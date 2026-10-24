@@ -198,6 +198,25 @@ def _pinned_json(path, sha256, what):
     return json.loads(raw)
 
 
+def quote_verifier(d, profile, *, wallet, rpcs, projection):
+    """The market port's quote verifier (IDEA-088, SJ-11-QV01), or None when the driver block names no
+    `untrusted_router_policy_file` / `_sha256` pair; without one every quote stays CAPABILITY_PROOF_REQUIRED.
+
+    The policy is the signer's own UntrustedRouterPolicy.v1 (IDEA-070 B02-U, DEV-23), loaded by its pinned hash and
+    bound to the balance RPC providers for the live router preflight. A missing input refuses the start."""
+    from larp.execution_live.config import untrusted_router_settings
+    settings = untrusted_router_settings(d)
+    if settings is None:
+        return None
+    if not rpcs:
+        raise ContractError('The untrusted-router quote verifier needs balance_rpc_providers for its preflight')
+    from larp.execution_live.untrusted_router import load_policy
+    from larp.marketdata.quote_verifier import ProviderRpc, UntrustedQuoteVerifier
+    scale = (projection.get('portfolio') or {}).get('bnb_decimals')
+    return UntrustedQuoteVerifier(load_policy(*settings).bind(ProviderRpc(rpcs)), profile, wallet=wallet,
+                                  bnb_decimals=scale)
+
+
 def build_driver(config, store, secrets, *, clock_ms=None):
     """The round driver (IDEA-048, IDEA-050) from the `driver` block of the manifest-bound runtime configuration.
 
@@ -287,9 +306,16 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     # Quotes request the profile's own slippage limit and pass its consumer check (PR #41, #40). The basis check uses
     # the token -> underlying tickers this run pinned and the check above bound to the issuer registry (IDEA-086).
     from larp.marketdata.basis import BasisVerifier
-    market = MarketPort(client, wallet, quote_limits=profile, basis_verifier=BasisVerifier(
-        {meta['token']: meta['underlying_id'] for meta in issuers.values()}))
     run = store.load(config['run_id']).read()
+    balance = balance_settings(d, mode)  # refuses a dev/live start without them, before any port makes a request
+    rpcs = None
+    if balance is not None:
+        from larp.execution_live.chain import Rpc
+        chain = Artifacts(str(Path(d['market_artifact_root']) / 'chain'))
+        rpcs = [Rpc(p['url'], artifacts=chain, source_id=p['source_id']) for p in balance['providers']]
+    market = MarketPort(client, wallet, quote_limits=profile, basis_verifier=BasisVerifier(
+        {meta['token']: meta['underlying_id'] for meta in issuers.values()}),
+        quote_verifier=quote_verifier(d, profile, wallet=wallet, rpcs=rpcs, projection=run['projection']))
     gas = None
     if 'gas_floor_bnb_units' in profile:
         gas = NativeGasQuotePort(client, wallet, quote_limits=profile, pay_units=profile['gas_top_up_cash_units'],
@@ -298,7 +324,6 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     lifecycle = lifecycle_policy_from(intelligence)
     # One registry-validated issuer map for evidence contexts and review jobs (#25).
     issuer_map = {i: dict(token=m['token'], underlying_id=m['underlying_id']) for i, m in issuers.items()}
-    balance = balance_settings(d, mode)  # refuses a dev/live start without them, before any port makes a request
     health = RuntimeHealth(store, config['run_id'], run['epoch'])
     builder = ContextBuilder(profile=profile, profile_hash=profile_hash, run_id=config['run_id'], issuers=issuer_map,
                              market=feed, health=health,
@@ -336,12 +361,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     balance_check = None
     if balance is not None:
         from larp.execution_live.balances import BalanceProviders, DecimalsCache
-        from larp.execution_live.chain import Rpc
-        chain = Artifacts(str(Path(d['market_artifact_root']) / 'chain'))
         # Primary first, then backups; a check fails only when every provider fails (IDEA-055 PR 5).
-        read = BalanceProviders([Rpc(p['url'], artifacts=chain, source_id=p['source_id'])
-                                 for p in balance['providers']],
-                                wallet=wallet, decimals=DecimalsCache(),
+        read = BalanceProviders(rpcs, wallet=wallet, decimals=DecimalsCache(),
                                 min_block=lambda: store.load(config['run_id']).read()['projection'].get('settled_block'))
         balance_check = BalanceCheck(coordinator, read, interval_ms=balance['interval_ms'],
                                      max_age_ms=balance['max_age_ms'])

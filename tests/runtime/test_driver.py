@@ -361,6 +361,51 @@ class Composition(unittest.TestCase):
                 self.assertIsInstance(market.basis_verifier, BasisVerifier)
                 self.assertEqual(market.basis_verifier.expected, {'NVDAB': 'NVDA'})
 
+    def untrusted_settings(self, **changes):
+        """IDEA-088 QV7: the run-3 S1 profile (initial-only gas), a pinned test router policy and balance RPCs."""
+        from tests.execution.test_untrusted_router import policy
+        raw = json.dumps(policy()).encode()
+        (self.root / 'router-policy.json').write_bytes(raw)
+        profile = (Path(__file__).resolve().parents[2] / 'docs/build/evidence/s1-rehearsal-profile-20261023/'
+                   'rehearsal-s1-deterministic.json').read_bytes()
+        (self.root / 's1-profile.json').write_bytes(profile)
+        value = dict(untrusted_router_policy_file=str(self.root / 'router-policy.json'),
+                     untrusted_router_policy_sha256=hashlib.sha256(raw).hexdigest(),
+                     strategy_profile_file=str(self.root / 's1-profile.json'),
+                     strategy_profile_sha256=hashlib.sha256(profile).hexdigest(),
+                     balance_rpc_providers=[dict(url='https://rpc-a.invalid/', source_id='a'),
+                                            dict(url='https://rpc-b.invalid/', source_id='b')],
+                     balance_check_interval_ms=600_000, balance_check_max_age_ms=1_800_000,
+                     price_jump_check_bps=3000)
+        value.update(changes)
+        return {k: v for k, v in value.items() if v is not None}
+
+    def test_qv7_a_pinned_untrusted_router_policy_gives_the_market_port_its_quote_verifier(self):
+        from larp.marketdata.quote_verifier import ProviderRpc, UntrustedQuoteVerifier
+        settings = self.untrusted_settings()
+        market = build_driver(self.config(**settings), Store(), self.secrets).ports['market']
+        verifier = market.quote_verifier
+        self.assertIsInstance(verifier, UntrustedQuoteVerifier)
+        self.assertEqual((verifier.decoder.mode, verifier.decoder.policy_sha256),
+                         ('untrusted', settings['untrusted_router_policy_sha256']))
+        self.assertIsInstance(verifier.decoder.rpc, ProviderRpc)
+        self.assertEqual([p.source_id for p in verifier.decoder.rpc.providers], ['a', 'b'])
+        self.assertIsNone(build_driver(self.config(), Store(), self.secrets).ports['market'].quote_verifier)
+
+    def test_qv7_the_policy_pair_is_pinned_complete_and_needs_its_inputs(self):
+        top_up = json.dumps(synthetic_profile()).encode()
+        (self.root / 'top-up-profile.json').write_bytes(top_up)
+        for name, change in (
+                ('hash', dict(untrusted_router_policy_sha256='0' * 64)),
+                ('file only', dict(untrusted_router_policy_sha256=None)),
+                ('hash only', dict(untrusted_router_policy_file=None)),
+                ('no balance providers', dict(balance_rpc_providers=None, balance_check_interval_ms=None,
+                                              balance_check_max_age_ms=None, price_jump_check_bps=None)),
+                ('top-up profile', dict(strategy_profile_file=str(self.root / 'top-up-profile.json'),
+                                        strategy_profile_sha256=hashlib.sha256(top_up).hexdigest()))):
+            with self.subTest(name), self.assertRaises(ContractError):
+                build_driver(self.config(**self.untrusted_settings(**change)), Store(), self.secrets)
+
     def test_e9_execution_mode_must_be_named_and_known(self):
         for change in (dict(execution=None), dict(execution='sign'), dict(signing=False),
                        dict(execution='service'),  # no expiry grace

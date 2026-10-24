@@ -64,6 +64,9 @@ def _quote_at_cap(m, side, pay_units, p, now, target_units, mandatory=False):
             cash, fee, gas, q, minimum = [integer(quote[k]) for k in
                 ("cash_units", "fee_units", "gas_bnb_units", "token_units", "min_receive_units")]
             valid &= (cash == pay_units and 0 < minimum <= q) if side == "BUY" else (q == pay_units and minimum <= cash)
+            if "expected_gas_bnb_units" in quote:
+                # IDEA-088: an expected fee inside the reserved gas; only the entry cost uses it.
+                valid &= 0 < integer(quote["expected_gas_bnb_units"]) <= gas
             if p.get("mode") == "LIVE":
                 output = q if side == "BUY" else cash
                 valid &= (output > 0 and minimum > 0
@@ -453,7 +456,9 @@ def plan(snapshot, proposal_or_none):
                 req["status"] = "DUST_OR_UNEXECUTABLE"
             result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_MINIMUM_TRADE"})
             continue
-        gas_value = ceil(Fraction(gas * ledger["bnb_price_units"], 10**ledger["bnb_decimals"]))
+        # IDEA-088: the cost uses the expected fee when the quote gives one; reservation and gas checks keep `gas`.
+        gas_value = ceil(Fraction(quote.get("expected_gas_bnb_units", gas) * ledger["bnb_price_units"],
+                                  10**ledger["bnb_decimals"]))
         mark = value(q, m)
         cost = max(Fraction(0), cash - mark if side == "BUY" else mark - cash) + fee + gas_value
         if cost > cost_reserve and not mandatory:
