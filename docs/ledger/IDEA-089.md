@@ -117,3 +117,55 @@ slippage 8 bps, fee units 0, gas reserved 384000000000000 wei (`EXECUTION_FEE_AU
 and underlying market, and the venue returns executable quotes that pass the planner's own check. So F-95 does not
 stop S2 this weekend, and S2-6's quote condition holds now; it is re-run shortly before install. One weekend sample, not
 the 7-day GAP-44 measurement.
+
+## S2 implementation: design and pass criteria (pre-registered 2026-10-24, assistant, before tests or code)
+
+**Design.**
+- **Hours rule (S2-2, S2-8):** the S1 block's `execution` part gets an optional `hours` key. Absent or
+  `NYSE_SESSION`: today's behaviour, byte for byte, so existing profile hashes do not change. `KIT_OPEN_STATE`: a
+  discretionary leg's interval is the current calendar session's open up to the next session's open, the interval
+  mandatory sells already use.
+  - The change is made only in `execution_bounds.interval`, which both the planner (`reserve`) and execution
+    admission (`permitted`) call.
+  - The planner's `token_open`/`underlying_open` check (F-95) and the profile window (`trade_after`, `new_risk_end`,
+    `flatten_start`, `signing_end`) still apply unchanged.
+- **Scope (S2-1):** `KIT_OPEN_STATE` is refused unless the profile is REHEARSAL with evidence and falsifiers in
+  SHADOW and the run mode is `dev`. The refusal is enforced in five places:
+  1. `validate_live` (environment and SHADOW scope);
+  2. `gate_a.prepare` (run mode);
+  3. `gate_a_check` (run mode);
+  4. the runtime start (`service.build_driver`);
+  5. the execution start (`execution_live/main.py`).
+- **Profile (S2-3, S2-4, S2-9):** the run-3 S1 block with `hours` `KIT_OPEN_STATE` and `max_attempts_per_leg_session`
+  5, built by `tools/deploy/build_rehearsal_candidate.py`.
+  - Window as S2-4: 2026-10-24T01:00Z, 2026-10-25T08:00Z, 2026-10-25T09:00Z and 2026-10-25T15:00Z.
+  - Policy ID `larp-s2-rehearsal-v1`.
+  - Every other value as run 3's `6bcf1dfb…`: sizes, two-child reserve, gas, authority, slippage, caps.
+- **Runtime config (S2-10):** `gate_a.prepare` takes the untrusted-router policy pair and writes
+  `untrusted_router_policy_file` / `_sha256` into `runtime.json`'s driver block.
+  - It refuses half a pair, a malformed hash, or a pair without balance RPC providers.
+  - `runtime.example.json` lists the pair as null.
+  - The RC7 M4 passes the LD03 pair and refuses a package whose `runtime.json` lacks it.
+- **Run sheet (S2-6, S2-7, S2-12):** `docs/build/ops/rehearsal-install-rc7-20261024/`, the RC6 sheet with:
+  - run `larp-dev-rehearsal-20261024-s2`, database `larp_rehearsal4`;
+  - retirement of run 3 (RC6 `9dc5edab`, `larp_rehearsal3`, signer `49cb1a08…`);
+  - the S2 profile and probe pins;
+  - M1 checks that the build contains QV01 and S2;
+  - a pre-install step that runs `tools.deploy.quote_check` for each name, BUY and SELL;
+  - the Sunday 00:00Z day-roll note.
+
+**Pass criteria (offline):**
+
+| # | Pass when |
+|---|---|
+| S2I-1 | With `KIT_OPEN_STATE`, the planner reserves a discretionary BUY at a time after the session's close buffer (a weekend time on the frozen calendar) and forms an intent; with no `hours` key, the same snapshot is `EXECUTION_WINDOW_CLOSED` (unchanged) |
+| S2I-2 | **S2-8:** a BUY the planner accepted under `KIT_OPEN_STATE` is admitted by `execution_bounds.permitted` at a weekend time, and refused after the next session opens |
+| S2I-3 | `parameters` accepts `hours` only as `NYSE_SESSION` or `KIT_OPEN_STATE`; a block without `hours` gives the same config as today, and run 3's profile `6bcf1dfb…` still validates with an unchanged hash |
+| S2I-4 | **S2-1:** `validate_live` refuses `KIT_OPEN_STATE` for FINAL, or with BOUNDED_FALSIFIER evidence or DISCRETIONARY_EXIT falsifiers; `gate_a.prepare` and `gate_a_check` refuse it in `live` mode; the runtime start and the execution start refuse it in `live` mode |
+| S2I-5 | **S2-10:** `gate_a.prepare` with the pair writes both keys into `runtime.json`'s driver block and refuses half a pair, a bad hash, or a pair without balance providers; without the pair, the output is unchanged |
+| S2I-6 | **S2-9:** the S2 profile has 5 attempts per leg, and over one weekend session a name gets 5 BUY quote rounds, then `LEG_ATTEMPT_LIMIT` |
+| S2I-7 | The S2 profile rebuilds byte for byte from its recorded command, passes `validate_live`, signed dev `gate_a.prepare` and `gate_a_check`, and builds the dev/service runtime; it differs from `6bcf1dfb…` only in `s1.execution.hours`, `s1.execution.max_attempts_per_leg_session`, the four window keys, `policy_id` and their provenance |
+| S2I-8 | Full offline suite: no failure beyond the environment-only ones already seen in this venv |
+
+Not covered offline: live quotes (S2-6, S2-12 SELL), the host install, the Sunday day roll and P1–P6. Those stay with
+Yao, Isaac and the run sheet.
