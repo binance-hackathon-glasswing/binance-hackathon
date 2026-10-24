@@ -419,3 +419,23 @@ Run `larp-dev-rehearsal-20261024-s2` on RC7 `2d160073`, dev wallet
    run's own portfolio; `primary-status` shows unit states and archive health.
 4. **Stop new orders at any time (primary):** `python3.12 -I ssm_run.py host/pause-primary-db-clients.sh`, or
    `systemctl disable --now larp-execution` in an SSM session. Record the reason here.
+
+### Finding S2-F2 — trading rounds follow the evidence-issuer rotation, not every 15 minutes (2026-10-24 06:3xZ)
+
+After the 06:00Z SKHYB fill no round ran at 06:15Z or 06:30Z. A read-only check (`checks/runtime-why.sh`, git-ignored
+run folder, 06:33Z) showed nothing stuck: all units active with 0 restarts, no journal lines since 05:55Z, no pending
+round records, no reservations, no open rounds, round health 7/0, settled block 129462303.
+
+**Cause (code, RC7):** `larp/runtime/driver.py` `_cadence` gives slot `n` (15 min) to issuer `issuers[n % 5]` and
+returns no round when that issuer has no evidence records ("nothing to assess for this slot's issuer"). Every cadence
+round seen in runs 2, 3 and 4 has `slot % 5` in {2, 4} (1991922, 1991924, 1991927, 1991929, 1991969, 1991972,
+1992024), so only two issuers produce cadence rounds and the planner gets a chance to trade in 2 of every 5 slots.
+For run 4 that predicts rounds at 06:45, 07:15, 08:00 and 08:30Z (plus any review or filing job), so the remaining four
+buys take about 2.5 h instead of 1 h. Not a failure of S2, but it couples trade timing to evidence availability; any
+later profile that needs timely execution (entries, trims, mandatory exits outside the flatten window) should not
+depend on it. Owner for a decision: Keegan (driver) with Keith (S1 timing).
+
+**Side note:** `execution_attempt_budget` shows `DISCRETIONARY:BUY:GOOGLB` 1 after the 06:00Z round although no GOOGLB
+quote was requested: the planner reserves the next leg's attempt in the same plan that already carries the SKHYB
+intent, and the driver then skips the quote. With 5 attempts per leg this costs one attempt per name; with S1's 3 it
+would matter more.
