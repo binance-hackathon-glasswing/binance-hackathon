@@ -464,3 +464,20 @@ attempt on two names (5 per name). Up to Sun 08:00Z there are enough rounds for 
 The Sunday flatten sells whatever is held; with one position (SKHYB) there is nothing to re-order. Not fixed in run 4
 (a run cannot change build). The fix belongs with S2-F2 (IDEA-090): a child round must plan the leg its parent
 requested (from `execution_parent.quote_requests`), and near-equal legs need a stable order.
+
+### T2, SA5, SA9 and M9 — PASS; the run-4 install sheet is complete (Yao, 2026-10-24 06:5xZ)
+
+**Decision (Yao, in chat):** "ill leave it running while my friends finish crafting the new strategy, in the mean time
+lets do T2 and we can close the monitoring". This replaces the earlier "after all 5 buys": T2 now, with one position
+held (SKHYB) and S2-F3 making further buys uncertain. The signer keeps signing from the database without SSM.
+- **T2:** plan `signer-access-off-run4.tfplan` 0 add / 0 change / 8 destroy, exactly T1's eight resources (assistant
+  check); apply `0 added, 0 changed, 8 destroyed`.
+- **SA5** (`mac/signer-reach.sh`, 06:58:37Z): no SSM interface endpoints, no SSM policy on `larp-dev-signer`, EC2 ok/ok;
+  the signer's last ping 06:54:33Z, before T2 (it goes `ConnectionLost`).
+- **SA9** (`checks/primary-status.sh`): primary `Online`; evidence, uploader, runtime, execution active with 0 restarts;
+  archive timer active; archive `healthy: true`, anchors 2 ACK, backup 1 ACK.
+- **M9** on `releases/rehearsal-20261024t052748z/`: 12 object versions deleted, `M9_DONE`.
+
+RC7 sheet steps D1 through M9 all PASS. Run 4 runs unattended: further S2 entries until Sun 08:00Z (subject to S2-F2 and
+S2-F3), the UTC day roll at Sun 00:00Z, and the flatten Sun 09:00–15:00Z (P4). Wallet at nonce 6 at 06:59Z. Open:
+J-roll and J-flat checks after the fact (`checks/trading-status.sh` after Sun 15:00Z), K soak at leisure.
