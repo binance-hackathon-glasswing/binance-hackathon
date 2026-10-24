@@ -1,8 +1,9 @@
 # IDEA-090 — S2-F2/S2-F3 fix: a planner decision round every slot, and the child plans its parent's leg (handoff)
 
 - Date / author: 2026-10-24 / Yao Zhu (decision), Claude Code (record and design notes)
-- Status: **open, not implemented.** This entry is the handoff for Yao's team: the problem, the evidence, a proposed
-  design, and pass criteria written before any code. Implementation and review are the team's.
+- Status: **implemented 2026-10-24, review pending** (branch `claude/zen-meitner-luu8xj`; results below). This entry
+  began as the handoff for Yao's team (problem, evidence, proposed design, criteria before any code). A Claude Code
+  session then implemented it on request; Keegan and Keith still review it as owners, and F7 needs the next dev run.
 - Owners: Keegan (driver, `larp/runtime/driver.py`), Keith (S1 timing and planner). Review: the other of the two.
 - Related: IDEA-089 finding S2-F2 and the S2-F2 backlog line (PR272), IDEA-076 / IDEA-084 PF-01 (S1), IDEA-088 (quote
   verifier), IDEA-050 (round driver).
@@ -113,6 +114,57 @@ a signed-path journal. Affects audit replay (DR-19) of a signed final, not tradi
 | F10 | A round started with this round's assessment and `use_accepted_evidence=True` (the signed path's ready round) replays to the same head, as do planning-only rounds (F4) | driver-harness replay test, red on base first |
 
 Fail or partial: record it here; do not loosen the evidence, `openState` or execution guards to make rounds appear.
+
+## Implementation and results (2026-10-24)
+
+Code commits on `claude/zen-meitner-luu8xj`, each test commit red on base first: `6c67a6ee` (F1–F5 tests), `fc07f23e`
+(S2-F2), `2a353e8e` (F8 tests), `ec7b3b85` (S2-F3), `b2dc560b` (F9 tests), `9d74d91b` and `a403143a` (S2-F4 config),
+`5e121da2` (F10 test), `7ee4fef1` (S2-F5).
+
+**What changed, and the design choices against the proposal above:**
+1. **S2-F2, Option B only** (`larp/runtime/driver.py`). A slot whose issuer has no records runs a planning-only round,
+   `cadence:{slot}#n`, job reason `SCHEDULED_DECISION`, started with `assessment_override=None,
+   use_accepted_evidence=True` (the same mode as the signed path's safety round). A slot whose issuer has records is
+   unchanged (F2). **Option A was not built:** taking the next issuer with records would reassess the issuers that have
+   records two to three times as often, adding model calls on the signed path and changing the evidence review cadence
+   that the S2-F2 backlog line says to keep. Option B alone gives a round every slot. On the signed path,
+   planning-only items are ignored (it already plans on every tick).
+2. **Design item 2 (stop after the first leg) was not needed.** F5 passes on base: the S1 loop already ends after an
+   intent (`break`) and after a quote request. The run-4 `GOOGLB 1` count matches S2-F3 instead: a follow-up that
+   sorted another leg first spends that leg's attempt (the F8 reproduction leaves exactly the parent's leg plus the
+   re-sorted leg in the budget).
+3. **S2-F3** (`larp/risk/planner.py`, `larp/strategy/execution_bounds.py requested_legs`). S1 actions sort as
+   (sell first, the parent's requested leg first, notional in whole cash units descending, symbol). The parent
+   preference applies only when `execution_parent` is from the same session; whether its attempt may be reused is
+   still `_reuse`'s decision.
+4. **S2-F4** (`config/runtime/runtime.example.json` and the AIand shadow example, which must mirror it):
+   `max_quote_rounds` 1 → 2, so a smaller requote after a better-than-mark quote can complete in the same round.
+5. **S2-F5** (`larp/runtime/coordinator.py`, `larp/runtime/replay.py`). A round started on accepted evidence records
+   `accepted_evidence`: `ONLY` (no assessment attempted) or `WITH_ASSESSMENT` (the signed path's ready result). Replay
+   starts it the same way. The key is absent from every other round, so their bytes do not change.
+
+| # | Result | Evidence |
+|---|---|---|
+| F1 | **pass** | `test_f1_…`: 10 consecutive slots with records for 2 of 5 issuers give 10 rounds; the 6 slots without records are planning-only (`accepted_evidence` `ONLY`, no assessment, no `ASSESSMENT_UNAVAILABLE`, the policy ran). Red on base in those 6 slots. |
+| F2 | **pass** | `test_f2_…`: job IDs equal the old payload digest, assessment present, no new key; all 21 existing `test_driver.py` tests pass, with D3 updated because it asserted the old skip. |
+| F3 | **pass** | `test_f3_…`: after a 4.02 filing makes the reduction mandatory, the next slot of an issuer without records plans the mandatory SELL in that slot. Red on base (no round). The "no issuer has records" case is the same code path (the slot's issuer has none). |
+| F4 | **pass** | `test_f4_…`: one round per slot across ticks and a restarted driver; an interrupted planning-only round retries as `#2`; the journal replays to the same head. Without the replay change the replay diverges (checked by reverting it). |
+| F5 | **pass on base** (regression guard) | `test_f5_…`: a plan with an intent reserves only that leg's attempt. See design note 2. |
+| F6 | **partial** | Linux, PostgreSQL **16.15** (14.24 not available here). Python 3.13.17: 2632 passed, 11 skipped, 1 failed (`test_m01_cli_verify_with_service_config_and_host_profile`: the host profile compares installed packages with the release locks; this venv is not the lock set). Python 3.12.3: see below. Before the changes, the same setup failed only that test plus 25 tests that needed boto3/botocore/numpy, which were installed for the later runs. |
+| F7 | open | Operator, next dev run: rounds in consecutive slots in `checks/trading-status.sh`. |
+| F8 | **pass** | `tests/strategy/test_child_keeps_parent_leg.py`: a one-unit price move on other names, or a whole-unit larger notional, no longer re-sorts the follow-up; it plans the parent's leg on attempt 1 and spends no other leg. A fresh round is not re-ordered by a sub-unit move; a parent from another session does not steer. Red on base. |
+| F9 | **pass** | `tests/strategy/test_requote_follow_up.py`: parent → follow-up (smaller requote) → second follow-up plans the leg on attempt 1; the example config allows two follow-ups (red on base). |
+| F10 | **pass** | `test_f10_…`: a round started with its assessment and `use_accepted_evidence=True` replays to the same head. Red on base (`Deterministic replay diverged`). |
+
+**Consequences for review (Keith, Keegan):**
+- **Attempts are spent faster.** Planning every slot means up to four quote rounds an hour per leg instead of about
+  1.6. With S1's 3 attempts per leg per session, a quote that keeps failing (verifier or venue outage) can exhaust a
+  leg's attempts in about 45 minutes. The limits themselves are unchanged (parameters are frozen).
+- **More rounds are logged.** Every round is logged, hold-only rounds included (never-do #12): up to 96 cadence rounds
+  a day at 15 minutes, plus follow-ups, instead of about 38.
+- **Quote requests.** Up to two follow-up rounds a round (one extra quote request when a requote is needed).
+- **Not changed here:** the run-sheet order that let the first post-P4 intent expire before P5 (IDEA-089) is a sheet
+  matter for the final install.
 
 ## Not covered
 
