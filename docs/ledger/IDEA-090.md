@@ -268,3 +268,11 @@ must leave a valid summary alone. Add a regression before the fix.
 reported environment failure; review S2-F6's bounded second request against the unchanged execution/signing checks.
 Source acceptance is separate from owner profile/config decisions, F7 and actual post-approve swaps in a later dev
 run, final release qualification and PAGES01. No change to the active RC7 run.
+
+
+**R2 (S2-F5 replay, identified before regression execution):** `_signed_cycle` starts ready rounds with
+`assessment_audit=ready['audit']`, but replay does not pass that journaled audit back to `Coordinator.start`. F10's
+new test omits the audit, so the actual asynchronous path can still diverge even after the accepted-evidence fix.
+Criterion: successful WITH_ASSESSMENT and unavailable-result ONLY rounds carrying nonempty synthetic model audits
+must replay to exactly the same journal head, preserving their original audit events and calling no live provider.
+Pass the recorded audit through; do not regenerate or discard original model I/O. Add both regressions before repair.
