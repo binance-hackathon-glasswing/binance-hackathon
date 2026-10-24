@@ -228,3 +228,33 @@ read. It never refuses or passes because of the clock or the open state. The ver
 | ID | Result | Evidence |
 |---|---|---|
 | QV12 | PASS (offline) | Commit `dc89654b`. Red first: the refused-quote case had no `token_open` (KeyError). The closed-market pass already held, because the port does not gate on `openState`. After the change, with both states false, a valid recorded quote exits 0 `VERIFIED_EXECUTABLE` and reports `false/false`; a refused quote (exit 2) reports both states, closed or open. The clock is used only for the `started_at` stamp and quote freshness in `_quote_at_cap` (profile age 30 s, before the deadline), never for trading hours. Full suite (PG 14.24): **2585 passed, 10 skipped, 0 failed** (log `a7327bad…`). |
+
+### QV11 result: PASS (live read-only, run by Yao 2026-10-24 03:39Z; relayed by the coordinating session)
+
+Criterion (QV11 as restated in A2): all five names at about 19 USDT return `VERIFIED_EXECUTABLE` with `quote_at_cap`
+accepted, at the time the run needs it, with both `openState` values recorded. **Met.**
+
+- Run: PR268 head `13bea958`, `python -m tools.deploy.quote_check --symbol <S> --env-file <repo>/.env`, side BUY,
+  19 USDT (default), public BNB Chain RPC (default), the pinned run-3 S1 profile `6bcf1dfb…` and LD03 policy
+  `05759e90…`.
+- All five exited 0 with `VERIFIED_EXECUTABLE` and `quote_at_cap.accepted` true. Each showed slippage 8 bp, fee 0,
+  `gas_bnb_units` 384,000,000,000,000 (`EXECUTION_FEE_AUTHORITY`), expected 80,004,608,000,000, recipient
+  `UNVERIFIED_UNTRUSTED_LAYOUT` and `native_value` 0. Receive tokens equal `larp.marketdata.port.TOKENS` (checked by
+  the coordinating session).
+
+| Name | Impact (bp) | Deadline after quote (s) | token_open / underlying_open |
+|---|---:|---:|---|
+| NVDAB | 1 | 499 | true / true |
+| GOOGLB | 1 | 500 | true / true |
+| SKHYB | 1 | 499 | true / true |
+| TSLAB | 1 | 500 | true / true |
+| MSFTB | 0 | 499 | true / true |
+
+- **Observation (not interpreted here):** at 03:39Z on a Saturday, with the US market closed, the Web3 API reported
+  `openState` true for both token and underlying for all five names. The planner's `openState` guard therefore would
+  not block an entry at that time; IDEA-089 owns what that means for S2.
+- Evidence: the output file stays git-ignored on Yao's Mac (`deploy/activation/quote-check-20261024T0339Z.txt`).
+  This entry records the relayed values; I have not seen the file. The same values are recorded as a pre-install
+  observation in IDEA-089 (PR269).
+- Not shown by this check: the signed path (approve, swap gas estimate, receipt, settlement), the runtime config pair
+  or a release. Those remain IDEA-089 S2 and the install steps.
