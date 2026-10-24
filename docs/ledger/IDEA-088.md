@@ -258,3 +258,18 @@ accepted, at the time the run needs it, with both `openState` values recorded. *
   observation in IDEA-089 (PR269).
 - Not shown by this check: the signed path (approve, swap gas estimate, receipt, settlement), the runtime config pair
   or a release. Those remain IDEA-089 S2 and the install steps.
+
+## QV6 decision and merge review (2026-10-24)
+
+- **QV6 accepted (Isaac and Keith, relayed by the user in the coordinating session, 2026-10-24):** the entry-cost
+  check prices gas at the quote's `expected_gas_bnb_units` (`gas_sizing_budget_units`), while the reservation,
+  `INSUFFICIENT_GAS`, the free-BNB floor and the exit reserve keep the full `gas_bnb_units`. The planner hunk stays.
+- **Merge review (assistant):**
+  - verifier, port, planner, service and driver diffs read in full;
+  - full offline suite on head `5fda10e` (Linux, Python 3.12, disposable PostgreSQL 16): 2581 passed, 11 skipped,
+    3 failed. The 3 failures (`test_service_configs` ×2, `test_fault_points` ×1) fail the same way on canonical in
+    that venv, which omits locked packages. They are environmental.
+  - Note, no change: each `QUOTE_NOT_EXECUTABLE` incident has an `incident:` event ID, so the archive takes an
+    incident backup at most once an hour (`larp/runtime/maintenance.py`). Off-hours or refused-quote periods
+    therefore add up to one backup an hour.
+- The runtime config pair and `runtime.example.json` entry are implemented with IDEA-089 S2 (S2-10).
