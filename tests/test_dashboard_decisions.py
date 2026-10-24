@@ -1,5 +1,6 @@
 """IDEA-087 DX1-DX4: the agent's decisions on the Pages dashboard, from synthetic round events. No database, no
 network."""
+from copy import deepcopy
 import json
 from pathlib import Path
 import re
@@ -121,6 +122,40 @@ class ExportTest(unittest.TestCase):
         lines = self.x['emit'](events(), 2, 'run')
         self.assertEqual([json.loads(line).get('round_id') for line in lines], ['cadence:101#1', 'filing:job-7#1', None])
         self.assertEqual(json.loads(lines[-1])['exported'], 2)
+
+    def test_rv01_default_export_fits_ssm_and_keeps_the_newest_complete_rows(self):
+        dense = []
+        for seq in range(1, 31):
+            event = deepcopy(events()[1][1])
+            event['record']['round_id'] = f'cadence:{seq}#1'
+            dense.append((seq, event))
+        lines = self.x['emit'](dense, 30, 'larp-dev-rehearsal-20261024-s2')
+        self.assertLessEqual(sum(len(line.encode('utf-8')) + 1 for line in lines), 22000)
+        parsed = [json.loads(line) for line in lines]
+        summary = parsed.pop()
+        self.assertEqual(summary['section'], 'decisions_summary')
+        self.assertGreater(summary['omitted_for_size'], 0)
+        self.assertEqual(summary['exported'] + summary['omitted_for_size'], 30)
+        self.assertEqual([r['seq'] for r in parsed], list(range(31 - summary['exported'], 31)))
+        _, report = dec.parse('\n'.join(lines))
+        self.assertEqual(report['summary']['omitted_for_size'], summary['omitted_for_size'])
+        # A single dense row must not force an incomplete JSON line or displace the summary.
+        huge = deepcopy(dense[-1][1])
+        huge['record']['policy_output']['targets'] *= 100
+        emit = self.x['emit']
+        globals_ = emit.__globals__
+        previous = globals_.get('MAX_EXPORT_BYTES')
+        try:
+            globals_['MAX_EXPORT_BYTES'] = 250
+            bounded = emit([(30, huge)], 30, 'run')
+            self.assertLessEqual(sum(len(line.encode('utf-8')) + 1 for line in bounded), 250)
+            self.assertEqual(len(bounded), 1)
+            self.assertEqual(json.loads(bounded[0])['omitted_for_size'], 1)
+        finally:
+            if previous is None:
+                globals_.pop('MAX_EXPORT_BYTES', None)
+            else:
+                globals_['MAX_EXPORT_BYTES'] = previous
 
     def test_dx1_database_part_is_read_only(self):
         text = EXPORT.read_text()
