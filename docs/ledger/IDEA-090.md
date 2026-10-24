@@ -166,6 +166,28 @@ Code commits on `claude/zen-meitner-luu8xj`, each test commit red on base first:
 - **Not changed here:** the run-sheet order that let the first post-P4 intent expire before P5 (IDEA-089) is a sheet
   matter for the final install.
 
+### Suspected finding S2-F6 — run 4, 07:15Z: approve confirmed, swap never sent (2026-10-24 08:2xZ, unconfirmed)
+
+Chain facts (public RPC, 08:17Z): at 07:15:42Z (block 129472187) the dev wallet approved 18.940509 USDT to the router
+(nonce 6, status 1, tx `0x865ada0e…957d`). No swap followed: nonce 7 both `latest` and `pending`, USDT unchanged at
+77.048279, and the 18.940509 USDT allowance to the router is still open. No transaction at the 08:00Z round either.
+
+**Most likely cause (code reading, not yet confirmed from the database):** after the approve is final, the execution
+service re-quotes the swap (`larp/execution_live/venue.py quote`, same `slippage_bps` 8 as the planning quote,
+`larp/execution_live/main.py` line 92) and `validate_payload` (`larp/execution.py`) requires the fresh quote's encoded
+`minimum_output >= intent.minimum_output`, the planning quote's minimum. With the same slippage on both sides that means
+**the fresh quote must return at least as many tokens as the planning quote**: any adverse move between planning and
+the post-approve requote blocks the swap ("encoded swap economics mismatch/expired"). After `max_prepare_probes` (3)
+blocked probes, or at `valid_until`, the intent aborts unsigned (`NOT_SUBMITTED`, `ABORTED_BEFORE_SWAP_BROADCAST`),
+leaving the approval open. The 06:00Z buy passed because its requote was not worse. Other possible causes: the
+untrusted-router preflight refusing, gas above the authorized limit, or the authority expiring.
+
+**To confirm (SSM operator, primary):** `checks/trading-status.sh` for the 07:15Z round's execution record: its
+`blocked_reason` and the NOT_SUBMITTED reason. If confirmed, this applies to the final as well (same code). A fix would
+re-request the post-approve quote with a slippage that makes its minimum equal the intent's authorized minimum (never
+wider than the profile's limit), so the swap goes through whenever the fresh output is still above the authorized
+minimum; it needs its own pass criteria and Isaac/Keegan review (execution and signer path).
+
 ## Not covered
 
 - Run 4 (`larp-dev-rehearsal-20261024-s2`, RC7 `2d160073`) keeps running as it is; a run cannot change build.
