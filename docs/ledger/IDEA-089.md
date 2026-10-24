@@ -216,3 +216,30 @@ Canonical `e68fcb87b3212355b670d1cb2af6b6f616d3f2c6` (PR270 merge) pushed as a f
 So no CI artifact exists for RC7, and M1 (`m1-fetch-bundle.sh`) cannot be used. The commit's tests are green in CI,
 and the bundle is built locally with `mac/m1-local-bundle.sh` (the SJ-11-A2 route). A later mirror artifact needs the
 quota freed and the usage recalculated (6–12 h), which is too late for the S2 window (new risk ends Sun 08:00Z).
+
+## Run 4 install (RC7 sheet `docs/build/ops/rehearsal-install-rc7-20261024/`, Yao as operator)
+
+### S2-A2 — local RC7 bundle again; D1 and M1-local PASS (Yao, 2026-10-24 ~05:16Z)
+
+**Decision (Yao, in chat):** "lets try and deploy it now", on the RC7 sheet's `mac/m1-local-bundle.sh` route. As in
+SJ-10-A2 and SJ-11-A2, this reverses Keegan's PR244 CI-artifact-only gate for run 4 only. The RC7 mirror CI run above
+tested `e68fcb87` (all test jobs green; no artifact because of the quota). BUILD `2d160073` differs from it only in
+`docs/ledger/IDEA-089.md` (assistant check), so no release file is untested by that run.
+
+- **D1** (`mac/d1-create-db.sh`): record `S2-D1`, database `larp_rehearsal4`, `new_database_preexisted: false`;
+  databases before: `larp`, `larp_rehearsal1`, `larp_rehearsal2`, `larp_rehearsal3`, `larp_trial`, `larp_trial2`.
+  Migrations equal to the release and to `larp`, 21 tables, 0 runs, all five service roles connect, runtime may insert
+  runs and not execution records. `D1_DONE`. (The first attempt stopped at "tunnel did not open": expired `aws login`
+  session; re-run after login.) The script's final line still prints `SJ-11-D1 PASS`: a label left from the RC6 copy;
+  its JSON record is `S2-D1`.
+- **M1-local** (`PY` = `larp-test-venv`): BUILD `2d160073d0f26c1f35c6c977c3dd6167a5ee0d26`,
+  `larp-2d160073d0f2-x86_64.tar.gz` sha256 `310818408f2253000863f27eeb15ea4c4b3521c387b029306b286b9c576e2332`, manifest
+  `55cf600b259ad43b15ec734bac63a78fc6b92fcf76bed58fd8bd061ff9a61c48`. Its checks for PR262, PR268, the S2 hours and
+  profile `eb55d76a…` passed. Against CI RC4 (manifest `5ea11a84…`), exactly the 14 release files that
+  `d03bbb1..2d160073` changes differ (NEW `basis.py`, `quote_verifier.py`; CHANGED `deviations.v1.json`,
+  `execution_live/main.py`, `marketdata/port.py`, `risk/planner.py`, `runtime/database.py`, `runtime/driver.py`,
+  `runtime/gate_a.py`, `runtime/gate_a_check.py`, `runtime/service.py`, `storage/postgres.py`,
+  `strategy/execution_bounds.py`, `strategy/profiles.py`). CPython `0e56475e…`, CA `d7389074…` and `provision.sh`
+  `d7905de4…` are unchanged. `MIRROR_RUN=LOCAL-BUILD-RUN4`. `M1_DONE`.
+
+Next: K soak for run 3 (before R1p), Q1, M2, M3.
