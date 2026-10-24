@@ -2,8 +2,8 @@
 
 - Date / author: 2026-10-25 SGT (2026-10-24 ~16:30Z) / team request in a Claude Code session on Keith's machine (request and the
   hours choice below); Claude Code (design, implementation, record). Strategy owner for review: Keith
-- Status: **open — implemented and tested offline 2026-10-25 (S4-1..S4-9 PASS, local CI replica; see the end of this
-  entry).** Not approved, built into a release or installed.
+- Status: **open — implemented and tested offline 2026-10-25 (S4-1..S4-9, S4R-1..S4R-5 and FS1-1..FS1-7 PASS, local
+  CI replica; see the results sections).** Not approved, built into a release or installed. S4 was renamed FS1.
 - Base: canonical `codex/system-testing-20261012` at `4b164649` (PR277 merged).
 - Related: IDEA-076 / IDEA-084 PF-01, PF-04 (S1 and the final calendar), IDEA-089 (S2, run 4), IDEA-090 (S2-F2..F6),
   IDEA-091 (strategy research), IDEA-092 (S3), SKILL.md F-95, F-115, F-117, F-119, F-121, F-124.
@@ -251,3 +251,19 @@ key, secret or paid-model action is taken here).
 | FS1-5 | With FS1's settings, a verified model-assessed Item 4.02 finding gives an EXIT target and a mandatory SELL intent from the planner (the model's verified output changes the decision); at a weekend time too |
 | FS1-6 | Live preparation of FS1 refuses a capture whose wallet holds any stock (S3 lesson 1), and FS1 refuses a scheduled flatten |
 | FS1-7 | Full local CI replica as S4-9, no new failures |
+
+### FS1 results (2026-10-25 SGT)
+
+Commit `c7242513` (rename, routing file, FS1 tests, run sheet). The FS1 tests were written in the same commit as the
+routing file; a separate red check removed `aiand-routing.fs1.json` and FS1-2, FS1-3 and FS1-4 failed; FS1-5 and FS1-6
+pass without it (they are guards on behaviour that already existed for this profile).
+
+| # | Result |
+|---|---|
+| FS1-1 | **PASS.** Against the S4 / S4-R builds at `db048e0d`, both profiles differ only in `policy_id` and provenance (`decision_id` text on the keys this entry set; formula text on the FS1-R window and policy). FS1 `75767d3e…` (digest `9249bf11…`, probe `fcd18d03…`); FS1-R `62b38000…` (digest `c0ba0637…`, probe `15cce45b…`); both rebuild byte for byte |
+| FS1-2 | **PASS.** Routing `9b86c732…` validates, equals the v4 repair example minus `openai_trial`, `gpt-6.1-sol` primary, Kimi K3 / GLM-5.3 reviewers; pacing Oct 18 11:00Z – Nov 13 00:00Z covers FS1's window |
+| FS1-3 | **PASS.** Signed live preparation writes `mode` `live`, `assessor` `aiand_routed`, `execution` `service`, the routing file and pin; `gate_a_check` scope and inputs pass; without routing, or with the v4 example (trial), preparation is refused. Missing inputs reported by preparation: `SEC_CONTACT` (installer supplies) and `LIVE_INTELLIGENCE_SETTINGS_AND_SIGNED_GATE_B_ACCEPTANCE` (always for signed) |
+| FS1-4 | **PASS.** The live runtime builds with the routed assessor and service execution, no network; signing itself starts only at run activation. The synthetic budget ledger is opened with the routing's pacing (total, prior spend, no reserve) |
+| FS1-5 | **PASS.** With FS1's settings on a Saturday after Friday's close, a verified Item 4.02 assessment (the repository's synthetic rule model in place of AIand, through the same gate and verifier) gives an EXIT target, a `CLASS_1_EXIT` reduction and a mandatory SELL intent |
+| FS1-6 | **PASS.** A stock-free capture initializes; one unit of any of the five stocks is refused at install; FS1 has no scheduled flatten |
+| FS1-7 | **PASS (local replica).** Clean clone of `c7242513`: **2684 passed, 9 skipped, 4004 subtests, 0 failed**; `pip check`, offline demo, Docker build and run PASS; x86_64 bundle `7304b7ba…` and `test_host_bundle.sh` PASS for primary and signer. Terraform not rerun: no `deploy/` or workflow file changed in this entry. Systemd conditions not run |

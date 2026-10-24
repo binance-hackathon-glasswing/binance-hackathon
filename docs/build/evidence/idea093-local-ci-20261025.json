@@ -69,5 +69,26 @@
   },
   "terraform": "not rerun: no deploy/ change since the first run",
   "systemd_conditions": "NOT RUN"
+ },
+ "fs1_rerun": {
+  "tested_commit": "c7242513fa063b59cd53e9c32a09225a48175b6c",
+  "pip_check": "PASS",
+  "pytest": {
+   "passed": 2684,
+   "skipped": 9,
+   "subtests_passed": 4004,
+   "failed": 0,
+   "seconds": 359.4
+  },
+  "offline_demo": "PASS (67652-byte trace)",
+  "docker_build_and_run": "PASS",
+  "host_bundle": {
+   "bundle": "larp-c7242513fa06-x86_64.tar.gz",
+   "bundle_sha256": "7304b7babd934c80789022677f0c0a7363b730c95403d66d8ab974c4aff56ae7",
+   "test_host_bundle": "PASS primary and signer"
+  },
+  "terraform": "not rerun: no deploy/ or workflow change since the first run",
+  "systemd_conditions": "NOT RUN",
+  "note": "paths in the first run's record (s4-*) were renamed fs1-* at c7242513"
  }
 }
