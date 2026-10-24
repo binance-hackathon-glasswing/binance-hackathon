@@ -34,6 +34,7 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
    - optionally `day_roll_window_ms` (daily risk anchor), `max_quote_rounds` and `max_quote_requests` (quote follow-up);
    - `balance_rpc_url` (HTTPS), `balance_rpc_source_id`, `balance_check_interval_ms` and `balance_check_max_age_ms` for the chain-balance check ([IDEA-055](../ledger/IDEA-055.md), #36); required in `dev` and `live`, so a start without them exits 4;
    - `assessor: "deterministic"`; a hosted model assessor exits 2 (not integrated).
+   - optionally `untrusted_router_policy_file` / `untrusted_router_policy_sha256` (both or neither; the signer's LD03 `UntrustedRouterPolicy.v1`, readable by `larp-runtime`), which turns on the runtime's quote verifier ([IDEA-088](../ledger/IDEA-088.md)); without them every quote stays `CAPABILITY_PROOF_REQUIRED` and no order can form. `prepare_shadow prepare --untrusted-router-policy-file … --untrusted-router-policy-sha256 …` writes them ([IDEA-089](../ledger/IDEA-089.md) S2-10). The examples leave them out, because a null there is a placeholder to fill.
 
    `cycle_timeout_seconds` (top level of `runtime.json`, required in `dev` and `live`; example 600 s) is the watchdog: a cycle that runs longer ends the process for a supervised restart of the same build ([IDEA-049-D](../ledger/IDEA-049-D.md) D-FND-004, #35).
 

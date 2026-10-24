@@ -79,6 +79,9 @@ def main(argv=None):
     assembly.add_argument('--execution', choices=('shadow', 'service'), default='shadow')
     assembly.add_argument('--runtime-mode', choices=('dev', 'live'), default='dev')
     assembly.add_argument('--model-adoption-ref', help='Reviewed signed/live model decision; with service execution')
+    assembly.add_argument('--untrusted-router-policy-file',
+                          help="Host path of the signer's UntrustedRouterPolicy.v1; enables the runtime quote verifier")
+    assembly.add_argument('--untrusted-router-policy-sha256', help='Reviewed SHA-256 of that policy file (LD03)')
     args = parser.parse_args(argv)
     try:
         if args.command == 'capture':
@@ -119,7 +122,9 @@ def main(argv=None):
                         balance_rpc_url=args.balance_rpc_url, balance_rpc_source_id=args.balance_rpc_source_id,
                         balance_rpc_providers=rpc_providers(args.balance_rpc_config),
                         model_routing_raw=routing_raw, model_routing_sha256=args.model_routing_sha256,
-                        execution=args.execution, runtime_mode=args.runtime_mode, adoption_ref=args.model_adoption_ref)
+                        execution=args.execution, runtime_mode=args.runtime_mode, adoption_ref=args.model_adoption_ref,
+                        untrusted_router_policy_file=args.untrusted_router_policy_file,
+                        untrusted_router_policy_sha256=args.untrusted_router_policy_sha256)
         write_new(args.out, files)
         report = json.loads(files['preparation-report.json'])
         # No account IDs, wallet, contacts, endpoints, credentials or raw input data in stdout.

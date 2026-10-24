@@ -16,6 +16,7 @@ from larp.intelligence.config import load_config, load_registry
 from larp.marketdata.port import MarketPort, NATIVE, TOKENS, integer
 from larp.marketdata.web3 import data, encoded, utc
 from larp.runtime.driver import SessionCalendar
+from larp.strategy.execution_bounds import require_open_state_scope
 from larp.strategy.profiles import validate_live
 from larp.strategy.schema import instant
 
@@ -274,11 +275,13 @@ def scoped_rehearsal(profile, mode):
 def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None,
             balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=None,
             model_routing_raw=None, model_routing_sha256=None, execution='shadow', runtime_mode='dev',
-            adoption_ref=None):
+            adoption_ref=None, untrusted_router_policy_file=None, untrusted_router_policy_sha256=None):
     """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage.
 
     The balance RPC is either one `balance_rpc_url` + `balance_rpc_source_id` or an ordered `balance_rpc_providers`
-    list (GA15), never both."""
+    list (GA15), never both. The untrusted-router policy pair (IDEA-088, IDEA-089 S2-10: the host path of the
+    signer's UntrustedRouterPolicy.v1 and its SHA-256) enables the runtime's quote verifier; without it the driver
+    block carries no pair and every quote stays CAPABILITY_PROOF_REQUIRED."""
     routing = None
     if model_routing_raw is not None or model_routing_sha256 is not None:
         routing = model_routing(model_routing_raw, model_routing_sha256)
@@ -286,6 +289,7 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     if routing is not None and routing.get('openai_trial') is not None and (signed or runtime_mode != 'dev'):
         raise ContractError('Unsigned trial routing requires dev/shadow preparation')
     profile, capture = json.loads(profile_raw), json.loads(capture_raw)
+    require_open_state_scope(profile, runtime_mode)  # IDEA-089 S2-1
     deterministic_rehearsal = routing is None and scoped_rehearsal(profile, runtime_mode)
     if (execution not in ('shadow', 'service') or runtime_mode not in ('dev', 'live')
             or (not signed and (runtime_mode != 'dev' or adoption_ref is not None))
@@ -311,6 +315,13 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     calendar(int(instant(profile['signing_end']).timestamp() * 1000))
     issuers = issuer_map(capture)
     providers = rpc_provider_list(balance_rpc_url, balance_rpc_source_id, balance_rpc_providers)
+    policy = (untrusted_router_policy_file, untrusted_router_policy_sha256)
+    if policy != (None, None):
+        if (type(policy[0]) is not str or not policy[0].startswith('/') or any(c in policy[0] for c in '\r\n\x00')
+                or type(policy[1]) is not str or not re.fullmatch('[0-9a-f]{64}', policy[1])):
+            raise ContractError('The untrusted-router policy needs an absolute file path and its SHA-256, together')
+        if providers is None:
+            raise ContractError('The untrusted-router quote verifier needs balance RPC providers')
     if providers is not None and 'chain' not in capture:
         # GA12: with the balance RPC configured, nothing excuses a capture without the chain read.
         raise ContractError('A chain balance capture required: capture with --balance-rpc-url or --balance-rpc-config')
@@ -341,8 +352,11 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                              cadence_ms=CADENCE_MS, day_roll_window_ms=DAY_ROLL_MS,
                              strategy_profile_sha256=digest(profile_raw),
                              session_calendar_sha256=digest(calendar_raw), issuers=issuers)
-    for key in ('model_routing_file', 'model_routing_sha256', 'model_budget_root', 'model_adoption_ref'):
+    for key in ('model_routing_file', 'model_routing_sha256', 'model_budget_root', 'model_adoption_ref',
+                'untrusted_router_policy_file', 'untrusted_router_policy_sha256'):
         runtime['driver'].pop(key, None)
+    if policy != (None, None):
+        runtime['driver'].update(untrusted_router_policy_file=policy[0], untrusted_router_policy_sha256=policy[1])
     if routing is not None:
         runtime['driver'].update(assessor='aiand_routed', model_routing_file=MODEL_ROUTING_FILE,
                                  model_routing_sha256=model_routing_sha256, model_budget_root=MODEL_BUDGET_ROOT)

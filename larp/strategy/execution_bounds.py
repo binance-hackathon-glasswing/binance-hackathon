@@ -3,6 +3,10 @@
 The runtime journals the budget with the round, not with a successful fill. Fresh
 round/intent IDs and an execution-service restart cannot restore spent attempts.
 Mandatory sales use a separate lane and bypass the discretionary time window.
+
+IDEA-089 S2: `execution.hours` KIT_OPEN_STATE gives discretionary legs the mandatory lane's interval (session open
+to the next open), for both the planner and execution admission. It is a dev REHEARSAL test setting only (S2-1); the
+planner's `openState` check (F-95) and the profile window still apply.
 """
 from larp.contracts import ContractError, Document
 from .schema import SYMBOLS, integer
@@ -11,15 +15,40 @@ BASELINE = 'TREND_GUARDED_VOL'
 SCHEMA = 'S1ExecutionBounds.v1'
 
 
+HOURS = ('NYSE_SESSION', 'KIT_OPEN_STATE')
+SCOPE = 'KIT_OPEN_STATE hours need a dev REHEARSAL with SHADOW evidence and falsifiers (IDEA-089 S2-1)'
+
+
 def parameters(value):
     keys = {'open_delay_seconds', 'close_buffer_seconds', 'max_attempts_per_leg_session'}
-    if type(value) is not dict or set(value) != keys:
+    if type(value) is not dict or not keys <= set(value) <= keys | {'hours'}:
         raise ContractError('S1 execution needs explicit delay, buffer and attempt limit')
-    result = {k: integer(v) for k, v in value.items()}
+    if 'hours' in value and value['hours'] not in HOURS:
+        raise ContractError('S1 execution hours must be NYSE_SESSION or KIT_OPEN_STATE')
+    result = {k: integer(v) for k, v in value.items() if k != 'hours'}
     if (result['open_delay_seconds'] > 14400 or result['close_buffer_seconds'] > 14400
             or not 1 <= result['max_attempts_per_leg_session'] <= 5):
         raise ContractError('S1 execution parameters outside supported bounds')
+    if 'hours' in value:
+        result['hours'] = value['hours']  # absent: today's config, so existing profiles keep their meaning
     return result
+
+
+def open_state_hours(profile):
+    """True when a profile's S1 block sets `execution.hours` KIT_OPEN_STATE (IDEA-089 S2)."""
+    s = profile.get('s1') if type(profile) is dict else None
+    execution = s.get('execution') if type(s) is dict else None
+    return type(execution) is dict and execution.get('hours') == 'KIT_OPEN_STATE'
+
+
+def require_open_state_scope(profile, mode):
+    """S2-1: refuse KIT_OPEN_STATE outside a REHEARSAL with SHADOW evidence and falsifiers, and outside a `dev`
+    run. `mode` None is validate_live, which sees only the profile; preparation, the gate check and both service
+    starts pass their run mode."""
+    if open_state_hours(profile) and not (
+            profile.get('environment') == 'REHEARSAL' and profile.get('evidence_mode') == 'SHADOW'
+            and profile.get('falsifier_authority') == 'SHADOW' and mode in (None, 'dev')):
+        raise ContractError(SCOPE)
 
 
 def session(context):
@@ -70,7 +99,7 @@ def budget(value, current_session):
 def interval(context, cfg, mandatory):
     s = session(context)
     limits = cfg['execution']
-    if mandatory:
+    if mandatory or limits.get('hours') == 'KIT_OPEN_STATE':
         return s['open_ms'], s['next_open_ms']
     return (s['open_ms'] + limits['open_delay_seconds'] * 1000,
             s['close_ms'] - limits['close_buffer_seconds'] * 1000)
