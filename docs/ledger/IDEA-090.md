@@ -1,4 +1,4 @@
-# IDEA-090 — S2-F2 fix: a planner decision round every slot, independent of evidence (handoff)
+# IDEA-090 — S2-F2/S2-F3 fix: a planner decision round every slot, and the child plans its parent's leg (handoff)
 
 - Date / author: 2026-10-24 / Yao Zhu (decision), Claude Code (record and design notes)
 - Status: **open, not implemented.** This entry is the handoff for Yao's team: the problem, the evidence, a proposed
@@ -68,7 +68,12 @@ such plan spends one of the next name's attempts for nothing (`max_attempts_per_
 2. **One wallet leg at a time, for real.** In the S1 branch of the planner, stop after the first leg that produced an
    intent or a quote request: do not call `execution_bounds.reserve` for a further leg in that plan. The comment there
    already states the intent ("Do not spend attempts for quotes the driver never requests").
-3. **No change** to evidence review rounds, quote follow-ups, the kit `openState` guard, caps, signer, execution
+3. **The child plans its parent's leg (S2-F3).** In a quote follow-up round (`execution_parent` present), put the
+   parent's requested leg (`execution_parent.quote_requests`) first, so the executable quote it fetched is the one
+   used; and give near-equal legs a stable order (for example compare notionals rounded to the money scale before
+   the symbol tie-break) so a fresh price inside the child cannot re-order them. Evidence: run 4 at 06:45Z, TSLAB
+   quote executable, child requested NVDAB instead and planned nothing (IDEA-089 S2-F3).
+4. **No change** to evidence review rounds, quote follow-ups, the kit `openState` guard, caps, signer, execution
    admission or the S2 rehearsal profile.
 
 ## Pre-registered pass criteria (before any code)
@@ -80,6 +85,7 @@ such plan spends one of the next name's attempts for nothing (`max_attempts_per_
 | F3 | With no records for any issuer (Option B), each slot still plans with prior accepted evidence, and a mandatory sell due in that slot is planned in that slot | driver + planner test |
 | F4 | One round per slot: a restart inside a slot, or a recovered interrupted round, does not create a second cadence round for it; replay reproduces the journal | existing recover/replay tests extended |
 | F5 | An S1 plan that carries an intent reserves no attempt for another leg (`execution_attempt_budget` unchanged for other names) | planner test reproducing the run-4 SKHYB/GOOGLB case |
+| F8 | A quote follow-up whose parent requested leg X plans X when X's quote is executable, even if another leg's notional is marginally larger at the child's prices | planner test reproducing run 4's TSLAB/NVDAB case |
 | F6 | Full suite on Python 3.12 with PostgreSQL 14.24, test commit red on base first | as in IDEA-088 |
 | F7 | Rehearsal check before the final: in a dev run, rounds appear in consecutive slots in `checks/trading-status.sh` | operator, next dev run |
 
