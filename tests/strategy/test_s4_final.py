@@ -305,7 +305,12 @@ def test_s4r_2_differs_from_s2_only_in_slippage_window_and_policy_and_keeps_the_
     s2p = json.loads(s2.PROFILE.read_bytes())
     changed_keys = {*WINDOW, 'slippage_bps', 'policy_id'}
     assert {k for k in set(p) | set(s2p) if p.get(k) != s2p.get(k)} == changed_keys | {'provenance'}
-    assert {k for k in p['provenance'] if p['provenance'][k] != s2p['provenance'][k]} == changed_keys
+    # `baseline` and `s1` share the block's decision ID, which names S4-R; the block bytes are S2's (same data hash).
+    assert {k for k in p['provenance'] if p['provenance'][k] != s2p['provenance'][k]} == changed_keys | {'s1', 'baseline'}
+    for key in ('s1', 'baseline'):
+        assert {k for k in p['provenance'][key] if p['provenance'][key][k] != s2p['provenance'][key].get(k)} \
+            == {'decision_id'}, key
+    assert p['provenance']['s1']['data_hash'] == hashlib.sha256(BLOCK.read_bytes()).hexdigest()
     assert [p[k] for k in WINDOW] == S4R_WINDOW
     assert (p['slippage_bps'], p['policy_id']) == (20, 'larp-s4-rehearsal-v1')
     assert p['s1'] == profile()['s1']

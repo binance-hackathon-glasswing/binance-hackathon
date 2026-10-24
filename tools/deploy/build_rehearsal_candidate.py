@@ -19,6 +19,12 @@ S2_POLICY_ID = 'larp-s2-rehearsal-v1'
 # IDEA-092 S3: S2 plus a scheduled sell-all; the requested 12 noon is 12:00 SGT Sunday, inside S2's buy window.
 S3_FLATTEN_AT = '2026-10-25T04:00:00Z'
 S3_POLICY_ID = 'larp-s3-rehearsal-v1'
+# IDEA-093 S4-R: S4's block and slippage on the dev wallet; starts an hour after run 4's signing_end, ends before
+# Monday's NYSE open on the Oct 26 freeze day (proposed; the run owner may rebuild with other times).
+S4R_WINDOW = dict(trade_after='2026-10-25T16:00:00Z', new_risk_end='2026-10-26T06:00:00Z',
+                  flatten_start='2026-10-26T07:00:00Z', signing_end='2026-10-26T12:00:00Z')
+S4R_POLICY_ID = 'larp-s4-rehearsal-v1'
+S4_SLIPPAGE_BPS = 20
 
 
 def s1_block(raw):
@@ -67,12 +73,13 @@ def open_state(block):
     return block is not None and type(block.get('execution')) is dict and block['execution'].get('hours') == 'KIT_OPEN_STATE'
 
 
-def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_at=None):
+def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_at=None, s4_rehearsal=False):
     """`exit_children=1` reproduces the historical LD10-Q01 bytes; LD10-P03 selects 2.
 
     With `s1_raw` (the exact bytes of Keith's S1 block) and `s1_decision`, the profile is TREND_GUARDED_VOL under the
     same SHADOW scope (SJ-11-RH01), and the reserve covers five positions x `exit_children`. With an S2 block,
-    `scheduled_flatten_at` makes it S3 (IDEA-092): everything sold at that time, then S2 again."""
+    `scheduled_flatten_at` makes it S3 (IDEA-092): everything sold at that time, then S2 again; `s4_rehearsal` makes it
+    S4-R (IDEA-093): the final S4 block and slippage in S2's dev scope, on the S4-R window."""
     if exit_children not in (1, 2):
         raise ValueError('exit_children must be 1 (historical Q01) or 2 (LD10-P03)')
     if (s1_raw is None) != (s1_decision is None) or (
@@ -82,6 +89,8 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
     s2 = open_state(s1)
     if scheduled_flatten_at is not None and not s2:
         raise ContractError('A scheduled flatten (S3) builds only on an S2 block (IDEA-092)')
+    if s4_rehearsal and (not s2 or scheduled_flatten_at is not None):
+        raise ContractError('S4-R builds only on a KIT_OPEN_STATE block, without a scheduled flatten (IDEA-093)')
     if s2:
         # The shared builder validates its BOUNDED_FALSIFIER profiles, which S2-1 refuses; the hours are set below,
         # once the SHADOW scope is.
@@ -124,6 +133,15 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
             formula='Sell every held name from this time, no buys until flat, then S2 resumes from a fresh book')
         p['provenance']['policy_id'] = dict(decision_id='IDEA-092 S3 (team request, 2026-10-24)',
             formula='S2 with a scheduled sell-all; REHEARSAL-only on the dev wallet; never installed for the final run')
+    if s4_rehearsal:
+        p.update(S4R_WINDOW, slippage_bps=S4_SLIPPAGE_BPS, policy_id=S4R_POLICY_ID)
+        for key in S4R_WINDOW:
+            p['provenance'][key] = dict(decision_id='IDEA-093 S4-R (2026-10-25, proposed window)',
+                formula='Off-hours dev test of S4: buys Mon 00:00 to 14:00 SGT, flatten from 15:00, signing to 20:00 SGT')
+        p['provenance']['slippage_bps'] = dict(p['provenance']['slippage_bps'], decision_id='IDEA-093 S4',
+            formula='20 bp (<= 50), the S4 final value after S2-F6 (IDEA-090 F16)')
+        p['provenance']['policy_id'] = dict(decision_id='IDEA-093 S4-R (2026-10-25)',
+            formula='REHEARSAL-only dev test of the S4 final settings; never installed for the final run')
     validate_live(p)
     return Document.from_dict(p)
 
@@ -137,11 +155,13 @@ def main(argv=None):
     parser.add_argument('--s1-decision', help='decision ID for the supplied S1 block; required with --s1-config')
     parser.add_argument('--scheduled-flatten-at', nargs='?', const=S3_FLATTEN_AT,
                         help='S3 (IDEA-092): sell everything at this UTC instant, then S2 again; default ' + S3_FLATTEN_AT)
+    parser.add_argument('--s4-rehearsal', action='store_true',
+                        help='S4-R (IDEA-093): the S4 block with S4 slippage 20 bp on the S4-R dev window')
     args = parser.parse_args(argv)
     if (args.s1_config is None) != (args.s1_decision is None):
         parser.error('--s1-config and --s1-decision must be supplied together')
     s1 = {} if args.s1_config is None else dict(s1_raw=args.s1_config.read_bytes(), s1_decision=args.s1_decision)
-    p = build(args.exit_children, **s1, scheduled_flatten_at=args.scheduled_flatten_at)
+    p = build(args.exit_children, **s1, scheduled_flatten_at=args.scheduled_flatten_at, s4_rehearsal=args.s4_rehearsal)
     with args.output.open('xb') as stream:
         stream.write(p.payload + b'\n')
     print(p.digest('StrategyProfile.v1'))
