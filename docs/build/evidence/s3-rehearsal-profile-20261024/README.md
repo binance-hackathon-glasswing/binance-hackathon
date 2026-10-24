@@ -53,3 +53,18 @@ Bare `--scheduled-flatten-at` uses `2026-10-25T04:00:00Z`; pass a value for anot
 above, and the output must be byte-identical to `rehearsal-s3-deterministic.json`.
 
 Checked offline in `tests/strategy/test_s3_scheduled_flatten.py` (IDEA-092 S3-1..S3-7).
+
+
+## PR277-RV01 source review (2026-10-24)
+
+The candidate bytes/hashes above are unchanged. The reviewed source bounds pre-schedule BUY command and independent
+execution/signer/broadcast authority at the cutoff. The first flat/DONE plan permits re-entry; pending reservations
+still prevent DONE, and already submitted transactions still reconcile. All16 S3 strategy/profile/PostgreSQL cases
+pass. See [review receipt](../pr277-review-20261024.json) and
+[IDEA-092 review](../../../ledger/IDEA-092.md#pr277-rv01-results--pass-for-source-merge-2026-10-24-sgt).
+
+The scheduled time starts sequential mandatory exit planning; it does not promise all fills in one round.
+Unexecutable holdings keep BUYs blocked. Noon and terminal sells share SAFETY attempts; DONE resets no BUY, leg or
+SAFETY budget. An install after the schedule on a flat wallet can skip actual scheduled sales by immediately reaching
+DONE. The full cycle's fresh gas/exit/attempt coverage and H1/H2/install approvals remain required. No carry-over,
+manual sale, funding or deployment is authorized by the source merge. Active run4/RC7 is unchanged.

@@ -150,3 +150,45 @@ Prospective pass criteria, recorded before review tests or changed runtime code 
 
 GitHub Actions run40098610551 did not start jobs: runtime annotation says failed account payments/spending limit.
 No code/CI pass is inferred from that run. No runtime release or live trading test is authorized by this source review.
+
+
+### PR277-RV01 results — PASS for source merge (2026-10-24 SGT)
+
+R1 reproduced red in two regressions at `28c94ce6`: a pre-cut BUY outlived the schedule and independent admission
+still accepted it at the boundary. Repair `0d97b747` shares `scheduled_flatten.buy_deadline` between `RuntimePlanner`
+and `execution_bounds.permitted`. Runtime command/finite authority is clipped at the scheduled instant until the
+independent plan records DONE; execution, signer and immediate broadcast checks refuse old BUYs at/after it.
+The first flat/DONE round reopens normal BUY authority. Mandatory SELLs and already submitted reconciliation retain
+their existing paths; no attempt budget, authorized minimum, gas/cap or scope guard is relaxed.
+
+RV2 passes with real PostgreSQL: DONE is committed, reloaded by a new coordinator, survives an actual reducer's
+synthetic BUY settlement and a later held book, and replays to the exact journal head without calling external ports.
+RV3 preserves consumed BUY and SAFETY counts. Both candidate profiles rebuild unchanged (`2fb32b8e…` S3 and
+`eb55d76a…` S2); the original validation/scope/prepare cases and all16 focused S3 cases pass.
+
+2659 tests/4004 subtests PASS, 8 explicit skips, 3 unchanged nested-sandbox cases deselected on Linux aarch64 / Python3.12.15 / PostgreSQL14.24;
+all44 applicable dependency pins match and `pip check` passes. Initial full run found three read-only activation-output
+failures and two nested-sandbox failures. A separate writable synthetic activation folder resolves the first three;
+Docker still rejects bubblewrap's nested proc mount. The final full command explicitly deselects the entire unchanged
+three-test Sandbox group, including its negative case. No sandbox/systemd/host-release acceptance is claimed.
+The attempted offline demo in the restricted container also lacks a working sandbox and is not accepted as a pass.
+GitHub jobs at original run40098610551 and fixed-source run40100265719 never started due to account billing/spending
+limits. [Exact counts, skips, commands, hashes and limitations](../build/evidence/pr277-review-20261024.json).
+
+Operational clarifications (RV3; supersede ambiguous shorthand above):
+
+- “Sell all” means mandatory requirements for all holdings, processed sequentially through the normal bounded
+  child/quote/intent rounds. The first eligible round at/after the schedule records obligations; it cannot promise
+  all fills in that round or at the exact clock instant. This clarifies S3-L1's live evidence requirement prospectively.
+- PENDING can retain unsellable positions; it means no new BUY, not a guaranteed all-cash wallet. Shared SAFETY
+  attempts consumed at noon also reduce capacity for the terminal flatten. Exhaustion does not reset at DONE;
+  terminal exit obligations can remain unfulfilled. Fresh full-cycle attempt/gas/size/exit evidence is still needed.
+- A stock-flat S3 started at/after the schedule can immediately record DONE without any scheduled SELL. Demonstrating
+  a buy/sell/rebuy cycle requires an approved install and enough execution time before the chosen schedule.
+- H1/H2 remain open: existing holdings, including dust, are refused at installation; no cost-basis carry-over or manual
+  stock sale is introduced. Any different time/window needs a rebuilt profile and its own approvals.
+
+Remaining owners: Yao decides run/window and obtains actual S3-L1 evidence; Isaac approves exact profile/signer and
+fresh gas/cap/attempt/exit inputs; Keegan/Keith own code/release/host/sandbox/systemd/RC coverage and any separate
+carry-over design; account owner restores CI. Source merge changes neither active run4/RC7 nor an installed signer,
+wallet, model or service. No whole live/release backlog item is closed.
