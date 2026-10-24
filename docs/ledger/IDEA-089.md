@@ -284,3 +284,16 @@ run-4 `signer.json` `56e029afe93819b75edb39bd1b5b32e5a6cef2c4f9d7fcfcaff47007d3a
 COVERED, Q1 10/10, CAP-02 `3241abd3…`, router policy `05759e90…`, the same dev wallet. Clears
 `OWNER_REVIEW_REQUIRED` for these hashes only; recorded as relayed. This is the P4 approval record
 ("IDEA-089 S2-A1"). Next: R1p, P2, M4, P3, P4, T1, R1s, P2s, S1, S1b, S2, P5, C1, T2, M9.
+
+### R1p and P2 — PASS on primary; run 3 retired, RC7 installed (Yao, 2026-10-24 ~05:3xZ)
+
+- **R1p** (SSM `b9965808-71c9-4c90-8a7b-d17b4e39e38a`, Success, no stderr): all six run-3 units inactive and disabled.
+  Moved to `/etc/larp-history/9dc5eda-larp-dev-rehearsal-20261024/`: the eleven SJ-11-J3 configs with their M4 hashes
+  (`release.json` `590edf38…`, `runtime.json` `7dc1986f…`, `strategy-profile.json` `6bcf1dfb…`, router policy
+  `05759e90…`, …). `/etc/larp` holds only `rds-ca.pem` and `role-primary`. Run 3 is retired (SJ-11-QV01: no order was
+  possible on RC6); `larp_rehearsal3` stays.
+- **P2** (SSM `efe399a6-f307-458f-b300-20c35369abff`, Success; 703 bytes of systemd symlink lines): installed
+  `/opt/larp/releases/2d160073d0f26c1f35c6c977c3dd6167a5ee0d26`, manifest `55cf600b…` (equals build.env), CA
+  `d7389074…`; nothing started.
+
+Next: M4 (stamp `20261024T052155Z`).
