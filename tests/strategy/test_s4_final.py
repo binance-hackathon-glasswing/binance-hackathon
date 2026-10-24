@@ -273,3 +273,66 @@ def test_s4_8_execution_start_passes_the_scope_in_live_and_refuses_dev():
                 == bounds.SCOPE, mode
     finally:
         fixture.doCleanups()
+
+
+# --- IDEA-093 S4R-1..S4R-4: the dev REHEARSAL with S4's settings ---------------------------------------------------
+
+REHEARSAL = ROOT / 'docs/build/evidence/s4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json'
+S4R_WINDOW = ['2026-10-25T16:00:00Z', '2026-10-26T06:00:00Z', '2026-10-26T07:00:00Z', '2026-10-26T12:00:00Z']
+
+
+def rehearsal_build(**options):
+    from tools.deploy.build_rehearsal_candidate import build
+    p = json.loads(REHEARSAL.read_bytes())
+    return build(2, s1_raw=BLOCK.read_bytes(), s1_decision=p['provenance']['s1']['decision_id'], **options)
+
+
+def test_s4r_1_rehearsal_rebuilds_and_passes_dev_preparation_and_runtime_build():
+    raw = REHEARSAL.read_bytes()
+    assert rehearsal_build(s4_rehearsal=True).payload + b'\n' == raw
+    p = json.loads(raw)
+    validate_live(p)
+    from larp.runtime import gate_a_check
+    files = rh.prepared(p, **s2.POLICY)
+    values = {n: json.loads(item) for n, item in files.items() if n.endswith('.json')}
+    gate_a_check.check_scope(values, values['preparation-report.json'])
+    gate_a_check.check_inputs(files, values)
+    s2.build_runtime(raw)
+
+
+def test_s4r_2_differs_from_s2_only_in_slippage_window_and_policy_and_keeps_the_final_block():
+    p = json.loads(REHEARSAL.read_bytes())
+    s2p = json.loads(s2.PROFILE.read_bytes())
+    changed_keys = {*WINDOW, 'slippage_bps', 'policy_id'}
+    assert {k for k in set(p) | set(s2p) if p.get(k) != s2p.get(k)} == changed_keys | {'provenance'}
+    assert {k for k in p['provenance'] if p['provenance'][k] != s2p['provenance'][k]} == changed_keys
+    assert [p[k] for k in WINDOW] == S4R_WINDOW
+    assert (p['slippage_bps'], p['policy_id']) == (20, 'larp-s4-rehearsal-v1')
+    assert p['s1'] == profile()['s1']
+    assert (p['environment'], p['evidence_mode'], p['falsifier_authority']) == ('REHEARSAL', 'SHADOW', 'SHADOW')
+
+
+def test_s4r_3_live_mode_and_final_are_refused():
+    p = json.loads(REHEARSAL.read_bytes())
+    assert rh.refusal(lambda: rh.prepared(p, runtime_mode='live')) == bounds.SCOPE
+    assert rh.refusal(lambda: s2.build_runtime(REHEARSAL.read_bytes(), mode='live')) == bounds.SCOPE
+    assert rh.refusal(lambda: validate_live(dict(p, environment='FINAL'))) in (bounds.SCOPE, rh.SCOPE)
+
+
+def test_s4r_4_builder_refusals_and_s2_s3_unchanged():
+    from tools.deploy.build_rehearsal_candidate import build
+    value = json.loads(BLOCK.read_bytes())
+    nyse = dict(value, execution={k: v for k, v in value['execution'].items() if k != 'hours'})
+    with pytest.raises(ContractError):
+        build(2, s1_raw=json.dumps(nyse).encode(), s1_decision='synthetic', s4_rehearsal=True)
+    with pytest.raises(ContractError):
+        build(2, s4_rehearsal=True)
+    with pytest.raises(ContractError):
+        rehearsal_build(s4_rehearsal=True, scheduled_flatten_at='2026-10-26T00:00:00Z')
+    s2raw = s2.PROFILE.read_bytes()
+    assert build(2, s1_raw=s2.BLOCK.read_bytes(),
+                 s1_decision=json.loads(s2raw)['provenance']['s1']['decision_id']).payload + b'\n' == s2raw
+    s3 = ROOT / 'docs/build/evidence/s3-rehearsal-profile-20261024/rehearsal-s3-deterministic.json'
+    s3raw = s3.read_bytes()
+    assert build(2, s1_raw=s2.BLOCK.read_bytes(), s1_decision=json.loads(s3raw)['provenance']['s1']['decision_id'],
+                 scheduled_flatten_at=json.loads(s3raw)['scheduled_flatten_at']).payload + b'\n' == s3raw
