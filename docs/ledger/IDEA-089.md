@@ -355,3 +355,31 @@ Next: T1, R1s, P2s, S1, S1b, S2, P5.
   `signing_enabled: true`, UNTRUSTED `05759e90…`, DEV-23, CAP-02. `S2_DONE`.
 
 Next: P5, C1, T2, M9; then J (first S2 entry).
+
+### P5, C1 and the first signed trade — **P2 PASS: first end-to-end BUY (SKHYB)** (2026-10-24 05:48–06:04Z)
+
+- **P5** (SSM `b5bb4637…`, Success; symlink stderr only): `larp-execution active restarts=0`, `release_verified: true`,
+  `P5_DONE`, about 05:48Z. **C1** (SSM `09119d20…`): `larp-signer active restarts=0`, no refusal line, key unchanged.
+- **First intent expired unclaimed (finding, sheet order):** right after P4 (05:32:54Z), quote follow-ups ran
+  (`filing…#1/quote1` 05:33:25Z, `review:474c…#1/quote1` 05:33:51Z): the verifier produced executable quotes and the
+  planner formed a BUY (the 05:45 round showed `available_cash_units` 77048279). Execution was not yet running (P5 at
+  about 05:48Z), so the command expired after its 660 s authority: `NOT_SUBMITTED`, `COMMAND_EXPIRED_UNCLAIMED`; its
+  reservation was released (the 06:00 round planned with 96000000 available). Fail-safe as designed; the RC sheets'
+  P4 → signer → P5 order makes the first post-P4 intent lapse. No signing request was made for it.
+- **First signed trade, round `cadence:1992024#1/quote1` (06:00Z):** order BUY SKHYB 18.951721 USDT. Execution record
+  `COMPLETED`, 2 signing requests, 2 signatures, **0 refusals**:
+  - approve `0xeed98a4327e5931a44dfd23df1353b2f172efc1f628562b8f9c064a68fb29e39` (nonce 4, to USDT, gas limit 70000,
+    used 46218, 51462330 wei/gas, 2378485967940 wei);
+  - swap `0x757bcb99e9489558bad77d7196d2b36ce77206979c9ccbd29f600ddeecfba416` (nonce 5, to router
+    `0xb44446b0c8e56988c34f7ff73ae904982b5fdda5`, gas limit 665126, used 434540, 50294924 wei/gas, 21855156274960 wei);
+  - `FILL`: paid 18951721 USDT units (fee 0, `ALL_USDT_TRANSFERS_INCLUDED_IN_NET_CASH`), received
+    137879758388310745 SKHYB units; `ROUND_LOGGED` 1 (round log delivered, never-do #12).
+  - **Assistant chain check (06:04:30Z, public RPC):** both receipts status 1 (blocks 129462184 and 129462303), from
+    the dev wallet; nonce 6; wallet USDT 77.048279 and SKHYB 137879758388310745 units, equal to the run's portfolio
+    (cash 77048279, SKHYB 137879758388310745, BNB 5301391412087111 = start minus the two gas amounts).
+  - Gas per approve + swap: 0.0000242 BNB, against the 0.000384 BNB reservation and the 0.00008 expected.
+  - Against the Saturday quote check (SKHYB 19 USDT → minimum 137910422436149392), 18.95 USDT returned
+    137879758388310745, consistent with the smaller amount.
+
+**P2 (one BUY end to end: intent, signing, approve, swap receipts, fill, round log) is met.** P3–P6 follow as the
+other names are bought, then the Sunday flatten. Next: T2, SA5/SA9, M9; then watch the remaining entries.
