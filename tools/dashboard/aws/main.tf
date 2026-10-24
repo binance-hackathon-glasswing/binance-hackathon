@@ -1,4 +1,4 @@
-# IDEA-091: hourly Lambda -> private S3 -> CloudFront with a login. The Lambda can run only the two read-only SSM
+# IDEA-092: hourly Lambda -> private S3 -> CloudFront with a login. The Lambda can run only the two read-only SSM
 # documents below, only on the primary; the bucket is reachable only through this distribution.
 locals {
   decisions_document = "${var.name}-dashboard-decisions-export"
@@ -74,7 +74,7 @@ resource "aws_cloudfront_origin_access_control" "dashboard" {
 }
 resource "aws_cloudfront_key_value_store" "auth" {
   name    = "${var.name}-dashboard-auth"
-  comment = "IDEA-091: basic-auth-sha256, set by an operator; never in Terraform"
+  comment = "IDEA-092: basic-auth-sha256, set by an operator; never in Terraform"
 }
 resource "aws_cloudfront_function" "viewer_auth" {
   name                         = "${var.name}-dashboard-auth"
@@ -85,7 +85,7 @@ resource "aws_cloudfront_function" "viewer_auth" {
 }
 resource "aws_cloudfront_distribution" "dashboard" {
   enabled             = true
-  comment             = "IDEA-091 LARP dashboard (private)"
+  comment             = "IDEA-092 LARP dashboard (private)"
   default_root_object = "index.html"
   price_class         = "PriceClass_100"
   origin {

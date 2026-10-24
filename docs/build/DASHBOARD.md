@@ -93,7 +93,7 @@ python -m tools.dashboard.decisions merge deploy/activation/rehearsal-install-rc
 - **On a public page, the decisions show the strategy**: its targets, sizes and reasons, as well as its trades.
   Decide on that before publishing it for the scored run (PAGES01).
 
-## Hourly private page on Cloudflare, from Keith's computer (IDEA-091, chosen)
+## Hourly private page on Cloudflare, from Keith's computer (IDEA-092, chosen)
 
 A scheduled job on Keith's always-on computer refreshes the page and posts it to Cloudflare Pages, which Cloudflare
 Access puts behind an email login. No AWS stack and no Claude session. One run:
@@ -158,7 +158,7 @@ tools.dashboard.cloudflare ──► tools.dashboard.refresh: chain-monitor poll
 - **Prices:** put the read-only Web3 key in `.env` at the repository root (as for the chain monitor) for equity and
   drawdown; without it those charts stay empty.
 
-## Automated private hosting on AWS (IDEA-091, proposal)
+## Automated private hosting on AWS (IDEA-092, proposal)
 
 The private claude.ai page is refreshed by an hourly Claude session (IDEA-087 DR). For the final, `tools/dashboard/aws/`
 runs the same refresh with no laptop and no Claude session: an hourly Lambda writes the redacted page to a private S3

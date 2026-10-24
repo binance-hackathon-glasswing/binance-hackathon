@@ -105,7 +105,7 @@ def poll(monitor_dir, seed_blocks, attempts=2, *, runner=None, settings=None):
 
 
 def configure(monitor, settings):
-    """Point the monitor at another wallet (IDEA-091): `wallet`, and its opening `start_nonce` and `start_usdt`."""
+    """Point the monitor at another wallet (IDEA-092): `wallet`, and its opening `start_nonce` and `start_usdt`."""
     if settings.get('wallet'):
         monitor.WALLET = settings['wallet'].lower()
     if settings.get('start_nonce') is not None:
@@ -131,7 +131,7 @@ def _poll(monitor_dir, seed_blocks, runner, settings):
     scan, read = monitor.wallet_txs, monitor.balances
 
     def wallet_txs(start, end):
-        """New transactions from known blocks (IDEA-091 C5): the seeds and the run's execution records. The monitor's
+        """New transactions from known blocks (IDEA-092 C5): the seeds and the run's execution records. The monitor's
         own scan of every block since the last poll runs only when a nonce is still missing (a transaction the agent
         did not make); thousands of full blocks per hour made the public node refuse the reads that follow."""
         known = set(seed_blocks)
@@ -200,7 +200,7 @@ def refresh(work, seed_blocks=(), *, runner=None, settings=None):
     if not seed_blocks and saved.is_file():
         seed_blocks = json.loads(saved.read_text()).get('blocks', [])
     chain = poll(monitor_dir, sorted(seed_blocks), runner=runner, settings=settings)
-    # Incremental (IDEA-091 E1/E2): each export reads only the events after the stored cursor, so its cost follows the
+    # Incremental (IDEA-092 E1/E2): each export reads only the events after the stored cursor, so its cost follows the
     # new events, not the run's length; a first run or a gap catches up over a few exports. Best effort: without the
     # export (no SSM access, a timeout) the trades still refresh beside the last decisions.
     command_id, export_error, merged = None, None, None

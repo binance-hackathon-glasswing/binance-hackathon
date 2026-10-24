@@ -1,4 +1,4 @@
-"""AWS Lambda: hourly refresh of the private dashboard (IDEA-091).
+"""AWS Lambda: hourly refresh of the private dashboard (IDEA-092).
 
 Each run: load the chain monitor's state from the private bucket, one `tools.dashboard.refresh` run (monitor poll,
 decisions export, redacted build), then upload the page under `site/` and the new state under `state/`. A run that

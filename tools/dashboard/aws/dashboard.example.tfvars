@@ -1,4 +1,4 @@
-# IDEA-091 example (copy to a git-ignored file). The login hash goes in the KeyValueStore after apply, never here:
+# IDEA-092 example (copy to a git-ignored file). The login hash goes in the KeyValueStore after apply, never here:
 #   printf '%s' "$(printf 'user:password' | base64)" | sha256sum   ->  aws cloudfront-keyvaluestore put-key ...
 account_id          = "000000000000"
 region              = "ap-southeast-2"

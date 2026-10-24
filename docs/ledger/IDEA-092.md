@@ -1,8 +1,10 @@
-# IDEA-091 — Automated private dashboard on AWS (proposal)
+# IDEA-092 — Automated private dashboard on AWS (proposal)
 
 - Date / author: 2026-10-24 / requested in the Claude Code session that runs the hourly dashboard refresh ("draft
   option A"); drafted by Claude Code. Owners for review and apply: Isaac and Keegan (AWS, Terraform), Keith (PAGES01).
 - Status: **open, proposal.** Drafted and tested offline only; nothing is applied in AWS.
+- Renumbered 2026-10-24 from IDEA-091: PR 276 merged a different IDEA-091 (strategy alternatives research) first;
+  commit messages on this branch before the renumbering say IDEA-091.
 - Related: IDEA-087 (dashboard, DX decisions, DR hourly refresh), PAGES01, F-24, F-114, F-117.
 
 ## Why

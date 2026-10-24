@@ -1,6 +1,6 @@
 # Read-only (primary; IDEA-087 DX): the agent's decisions for the dashboard. One JSON line per round (the latest N,
 # default 30), bounded to 22,000 UTF-8 bytes including a summary for SSM inline output. One READ ONLY transaction.
-# With SINCE (IDEA-091 E1), only the events after that sequence are read: oldest first within the budget, a closure
+# With SINCE (IDEA-092 E1), only the events after that sequence are read: oldest first within the budget, a closure
 # line for a round planned earlier, and a summary naming the last sequence covered (the next run's SINCE). Events are
 # streamed through a server-side cursor either way, so memory and reads follow the new events, not the run's length.
 # Fields are allow-listed (codes, symbols, amounts, times): no free text, model text, IDs, hashes, config or URLs.
@@ -130,7 +130,7 @@ def emit(events, limit, run_id):
 
 
 def emit_since(rows, run_id, since, load, budget=MAX_EXPORT_BYTES):
-    """Incremental lines (IDEA-091 E1) for `(sequence, raw batch)` pairs: only events after `since` are decoded. Rows
+    """Incremental lines (IDEA-092 E1) for `(sequence, raw batch)` pairs: only events after `since` are decoded. Rows
     go oldest first while they fit the budget; `last_seq` is the last sequence whose output is complete, so the next
     run (SINCE=last_seq) picks up anything trimmed. A closure of a round planned before `since` is a closure line."""
     entries, planned, last, decoded = [], {}, since, 0
@@ -182,7 +182,7 @@ c = json.loads(Path('/etc/larp/execution.json').read_text()); r = c['run_id']
 s = RO(c, rds_client(c['region']))
 since = int(os.environ['SINCE']) if os.environ.get('SINCE') else None
 with s.transaction() as db:
-    # A named (server-side) cursor streams the batches 20 at a time: never the whole journal in memory (IDEA-091).
+    # A named (server-side) cursor streams the batches 20 at a time: never the whole journal in memory (IDEA-092).
     with db.cursor(name='larp_dashboard_export') as cur:
         cur.itersize = 20
         cur.execute('SELECT sequence,batch FROM events WHERE run_id=%s AND sequence>%s ORDER BY sequence', (r, since or 0))

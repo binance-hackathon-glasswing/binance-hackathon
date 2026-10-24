@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 
 FILE = 'decisions.jsonl'
-CURSOR = 'decisions-cursor.json'  # the last event sequence an incremental export covered (IDEA-091 E2)
+CURSOR = 'decisions-cursor.json'  # the last event sequence an incremental export covered (IDEA-092 E2)
 SCHEMA = 'LarpDecisionExport.v1'
 
 

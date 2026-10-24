@@ -1,4 +1,4 @@
-"""Refresh the dashboard and post it to Cloudflare Pages (IDEA-091, Keith's always-on computer).
+"""Refresh the dashboard and post it to Cloudflare Pages (IDEA-092, Keith's always-on computer).
 
   CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... AWS_PROFILE=larp \\
       python -m tools.dashboard.cloudflare --work ~/larp-dashboard --project larp-dashboard

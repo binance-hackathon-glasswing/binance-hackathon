@@ -1,4 +1,4 @@
-// IDEA-091: CloudFront Function (cloudfront-js-2.0, viewer request). The page is served only to a request whose HTTP
+// IDEA-092: CloudFront Function (cloudfront-js-2.0, viewer request). The page is served only to a request whose HTTP
 // basic-auth header hashes (SHA-256, hex, of the base64 "user:password" part) to the value an operator put in the
 // distribution's KeyValueStore under `basic-auth-sha256`. Neither the password nor its hash is in the repository or the
 // Terraform state. A missing key or any lookup error refuses the request.

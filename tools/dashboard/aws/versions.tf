@@ -1,4 +1,4 @@
-# IDEA-091: the private dashboard's own stack, separate from deploy/aws (its own state; outside the release files).
+# IDEA-092: the private dashboard's own stack, separate from deploy/aws (its own state; outside the release files).
 terraform {
   required_version = "= 1.13.5"
   required_providers {
@@ -14,6 +14,6 @@ provider "aws" {
   region              = var.region
   allowed_account_ids = [var.account_id]
   default_tags {
-    tags = { Project = "LARP", Environment = var.environment, ManagedBy = "Terraform", Purpose = "IDEA-091 dashboard" }
+    tags = { Project = "LARP", Environment = var.environment, ManagedBy = "Terraform", Purpose = "IDEA-092 dashboard" }
   }
 }

@@ -1,4 +1,4 @@
-"""IDEA-091 C1-C3: the Cloudflare Pages job, with a fake wrangler. No network, no Cloudflare account."""
+"""IDEA-092 C1-C3: the Cloudflare Pages job, with a fake wrangler. No network, no Cloudflare account."""
 import json
 import os
 from pathlib import Path

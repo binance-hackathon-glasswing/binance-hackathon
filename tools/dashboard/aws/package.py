@@ -1,4 +1,4 @@
-"""Build the dashboard Lambda's deployment package (IDEA-091).
+"""Build the dashboard Lambda's deployment package (IDEA-092).
 
   python -m tools.dashboard.aws.package --out <zip>
 
