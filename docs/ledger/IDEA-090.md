@@ -276,3 +276,9 @@ new test omits the audit, so the actual asynchronous path can still diverge even
 Criterion: successful WITH_ASSESSMENT and unavailable-result ONLY rounds carrying nonempty synthetic model audits
 must replay to exactly the same journal head, preserving their original audit events and calling no live provider.
 Pass the recorded audit through; do not regenerate or discard original model I/O. Add both regressions before repair.
+
+**R3 (dashboard follow-up IDs, reproduced before repair):** `shape` rejects the slash in actual execution-bearing
+IDs such as `cadence:1992024#1/quote1`, yielding only a summary with0 rounds. The full-detail builder independently
+rejects those IDs too. Criterion: export and full-detail rendering retain `/quoteN` and retried `/quoteN#attempt`
+rounds; redacted output still omits IDs; URLs, arbitrary slash paths and hex-bearing IDs remain excluded. Add a
+regression before repair and restrict accepted suffixes to the driver's quote-follow-up grammar.

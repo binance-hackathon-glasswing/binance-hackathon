@@ -157,6 +157,26 @@ class ExportTest(unittest.TestCase):
             else:
                 globals_['MAX_EXPORT_BYTES'] = previous
 
+    def test_rv01_actual_quote_follow_up_round_ids_are_exported_and_redacted(self):
+        ids = ['cadence:1992024#1/quote1', 'cadence:1992024#1/quote2#2']
+        source = [planned(n + 1, rid, n, orders=[dict(symbol='SKHYB', side='BUY', amount='18.951721')])
+                  for n, rid in enumerate(ids)]
+        for rid in ('https://example.invalid/filing', 'cadence:1#1/arbitrary', 'review:0x' + 'ab' * 32 + '/quote1'):
+            source.append(planned(9, rid, 9))
+        lines = self.x['emit'](source, 30, 'run')
+        records = [json.loads(line) for line in lines[:-1]]
+        self.assertEqual([r['round_id'] for r in records], ids)
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = write_monitor(Path(temporary) / 'monitor')
+            dec.merge('\n'.join(lines), folder)
+            full = b.dashboard_data(folder, redact=False)['decisions']
+            self.assertEqual([r['round_id'] for r in full['rows']], ids[::-1])
+            self.assertEqual((full['with_orders'], full['buys']), (2, 2))
+            redacted = b.dashboard_data(folder)
+            self.assertNotIn('round_id', keys(redacted))
+            for rid in ids:
+                self.assertNotIn(rid, b.encode(redacted))
+
     def test_dx1_database_part_is_read_only(self):
         text = EXPORT.read_text()
         db = text[text.index('# ---- database'):]
