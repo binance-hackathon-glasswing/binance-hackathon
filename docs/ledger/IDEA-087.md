@@ -200,3 +200,18 @@ Default redacted pages still omit round IDs. A synthetic regression verifies ord
 - Limits seen: "Seen (UTC)" is the poll that found a transaction, so a monitor started late shows its start time for
   all earlier transactions; equity and drawdown need the read-only Web3 key on the monitor machine. Not published
   (PAGES01).
+
+### Hosting decision: a private claude.ai page instead of GitHub Pages (2026-10-24 ~10:45Z)
+
+- Asked in the Claude Code session to "create the Pages repo and publish it, make sure the repo is private". On the
+  Free org plan (checked 2026-10-23) Pages serves only public repositories, and on paid Team plans a Pages site from a
+  private repository is still public; only Enterprise Cloud restricts who can view it. So a private repo cannot host
+  a private Pages site here.
+- Rules check (source page, the kit including the Participant Guide, SKILL.md F-19, F-24, F-63, F-114, F-117, G-10,
+  never-do list): no rule forbids a team dashboard, private or public. F-24 concerns the code repository; F-19 the
+  organisers' leaderboard. The risk of a public page is strategic: the Decisions section shows targets, sizes and
+  reasons that other finalists could follow.
+- Choice (the session's user): a **private claude.ai Artifact**, published from the redacted build of the real-data
+  preview above: https://claude.ai/artifact/TvedBe3MDUf2EwTKnqgjqs (version 1, data as of 10:34Z). Only its owner can
+  open it until it is shared from its Share menu. It is a snapshot: it updates when it is republished (rebuild from the
+  chain monitor and the SSM export, then publish the same page again). No GitHub repository was created.
