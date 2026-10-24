@@ -144,3 +144,37 @@ class OneLegPerPlan(unittest.TestCase):
                 self.assertEqual(result['execution_attempt_budget']['counts'], {leg: 1})
                 self.assertEqual([a['authority']['leg'] for a in result['execution_attempts']], [leg])
                 self.assertEqual(result['quote_requests'], [])
+
+
+class SignedReplay(DriverHarness):
+    """IDEA-090 F10: a round started on accepted evidence with this round's assessment (the signed path's ready
+    result) replays to the same head; replay must start it with the same evidence mode."""
+
+    def replay(self, driver):
+        journal, expected = self.store.journal(RUN), self.store.verify(RUN)
+        with self.store.transaction() as db:
+            db.execute('TRUNCATE runs CASCADE')
+        builder = driver.coordinator.context_builder
+        dead = lambda *a: (_ for _ in ()).throw(AssertionError('live port called in replay'))
+        builder.market = builder.health = builder.calendar = dead
+        head = replay_live(journal, doc(initial_projection(pipeline.pipeline_ledger())), self.store, builder=builder,
+                           run_id=RUN, wallet_id='fake-wallet', chain_id=56, version_id='integration-fixture',
+                           profile_hash=self.h, address='0x' + '1' * 40, policy=StrategyPolicy(),
+                           planner=RuntimePlanner(job_validity_ms=86_400_000, job_max_attempts=3),
+                           execution=ExecutionBridge(), reducer=settle,
+                           initial_policy_state=initial_policy_state(RUN, self.profile))
+        return head, expected
+
+    def test_f10_a_ready_assessment_round_on_accepted_evidence_replays(self):
+        self.world(['EXSEMI_402_8K'])
+        driver = self.driver('MANDATORY_REDUCTION')
+        c = driver.coordinator
+        item = driver.work.next(self.w.clock(), self.epoch)
+        request = driver.work.request(item, self.store.load(RUN).read(), self.w.clock())
+        result = c.assessor.assess(request)
+        c.start(item['round_id'], request, self.w.clock(), assessment_override=result, use_accepted_evidence=True)
+        record = self.store.event(RUN, 'plan:' + item['round_id'])['record']
+        self.assertIsNotNone(record['assessment'])
+        self.assertIn('assessment_available', record['policy_input']['context'])
+        head, expected = self.replay(driver)
+        self.assertEqual(head, expected)

@@ -102,6 +102,16 @@ child requests 37950023 instead of 37980000, and a second follow-up with that qu
 |---|---|---|
 | F9 | A parent → follow-up → second follow-up chain with a better-than-mark quote plans the parent's leg on the parent's attempt (ordinal 1, no other leg's count), and the example runtime config allows two follow-up rounds | planner chain test; config test |
 
+**Finding S2-F5 (found while checking replay for S2-F2) — a signed-path round with an assessment does not replay.**
+`_signed_cycle` starts its ready-assessment rounds with `use_accepted_evidence=True`, which adds
+`assessment_available` to the policy context, but the round record does not say so and `larp/runtime/replay.py` starts
+every round without it, so replay of such a round diverges (`Deterministic replay diverged`). No existing test replays
+a signed-path journal. Affects audit replay (DR-19) of a signed final, not trading.
+
+| # | Pass when | How |
+|---|---|---|
+| F10 | A round started with this round's assessment and `use_accepted_evidence=True` (the signed path's ready round) replays to the same head, as do planning-only rounds (F4) | driver-harness replay test, red on base first |
+
 Fail or partial: record it here; do not loosen the evidence, `openState` or execution guards to make rounds appear.
 
 ## Not covered
