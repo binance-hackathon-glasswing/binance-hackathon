@@ -201,3 +201,18 @@ are byte-identical to RC6's.
 
 **Not covered offline:** the live quotes (Q1), the RC7 build, the host install, the Sunday day roll and P1–P6. Next:
 RC7 (M1-local or a mirror CI run), Q1, D1, M3, Isaac's A1, install by Yao.
+
+## RC7 mirror CI (2026-10-24, assistant)
+
+Canonical `e68fcb87b3212355b670d1cb2af6b6f616d3f2c6` (PR270 merge) pushed as a fast-forward to the mirror
+`Keegan4/Keegan4-larp-ci-mirror` `codex/system-testing-20261012` (from RC6 `d64e4fc`). Run
+[40063882235](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/40063882235), 04:49–04:59Z:
+- `runtime`: **success**. Full suite with `pip check`, the systemd conditions, the offline demo and the container build.
+- `infrastructure (deploy/aws)` and `(deploy/bootstrap)`: **success**.
+- `host-bundle`: **failure**. `build_release_bundle.py` succeeded, but `upload-artifact` refused: "Artifact storage
+  quota has been hit. Unable to upload any new artifacts. Usage is recalculated every 6-12 hours." `test_host_bundle.sh`
+  was skipped. This is the same cause as RC6's run 39973096861.
+
+So no CI artifact exists for RC7, and M1 (`m1-fetch-bundle.sh`) cannot be used. The commit's tests are green in CI,
+and the bundle is built locally with `mac/m1-local-bundle.sh` (the SJ-11-A2 route). A later mirror artifact needs the
+quota freed and the usage recalculated (6–12 h), which is too late for the S2 window (new risk ends Sun 08:00Z).
