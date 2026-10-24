@@ -36,7 +36,7 @@ HASH = re.compile(r'^0x[0-9a-fA-F]{64}$')
 UTC = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
 CODE = re.compile(r'^[A-Z][A-Z0-9_]{0,63}$')  # reason, status and error codes
 AMOUNT = re.compile(r'^[0-9]{1,30}(\.[0-9]{1,30})?$')
-ROUND_ID = re.compile(r'^[A-Za-z0-9_.:#-]{1,160}$')
+ROUND_ID = re.compile(r'^[A-Za-z0-9_.:#-]{1,160}(?:/quote[1-9][0-9]*(?:#[1-9][0-9]*)?)*$')
 HEX = re.compile(r'0x[0-9a-fA-F]{8,}')
 ROUND_SOURCES = ('cadence', 'filing', 'review', 'safety')
 # Alert kinds written by chain-monitor.py. Unknown kinds show as warnings.

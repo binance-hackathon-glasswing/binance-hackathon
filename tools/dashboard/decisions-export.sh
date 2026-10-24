@@ -13,7 +13,7 @@ from collections import deque
 import json, os, re
 CODE = re.compile(r'^[A-Z][A-Z0-9_]{0,63}$')
 SYMBOL = re.compile(r'^[A-Z][A-Z0-9]{0,15}$')
-ROUND = re.compile(r'^[A-Za-z0-9_.:#-]{1,160}$')
+ROUND = re.compile(r'^[A-Za-z0-9_.:#-]{1,160}(?:/quote[1-9][0-9]*(?:#[1-9][0-9]*)?)*$')
 AMOUNT = re.compile(r'^[0-9]{1,30}(\.[0-9]{1,30})?$')
 HEX = re.compile(r'0x[0-9a-fA-F]{8,}')
 SCHEMA = 'LarpDecisionExport.v1'

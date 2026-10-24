@@ -178,3 +178,9 @@ output, including its summary and every newline, fits22000 UTF-8 bytes. Small ex
 size-limited exports add `omitted_for_size`, retained in the merge report. Even a single over-budget row leaves a
 complete summary. The SQL/privacy allow-lists are unchanged. This is source/offline validation only; the first
 read-only host export and PAGES01 publishing decision remain open. Full review evidence: IDEA-090 PR274-RV01.
+
+
+PR274-RV01 also retains actual quote-follow-up round IDs (`/quoteN`, with optional `#attempt`) in the export and
+full-detail builder. The original round-ID filter excluded slash and silently dropped execution-bearing rounds.
+Only the specific driver suffix grammar is added; arbitrary slash paths, URLs and hex-bearing IDs remain refused.
+Default redacted pages still omit round IDs. A synthetic regression verifies order counts and both rendering modes.
