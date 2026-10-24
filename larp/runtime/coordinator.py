@@ -261,6 +261,10 @@ class Coordinator:
             record['assessment_audit']=assessment_audit
         if execution_parent_round is not None:
             record['execution_parent_round'] = execution_parent_round
+        if use_accepted_evidence and assessment_override is None:
+            # Planned on accepted evidence with no assessment attempted (IDEA-090); replay starts it the same way.
+            # Absent otherwise, so other rounds keep their bytes.
+            record['accepted_evidence_only'] = True
         if now_ms!=started_ms:
             record['decision_ms']=now_ms  # absent in historical zero-duration fixture records
         if updates.get('evidence_decisions'):

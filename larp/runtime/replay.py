@@ -59,7 +59,9 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
                 else:
                     runtime.start(record['round_id'],doc(record['request']),record['started_ms'],defer_close=True,
                         **(dict(execution_parent_round=record['execution_parent_round'])
-                           if 'execution_parent_round' in record else {}))
+                           if 'execution_parent_round' in record else {}),
+                        **(dict(assessment_override=None,use_accepted_evidence=True)
+                           if record.get('accepted_evidence_only') is True else {}))
             elif kind=='BALANCE_ADJUSTED':
                 # Recorded, then checked: the journaled ledger must be adjust_ledger of the previous one (IDEA-055).
                 from larp.integration.settlement import balances_of

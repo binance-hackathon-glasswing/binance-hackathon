@@ -104,8 +104,8 @@ class EverySlot(DriverHarness):
         self.assertIsNone(self.tick(self.driver('MANDATORY_REDUCTION', issuers=(EXSEMI, EXMEM)))['round_id'])
         self.assertEqual(self.slot_round(driver, slot + 1), f'cadence:{slot + 1}#1')  # EXSEMI: evidence round
         self.assertEqual(self.slot_round(driver, slot + 2), f'cadence:{slot + 2}#1')
-        planning = [r for r in self.logs() if r.startswith('cadence:')]
-        self.assertEqual(planning, [f'cadence:{s}#1' for s in (slot, slot + 1, slot + 2)])
+        mine = [r for r in self.logs() if r.startswith('cadence:') and int(r[8:].split('#')[0]) >= slot]
+        self.assertEqual(mine, [f'cadence:{s}#1' for s in (slot, slot + 1, slot + 2)])
         journal, expected = self.store.journal(RUN), self.store.verify(RUN)
         with self.store.transaction() as db:
             db.execute('TRUNCATE runs CASCADE')

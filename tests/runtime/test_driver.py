@@ -120,7 +120,7 @@ class Driver(DriverHarness):
         self.assertTrue(all('tx_hash' not in o for o in log['orders']))
         self.assertEqual([a['reason'] for a in log['output']['aborted']], [SHADOW_REASON] * len(log['orders']))
 
-    def test_d3_cadence_rounds_run_once_per_slot_and_skip_issuers_without_records(self):
+    def test_d3_cadence_rounds_run_once_per_slot_and_plan_for_issuers_without_records(self):
         self.world(['EXSEMI_Q2_8K'], now_ms=NOW)
         driver = self.driver(issuers=(EXSEMI, EXMEM))
         slot = self.w.clock() // HOUR + 2
@@ -129,10 +129,11 @@ class Driver(DriverHarness):
         self.assertEqual(self.tick(driver)['round_id'], f'cadence:{slot}#1')
         self.assertIsNone(self.tick(driver)['round_id'])  # same slot
         self.w.clock.now = (slot + 1) * HOUR
-        self.assertIsNone(self.tick(driver)['round_id'])  # EXMEM has no record
+        # EXMEM has no record: the slot still plans, on accepted evidence only (IDEA-090, S2-F2).
+        self.assertEqual(self.tick(driver)['round_id'], f'cadence:{slot + 1}#1')
         self.w.clock.now = (slot + 2) * HOUR
         self.assertEqual(self.tick(driver)['round_id'], f'cadence:{slot + 2}#1')
-        self.assertEqual(sorted(self.logs()), [f'cadence:{slot}#1', f'cadence:{slot + 2}#1'])
+        self.assertEqual(sorted(self.logs()), [f'cadence:{slot + n}#1' for n in range(3)])
 
     def test_d4_a_scheduled_review_job_runs_first_and_is_finished(self):
         self.world(['EXSEMI_402_8K'])
