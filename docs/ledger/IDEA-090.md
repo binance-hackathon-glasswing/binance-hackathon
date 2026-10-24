@@ -226,6 +226,21 @@ authority, but the same path passed at 06:00Z and fails intermittently, which fi
 price noise, not a fixed deadline mismatch. The S2-F6 fix (F11–F14) covers both requotes. Run 4 keeps RC7 and stays
 exposed, including the Sunday flatten's SELL swaps.
 
+### S2-F6 fix: results (2026-10-24)
+
+Commits: `05f0687e` (criteria), `b2da84f8` (tests, red on base), `de86fd0b` (fix), `bf1e6a31` (F16).
+
+| # | Result | Evidence |
+|---|---|---|
+| F11 | **pass** | `tests/execution/test_requote_at_authorized_minimum.py`: the executor prepares and sends the approve, finalizes it, and the swap requote after a 5 bps adverse move is `PREPARED` with a minimum ≥ the authorized one (requests at 8, 8, then 3 bps). On base the same test reproduces run 4's `encoded swap economics mismatch/expired`. |
+| F12 | **pass** | Four adverse moves inside the limit: the second request is whole bps, 1 ≤ s' < 8; no request is wider than 8. |
+| F13 | **pass** | One request when the first quote meets the minimum (bytes unchanged); no second request at or below the authorized minimum or when s' would be 0. |
+| F14 | **pass** | A second quote that fell again is returned and then blocked by `validate_payload` as before; a second response from another vendor or with a minimum wider than the limit is refused by the existing checks. |
+| F15 | **pass** | Python 3.12.3, PostgreSQL 16.15: 2638 passed, 11 skipped, 1 failed, the same host-profile lock test as in F6; no new failures. `tests/execution`, `tests/marketdata`, `tests/signer`: 576 passed, 1 skipped. |
+| F16 | **pass** | See above: 3 of run 4's 4 buys were blocked by this check. |
+
+Review: Isaac (execution and signer path) and Keegan. Next dev run: buys go through after the approve.
+
 ## Not covered
 
 - Run 4 (`larp-dev-rehearsal-20261024-s2`, RC7 `2d160073`) keeps running as it is; a run cannot change build.
