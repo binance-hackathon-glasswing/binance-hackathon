@@ -625,7 +625,9 @@ footer p { margin: 4px 0; }
     });
     var cols = [
       { label: 'Decided (UTC)', get: function (d) { return when(d.utc); } },
-      { label: 'Round', get: function (d) { return humanize(d.source) + (d.round_kind !== 'TRADE' ? ' · ' + humanize(d.round_kind) : ''); } },
+      { label: 'Round', get: function (d) {
+        return humanize(d.source) + (d.follow_up ? ' · quote follow-up' : '') + (d.round_kind !== 'TRADE' ? ' · ' + humanize(d.round_kind) : '');
+      } },
       { label: 'Outcome', get: statusCell },
       { label: 'Orders', cls: 'wrap', get: function (d) {
         return list(d.orders.map(function (o) { return (o.side || '?') + ' ' + o.symbol + (o.amount ? ' ' + o.amount : ''); }));

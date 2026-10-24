@@ -36,7 +36,7 @@ HASH = re.compile(r'^0x[0-9a-fA-F]{64}$')
 UTC = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
 CODE = re.compile(r'^[A-Z][A-Z0-9_]{0,63}$')  # reason, status and error codes
 AMOUNT = re.compile(r'^[0-9]{1,30}(\.[0-9]{1,30})?$')
-ROUND_ID = re.compile(r'^[A-Za-z0-9_.:#-]{1,160}$')
+ROUND_ID = re.compile(r'^[A-Za-z0-9_.:#/-]{1,160}$')
 HEX = re.compile(r'0x[0-9a-fA-F]{8,}')
 ROUND_SOURCES = ('cadence', 'filing', 'review', 'safety')
 # Alert kinds written by chain-monitor.py. Unknown kinds show as warnings.
@@ -279,6 +279,7 @@ def decision(d, redact):
     row = dict(
         utc=ms_utc(d.get('decision_ms')) or ms_utc(d.get('started_ms')),
         source=source.upper() if source in ROUND_SOURCES else 'OTHER',
+        follow_up='/quote' in rid,  # a quote follow-up of the round before it (IDEA-050 E6)
         event=d.get('event') if d.get('event') in ('PLANNED', 'REJECTED') else 'OTHER',
         status=code(d['status']) if d.get('status') is not None else None,
         round_kind=code(d.get('round_kind')), execution_pending=d.get('execution_pending') is True,
