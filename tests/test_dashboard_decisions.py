@@ -118,6 +118,21 @@ class ExportTest(unittest.TestCase):
                    'issuer'}
         self.assertLessEqual(keys(rows), allowed)
 
+    def test_dx1_quote_follow_up_rounds_are_exported(self):
+        # Found on the first real export (run 4): the follow-up rounds, which carry the orders, were dropped.
+        child = planned(9, 'cadence:100#1/quote1', 1, orders=[dict(symbol='SKHYB', side='BUY', amount='18.951721')])
+        rows = [json.loads(line) for line in self.x['emit'](events() + [child], 30, 'run')]
+        self.assertIn('cadence:100#1/quote1', [r.get('round_id') for r in rows])
+        folder = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__('shutil').rmtree(folder))
+        dec.merge('\n'.join(json.dumps(r) for r in rows), folder)
+        redacted = b.dashboard_data(folder)['decisions']['rows'][0]
+        self.assertEqual((redacted['source'], redacted['follow_up'], redacted['orders'][0]['symbol']),
+                         ('CADENCE', True, 'SKHYB'))
+        self.assertNotIn('quote1', b.encode(b.dashboard_data(folder)))
+        self.assertEqual(b.dashboard_data(folder, redact=False)['decisions']['rows'][0]['round_id'],
+                         'cadence:100#1/quote1')
+
     def test_dx1_export_limit(self):
         lines = self.x['emit'](events(), 2, 'run')
         self.assertEqual([json.loads(line).get('round_id') for line in lines], ['cadence:101#1', 'filing:job-7#1', None])
@@ -182,7 +197,7 @@ class ExportTest(unittest.TestCase):
         db = text[text.index('# ---- database'):]
         self.assertIn("SET TRANSACTION READ ONLY", db)
         self.assertIn('with s.transaction() as db:', db)
-        self.assertEqual(re.findall(r"db\.execute\('([A-Z]+)", db), ['SET', 'SELECT'])
+        self.assertEqual(re.findall(r"(?:db|cur)\.execute\('([A-Z]+)", db), ['SET', 'SELECT'])
         self.assertIsNone(re.search(r'\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|COPY)\b', text))
 
 

@@ -607,7 +607,8 @@ footer p { margin: 4px 0; }
     $('decisions-sub').textContent = dec.total
       ? 'One row per round, newest first. ' + (dec.total > dec.rows.length ? dec.rows.length + ' of ' + dec.total + ' shown. ' : '') +
         'Latest decision ' + when(dec.latest_utc) + ' UTC. Targets come from the policy, orders from the planner; ' +
-        '"Why not" lists the planner\'s rejection and error codes.'
+        '"Why not" lists the planner\'s rejection and error codes. Round status is the round\'s own close; ' +
+        'whether a planned order filled is in Transactions above.'
       : 'No decisions exported yet. An operator runs tools/dashboard/decisions-export.sh over SSM and merges it with tools.dashboard.decisions.';
     var chips = clear($('decision-chips'));
     Object.keys(dec.by_status).sort().forEach(function (k) {
@@ -625,15 +626,22 @@ footer p { margin: 4px 0; }
     });
     var cols = [
       { label: 'Decided (UTC)', get: function (d) { return when(d.utc); } },
-      { label: 'Round', get: function (d) { return humanize(d.source) + (d.round_kind !== 'TRADE' ? ' · ' + humanize(d.round_kind) : ''); } },
-      { label: 'Outcome', get: statusCell },
-      { label: 'Orders', cls: 'wrap', get: function (d) {
+      { label: 'Round', get: function (d) {
+        return humanize(d.source) + (d.follow_up ? ' · quote follow-up' : '') + (d.round_kind !== 'TRADE' ? ' · ' + humanize(d.round_kind) : '');
+      } },
+      { label: 'Round status', get: statusCell },
+      { label: 'Planned orders', cls: 'wrap', get: function (d) {
         return list(d.orders.map(function (o) { return (o.side || '?') + ' ' + o.symbol + (o.amount ? ' ' + o.amount : ''); }));
       } },
       { label: 'Policy targets', cls: 'wrap', get: function (d) {
-        return list(d.targets.map(function (t) {
-          return t.symbol + ' ' + (t.weight_pct != null ? fmt.pct(t.weight_pct) : humanize(t.kind)) + ' (' + t.reason + ')';
-        }));
+        // Names with the same target and reason share one entry: "GOOGLB, MSFTB 19.00% (S1_LEVEL_CHANGE)".
+        var groups = [], index = {};
+        d.targets.forEach(function (t) {
+          var what = (t.weight_pct != null ? fmt.pct(t.weight_pct) : humanize(t.kind)) + ' (' + t.reason + ')';
+          if (!(what in index)) { index[what] = groups.length; groups.push({ what: what, names: [] }); }
+          groups[index[what]].names.push(t.symbol);
+        });
+        return list(groups.map(function (g) { return g.names.join(', ') + ' ' + g.what; }));
       } },
       { label: 'Why not', cls: 'wrap codes', get: function (d) {
         return list(d.rejections.map(function (r) {

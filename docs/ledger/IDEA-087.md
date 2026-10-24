@@ -184,3 +184,55 @@ PR274-RV01 also retains actual quote-follow-up round IDs (`/quoteN`, with option
 full-detail builder. The original round-ID filter excluded slash and silently dropped execution-bearing rounds.
 Only the specific driver suffix grammar is added; arbitrary slash paths, URLs and hex-bearing IDs remain refused.
 Default redacted pages still omit round IDs. A synthetic regression verifies order counts and both rendering modes.
+
+### DX on real data: first export from run 4 (2026-10-24 ~10:30Z)
+
+- `tools/dashboard/decisions-export.sh 40` over SSM on the run-4 primary (read-only; commands `0047c475…`,
+  `d6c09030…` and, with Isaac's PR274-RV01 export, `fb1593aa…`), from a Claude Code session as IAM user
+  `larp-claude-session`. The first run exported 11 of 21 rounds: the round-ID allow-list dropped every quote follow-up
+  (`…#1/quote1`), the rounds that carry the orders. Fixed in `003604e8` and independently in PR274-RV01 (Isaac's
+  stricter `/quoteN` pattern kept at the merge); after the fix 21 of 21 rounds, 19,166 bytes.
+- Trades: the RC7 chain monitor, one poll seeded with run 4's eight known transaction blocks (no Web3 key here, so
+  no prices or equity): nonces 4–11, 3 swaps (SKHYB, GOOGLB, NVDAB), 0 alerts, USDT 39.199138.
+- Build: redacted page has no `0x…` identifier; headless Chromium at 1200 and 390 px, no console messages, no
+  horizontal scroll, 21 decision rows, 8 transactions. Two page fixes came from it (`IDEA-087 DX: group equal policy
+  targets…`): repeated equal targets are grouped, and "Round status" / "Planned orders" no longer read like fills.
+- Limits seen: "Seen (UTC)" is the poll that found a transaction, so a monitor started late shows its start time for
+  all earlier transactions; equity and drawdown need the read-only Web3 key on the monitor machine. Not published
+  (PAGES01).
+
+### Hosting decision: a private claude.ai page instead of GitHub Pages (2026-10-24 ~10:45Z)
+
+- Asked in the Claude Code session to "create the Pages repo and publish it, make sure the repo is private". On the
+  Free org plan (checked 2026-10-23) Pages serves only public repositories, and on paid Team plans a Pages site from a
+  private repository is still public; only Enterprise Cloud restricts who can view it. So a private repo cannot host
+  a private Pages site here.
+- Rules check (source page, the kit including the Participant Guide, SKILL.md F-19, F-24, F-63, F-114, F-117, G-10,
+  never-do list): no rule forbids a team dashboard, private or public. F-24 concerns the code repository; F-19 the
+  organisers' leaderboard. The risk of a public page is strategic: the Decisions section shows targets, sizes and
+  reasons that other finalists could follow.
+- Choice (the session's user): a **private claude.ai Artifact**, published from the redacted build of the real-data
+  preview above: https://claude.ai/artifact/TvedBe3MDUf2EwTKnqgjqs (version 1, data as of 10:34Z). Only its owner can
+  open it until it is shared from its Share menu. It is a snapshot: it updates when it is republished (rebuild from the
+  chain monitor and the SSM export, then publish the same page again). No GitHub repository was created.
+
+### DR: hourly refresh of the private page (2026-10-24)
+
+- Requested: "refresh the dashboard every hour". `tools/dashboard/refresh.py` does one refresh: a chain-monitor poll,
+  the read-only decisions export over SSM, the merge, the redacted build, and the page adapted for the Artifact
+  (`larp-dashboard.html`, `data.json`, `refresh-state.json`). `refresh-state.json` lists the wallet's known transaction
+  blocks and is published with the page, so a new container can seed the monitor's first poll from it instead of a
+  full block scan. Publishing stays a separate Artifact step. A scheduled task wakes the Claude Code session every hour
+  to run it and republish to the same link.
+- Pass criteria (before the test ran): DR1 the built page loses its document skeleton, keeps one title, gains the
+  safe-area gutter and has no `0x…` identifier; DR2 the known blocks are the monitor's transaction blocks. Result:
+  `tests/test_dashboard_refresh.py` red on base (no module), then 2 passed; the converter reproduces the published
+  version 1 page byte for byte; a real refresh (SSM command `c060c757…`) took 5 s with an unchanged nonce.
+- Sharing changed by the owner to "anyone with the link" (seen at the second publish, ~10:46Z). So the seed block
+  list is no longer published with the page (block numbers identify the wallet): it stays in the work folder, and a
+  new container seeds from the run's execution records (`tools/dashboard/tx-export.sh`, read-only). Cold start then
+  measured 11 s (8 transactions, 0 alerts); the monitor poll runs on a copy of its folder and is kept only on success,
+  because a poll that failed at the balance read (seen once, after a 2 min block scan) would otherwise book the same
+  transactions twice on the retry.
+- Version 2 published 10:46Z. Scheduled task "Hourly LARP dashboard refresh" (`trig_01HrkmwdUoR5YGpm6EbJacev`, cron
+  `47 * * * *`, first run 11:47Z) wakes the Claude Code session to refresh and republish; it runs until stopped.

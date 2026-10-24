@@ -1,14 +1,19 @@
 # Read-only (primary; IDEA-087 DX): the agent's decisions for the dashboard. One JSON line per round (the latest N,
 # default 30), bounded to 22,000 UTF-8 bytes including a summary for SSM inline output. One READ ONLY transaction.
+# With SINCE (IDEA-092 E1), only the events after that sequence are read: oldest first within the budget, a closure
+# line for a round planned earlier, and a summary naming the last sequence covered (the next run's SINCE). Events are
+# streamed through a server-side cursor either way, so memory and reads follow the new events, not the run's length.
 # Fields are allow-listed (codes, symbols, amounts, times): no free text, model text, IDs, hashes, config or URLs.
-#   python3.12 -I ssm_run.py ../../../tools/dashboard/decisions-export.sh [N]     (from the copied run folder)
+#   python3.12 -I ssm_run.py ../../../tools/dashboard/decisions-export.sh [N] [SINCE]     (from the copied run folder)
 #   python -m tools.dashboard.decisions merge results/decisions-export-stdout.txt --monitor-dir deploy/activation/rehearsal-monitor
 set -eu
 LIMIT=${1:-30}
+SINCE=${2:-}
 case "$LIMIT" in ''|*[!0-9]*) echo "N must be a number" >&2; exit 2;; esac
+case "$SINCE" in *[!0-9]*) echo "SINCE must be a sequence number" >&2; exit 2;; esac
 cd /opt/larp/current
 # larp_execution can SELECT every table read here (deploy/postgres/roles.sql); larp_runtime cannot.
-runuser -u larp-execution -- env PYTHONDONTWRITEBYTECODE=1 LIMIT="$LIMIT" .venv/bin/python - <<'PY'
+runuser -u larp-execution -- env PYTHONDONTWRITEBYTECODE=1 LIMIT="$LIMIT" SINCE="$SINCE" .venv/bin/python - <<'PY'
 from collections import deque
 import json, os, re
 CODE = re.compile(r'^[A-Z][A-Z0-9_]{0,63}$')
@@ -124,6 +129,43 @@ def emit(events, limit, run_id):
         summary['omitted_for_size'] = len(latest) - summary['exported']
 
 
+def emit_since(rows, run_id, since, load, budget=MAX_EXPORT_BYTES):
+    """Incremental lines (IDEA-092 E1) for `(sequence, raw batch)` pairs: only events after `since` are decoded. Rows
+    go oldest first while they fit the budget; `last_seq` is the last sequence whose output is complete, so the next
+    run (SINCE=last_seq) picks up anything trimmed. A closure of a round planned before `since` is a closure line."""
+    entries, planned, last, decoded = [], {}, since, 0
+    for seq, raw in rows:
+        if type(seq) is not int or seq <= since:
+            continue
+        decoded += 1
+        event = (load(raw) or {}).get('event')
+        row = shape(seq, event)
+        if row:
+            row['status'] = None
+            planned[row['round_id']] = row
+            entries.append((seq, row))
+        done = closing(event)
+        if done:
+            rid, status = done
+            if rid in planned:
+                planned[rid]['status'] = status
+            elif ROUND.match(rid) and not HEX.search(rid):
+                entries.append((seq, dict(section='closure', schema=SCHEMA, seq=seq, round_id=rid, status=status)))
+        last = seq
+    size = lambda line: len(line.encode('utf-8')) + 1
+    lines, total, covered = [], 0, last
+    for seq, entry in entries:
+        line = json.dumps(entry, sort_keys=True, separators=(',', ':'))
+        if total + size(line) + 400 > budget:  # 400 bytes kept for the summary
+            covered = seq - 1
+            break
+        lines.append(line)
+        total += size(line)
+    summary = dict(section='decisions_summary', schema=SCHEMA, run_id=run_id, since=since, last_seq=covered,
+                   exported=len(lines), complete=covered == last, decoded=decoded)
+    return lines + [json.dumps(summary, sort_keys=True, separators=(',', ':'))]
+
+
 # ---- database (not run by the offline tests) ----
 from contextlib import contextmanager
 from pathlib import Path
@@ -138,9 +180,16 @@ def load(b):
     except Exception: return None
 c = json.loads(Path('/etc/larp/execution.json').read_text()); r = c['run_id']
 s = RO(c, rds_client(c['region']))
+since = int(os.environ['SINCE']) if os.environ.get('SINCE') else None
 with s.transaction() as db:
-    events = [(seq, (load(b) or {}).get('event'))
-              for seq, b in db.execute('SELECT sequence,batch FROM events WHERE run_id=%s ORDER BY sequence', (r,)).fetchall()]
-for line in emit(events, int(os.environ['LIMIT']), r):
+    # A named (server-side) cursor streams the batches 20 at a time: never the whole journal in memory (IDEA-092).
+    with db.cursor(name='larp_dashboard_export') as cur:
+        cur.itersize = 20
+        cur.execute('SELECT sequence,batch FROM events WHERE run_id=%s AND sequence>%s ORDER BY sequence', (r, since or 0))
+        if since is None:
+            lines = emit(((seq, (load(b) or {}).get('event')) for seq, b in cur), int(os.environ['LIMIT']), r)
+        else:
+            lines = emit_since(((seq, bytes(b)) for seq, b in cur), r, since, load)
+for line in lines:
     print(line)
 PY

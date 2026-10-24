@@ -93,6 +93,126 @@ python -m tools.dashboard.decisions merge deploy/activation/rehearsal-install-rc
 - **On a public page, the decisions show the strategy**: its targets, sizes and reasons, as well as its trades.
   Decide on that before publishing it for the scored run (PAGES01).
 
+## Hourly private page on Cloudflare, from Keith's computer (IDEA-092, chosen)
+
+A scheduled job on Keith's always-on computer refreshes the page and posts it to Cloudflare Pages, which Cloudflare
+Access puts behind an email login. No AWS stack and no Claude session. One run:
+
+```
+tools.dashboard.cloudflare ──► tools.dashboard.refresh: chain-monitor poll (public BSC RPC)
+                                 + decisions export over SSM (read-only, incremental: only events since the last run)
+                                 + redacted build
+                           ──► wrangler pages deploy: index.html, data.json, _headers (no-store, noindex) ──► Access ──► team
+```
+
+**One-time setup (Keith)**
+
+1. The machine: this repository's checkout, a Python 3.12 venv from `requirements.lock`, Node.js 18 or later (for
+   `npx wrangler`), and the AWS profile the team uses for the read-only checks (SSM on the primary). Keep it awake
+   (macOS: System Settings → Battery/Energy → prevent automatic sleeping).
+2. Cloudflare: an account, and an API token with only **Account → Cloudflare Pages → Edit**. Then create the project:
+
+   ```bash
+   export CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=...
+   npx --yes wrangler@4.145.0 pages project create larp-dashboard --production-branch main
+   ```
+
+3. **Login, before the first deploy.** Cloudflare Zero Trust → Access → Applications → Add a self-hosted application
+   for `larp-dashboard.pages.dev` **and** `*.larp-dashboard.pages.dev` (preview deployments), with an Allow policy for
+   the team's email addresses. In the Pages project, Settings → General → Access policy: enable it for previews too.
+   Check in a private window that both addresses ask for the login.
+4. A credentials file only Keith can read, outside the repository:
+
+   ```bash
+   cat > ~/.larp-dashboard.env <<'ENV'
+   CLOUDFLARE_API_TOKEN=...
+   CLOUDFLARE_ACCOUNT_ID=...
+   AWS_PROFILE=larp
+   ENV
+   chmod 600 ~/.larp-dashboard.env
+   ```
+
+5. One run by hand, from the repository root (the first decisions export catches up over a few SSM calls):
+
+   ```bash
+   set -a; . ~/.larp-dashboard.env; set +a
+   .venv/bin/python -m tools.dashboard.cloudflare --work ~/larp-dashboard --project larp-dashboard
+   ```
+
+6. Every hour, from cron (`crontab -e`; on macOS give cron Full Disk Access if it is refused):
+
+   ```
+   7 * * * * cd ~/binance-hackathon && set -a && . ~/.larp-dashboard.env && set +a && .venv/bin/python -m tools.dashboard.cloudflare --work ~/larp-dashboard --project larp-dashboard >> ~/larp-dashboard/cron.log 2>&1
+   ```
+
+   Then the Claude session's hourly task can be stopped.
+
+- **For the final:** add `--wallet <final wallet> --start-nonce <its nonce at the start> --start-usdt <opening
+  equity>`; without them the job watches the dev rehearsal wallet the RC7 monitor hard-codes. Start a new `--work`
+  folder for the new run.
+- **Load on the primary:** each hour one short read-only SSM command that reads only the events since the last run
+  (about an hour's worth), streamed 20 at a time. The chain side uses public BSC nodes only.
+- **Failures:** a failed refresh deploys nothing (the page keeps the last good data and its status pill turns Delayed,
+  then Stale); an overlapping run exits; without SSM access the trades still update and the decisions keep their last
+  export (`export_error` in `cron.log`).
+- **Prices:** put the read-only Web3 key in `.env` at the repository root (as for the chain monitor) for equity and
+  drawdown; without it those charts stay empty.
+
+## Automated private hosting on AWS (IDEA-092, proposal)
+
+The private claude.ai page is refreshed by an hourly Claude session (IDEA-087 DR). For the final, `tools/dashboard/aws/`
+runs the same refresh with no laptop and no Claude session: an hourly Lambda writes the redacted page to a private S3
+bucket, and CloudFront serves it behind a login. It is a separate Terraform stack outside the release files; it only
+reads the agent through two fixed, read-only SSM documents. **Not applied yet:** the owners (Isaac, Keegan) review
+and apply it.
+
+```
+EventBridge Scheduler (hourly) ──► Lambda: chain-monitor poll + SSM documents (decisions, tx hashes, read-only)
+                                         ──► s3://<bucket>/state/ (monitor state)   s3://<bucket>/site/ (page)
+viewer ──► CloudFront ──► login function (KeyValueStore hash) ──► Origin Access Control ──► s3://<bucket>/site/
+```
+
+1. Build the package (deterministic, about 44 KB; the AWS SDK comes from the Lambda runtime):
+
+   ```bash
+   python -m tools.dashboard.aws.package --out deploy/activation/dashboard-lambda.zip
+   ```
+
+2. Optional, for equity and drawdown: a Secrets Manager secret holding the **read-only** Web3 key as JSON
+   (`{"BINANCE_API_KEY": "...", "BINANCE_SECRET_KEY": "..."}`); pass its ARN as `web3_secret_arn`.
+3. Copy `tools/dashboard/aws/dashboard.example.tfvars` to a git-ignored `*.tfvars`, fill in the account, region,
+   bucket name, the run's primary instance ID, the wallet, its start nonce and opening USDT, then, with its **own**
+   state key:
+
+   ```bash
+   cd tools/dashboard/aws
+   terraform init -backend-config=<backend file with a dashboard state key>
+   terraform apply -var-file=<your>.tfvars
+   ```
+
+4. Set the login, outside Terraform (nothing secret is in the repo or the state). The stored value is the SHA-256
+   (hex) of the base64 `user:password` that browsers send:
+
+   ```bash
+   HASH=$(printf '%s' "$(printf '%s' 'user:password' | base64)" | sha256sum | cut -d' ' -f1)
+   KVS=$(terraform output -raw auth_key_value_store_arn)
+   ETAG=$(aws cloudfront-keyvaluestore describe-key-value-store --kvs-arn "$KVS" --query ETag --output text)
+   aws cloudfront-keyvaluestore put-key --kvs-arn "$KVS" --key basic-auth-sha256 --value "$HASH" --if-match "$ETAG"
+   ```
+
+5. Open `terraform output dashboard_url` and sign in. The first run happens within the hour; `aws lambda invoke
+   --function-name $(terraform output -raw lambda_function_name) /dev/stdout` runs it now. Then stop the Claude
+   session's hourly task.
+
+- **Least privilege:** the Lambda may `ssm:SendCommand` only the two documents, only on the primary; it cannot run
+  `AWS-RunShellScript`. It writes only `state/` and `site/` in its bucket and reads only the Web3 secret, if given.
+- **Failure:** a failed run uploads nothing; the page stays at the last good refresh, and its status pill turns
+  Delayed, then Stale.
+- **Scored run:** whether SSM read access to the primary stays open is still PAGES01. Without it, the trade side keeps
+  updating and the Decisions section keeps its last export; the run reports `export_error`.
+- Tests: `pytest tests/test_dashboard_aws.py` (handler, package, login function) and, from `tools/dashboard/aws`,
+  `terraform init -backend=false && terraform test` (IAM, privacy, schedule).
+
 ## Limits
 
 - GitHub's soft limit is 10 branch-based Pages builds an hour, so `--loop` must be at least 360 s (600 s is the

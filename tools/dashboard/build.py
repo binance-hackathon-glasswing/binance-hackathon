@@ -279,6 +279,7 @@ def decision(d, redact):
     row = dict(
         utc=ms_utc(d.get('decision_ms')) or ms_utc(d.get('started_ms')),
         source=source.upper() if source in ROUND_SOURCES else 'OTHER',
+        follow_up='/quote' in rid,  # a quote follow-up of the round before it (IDEA-050 E6)
         event=d.get('event') if d.get('event') in ('PLANNED', 'REJECTED') else 'OTHER',
         status=code(d['status']) if d.get('status') is not None else None,
         round_kind=code(d.get('round_kind')), execution_pending=d.get('execution_pending') is True,
