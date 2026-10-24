@@ -49,5 +49,25 @@
   "a GitHub Actions pass",
   "systemd/host/release qualification",
   "any live run, approval or installation"
- ]
+ ],
+ "s4r_rerun": {
+  "tested_commit": "db048e0d67cdd3f96250abe3fa5633454961c134",
+  "pip_check": "PASS",
+  "pytest": {
+   "passed": 2679,
+   "skipped": 9,
+   "subtests_passed": 4004,
+   "failed": 0,
+   "seconds": 359.87
+  },
+  "offline_demo": "PASS (67652-byte trace)",
+  "docker_build_and_run": "PASS",
+  "host_bundle": {
+   "bundle": "larp-db048e0d67cd-x86_64.tar.gz",
+   "bundle_sha256": "8b95a5ef5a1be212cea3983f5477075b5b640cf2ebe5c05ce99db8e192214257",
+   "test_host_bundle": "PASS primary and signer"
+  },
+  "terraform": "not rerun: no deploy/ change since the first run",
+  "systemd_conditions": "NOT RUN"
+ }
 }

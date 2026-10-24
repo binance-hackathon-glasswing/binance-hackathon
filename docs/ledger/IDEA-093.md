@@ -172,3 +172,22 @@ before `signing_end`; balance check MATCH; no HALT or quarantine.
 | S4R-3 | `live` mode is refused at preparation and at the runtime start (S2-1 scope); FINAL is refused for it |
 | S4R-4 | The builder refuses `--s4-rehearsal` with an NYSE-hours block and with a scheduled flatten; S2 and S3 profiles still rebuild byte for byte |
 | S4R-5 | Full local CI replica as S4-9, no new failures |
+
+### S4-R results (2026-10-25 SGT)
+
+Commits: `76260ae8` (criteria), `31945fb0` tests red on base (all 4 S4R tests failed before the builder change), `db048e0d`
+(builder option and profile). Profile `docs/build/evidence/s4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json`:
+file `9dbe6f4d…`, digest `b09c88e8…`, probe `a56f5307…`.
+
+| # | Result |
+|---|---|
+| S4R-1 | **PASS.** Rebuilds byte for byte; `validate_live`, signed dev `gate_a.prepare` with the router-policy pair, `gate_a_check` scope and inputs, and the dev runtime build pass |
+| S4R-2 | **PASS, with one correction to the criterion's wording.** Differs from S2's `eb55d76a…` in `slippage_bps`, the four window keys and `policy_id` with their provenance, **and in the decision ID on `s1`/`baseline` provenance** (they carry the block's decision text, which names S4-R; the block bytes and data hash equal S2's). The `s1` block equals S4's FINAL block |
+| S4R-3 | **PASS.** `live` refused at preparation and at the runtime start; FINAL refused |
+| S4R-4 | **PASS.** NYSE-hours block, no block, and a scheduled flatten are refused; S2 and S3 still rebuild byte for byte |
+| S4R-5 | **PASS (local replica).** Clean clone of `db048e0d`, Python 3.12.15 / PostgreSQL 14.24 / pinned lock: **2679 passed, 9 skipped, 4004 subtests, 0 failed**; `pip check`, offline demo, Docker image build and run PASS; x86_64 bundle (`8b95a5ef…`) built and `test_host_bundle.sh` PASS for primary and signer. Terraform not rerun: no `deploy/` file changed since S4-9. Systemd conditions not run |
+
+**To run it (Yao, Isaac):** retire run 4 flat after its Sun 15:00Z `signing_end`; new run ID and database; RC8 build from
+this branch (or its merge); M3 coverage review against `9dbe6f4d…`; Isaac's approval of that hash and the new
+`signer.json`; install with execution running before `trade_after` (2026-10-25T16:00:00Z). If install is later, the
+window can be rebuilt with other times (one-line change in `S4R_WINDOW`, new hash, new approval).
