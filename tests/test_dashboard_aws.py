@@ -72,15 +72,25 @@ class Monitor:
         return json.loads(p.read_text()) if p.exists() else dict(nonce=self.START['nonce'], block=None, trades=0)
 
     def rpc(self, method, params, batch=None):
-        return [dict(blockNumber=hex(129462303))] if batch else None
+        if batch:
+            return [dict(blockNumber=hex(129462303)) if m == 'eth_getTransactionReceipt' else
+                    dict(transactions=[dict(nonce=hex(4), **{'from': self.WALLET})]) for m, _ in batch]
+        if method == 'eth_getTransactionCount':
+            return hex(5)
+        return None
 
     def wallet_txs(self, start, end):
-        return []
+        raise AssertionError('full block scan')
+
+    def balances(self, tag):
+        return {}, {}
 
     def poll(self, state):
         if Monitor.fail:
             raise RuntimeError('balance read refused')
-        if state['block'] is None:
+        if state['block'] is None:  # the nonce moved: find the transactions the way the real monitor does
+            self.balances('finalized')
+            assert [int(t['nonce'], 16) for t in self.wallet_txs(129462000, 129462403)] == [4]
             with (self.OUT / 'transactions.jsonl').open('a') as f:
                 f.write(json.dumps(dict(hash=TX, nonce=4, block=129462303, kind='APPROVE', status=1)) + '\n')
         state = dict(state, block=(state['block'] or 129462303) + 100, nonce=5)

@@ -30,6 +30,7 @@ MONITOR = ROOT / 'docs/build/ops/rehearsal-install-rc7-20261024/mac/chain-monito
 EXPORT = ROOT / 'tools/dashboard/decisions-export.sh'
 TX_EXPORT = ROOT / 'tools/dashboard/tx-export.sh'
 EXPORT_ROUNDS = 10  # incremental exports per refresh at most (about 20 rounds each)
+BALANCE_RETRY_S = (0, 10, 30)  # pauses before each balance read attempt
 PRIMARY = 'i-040fc5fea8b700e9a'  # run 4's primary (ssm_run.py)
 REGION = 'ap-southeast-2'
 GUTTER = ('.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); '
@@ -70,7 +71,7 @@ def chain_monitor(monitor_dir):
     return monitor
 
 
-def seeds_from_primary(monitor, runner):
+def tx_blocks(monitor, runner):
     """Blocks of the transactions in the run's execution records (read-only export over SSM)."""
     _, stdout = runner(TX_EXPORT)
     hashes = [row['tx_hash'] for row in map(json.loads, filter(None, stdout.splitlines())) if row.get('section') == 'tx']
@@ -127,22 +128,39 @@ def _poll(monitor_dir, seed_blocks, runner, settings):
     monitor = chain_monitor(monitor_dir)
     configure(monitor, settings)
     state = monitor.load_state()
-    if state['block'] is None and not seed_blocks:
-        seed_blocks = seeds_from_primary(monitor, runner)
-    if state['block'] is None and seed_blocks:
-        scan = monitor.wallet_txs
+    scan, read = monitor.wallet_txs, monitor.balances
 
-        def seeded(start, end):
-            blocks = monitor.rpc(None, None, batch=[('eth_getBlockByNumber', [hex(n), True]) for n in seed_blocks])
-            found = [t for b in blocks for t in (b or {}).get('transactions', []) if t['from'].lower() == monitor.WALLET]
+    def wallet_txs(start, end):
+        """New transactions from known blocks (IDEA-091 C5): the seeds and the run's execution records. The monitor's
+        own scan of every block since the last poll runs only when a nonce is still missing (a transaction the agent
+        did not make); thousands of full blocks per hour made the public node refuse the reads that follow."""
+        known = set(seed_blocks)
+        try:
+            known |= set(tx_blocks(monitor, runner))
+        except Exception:  # no SSM access: the monitor scans as before
+            pass
+        blocks = sorted(b for b in known if b <= end and (state['block'] is None or b >= start))
+        found = [t for b in (monitor.rpc(None, None, batch=[('eth_getBlockByNumber', [hex(n), True]) for n in blocks])
+                             if blocks else [])
+                 for t in (b or {}).get('transactions', []) if t['from'].lower() == monitor.WALLET]
+        try:
+            nonce = int(monitor.rpc('eth_getTransactionCount', [monitor.WALLET, hex(end)]), 16)
+        except (RuntimeError, OSError, ValueError, TypeError):
+            nonce = None  # unknown: scan
+        if nonce is not None and {int(t['nonce'], 16) for t in found} >= set(range(state['nonce'], nonce)):
+            return found
+        return found + scan(start, end)
+
+    def balances(tag):
+        """The monitor's balance read, retried after short pauses: a public node refuses reads now and then."""
+        for wait in BALANCE_RETRY_S:
+            time.sleep(wait)
             try:
-                nonce = int(monitor.rpc('eth_getTransactionCount', [monitor.WALLET, hex(end)]), 16)
-            except (RuntimeError, OSError, ValueError, TypeError):
-                nonce = None  # unknown: scan
-            if nonce is not None and {int(t['nonce'], 16) for t in found} >= set(range(state['nonce'], nonce)):
-                return found  # the seeds hold every transaction up to `end`
-            return found + scan(max(seed_blocks) + 1, end)  # else also scan after the last seed
-        monitor.wallet_txs = seeded
+                return read(tag)
+            except RuntimeError as error:
+                refused = error
+        raise refused
+    monitor.wallet_txs, monitor.balances = wallet_txs, balances
     snap, alerts = monitor.poll(state)
     if settings.get('start_usdt') is not None:
         snap = restate_opening(monitor_dir, settings['start_usdt'])

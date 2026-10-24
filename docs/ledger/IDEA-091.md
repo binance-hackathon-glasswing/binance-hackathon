@@ -104,3 +104,16 @@ rate limiting after the scan.
 | # | Pass when | How |
 |---|---|---|
 | C5 | When the nonce moves, the poll takes the new transactions' blocks from the run's execution records (read-only `tx-export`) and scans no blocks when they cover every nonce; it falls back to the monitor's scan only when a nonce is still missing; a refused balance read is retried after short pauses; the job then completes against run 4 | refresh tests with a fake monitor; one real run |
+
+### Results E1–E3, C1–C5 (2026-10-24)
+
+| # | Result | Evidence |
+|---|---|---|
+| E1 | **pass** | `tests/test_dashboard_incremental.py`: rows oldest first, cursor (`last_seq`) and `complete`; a 2,200-byte budget trims and the next export brings the rest; a round planned earlier gets a closure line; the database part uses a named cursor, `itersize` 20, `sequence>%s` and no `fetchall`. Isaac's read-only check accepts `cur.execute` alongside `db.execute`. |
+| E2 | **pass** | Exports of a journal growing in five steps, merged with the stored cursor and a small budget, give the same `decisions.jsonl` as one full export; cursor 11; closures applied. |
+| E3 | **pass** | 1,000 events behind the cursor and 5 new: 5 batches decoded. |
+| C1 | **pass** | `tests/test_dashboard_cloudflare.py` with a fake wrangler: exactly `_headers`, `data.json`, `index.html`, production branch `main`; no deploy after a failed refresh; an overlapping run does nothing; missing credentials stop before any work; a failed deploy never shows the token; wallet settings reach the refresh. |
+| C2 | **pass** | `_headers`: `/*` with `Cache-Control: no-store`, `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer`. |
+| C3 | **pass** | `wrangler@4.145.0` (exact; published 2026-09-30, checked on npm). |
+| C4 | open | Keith, at setup (guide in `docs/build/DASHBOARD.md`). |
+| C5 | **pass** | Refresh tests with a fake monitor that fails on a block scan. Real run, 11:51Z: the nonce had moved 12 → 14 (BUY TSLAB 18.924816); the refresh took 14 s with no block scan and no alerts, and the incremental export caught up to sequence 88 (25 rounds, complete). The Cloudflare job on that state (fake wrangler): 5 s, the three files deployed, no `__pycache__` in the run-sheet folder. |
