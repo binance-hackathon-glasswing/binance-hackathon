@@ -439,3 +439,7 @@ depend on it. Owner for a decision: Keegan (driver) with Keith (S1 timing).
 quote was requested: the planner reserves the next leg's attempt in the same plan that already carries the SKHYB
 intent, and the driver then skips the quote. With 5 attempts per leg this costs one attempt per name; with S1's 3 it
 would matter more.
+
+**Decision (Yao, in chat, 2026-10-24 06:3xZ):** "yes update that we want to fix our final strategy as well". S2-F2 is
+to be fixed before the final run, not accepted as a limit; Yao informs the team. Backlog line S2-F2 in
+`docs/INCOMPLETE_WORK.md`.
