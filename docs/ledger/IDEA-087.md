@@ -184,3 +184,19 @@ PR274-RV01 also retains actual quote-follow-up round IDs (`/quoteN`, with option
 full-detail builder. The original round-ID filter excluded slash and silently dropped execution-bearing rounds.
 Only the specific driver suffix grammar is added; arbitrary slash paths, URLs and hex-bearing IDs remain refused.
 Default redacted pages still omit round IDs. A synthetic regression verifies order counts and both rendering modes.
+
+### DX on real data: first export from run 4 (2026-10-24 ~10:30Z)
+
+- `tools/dashboard/decisions-export.sh 40` over SSM on the run-4 primary (read-only; commands `0047c475…`,
+  `d6c09030…` and, with Isaac's PR274-RV01 export, `fb1593aa…`), from a Claude Code session as IAM user
+  `larp-claude-session`. The first run exported 11 of 21 rounds: the round-ID allow-list dropped every quote follow-up
+  (`…#1/quote1`), the rounds that carry the orders. Fixed in `003604e8` and independently in PR274-RV01 (Isaac's
+  stricter `/quoteN` pattern kept at the merge); after the fix 21 of 21 rounds, 19,166 bytes.
+- Trades: the RC7 chain monitor, one poll seeded with run 4's eight known transaction blocks (no Web3 key here, so
+  no prices or equity): nonces 4–11, 3 swaps (SKHYB, GOOGLB, NVDAB), 0 alerts, USDT 39.199138.
+- Build: redacted page has no `0x…` identifier; headless Chromium at 1200 and 390 px, no console messages, no
+  horizontal scroll, 21 decision rows, 8 transactions. Two page fixes came from it (`IDEA-087 DX: group equal policy
+  targets…`): repeated equal targets are grouped, and "Round status" / "Planned orders" no longer read like fills.
+- Limits seen: "Seen (UTC)" is the poll that found a transaction, so a monitor started late shows its start time for
+  all earlier transactions; equity and drawdown need the read-only Web3 key on the monitor machine. Not published
+  (PAGES01).
