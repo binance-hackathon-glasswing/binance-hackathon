@@ -1,4 +1,6 @@
-"""IDEA-093 S4-1..S4-8: the final 24/7 profile (KIT_OPEN_STATE hours in a live FINAL). Synthetic ports; no keys or network."""
+"""IDEA-093: FS1, the final live solution (S4-1..S4-8, S4R-1..S4R-4, FS1-1..FS1-6). Synthetic ports; no keys or network.
+
+S4 was renamed FS1 (and S4-R FS1-R); the criteria IDs keep their pre-registered names."""
 from copy import deepcopy
 import hashlib
 import json
@@ -19,11 +21,11 @@ from tests.strategy.test_execution_bounds import at, milliseconds, run
 from tests.strategy.test_s1_core import block
 
 ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE = ROOT / 'docs/build/evidence/s4-final-profile-20261025'
-BLOCK, PROFILE = EVIDENCE / 's4-block.json', EVIDENCE / 'final-s4.json'
+EVIDENCE = ROOT / 'docs/build/evidence/fs1-final-20261025'
+BLOCK, PROFILE = EVIDENCE / 'fs1-block.json', EVIDENCE / 'fs1-final.json'
 WINDOW = ('trade_after', 'new_risk_end', 'flatten_start', 'signing_end')
 PF04 = ['2026-10-29T14:00:00Z', '2026-11-09T21:00:00Z', '2026-11-10T19:00:00Z', '2026-11-11T14:45:00Z']
-S4 = dict(s1=block(execution=dict(s2.EXECUTION, hours='KIT_OPEN_STATE')))
+FS1 = dict(s1=block(execution=dict(s2.EXECUTION, hours='KIT_OPEN_STATE')))
 # A synthetic Friday session (open 13:30Z, close 20:00Z) whose next open is Monday 13:30Z: the weekend is one session.
 FRIDAY_OPEN, FRIDAY_CLOSE, MONDAY_OPEN = '2026-10-09T13:30:00Z', '2026-10-09T20:00:00Z', '2026-10-12T13:30:00Z'
 SATURDAY, SUNDAY = '2026-10-10T23:00:00Z', '2026-10-11T12:00:00Z'
@@ -34,11 +36,11 @@ def profile():
 
 
 def final_scope(p=None):
-    """A FINAL with the decided v1 scope and S4's hours (the committed profile unless given)."""
+    """A FINAL with the decided v1 scope and FS1's hours (the committed profile unless given)."""
     return deepcopy(p or profile())
 
 
-def weekend(value, profile_changes=S4):
+def weekend(value, profile_changes=FS1):
     """A round at `value` in the weekend session. The risk day is `value`'s UTC day, as the runtime's day roll leaves
     it (S2-12: without the roll a Sunday buy is NEW_RISK_HALTED)."""
     session = at(value).context.read()['session_index']
@@ -99,7 +101,7 @@ def test_s4_2_planner_buys_overnight_and_at_the_weekend_with_open_state_hours():
         assert item['execution_bounds'] == dict(schema=bounds.SCHEMA, session_index=session['index'],
             leg='DISCRETIONARY:BUY:' + item['symbol'], ordinal=1, valid_from_ms=milliseconds(FRIDAY_OPEN),
             valid_until_ms=milliseconds(MONDAY_OPEN))
-        # S1's NYSE hours refuse the same snapshot (the S2-era limit S4 removes).
+        # S1's NYSE hours refuse the same snapshot (the S2-era limit FS1 removes).
         refused = run(weekend(value, s2.NYSE))
         assert not refused['intents'] and 'EXECUTION_WINDOW_CLOSED' in {r['reason'] for r in refused['rejections']}
 
@@ -112,9 +114,9 @@ def test_s4_2_openstate_and_the_profile_window_still_apply():
             market[key] = False
         closed = run(changed(snapshot, markets=markets))
         assert not closed['intents'] and 'MARKET_CLOSED_OR_UNKNOWN' in {r['reason'] for r in closed['rejections']}, key
-    late = run(weekend(SATURDAY, dict(S4, new_risk_end='2026-10-10T22:00:00Z')))
+    late = run(weekend(SATURDAY, dict(FS1, new_risk_end='2026-10-10T22:00:00Z')))
     assert not late['intents'] and not late['quote_requests'] and not late['execution_attempts']
-    early = run(weekend(SATURDAY, dict(S4, trade_after='2026-10-11T00:00:00Z')))
+    early = run(weekend(SATURDAY, dict(FS1, trade_after='2026-10-11T00:00:00Z')))
     assert not early['intents'] and not early['quote_requests'] and not early['execution_attempts']
 
 
@@ -180,7 +182,7 @@ def test_s4_6_profile_rebuilds_byte_for_byte_and_carries_the_final_values():
     assert p['s1']['weights'] == {s: [1, 5] for s in TOKENS}
     assert p['s1']['execution'] == dict(open_delay_seconds=1800, close_buffer_seconds=900,
                                         max_attempts_per_leg_session=5, hours='KIT_OPEN_STATE')
-    assert (p['slippage_bps'], p['policy_id']) == (20, 'larp-s4-final-v1')
+    assert (p['slippage_bps'], p['policy_id']) == (20, 'larp-fs1-final-v1')
     assert [p[k] for k in WINDOW] == PF04
     assert (p['evidence_mode'], p['falsifier_authority']) == ('BOUNDED_FALSIFIER', 'DISCRETIONARY_EXIT')
     assert bounds.open_state_hours(p)
@@ -275,9 +277,9 @@ def test_s4_8_execution_start_passes_the_scope_in_live_and_refuses_dev():
         fixture.doCleanups()
 
 
-# --- IDEA-093 S4R-1..S4R-4: the dev REHEARSAL with S4's settings ---------------------------------------------------
+# --- IDEA-093 S4R-1..S4R-4: FS1-R, the dev REHEARSAL with FS1's settings ---------------------------------------------------
 
-REHEARSAL = ROOT / 'docs/build/evidence/s4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json'
+REHEARSAL = ROOT / 'docs/build/evidence/fs1-rehearsal-20261025/fs1-rehearsal.json'
 S4R_WINDOW = ['2026-10-25T16:00:00Z', '2026-10-26T06:00:00Z', '2026-10-26T07:00:00Z', '2026-10-26T12:00:00Z']
 
 
@@ -289,7 +291,7 @@ def rehearsal_build(**options):
 
 def test_s4r_1_rehearsal_rebuilds_and_passes_dev_preparation_and_runtime_build():
     raw = REHEARSAL.read_bytes()
-    assert rehearsal_build(s4_rehearsal=True).payload + b'\n' == raw
+    assert rehearsal_build(fs1_rehearsal=True).payload + b'\n' == raw
     p = json.loads(raw)
     validate_live(p)
     from larp.runtime import gate_a_check
@@ -305,14 +307,14 @@ def test_s4r_2_differs_from_s2_only_in_slippage_window_and_policy_and_keeps_the_
     s2p = json.loads(s2.PROFILE.read_bytes())
     changed_keys = {*WINDOW, 'slippage_bps', 'policy_id'}
     assert {k for k in set(p) | set(s2p) if p.get(k) != s2p.get(k)} == changed_keys | {'provenance'}
-    # `baseline` and `s1` share the block's decision ID, which names S4-R; the block bytes are S2's (same data hash).
+    # `baseline` and `s1` share the block's decision ID, which names FS1-R; the block bytes are S2's (same data hash).
     assert {k for k in p['provenance'] if p['provenance'][k] != s2p['provenance'][k]} == changed_keys | {'s1', 'baseline'}
     for key in ('s1', 'baseline'):
         assert {k for k in p['provenance'][key] if p['provenance'][key][k] != s2p['provenance'][key].get(k)} \
             == {'decision_id'}, key
     assert p['provenance']['s1']['data_hash'] == hashlib.sha256(BLOCK.read_bytes()).hexdigest()
     assert [p[k] for k in WINDOW] == S4R_WINDOW
-    assert (p['slippage_bps'], p['policy_id']) == (20, 'larp-s4-rehearsal-v1')
+    assert (p['slippage_bps'], p['policy_id']) == (20, 'larp-fs1-rehearsal-v1')
     assert p['s1'] == profile()['s1']
     assert (p['environment'], p['evidence_mode'], p['falsifier_authority']) == ('REHEARSAL', 'SHADOW', 'SHADOW')
 
@@ -329,11 +331,11 @@ def test_s4r_4_builder_refusals_and_s2_s3_unchanged():
     value = json.loads(BLOCK.read_bytes())
     nyse = dict(value, execution={k: v for k, v in value['execution'].items() if k != 'hours'})
     with pytest.raises(ContractError):
-        build(2, s1_raw=json.dumps(nyse).encode(), s1_decision='synthetic', s4_rehearsal=True)
+        build(2, s1_raw=json.dumps(nyse).encode(), s1_decision='synthetic', fs1_rehearsal=True)
     with pytest.raises(ContractError):
-        build(2, s4_rehearsal=True)
+        build(2, fs1_rehearsal=True)
     with pytest.raises(ContractError):
-        rehearsal_build(s4_rehearsal=True, scheduled_flatten_at='2026-10-26T00:00:00Z')
+        rehearsal_build(fs1_rehearsal=True, scheduled_flatten_at='2026-10-26T00:00:00Z')
     s2raw = s2.PROFILE.read_bytes()
     assert build(2, s1_raw=s2.BLOCK.read_bytes(),
                  s1_decision=json.loads(s2raw)['provenance']['s1']['decision_id']).payload + b'\n' == s2raw
@@ -341,3 +343,165 @@ def test_s4r_4_builder_refusals_and_s2_s3_unchanged():
     s3raw = s3.read_bytes()
     assert build(2, s1_raw=s2.BLOCK.read_bytes(), s1_decision=json.loads(s3raw)['provenance']['s1']['decision_id'],
                  scheduled_flatten_at=json.loads(s3raw)['scheduled_flatten_at']).payload + b'\n' == s3raw
+
+
+# --- FS1-2..FS1-6: the final live solution with AIand/ChatGPT routing ----------------------------------------------
+
+ROUTING = ROOT / 'config/intelligence/aiand-routing.fs1.json'
+REPAIR = ROOT / 'config/intelligence/aiand-routing.repair.example.json'
+
+
+def live_prepared(p, routing=ROUTING, **changes):
+    from unittest.mock import patch
+    from tests.runtime.test_gate_a import assembled
+    options = {} if routing is None else dict(model_routing_raw=routing.read_bytes(),
+                                              model_routing_sha256=hashlib.sha256(routing.read_bytes()).hexdigest())
+    with patch('socket.create_connection', side_effect=AssertionError('no model/network')):
+        return assembled(profile_raw=json.dumps(p).encode(), execution='service', runtime_mode='live',
+                         adoption_ref='SYNTHETIC IDEA-093 FS1', **options, **changes)
+
+
+def test_fs1_2_routing_is_the_v4_repair_without_the_trial_and_chatgpt_leads():
+    from larp.intelligence.routing import validate_routing_spec
+    spec = json.loads(ROUTING.read_bytes())
+    validate_routing_spec(spec)
+    repair = json.loads(REPAIR.read_bytes())
+    assert 'openai_trial' in repair and 'openai_trial' not in spec
+    assert spec == {k: v for k, v in repair.items() if k != 'openai_trial'}
+    assert (spec['schema'], spec['openai_model']) == ('AIandRouting.v4', 'gpt-6.1-sol')
+    assert [e['model_id'] for e in spec['external_reviewers']] == ['moonshotai/kimi-k3', 'zai-org/glm-5.3']
+    pacing, p = spec['openai_pacing'], profile()
+    assert pacing['start_ms'] <= milliseconds(p['trade_after']) and milliseconds(p['signing_end']) < pacing['end_ms']
+
+
+def test_fs1_3_signed_live_preparation_with_routing_passes_the_gate_check():
+    from larp.runtime import gate_a_check
+    files = live_prepared(profile())
+    values = {n: json.loads(raw) for n, raw in files.items() if n.endswith('.json')}
+    runtime, report = values['runtime.json'], values['preparation-report.json']
+    assert runtime['mode'] == 'live'
+    assert (runtime['driver']['assessor'], runtime['driver']['execution']) == ('aiand_routed', 'service')
+    assert runtime['driver']['model_routing_sha256'] == hashlib.sha256(ROUTING.read_bytes()).hexdigest()
+    assert files['model-routing.json'] == ROUTING.read_bytes()
+    assert report['model_routing']['routine'] == 'gpt-6.1-sol'
+    assert values['strategy-profile.json'] == profile()
+    gate_a_check.check_scope(values, report)
+    gate_a_check.check_inputs(files, values)
+    for routing in (None, REPAIR):  # no routing, or the v4 example that still carries the expired trial
+        with pytest.raises(ContractError):
+            live_prepared(profile(), routing=routing)
+
+
+def test_fs1_4_runtime_starts_live_with_the_routed_assessor():
+    from unittest.mock import patch
+    from larp.intelligence.model_budget import ModelBudget
+    from larp.intelligence.routing import RoutedAssessor
+    from larp.runtime import gate_a
+    from larp.runtime.service import build_driver
+    from tests.runtime.test_driver import Composition, Store
+    fixture = Composition(); fixture.setUp()
+    try:
+        raw = ROUTING.read_bytes()
+        (fixture.root / 'routing.json').write_bytes(raw)
+        spec = json.loads(raw)
+        pacing = spec['openai_pacing']  # a paced (v3/v4) spec opens its ledger with the pacing total and no reserve
+        ModelBudget.initialize(fixture.root / 'openai-budget.sqlite', spec['budget_account'],
+                               initial_spent=pacing['prior_spent_micro_usd'], total=pacing['total_micro_usd'],
+                               reserve=0, pacing=pacing)
+        cfg = fixture.config(execution='service', intelligence_mode='live', expiry_grace_ms=5000,
+                             assessor='aiand_routed', model_routing_file=str(fixture.root / 'routing.json'),
+                             model_routing_sha256=hashlib.sha256(raw).hexdigest(),
+                             model_budget_root=str(fixture.root), model_adoption_ref='SYNTHETIC IDEA-093 FS1')
+        base = json.loads((gate_a.ROOT / 'config/runtime/runtime.example.json').read_bytes())['driver']
+        for key in ('balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps'):
+            cfg['driver'][key] = base[key]
+        cfg['driver']['balance_rpc_providers'] = [dict(url='https://rpc.invalid/', source_id='synthetic-rpc')]
+        (fixture.root / 'profile.json').write_bytes(PROFILE.read_bytes())
+        cfg['driver']['strategy_profile_sha256'] = gate_a.digest(PROFILE.read_bytes())
+        cfg['mode'] = 'live'
+        secrets = dict(fixture.secrets, LARP_AIAND_API_KEY='synthetic-aiand-runtime-key')
+        with patch('socket.create_connection', side_effect=AssertionError('No network during construction')):
+            runtime = build_driver(cfg, Store(), secrets)
+        runtime.ports['evidence'].close()
+        from larp.runtime.driver import ServiceExecution
+        assert isinstance(runtime.coordinator.assessor, RoutedAssessor)
+        assert isinstance(runtime.execution, ServiceExecution)  # signing itself starts only at run activation
+    finally:
+        fixture.doCleanups()
+
+
+def test_fs1_5_a_verified_model_assessed_4_02_finding_sells_the_name_at_the_weekend():
+    """The assessment path FS1 uses (synthetic model in place of AIand): a verified Item 4.02 finding on a held name
+    gives an EXIT target, and the planner makes it a mandatory SELL on a Saturday, under FS1's settings."""
+    from dataclasses import replace as replaced
+    from datetime import datetime, timedelta, timezone
+    from larp.contracts import TargetKind
+    from larp.integration.contract import build_evidence_context
+    from larp.integration.runtime import ContextBuilder, initial_projection
+    from larp.intelligence.agent import context_hash
+    from larp.intelligence.gate import accept, consume, initial_state
+    from larp.intelligence.scenarios import EXSEMI
+    from larp.research.fixtures import snapshot
+    from larp.risk.planner import plan
+    from larp.strategy.policy import decide
+    from larp.strategy.schema import instant
+    from tests.intelligence.test_red_flags import Run
+    p = profile()
+    run = Run('RF1-4.02-SUPPORTED')
+    original = run.state['context']
+    result = run.assess('RF1-4.02-SUPPORTED')
+    s = snapshot(held={'NVDAB': 2000}, now=instant('2026-10-10T14:00:00Z'), profile_changes={
+        'baseline': p['baseline'], 's1': p['s1'], 'red_flag_policy': p['red_flag_policy'],
+        'falsifier_ids': p['falsifier_ids'], 'red_flag_authority': p['red_flag_authority'],
+        'evidence_mode': p['evidence_mode'], 'falsifier_authority': p['falsifier_authority']})
+    now = datetime.fromtimestamp(result['completed_ms'] / 1000, timezone.utc)
+    s = replaced(s, observed_at=now)
+    result.update(run_id=s.run_id, policy_profile_hash=s.policy_profile_hash)
+    state = dict(initial_state(EXSEMI, s.policy_profile_hash), context=original, context_hash=context_hash(original))
+    decision, state = accept(state, Document.from_dict(result), profile_hash=s.policy_profile_hash,
+                             now_ms=result['completed_ms'])
+    assert decision == 'ACCEPT'
+    record = build_evidence_context(consume(state, result['completed_ms']), state, run_id=s.run_id, token='NVDAB',
+                                    underlying_id=EXSEMI, policy_profile_hash=s.policy_profile_hash)
+    c = s.context.read()
+    for m in c['markets']:
+        m['observed_at'] = m['available_at'] = m['close_at'] = now.isoformat()
+        if m['symbol'] == 'NVDAB':
+            m['underlying_id'] = EXSEMI
+    friday = (now - timedelta(days=1)).replace(hour=13, minute=30, second=0, microsecond=0)
+    session = dict(index=c['session_index'], open_ms=int(friday.timestamp() * 1000),
+                   close_ms=int((friday + timedelta(hours=6, minutes=30)).timestamp() * 1000),
+                   next_open_ms=int((friday + timedelta(days=3)).timestamp() * 1000))
+    assert session['close_ms'] < result['completed_ms'] < session['next_open_ms']  # after Friday's close
+    s = changed(s, markets=c['markets'], assessments=[record], execution_session=session)
+    proposal = decide(s, s.policy_state)
+    assert next(t for t in proposal.targets if t.symbol == 'NVDAB').kind is TargetKind.EXIT
+    builder = ContextBuilder(profile=c['profile'], profile_hash=s.policy_profile_hash, run_id=s.run_id, issuers={},
+                             market=None, health=None, calendar=None, universe=s.universe)
+    current = {'run_id': s.run_id, 'wallet_id': s.wallet_id, 'projection': initial_projection(c['portfolio']),
+               'policy_state': s.policy_state.record(), 'reservations': []}
+    reductions = builder._reductions([record], current, {'NVDAB': 2000}, c['markets'], result['completed_ms'])
+    assert reductions == [{'symbol': 'NVDAB', 'max_units': 0, 'reason': 'CLASS_1_EXIT'}]
+    planned = plan(with_quotes(changed(s, reduction_constraints=reductions)), None).read()
+    assert (planned['intents'][0]['symbol'], planned['intents'][0]['side'], planned['intents'][0]['mandatory']) == (
+        'NVDAB', 'SELL', True)
+
+
+def test_fs1_6_install_refuses_a_wallet_holding_stock_and_fs1_has_no_scheduled_flatten():
+    """S3 lesson 1 (IDEA-092 H1): a new run's install refuses any stock, so the final wallet must be stock-free at install
+    and the scored run must stay one run; FS1 sells by rule and in the terminal flatten, never on a schedule."""
+    from larp.runtime import gate_a
+    from tests.runtime.test_gate_a import captured, rehash
+    from larp.marketdata.port import TOKENS as CONTRACTS
+    p = profile()
+    assert 'scheduled_flatten_at' not in p
+    flat = captured()
+    state = gate_a.initial_state(flat, p, 'fs1-run')
+    assert all(position['units'] == 0 for position in state['positions'].values())
+    for symbol in sorted(CONTRACTS):
+        held = captured()
+        held['balances']['response']['data'][0]['tokenAssets'].append(
+            dict(tokenContractAddress=CONTRACTS[symbol], rawBalance='1'))  # dust counts too (H2)
+        rehash(held)
+        with pytest.raises(ContractError):
+            gate_a.initial_state(held, p, 'fs1-run')

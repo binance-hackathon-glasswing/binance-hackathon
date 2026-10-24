@@ -1,4 +1,4 @@
-"""IDEA-093 S4: offline FINAL profile for the scored run, 24/7 under the kit's openState; no ports or installation.
+"""IDEA-093 FS1: offline FINAL profile for the scored run, 24/7 under the kit's openState; no ports or installation.
 
 S1 (TREND_GUARDED_VOL) with the decided v1 FINAL scope (BOUNDED_FALSIFIER evidence, DISCRETIONARY_EXIT falsifiers),
 built from the same pinned inputs as S2 (IDEA-089), plus:
@@ -18,42 +18,42 @@ from larp.strategy.profiles import validate_live
 from larp.strategy.schema import ceil, fraction
 from tools.deploy.build_rehearsal_candidate import gas_formulas, pinned_profiles
 
-DECISION = 'IDEA-093 S4 (2026-10-25)'
+DECISION = 'IDEA-093 FS1 (2026-10-25)'
 # IDEA-084 PF-04 (adopted): first buy Oct 29 14:00, new risk ends Nov 9 21:00, flatten Nov 10 19:00, signing ends
 # Nov 11 14:45, all UTC; flat-by target Nov 11 15:00.
 PF04_WINDOW = dict(trade_after='2026-10-29T14:00:00Z', new_risk_end='2026-11-09T21:00:00Z',
                    flatten_start='2026-11-10T19:00:00Z', signing_end='2026-11-11T14:45:00Z')
 SLIPPAGE_BPS = 20
-POLICY_ID = 'larp-s4-final-v1'
+POLICY_ID = 'larp-fs1-final-v1'
 EXIT_CHILDREN = 2
 
 
 def s4_block(raw):
-    """The S4 block from its exact bytes: weights 1/5, deterministic limiter, KIT_OPEN_STATE hours, 5 attempts."""
+    """The FS1 block from its exact bytes: weights 1/5, deterministic limiter, KIT_OPEN_STATE hours, 5 attempts."""
     if type(raw) is not bytes:
-        raise ContractError('S4 configuration must be the exact file bytes')
+        raise ContractError('FS1 configuration must be the exact file bytes')
     try:
         block = json.loads(raw)
     except (TypeError, ValueError):
-        raise ContractError('S4 configuration must be a JSON object') from None
+        raise ContractError('FS1 configuration must be a JSON object') from None
     if type(block) is not dict or type(block.get('weights')) is not dict:
-        raise ContractError('S4 configuration must be a JSON object with weights')
+        raise ContractError('FS1 configuration must be a JSON object with weights')
     if any(fraction(w) != Fraction(1, 5) for w in block['weights'].values()):
-        raise ContractError('S4 weights must be 1/5 each (IDEA-091 rank 2, IDEA-093)')
+        raise ContractError('FS1 weights must be 1/5 each (IDEA-091 rank 2, IDEA-093)')
     # The runtime never sets exposure_assessment, so a MODEL limiter would never move (SJ-11-RH01-L1).
     if block.get('limiter_mode') != 'DETERMINISTIC':
-        raise ContractError('S4 needs limiter_mode DETERMINISTIC')
+        raise ContractError('FS1 needs limiter_mode DETERMINISTIC')
     execution = block.get('execution')
     if type(execution) is not dict or execution.get('hours') != 'KIT_OPEN_STATE':
-        raise ContractError('S4 trades 24/7: s1.execution.hours must be KIT_OPEN_STATE (IDEA-093)')
+        raise ContractError('FS1 trades 24/7: s1.execution.hours must be KIT_OPEN_STATE (IDEA-093)')
     if execution.get('max_attempts_per_leg_session') != 5:
-        raise ContractError('S4 sets max_attempts_per_leg_session to 5: one session spans a weekend (IDEA-089 S2-9)')
+        raise ContractError('FS1 sets max_attempts_per_leg_session to 5: one session spans a weekend (IDEA-089 S2-9)')
     return block
 
 
 def build(*, s1_raw, s1_decision):
     if type(s1_decision) is not str or not s1_decision.strip():
-        raise ContractError('An S4 block and the decision behind it go together')
+        raise ContractError('An FS1 block and the decision behind it go together')
     block = s4_block(s1_raw)
     # The shared generator validates its profiles before the hours are set; the hours go on with the final values.
     base = dict(block, execution={k: v for k, v in block['execution'].items() if k != 'hours'})
@@ -63,10 +63,10 @@ def build(*, s1_raw, s1_decision):
     # The caps review reserves every position's balanced exit at the hard name line (LD10-P03 D3), as for S2.
     from larp.strategy.s1 import config
     if exit_parts(ceil(config(p)['hard'] * p['expected_equity_units']), p['per_trade_cap_units']) > EXIT_CHILDREN:
-        raise ContractError('The S4 hard name line needs more exit children than the reserve covers')
+        raise ContractError('The FS1 hard name line needs more exit children than the reserve covers')
     p['exit_gas_reserve_units'] = 5 * EXIT_CHILDREN * p['gas_action_budget_units']
     p['provenance']['exit_gas_reserve_units'] = dict(p['provenance']['exit_gas_reserve_units'],
-        decision_id='IDEA-049-C LD10-P03 (Keegan delegation, 2026-10-21); IDEA-093 S4',
+        decision_id='IDEA-049-C LD10-P03 (Keegan delegation, 2026-10-21); IDEA-093 FS1',
         formula='5 positions*2 balanced exit children*gas_action_budget_units; cleanup disabled')
     p['s1'] = block
     p.update(PF04_WINDOW, slippage_bps=SLIPPAGE_BPS, policy_id=POLICY_ID)
@@ -78,7 +78,7 @@ def build(*, s1_raw, s1_decision):
         formula='20 bp (<= 50): measured max p90 requote drift was 8 bp, and 3 of 4 run-4 buys aborted at the '
                 'post-approve requote under it (S2-F6, IDEA-090 F16)')
     p['provenance']['policy_id'] = dict(decision_id=DECISION,
-        formula='Final scored-run strategy: S1 with 24/7 KIT_OPEN_STATE hours under openState, live FINAL only')
+        formula='FS1, the final scored-run strategy: S1 with 24/7 KIT_OPEN_STATE hours under openState, live FINAL only')
     validate_live(p)
     return Document.from_dict(p)
 
@@ -86,7 +86,7 @@ def build(*, s1_raw, s1_decision):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--s1-config', type=Path, required=True, help='the S4 block (JSON)')
+    parser.add_argument('--s1-config', type=Path, required=True, help='the FS1 block (JSON)')
     parser.add_argument('--s1-decision', required=True, help='decision ID for the supplied block')
     args = parser.parse_args(argv)
     p = build(s1_raw=args.s1_config.read_bytes(), s1_decision=args.s1_decision)

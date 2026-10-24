@@ -6,7 +6,7 @@ Mandatory sales use a separate lane and bypass the discretionary time window.
 
 IDEA-089 S2: `execution.hours` KIT_OPEN_STATE gives discretionary legs the mandatory lane's interval (session open
 to the next open), for both the planner and execution admission. It is allowed in a dev REHEARSAL (S2-1) and in the
-live FINAL (IDEA-093 S4); the planner's `openState` check (F-95) and the profile window still apply.
+live FINAL (IDEA-093 FS1); the planner's `openState` check (F-95) and the profile window still apply.
 """
 from larp.contracts import ContractError, Document
 from .schema import SYMBOLS, integer
@@ -17,7 +17,7 @@ SCHEMA = 'S1ExecutionBounds.v1'
 
 HOURS = ('NYSE_SESSION', 'KIT_OPEN_STATE')
 SCOPE = ('KIT_OPEN_STATE hours need a dev REHEARSAL with SHADOW evidence and falsifiers (IDEA-089 S2-1) '
-         'or a live FINAL with the decided v1 scope (IDEA-093 S4)')
+         'or a live FINAL with the decided v1 scope (IDEA-093 FS1)')
 
 
 def parameters(value):
@@ -47,7 +47,7 @@ def require_open_state_scope(profile, mode):
     profile; preparation, the gate check and both service starts pass their run mode.
 
     - S2-1 (IDEA-089): a REHEARSAL with SHADOW evidence and falsifiers, in a `dev` run.
-    - S4 (IDEA-093, F-119 "Orders can be placed 24/7"): a FINAL with the decided v1 scope (BOUNDED_FALSIFIER
+    - FS1 (IDEA-093, F-119 "Orders can be placed 24/7"): a FINAL with the decided v1 scope (BOUNDED_FALSIFIER
       evidence, DISCRETIONARY_EXIT falsifiers, SHADOW statements), in a `live` run. The `openState` check (F-95)
       and the profile window still apply."""
     if not open_state_hours(profile):

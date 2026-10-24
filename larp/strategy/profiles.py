@@ -115,7 +115,7 @@ def validate_live(p):
                 or p["assessment_required"] is not False):
             raise ContractError("Live profile differs from decided v1 scope")
         from .execution_bounds import require_open_state_scope
-        require_open_state_scope(p, None)  # IDEA-089 S2-1 / IDEA-093 S4: 24/7 hours only in their decided scopes
+        require_open_state_scope(p, None)  # IDEA-089 S2-1 / IDEA-093 FS1: 24/7 hours only in their decided scopes
         from .scheduled_flatten import require_scope
         require_scope(p)  # IDEA-092 S3: a scheduled sell-all only on S2's REHEARSAL, inside the buy window
         # IDEA-035/037 fix these values; provenance alone cannot adopt a new policy.

@@ -1,4 +1,4 @@
-# IDEA-093 — S4: the final strategy, 24/7 with every S2 fix
+# IDEA-093 — FS1 (first built as S4): the final live solution, 24/7 with every S2 fix and AIand/ChatGPT routing
 
 - Date / author: 2026-10-25 SGT (2026-10-24 ~16:30Z) / team request in a Claude Code session on Keith's machine (request and the
   hours choice below); Claude Code (design, implementation, record). Strategy owner for review: Keith
