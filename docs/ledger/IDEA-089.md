@@ -88,3 +88,27 @@ final run.
 - Implementation: Yao's team (named in the PR). Review: Keegan.
 - Profile and `signer.json` approval: Isaac (A1).
 - Host, AWS and Terraform commands: Yao. No assistant key, signing, wallet or host action.
+
+## Pre-install observation: live quote check on Saturday (Yao, 2026-10-24 03:39Z)
+
+`tools/deploy/quote_check.py` (IDEA-088 A1, PR268 head `13bea958`), read-only, BUY 19 USDT per name, run-3 S1 profile
+`6bcf1dfb…`, policy `05759e90…`, public BNB Chain RPC; output kept in the git-ignored
+`deploy/activation/quote-check-20261024T0339Z.txt`.
+
+| Name | Status | `quote_at_cap` | `token_open` / `underlying_open` | Impact bps | Deadline after quote |
+|---|---|---|---|---|---|
+| NVDAB | `VERIFIED_EXECUTABLE`, exit 0 | accepted | true / true | 1 | 499 s |
+| GOOGLB | `VERIFIED_EXECUTABLE`, exit 0 | accepted | true / true | 1 | 500 s |
+| SKHYB | `VERIFIED_EXECUTABLE`, exit 0 | accepted | true / true | 1 | 499 s |
+| TSLAB | `VERIFIED_EXECUTABLE`, exit 0 | accepted | true / true | 1 | 500 s |
+| MSFTB | `VERIFIED_EXECUTABLE`, exit 0 | accepted | true / true | 0 | 499 s |
+
+Every quote: pay token USDT, receive token equal to the pinned contract in `larp.marketdata.port.TOKENS` (assistant
+check), amount 19e18, `native_value` 0, recipient `UNVERIFIED_UNTRUSTED_LAYOUT` (expected for the UNTRUSTED layout),
+slippage 8 bps, fee units 0, gas reserved 384000000000000 wei (`EXECUTION_FEE_AUTHORITY`), expected gas
+80004608000000 wei.
+
+**What it shows:** on Saturday 03:39Z, with the US market closed, the kit API reports `openState` true for every token
+and underlying market, and the venue returns executable quotes that pass the planner's own check. So F-95 does not
+stop S2 this weekend, and S2-6's quote condition holds now; it is re-run shortly before install. One weekend sample, not
+the 7-day GAP-44 measurement.
