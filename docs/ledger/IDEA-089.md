@@ -259,3 +259,18 @@ Next: K soak for run 3 (before R1p), Q1, M2, M3.
 - **M2:** bundle uploaded, `bytes: 98434594`, SSE `aws:kms`, `M2_DONE`.
 
 Next: M3 (before R1p).
+
+### M3 — run-4 recapture and signer.json: COVERED, awaiting A1 (Yao, 2026-10-24 05:22Z)
+
+Stamp `20261024T052155Z`, review at 05:22:31Z, run 3 still installed on primary (probe `8e8d6c89…` checked by the
+script). Bindings written for `2d16007` (run `larp-dev-rehearsal-20261024-s2`, database `larp_rehearsal4`).
+- `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`, only blocker `OWNER_REVIEW_REQUIRED`; ready, signing and
+  Gate B false.
+- 86/86 checks covered against the S2 profile (`eb55d76a…`, assistant hash of `profile.json`), gas scope INITIAL_ONLY,
+  no missing quote coverage (run 3 had 89 checks).
+- Holdings: 96000000 USDT units, 5325625054330011 BNB wei, five stocks 0, no reservations.
+- Candidate **`signer.json` `56e029afe93819b75edb39bd1b5b32e5a6cef2c4f9d7fcfcaff47007d3acc8c1`**; against run 3's
+  `49cb1a08…` it differs in exactly `build_id` (→ `2d160073…`), `database_name` (→ `larp_rehearsal4`) and `run_id`
+  (→ `larp-dev-rehearsal-20261024-s2`) (assistant field check).
+
+Next: A1 (Isaac): profile `eb55d76a…` and `signer.json` `56e029af…`.
