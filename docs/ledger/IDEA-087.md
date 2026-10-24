@@ -228,3 +228,11 @@ Default redacted pages still omit round IDs. A synthetic regression verifies ord
   safe-area gutter and has no `0x…` identifier; DR2 the known blocks are the monitor's transaction blocks. Result:
   `tests/test_dashboard_refresh.py` red on base (no module), then 2 passed; the converter reproduces the published
   version 1 page byte for byte; a real refresh (SSM command `c060c757…`) took 5 s with an unchanged nonce.
+- Sharing changed by the owner to "anyone with the link" (seen at the second publish, ~10:46Z). So the seed block
+  list is no longer published with the page (block numbers identify the wallet): it stays in the work folder, and a
+  new container seeds from the run's execution records (`tools/dashboard/tx-export.sh`, read-only). Cold start then
+  measured 11 s (8 transactions, 0 alerts); the monitor poll runs on a copy of its folder and is kept only on success,
+  because a poll that failed at the balance read (seen once, after a 2 min block scan) would otherwise book the same
+  transactions twice on the retry.
+- Version 2 published 10:46Z. Scheduled task "Hourly LARP dashboard refresh" (`trig_01HrkmwdUoR5YGpm6EbJacev`, cron
+  `47 * * * *`, first run 11:47Z) wakes the Claude Code session to refresh and republish; it runs until stopped.
