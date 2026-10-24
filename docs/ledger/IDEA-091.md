@@ -95,3 +95,12 @@ wallet's start nonce and opening USDT.
 | C2 | `_headers` sets `Cache-Control: no-store` and `X-Robots-Tag: noindex` for every path | job test |
 | C3 | The wrangler version is pinned exactly (no range or tag) | job test |
 | C4 | Operator (Keith): an Access application covers the project's production and preview hostnames before the first deploy | setup guide; checked once by hand |
+
+**Found in the first end-to-end run (2026-10-24 ~12:00Z), before its fix was written:** after a move of the nonce,
+the RC7 monitor scans every block since its last poll (about 6,000 full blocks, 20 per request) and the public node
+then refused the balance batch (`balance read refused`) on both attempts; run alone, the same read succeeds, so it is
+rate limiting after the scan.
+
+| # | Pass when | How |
+|---|---|---|
+| C5 | When the nonce moves, the poll takes the new transactions' blocks from the run's execution records (read-only `tx-export`) and scans no blocks when they cover every nonce; it falls back to the monitor's scan only when a nonce is still missing; a refused balance read is retried after short pauses; the job then completes against run 4 | refresh tests with a fake monitor; one real run |
