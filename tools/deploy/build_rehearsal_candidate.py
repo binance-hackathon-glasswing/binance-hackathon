@@ -43,6 +43,25 @@ def s1_block(raw):
     return block
 
 
+def pinned_profiles(**s1):
+    """`build_live_profiles` on the pinned measured inputs, L/m and initial-only gas budgets (also IDEA-093 S4)."""
+    def document(path):
+        return Document.from_dict(json.loads(path.read_bytes()))
+    authority = dict(seconds=660, margin=30, decision_id='IDEA-049-C LD04-V01 (Keegan, 2026-10-20)',
+        data_hash=hashlib.sha256((EVIDENCE / 'ld02-execution-packet-20261020.json').read_bytes()).hexdigest())
+    budget = dict(action_units=384000000000000, sizing_units=80004608000000,
+        decision_id='IDEA-049-C LD10-Q01 (Keegan delegation, 2026-10-21)',
+        data_hash=hashlib.sha256((EVIDENCE / 'signer-numeric-ceilings-20261021.json').read_bytes()).hexdigest())
+    return build_live_profiles(document(EVIDENCE / 'quotes-complete-20261020/quote-cost-summary.json'),
+        document(ROOT / 'config/intelligence/red_flags.v1.json'), initial_gas_only=True,
+        authority=authority, gas_budget=budget, **s1)
+
+
+def gas_formulas(p):
+    p['provenance']['gas_action_budget_units']['formula'] = '2*1200000 max signed child gas*160000000 max gas price; cleanup disabled'
+    p['provenance']['gas_sizing_budget_units']['formula'] = 'ceil(1000057*5/4) independently rounded child allowance at 64000000 expected gas price'
+
+
 def open_state(block):
     """IDEA-089 S2: the block sets KIT_OPEN_STATE hours (a weekend REHEARSAL test, never a final profile)."""
     return block is not None and type(block.get('execution')) is dict and block['execution'].get('hours') == 'KIT_OPEN_STATE'
@@ -67,19 +86,8 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
         # The shared builder validates its BOUNDED_FALSIFIER profiles, which S2-1 refuses; the hours are set below,
         # once the SHADOW scope is.
         base_s1 = dict(s1, execution={k: v for k, v in s1['execution'].items() if k != 'hours'})
-    def document(path):
-        return Document.from_dict(json.loads(path.read_bytes()))
-    authority = dict(seconds=660, margin=30, decision_id='IDEA-049-C LD04-V01 (Keegan, 2026-10-20)',
-        data_hash=hashlib.sha256((EVIDENCE / 'ld02-execution-packet-20261020.json').read_bytes()).hexdigest())
-    budget = dict(action_units=384000000000000, sizing_units=80004608000000,
-        decision_id='IDEA-049-C LD10-Q01 (Keegan delegation, 2026-10-21)',
-        data_hash=hashlib.sha256((EVIDENCE / 'signer-numeric-ceilings-20261021.json').read_bytes()).hexdigest())
-    p = build_live_profiles(document(EVIDENCE / 'quotes-complete-20261020/quote-cost-summary.json'),
-        document(ROOT / 'config/intelligence/red_flags.v1.json'), initial_gas_only=True,
-        authority=authority, gas_budget=budget,
-        **({} if s1 is None else dict(s1=base_s1 if s2 else s1, s1_decision=s1_decision)))['REHEARSAL'].read()
-    p['provenance']['gas_action_budget_units']['formula'] = '2*1200000 max signed child gas*160000000 max gas price; cleanup disabled'
-    p['provenance']['gas_sizing_budget_units']['formula'] = 'ceil(1000057*5/4) independently rounded child allowance at 64000000 expected gas price'
+    p = pinned_profiles(**({} if s1 is None else dict(s1=base_s1 if s2 else s1, s1_decision=s1_decision)))['REHEARSAL'].read()
+    gas_formulas(p)
     positions = 4
     if s1 is not None:
         positions = 5

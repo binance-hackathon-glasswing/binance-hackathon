@@ -274,7 +274,7 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     if mode in ('dev', 'live') and profile.get('mode') != 'LIVE':
         raise ContractError('A dev or live run needs a LIVE strategy profile')
     from larp.strategy.execution_bounds import require_open_state_scope
-    require_open_state_scope(profile, mode)  # IDEA-089 S2-1: weekend hours only in a dev SHADOW REHEARSAL
+    require_open_state_scope(profile, mode)  # IDEA-089 S2-1 / IDEA-093 S4: 24/7 hours only in their decided scopes
     if signed_model and mode in ('dev', 'live'):
         from larp.strategy.profiles import validate_live
         validate_live(profile)
