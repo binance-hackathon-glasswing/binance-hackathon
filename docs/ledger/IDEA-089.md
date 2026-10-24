@@ -318,3 +318,16 @@ M4 with stamp `20261024T052155Z`, `SCOPE_CONFIRMATION="IDEA-089 Decision (Yao, 2
   `session-calendar.json` `bf4c2eca…` and `evidence.env` `c3add04b…` unchanged.
 
 Next: P3.
+
+### P3 and P4 — PASS; run 4 initialized and activated on S2 (Yao, 2026-10-24 ~05:3x–05:4xZ)
+
+- **P3** (SSM `c9d6df42-f93a-4d81-8c6c-9fa369f2480c`, Success, no stderr): `release_verified: true`; runtime and
+  execution `configuration_valid: true`; **`runtime_router_policy readable_by=larp-runtime sha256=05759e90`** (S2-10);
+  routes PASS `d182e7be…`, 13 destinations; chrony on Amazon Time Sync, 0.000000008 s fast. `P3_DONE`.
+- **P4** (`host/p4-init-activate-start.sh "Yao Zhu" "S2-A1 Isaac via Yao; S2 decision Yao Zhu 2026-10-23"`, SSM
+  `14c24b78-db9a-4a25-8347-f7f512a5c717`, Success): `init` run `larp-dev-rehearsal-20261024-s2`, mode `dev`,
+  quarantined at init (as runs 1–3); `activate` epoch 2, signing false; evidence, uploader, runtime active with 0
+  restarts; execution inactive; archive timer active. `P4_DONE`. Run 4 is bound to RC7 `2d160073` and
+  `larp_rehearsal4`.
+
+Next: T1, R1s, P2s, S1, S1b, S2, P5.
