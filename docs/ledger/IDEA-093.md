@@ -191,3 +191,63 @@ file `9dbe6f4d…`, digest `b09c88e8…`, probe `a56f5307…`.
 this branch (or its merge); M3 coverage review against `9dbe6f4d…`; Isaac's approval of that hash and the new
 `signer.json`; install with execution running before `trade_after` (2026-10-25T16:00:00Z). If install is later, the
 window can be rebuilt with other times (one-line change in `S4R_WINDOW`, new hash, new approval).
+
+## FS1: the final live solution (requested 2026-10-25 SGT; pre-registered before tests or code)
+
+**Requests (in chat):** "make sure the PR creates a final live solution, name it FS1", and for the live preparation gate,
+"have it use AIand/ChatGPT in its decisions". The same message asked to take into account why S3 sells nothing today
+(pasted note, IDEA-092 H1/H2): (1) a new run's install (`gate_a.initial_state`) refuses a wallet that holds any stock;
+(2) S3's sell-all is at a fixed time, not on start; (3) a run only sells what its own books hold, and carrying another
+run's holdings over (H1) is not built.
+
+**Naming.** S4 is renamed **FS1** (final) and S4-R **FS1-R** (its dev rehearsal). The criteria IDs above (S4-n, S4R-n)
+keep their pre-registered names; the profile bytes change only in `policy_id` and its provenance text.
+
+**What "AIand/ChatGPT in its decisions" means in the code (checked, not changed).**
+- Signed live preparation (`gate_a.prepare`, `runtime_mode='live'`) already requires a reviewed AIand routing file;
+  deterministic signing is only allowed for dev rehearsals. With it the runtime's assessor is `aiand_routed`.
+- Models act on decisions through the red-flag path that FS1's FINAL scope enables (BOUNDED_FALSIFIER evidence,
+  DISCRETIONARY_EXIT falsifiers, `red_flag_authority` RF1 4.02 / RF2 1.05, 2.06): the model assesses EDGAR evidence;
+  a claim counts only after the deterministic verifier matches it to the source span; a verified Class 1 finding forces
+  an exit (mandatory SELL), a verified Class 2 finding blocks buys for five sessions. Models never sign, size or place
+  orders (D-11, services.v1.json).
+- The S1 exposure limiter stays DETERMINISTIC: the runtime has no producer for `exposure_assessment` (IDEA-057
+  routing guide: "This does not implement B4's exposure-evidence producer or the optional MODEL-mode exposure call"),
+  so a MODEL limiter would never move. Wiring that is new runtime code and is not part of FS1.
+
+**FS1 routing: `config/intelligence/aiand-routing.fs1.json`.** The v4 repair candidate
+(`aiand-routing.repair.example.json`, IDEA-057 PR204: per-stage output caps, `review.v2.md`) **without `openai_trial`**:
+the trial window is historical/expired, and `gate_a.prepare` refuses a trial in a signed preparation. ChatGPT
+(`gpt-6.1-sol`, medium) leads; Kimi K3 and GLM-5.3 (high) review and take over when OpenAI fails or its budget refuses.
+`openai_pacing` keeps the example's values (US$50 total, US$2 prior spend, Oct 18 11:00Z – Nov 13 00:00Z, daily
+release), which cover the PF-04 window. **These budget values are not reconciled** with the shared ledger (KMP-BUD01:
+about US$2.88 settled plus US$0.34 unknown); the account owners must confirm or change them before install, and any
+change makes a new routing hash.
+
+**The S3 install limits, applied.**
+- **FS1 (final wallet).** The final wallet is fresh and funded with USDT only (F-14, F-107); its first BNB comes from a
+  MetaMask USDT → BNB swap before the first agent trade (F-120). So it holds no stock at install and (1) does not
+  block. FS1 has no scheduled sell-all (the S3 key is refused for FINAL); it sells by rule (red-flag exits, loss cuts)
+  and in the terminal flatten from Nov 10 19:00Z, so (2) does not apply. Every position is bought by the FS1 run
+  itself, so the flatten can sell all of it (3). **Consequence:** the scored run must be **one run** from start to end:
+  automatic restarts (F-124) resume the same run and database; a new run cannot be started mid-run, because its install
+  would refuse the held stocks and its books would not own them.
+- **FS1-R (dev wallet).** It can only be installed once run 4 has sold out. Run 4 is RC7, which predates the S2-F6
+  fix, so its Sunday flatten SELLs can abort the same way its buys did; if SKHYB (or any dust, H2) is still in the dev
+  wallet after 15:00Z, FS1-R cannot be installed, and nothing in this PR sells run 4's stocks. The run sheet's first
+  step is a read-only wallet check for zero stock units. If the check fails, the options are a reviewed H1 carry-over
+  (Isaac/Keegan) or skipping FS1-R; neither is built here.
+
+**Final live package (this PR).** FS1 profile, FS1 routing, the gate scope already added for S4, tests, and a run sheet
+`docs/build/ops/final-fs1/README.md` that lists the final install steps and inputs for the owners (no host, wallet,
+key, secret or paid-model action is taken here).
+
+| # | Pass when |
+|---|---|
+| FS1-1 | FS1 and FS1-R profiles rebuild byte for byte; each differs from its S4 / S4-R predecessor only in `policy_id` (`larp-fs1-final-v1`, `larp-fs1-rehearsal-v1`) and provenance text |
+| FS1-2 | `aiand-routing.fs1.json` passes `validate_routing_spec`, equals the v4 repair example minus `openai_trial`, names `gpt-6.1-sol` as the OpenAI model with Kimi K3 and GLM-5.3 reviewers, and its pacing window covers FS1's `trade_after`..`signing_end` |
+| FS1-3 | Signed live `gate_a.prepare` with FS1 + FS1 routing + an adoption reference writes `assessor` `aiand_routed` and the routing file; `gate_a_check` scope and inputs pass; the same preparation without routing, or with the v4 example that still carries the trial, is refused |
+| FS1-4 | The runtime start in `live` mode builds with FS1 and the FS1 routing pair, with no network |
+| FS1-5 | With FS1's settings, a verified model-assessed Item 4.02 finding gives an EXIT target and a mandatory SELL intent from the planner (the model's verified output changes the decision); at a weekend time too |
+| FS1-6 | Live preparation of FS1 refuses a capture whose wallet holds any stock (S3 lesson 1), and FS1 refuses a scheduled flatten |
+| FS1-7 | Full local CI replica as S4-9, no new failures |
