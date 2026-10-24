@@ -383,3 +383,39 @@ Next: P5, C1, T2, M9; then J (first S2 entry).
 
 **P2 (one BUY end to end: intent, signing, approve, swap receipts, fill, round log) is met.** P3–P6 follow as the
 other names are bought, then the Sunday flatten. Next: T2, SA5/SA9, M9; then watch the remaining entries.
+
+**T2 timing (Yao, in chat, 06:0xZ):** "turn signer off after all 5 buys". Signer access (T1's eight resources) stays on
+until all five S2 entries have filled, so a refused leg can be examined over SSM; the signer signs from the database
+either way. Then T2, SA5/SA9 and M9.
+
+### Watching run 4 live (for the team)
+
+Run `larp-dev-rehearsal-20261024-s2` on RC7 `2d160073`, dev wallet
+`0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479`. Times are UTC (SGT = UTC+8).
+
+| When | What should happen |
+|---|---|
+| Sat 06:00Z onward | One BUY per 15-minute round (about 19 USDT each), five names: SKHYB done at 06:00Z |
+| Sun 00:00Z | UTC day roll (keep the runtime up; risk day becomes 2026-10-25) |
+| Sun 08:00Z | New buys stop |
+| Sun 09:00Z–15:00Z | Flatten: every position sold, then signing ends |
+
+1. **Anyone, no checkout:** [BscScan, dev wallet](https://bscscan.com/address/0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479).
+   Each buy is an approve (to USDT) then a swap (to router `0xb44446b0…`); the nonce rises by 2 per buy.
+2. **Anyone with a checkout (no AWS):** the chain monitor, from a venv built from `requirements.lock`; prices need the
+   read-only Web3 key pair in `.env`:
+   ```bash
+   python docs/build/ops/rehearsal-install-rc7-20261024/mac/chain-monitor.py          # one line per minute
+   python docs/build/ops/rehearsal-install-rc7-20261024/mac/chain-monitor.py --once   # a single poll
+   ```
+   It prints nonce, USDT, BNB, holdings, trades, gas spent, realised/unrealised PnL and alert counts, and writes
+   `deploy/activation/rehearsal-monitor/*.jsonl` (git-ignored). Raise anything with `alerts` or `failed_txs` above 0.
+3. **SSM operators (Yao, Keegan's team), from the copied run folder `deploy/activation/rehearsal-install-rc7-20261024/`:**
+   ```bash
+   python3.12 -I ssm_run.py checks/trading-status.sh && cat results/trading-status-stdout.txt
+   python3.12 -I ssm_run.py checks/primary-status.sh
+   ```
+   `trading-status` shows rounds, plans and reasons, execution records, signing requests, signatures, refusals and the
+   run's own portfolio; `primary-status` shows unit states and archive health.
+4. **Stop new orders at any time (primary):** `python3.12 -I ssm_run.py host/pause-primary-db-clients.sh`, or
+   `systemctl disable --now larp-execution` in an SSM session. Record the reason here.
