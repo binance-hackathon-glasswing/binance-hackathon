@@ -443,3 +443,24 @@ would matter more.
 **Decision (Yao, in chat, 2026-10-24 06:3xZ):** "yes update that we want to fix our final strategy as well". S2-F2 is
 to be fixed before the final run, not accepted as a limit; Yao informs the team. Backlog line S2-F2 in
 `docs/INCOMPLETE_WORK.md`.
+
+### Finding S2-F3 — a quote follow-up can re-order the legs and drop the executable quote (2026-10-24 06:45Z)
+
+The 06:45Z round ran (`cadence:1992027#1`, as S2-F2 predicted) and asked for a TSLAB quote (TSLAB attempt 1). The quote
+was executable, so the driver opened `cadence:1992027#1/quote1`. In that child round the planner put **NVDAB** first,
+requested an NVDAB quote (NVDAB attempt 1) and stopped (S1: one wallet leg at a time); TSLAB's executable quote was
+never used, the round planned 0 intents and no rejection, and the wallet stayed at nonce 6 (read-only checks
+`trading-status` and `round-detail`, 06:49Z; budget after: GOOGLB 1, NVDAB 1, SKHYB 3 closed, TSLAB 1).
+
+**Cause (code, RC7):** `larp/risk/planner.py` orders S1 actions by `(side != SELL, -value(units, mark), symbol)`. Every
+unheld name targets the same 19% of the same equity, so their notionals differ only by the `floor` in the desired-units
+calculation (far below one micro-USDT). In the child round the quoted name's market row is the fresh observation taken
+with the quote, so its price, and its rounding remainder, can differ from the parent's, which re-orders near-equal
+legs. The child then requests a different leg instead of using the quote its parent asked for. The SKHYB buy at 06:00Z
+succeeded only on its third round, consistent with this.
+
+**Effect on run 4:** a buy succeeds only when the child keeps the parent's leg first; each failed round spends one
+attempt on two names (5 per name). Up to Sun 08:00Z there are enough rounds for more buys, but how many is chance.
+The Sunday flatten sells whatever is held; with one position (SKHYB) there is nothing to re-order. Not fixed in run 4
+(a run cannot change build). The fix belongs with S2-F2 (IDEA-090): a child round must plan the leg its parent
+requested (from `execution_parent.quote_requests`), and near-equal legs need a stable order.
