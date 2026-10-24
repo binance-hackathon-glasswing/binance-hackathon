@@ -107,7 +107,8 @@ tests with no errors.
   decisions for the bot". The page above shows only what the chain monitor sees (trades). The decisions (each round's
   policy targets, planner orders, rejections and close status) exist only in the run's database on the primary.
 - What: three parts. **None of them runs on the agent's path or changes the registered build.**
-  - `docs/build/ops/rehearsal-install-rc7-20261024/checks/decisions-export.sh`: a read-only primary check, run over SSM
+  - `tools/dashboard/decisions-export.sh` (first written under the RC7 run folder's `checks/`, moved out 2026-10-24
+    because the run-4 sheet test pins that folder's file list): a read-only primary check, run over SSM
     like `trading-status.sh`. It runs one READ ONLY transaction and prints one allow-listed JSON line per round (the
     latest N, default 30, so the output stays under SSM's 24,000-character inline limit).
   - `python -m tools.dashboard.decisions merge <ssm stdout> --monitor-dir <dir>`: merges an export into

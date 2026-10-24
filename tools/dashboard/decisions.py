@@ -2,10 +2,10 @@
 
   python -m tools.dashboard.decisions merge results/decisions-export-stdout.txt --monitor-dir deploy/activation/rehearsal-monitor
 
-The export (docs/build/ops/rehearsal-install-rc7-20261024/checks/decisions-export.sh, run over SSM) prints the latest
-rounds only, so each merge adds its rounds to <monitor dir>/decisions.jsonl, keyed by round ID: a newer export of a
-round (for example once it has closed) replaces the older one. Lines that are not decision rows are skipped and
-counted. The file is rewritten sorted and atomically, so the same input always gives the same bytes.
+The export (tools/dashboard/decisions-export.sh, run over SSM) prints the latest rounds only, so each merge adds its
+rounds to <monitor dir>/decisions.jsonl, keyed by round ID: a newer export of a round (for example once it has closed)
+replaces the older one. Lines that are not decision rows are skipped and counted. The file is rewritten sorted and
+atomically, so the same input always gives the same bytes.
 """
 import argparse
 import json
@@ -83,7 +83,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest='command', required=True)
     m = sub.add_parser('merge', help='merge an export into <monitor dir>/decisions.jsonl')
-    m.add_argument('export', help='stdout of checks/decisions-export.sh (results/decisions-export-stdout.txt)')
+    m.add_argument('export', help='stdout of tools/dashboard/decisions-export.sh (results/decisions-export-stdout.txt)')
     m.add_argument('--monitor-dir', required=True, help='chain-monitor output folder (LARP_MONITOR_DIR)')
     args = ap.parse_args()
     print(json.dumps(merge(Path(args.export).read_text(), args.monitor_dir), sort_keys=True))

@@ -71,15 +71,15 @@ the evidence assessment's status. The chain monitor cannot see decisions; they l
 primary. So an SSM operator exports them, read-only, and the export is merged into the monitor folder:
 
 ```
-primary DB ──► checks/decisions-export.sh (SSM, READ ONLY) ──► results/decisions-export-stdout.txt
+primary DB ──► tools/dashboard/decisions-export.sh (SSM, READ ONLY) ──► results/decisions-export-stdout.txt
            ──► tools.dashboard.decisions merge ──► <monitor dir>/decisions.jsonl ──► build / publish (as above)
 ```
 
-From the copied run folder `deploy/activation/rehearsal-install-rc7-20261024/` (copy the new
-`checks/decisions-export.sh` into it first), then from the repository root:
+From the copied run folder `deploy/activation/rehearsal-install-rc7-20261024/` (the script stays in `tools/dashboard/`;
+`ssm_run.py` sends any script path), then from the repository root:
 
 ```bash
-python3.12 -I ssm_run.py checks/decisions-export.sh 30     # the latest 30 rounds (about 7.5 h at 15-minute rounds)
+python3.12 -I ssm_run.py ../../../tools/dashboard/decisions-export.sh 30     # the latest 30 rounds (about 7.5 h at 15-minute rounds)
 python -m tools.dashboard.decisions merge deploy/activation/rehearsal-install-rc7-20261024/results/decisions-export-stdout.txt --monitor-dir deploy/activation/rehearsal-monitor
 ```
 

@@ -1,7 +1,7 @@
 # Read-only (primary; IDEA-087 DX): the agent's decisions for the dashboard. One JSON line per round (the latest N,
 # default 30, to stay under SSM's 24,000-character inline output), then one summary line. One READ ONLY transaction.
 # Fields are allow-listed (codes, symbols, amounts, times): no free text, model text, IDs, hashes, config or URLs.
-#   python3.12 -I ssm_run.py checks/decisions-export.sh [N]
+#   python3.12 -I ssm_run.py ../../../tools/dashboard/decisions-export.sh [N]     (from the copied run folder)
 #   python -m tools.dashboard.decisions merge results/decisions-export-stdout.txt --monitor-dir deploy/activation/rehearsal-monitor
 set -eu
 LIMIT=${1:-30}

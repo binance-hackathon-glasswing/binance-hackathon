@@ -608,7 +608,7 @@ footer p { margin: 4px 0; }
       ? 'One row per round, newest first. ' + (dec.total > dec.rows.length ? dec.rows.length + ' of ' + dec.total + ' shown. ' : '') +
         'Latest decision ' + when(dec.latest_utc) + ' UTC. Targets come from the policy, orders from the planner; ' +
         '"Why not" lists the planner\'s rejection and error codes.'
-      : 'No decisions exported yet. An operator runs checks/decisions-export.sh over SSM and merges it with tools.dashboard.decisions.';
+      : 'No decisions exported yet. An operator runs tools/dashboard/decisions-export.sh over SSM and merges it with tools.dashboard.decisions.';
     var chips = clear($('decision-chips'));
     Object.keys(dec.by_status).sort().forEach(function (k) {
       var c = el('span', 'chip');

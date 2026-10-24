@@ -10,7 +10,7 @@ from tests.test_dashboard import keys, write_monitor
 from tools.dashboard import build as b
 from tools.dashboard import decisions as dec
 
-EXPORT = Path(__file__).resolve().parents[1] / 'docs/build/ops/rehearsal-install-rc7-20261024/checks/decisions-export.sh'
+EXPORT = Path(__file__).resolve().parents[1] / 'tools/dashboard/decisions-export.sh'
 PLANTED = ['0x' + 'ab' * 20, '0x' + 'cd' * 32, 'quote-7f3e9a', 'intent-55c1d2', 'I expect NVDA to rally because',
            'postgres://larp@db.internal/larp', 'https://example.invalid/filing', 'cadence:100#1', 'filing:job-7#1']
 MS = 1792821600000  # 2026-10-24T06:00:00Z
