@@ -36,6 +36,18 @@ def require_scope(profile):
     at(profile)
 
 
+def buy_deadline(profile, risk):
+    """Pre-flatten BUY authority ends at the schedule; a committed DONE plan reopens it.
+
+    Consumers use the independent plan's risk state, including the first flat/DONE round, rather than the
+    policy proposal or the pre-plan ledger. Already submitted transactions still reconcile normally.
+    """
+    when = at(profile)
+    if when is None or (type(risk) is dict and risk.get('scheduled_flatten') == 'DONE'):
+        return None
+    return when
+
+
 def state(profile, risk, ledger, now):
     """None (no scheduled flatten), BEFORE, PENDING or DONE."""
     when = at(profile)

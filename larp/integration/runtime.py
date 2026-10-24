@@ -309,6 +309,11 @@ class RuntimePlanner:
                     expires = min(expires, iso_ms(p["new_risk_end"]))
             if 'execution_bounds' in intent:
                 expires = min(expires, intent['execution_bounds']['valid_until_ms'])
+            if not intent['mandatory'] and intent['side'] == 'BUY':
+                from larp.strategy.scheduled_flatten import buy_deadline
+                deadline = buy_deadline(p, raw.get('risk_state'))
+                if deadline is not None:
+                    expires = min(expires, int(deadline.timestamp() * 1000))
             if finite is None and valid_until is not None and not intent["mandatory"]:
                 expires = min(expires, valid_until)  # a discretionary intent never outlives its proposal
             if finite is not None:

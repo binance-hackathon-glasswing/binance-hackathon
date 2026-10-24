@@ -210,6 +210,11 @@ def permitted(projection, intent, now_ms):
                 or intent.minimum_output != planned['min_receive_units'] * (1 if buy else 10**12)):
             return False  # a BUY cannot borrow a mandatory SELL's after-hours authority
         authority = planned['execution_bounds']
+        if buy and not planned['mandatory']:
+            from .scheduled_flatten import buy_deadline
+            deadline = buy_deadline(p, record['plan'].get('risk_state'))
+            if deadline is not None and now_ms >= int(deadline.timestamp() * 1000):
+                return False  # a pre-flatten BUY cannot sign/submit across the scheduled boundary
         start, end = interval(context, cfg, planned['mandatory'])
         key = leg_key(planned['symbol'], planned['side'], planned['mandatory'])
         slots = budget(record['plan']['execution_attempt_budget'], context['session_index'])
