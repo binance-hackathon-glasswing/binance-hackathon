@@ -179,3 +179,29 @@ class SignedReplay(DriverHarness):
         self.assertEqual(record['accepted_evidence'], 'WITH_ASSESSMENT')
         head, expected = self.replay(driver)
         self.assertEqual(head, expected)
+
+
+    def check_audited_replay(self, available):
+        self.world(['EXSEMI_402_8K'])
+        driver = self.driver('MANDATORY_REDUCTION')
+        c = driver.coordinator
+        item = driver.work.next(self.w.clock(), self.epoch)
+        request = driver.work.request(item, self.store.load(RUN).read(), self.w.clock())
+        result = c.assessor.assess(request) if available else None
+        audit = dict(state='COMPLETE' if available else 'INTERRUPTED', events=[
+            dict(kind='REQUEST', request=request.read()),
+            dict(kind='STAGE', result=dict(model_io=dict(cot='synthetic retained model audit')))])
+        c.start(item['round_id'], request, self.w.clock(), assessment_override=result,
+                assessment_audit=audit, use_accepted_evidence=True)
+        record = self.store.event(RUN, 'plan:' + item['round_id'])['record']
+        self.assertEqual(record['assessment_audit'], audit)
+        self.assertEqual(record['accepted_evidence'], 'WITH_ASSESSMENT' if available else 'ONLY')
+        head, expected = self.replay(driver)
+        self.assertEqual(head, expected)
+        self.assertEqual(self.store.event(RUN, 'plan:' + item['round_id'])['record']['assessment_audit'], audit)
+
+    def test_rv01_ready_result_replays_with_its_original_model_audit(self):
+        self.check_audited_replay(True)
+
+    def test_rv01_unavailable_result_replays_with_its_original_model_audit(self):
+        self.check_audited_replay(False)

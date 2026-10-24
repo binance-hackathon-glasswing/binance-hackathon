@@ -110,7 +110,7 @@ tests with no errors.
   - `tools/dashboard/decisions-export.sh` (first written under the RC7 run folder's `checks/`, moved out 2026-10-24
     because the run-4 sheet test pins that folder's file list): a read-only primary check, run over SSM
     like `trading-status.sh`. It runs one READ ONLY transaction and prints one allow-listed JSON line per round (the
-    latest N, default 30, so the output stays under SSM's 24,000-character inline limit).
+    latest N, default 30; PR274-RV01 additionally bounds complete output to22,000 UTF-8 bytes below SSM's24,000-character inline limit and reports rows omitted for size).
   - `python -m tools.dashboard.decisions merge <ssm stdout> --monitor-dir <dir>`: merges an export into
     `<monitor dir>/decisions.jsonl` (git-ignored), keyed by round ID, so repeated exports build up the whole run.
   - `tools/dashboard/build.py` reads `decisions.jsonl` when present and the page gains a "Decisions" section.
@@ -168,3 +168,19 @@ gives 40 passed with 44 subtests: 18 existing dashboard tests, 9 new, 13 contrac
 - Not done: the export has not been run on the live primary. Its database part copies `trading-status.sh`'s
   read-only pattern but is untested against a real database, so the first SSM run is its check. No real decisions
   have been seen, and nothing was published (PAGES01).
+
+
+### PR274-RV01 — decision export output bound (2026-10-24)
+
+The default30 rows did not guarantee SSM's inline output limit:30 copies of the existing synthetic DX fixture give
+24336 bytes (regression with distinct round IDs). The exporter now removes oldest complete rows until the entire
+output, including its summary and every newline, fits22000 UTF-8 bytes. Small exports keep their existing bytes;
+size-limited exports add `omitted_for_size`, retained in the merge report. Even a single over-budget row leaves a
+complete summary. The SQL/privacy allow-lists are unchanged. This is source/offline validation only; the first
+read-only host export and PAGES01 publishing decision remain open. Full review evidence: IDEA-090 PR274-RV01.
+
+
+PR274-RV01 also retains actual quote-follow-up round IDs (`/quoteN`, with optional `#attempt`) in the export and
+full-detail builder. The original round-ID filter excluded slash and silently dropped execution-bearing rounds.
+Only the specific driver suffix grammar is added; arbitrary slash paths, URLs and hex-bearing IDs remain refused.
+Default redacted pages still omit round IDs. A synthetic regression verifies order counts and both rendering modes.

@@ -246,3 +246,39 @@ Review: Isaac (execution and signer path) and Keegan. Next dev run: buys go thro
 - Run 4 (`larp-dev-rehearsal-20261024-s2`, RC7 `2d160073`) keeps running as it is; a run cannot change build.
 - The final strategy choice (S1 or another version, Monday) and its profile hash are separate decisions; this fix
   goes into whichever build the final uses, with its own release, run and approval.
+
+
+## PR274-RV01 — independent merge review (Isaac/Codex, 2026-10-24 SGT)
+
+Review base canonical `2d160073`; original PR head `bc25991b`. Read the source changes, IDEA-087 DX and IDEA-089/090
+criteria and current backlog. No host, wallet, key, model-provider or dashboard-publishing operation.
+
+Initial targeted validation with Python3.12.14 and a dedicated PostgreSQL14.24 instance:66 tests /56 subtests PASS.
+The new dedicated venv uses `deploy/requirements-test.lock`; the earlier review venv no longer had pytest, so it was
+not reused. No change to release locks or host-profile checking is proposed.
+
+**R1 (dashboard, reproduced before repair):** default30 synthetic decision rows from the existing DX fixture
+produce24334 characters, exceeding the documented24000-character SSM inline limit. Larger legitimate targets and
+rejections amplify this. Truncation can lose the latest rows and summary. Repair criterion: cap output at22000 UTF-8
+bytes including newlines, keep complete newest rows, always emit the summary, and report how many requested rows
+were omitted for size. Preserve small-export bytes and the read-only/privacy allow-lists. A too-large single row
+must leave a valid summary alone. Add a regression before the fix.
+
+**Remaining review/validation:** run the full pinned suite once against dedicated PostgreSQL14.24 to resolve F6/F15's
+reported environment failure; review S2-F6's bounded second request against the unchanged execution/signing checks.
+Source acceptance is separate from owner profile/config decisions, F7 and actual post-approve swaps in a later dev
+run, final release qualification and PAGES01. No change to the active RC7 run.
+
+
+**R2 (S2-F5 replay, identified before regression execution):** `_signed_cycle` starts ready rounds with
+`assessment_audit=ready['audit']`, but replay does not pass that journaled audit back to `Coordinator.start`. F10's
+new test omits the audit, so the actual asynchronous path can still diverge even after the accepted-evidence fix.
+Criterion: successful WITH_ASSESSMENT and unavailable-result ONLY rounds carrying nonempty synthetic model audits
+must replay to exactly the same journal head, preserving their original audit events and calling no live provider.
+Pass the recorded audit through; do not regenerate or discard original model I/O. Add both regressions before repair.
+
+**R3 (dashboard follow-up IDs, reproduced before repair):** `shape` rejects the slash in actual execution-bearing
+IDs such as `cadence:1992024#1/quote1`, yielding only a summary with0 rounds. The full-detail builder independently
+rejects those IDs too. Criterion: export and full-detail rendering retain `/quoteN` and retried `/quoteN#attempt`
+rounds; redacted output still omits IDs; URLs, arbitrary slash paths and hex-bearing IDs remain excluded. Add a
+regression before repair and restrict accepted suffixes to the driver's quote-follow-up grammar.

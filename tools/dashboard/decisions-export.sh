@@ -1,5 +1,5 @@
 # Read-only (primary; IDEA-087 DX): the agent's decisions for the dashboard. One JSON line per round (the latest N,
-# default 30, to stay under SSM's 24,000-character inline output), then one summary line. One READ ONLY transaction.
+# default 30), bounded to 22,000 UTF-8 bytes including a summary for SSM inline output. One READ ONLY transaction.
 # Fields are allow-listed (codes, symbols, amounts, times): no free text, model text, IDs, hashes, config or URLs.
 #   python3.12 -I ssm_run.py ../../../tools/dashboard/decisions-export.sh [N]     (from the copied run folder)
 #   python -m tools.dashboard.decisions merge results/decisions-export-stdout.txt --monitor-dir deploy/activation/rehearsal-monitor
@@ -9,13 +9,15 @@ case "$LIMIT" in ''|*[!0-9]*) echo "N must be a number" >&2; exit 2;; esac
 cd /opt/larp/current
 # larp_execution can SELECT every table read here (deploy/postgres/roles.sql); larp_runtime cannot.
 runuser -u larp-execution -- env PYTHONDONTWRITEBYTECODE=1 LIMIT="$LIMIT" .venv/bin/python - <<'PY'
+from collections import deque
 import json, os, re
 CODE = re.compile(r'^[A-Z][A-Z0-9_]{0,63}$')
 SYMBOL = re.compile(r'^[A-Z][A-Z0-9]{0,15}$')
-ROUND = re.compile(r'^[A-Za-z0-9_.:#/-]{1,160}$')
+ROUND = re.compile(r'^[A-Za-z0-9_.:#-]{1,160}(?:/quote[1-9][0-9]*(?:#[1-9][0-9]*)?)*$')
 AMOUNT = re.compile(r'^[0-9]{1,30}(\.[0-9]{1,30})?$')
 HEX = re.compile(r'0x[0-9a-fA-F]{8,}')
 SCHEMA = 'LarpDecisionExport.v1'
+MAX_EXPORT_BYTES = 22000  # leave room below SSM's 24,000-character stdout limit
 
 
 def code(v):
@@ -105,11 +107,21 @@ def emit(events, limit, run_id):
         if done:
             closed[done[0]] = done[1]
     latest = sorted(decisions.values(), key=lambda d: d['seq'] or 0)[-limit:] if limit > 0 else []
-    lines = [json.dumps(dict(d, status=closed.get(d['round_id'])), sort_keys=True, separators=(',', ':'))
-             for d in latest]
-    lines.append(json.dumps(dict(section='decisions_summary', schema=SCHEMA, run_id=run_id, rounds=len(decisions),
-                                 exported=len(latest), closed=len(closed)), sort_keys=True, separators=(',', ':')))
-    return lines
+    lines = deque(json.dumps(dict(d, status=closed.get(d['round_id'])), sort_keys=True, separators=(',', ':'))
+                  for d in latest)
+    summary = dict(section='decisions_summary', schema=SCHEMA, run_id=run_id, rounds=len(decisions),
+                   exported=len(latest), closed=len(closed))
+    size = lambda line: len(line.encode('utf-8')) + 1  # print adds one newline per line
+    total = sum(map(size, lines))
+    while True:
+        tail = json.dumps(summary, sort_keys=True, separators=(',', ':'))
+        if total + size(tail) <= MAX_EXPORT_BYTES:
+            return [*lines, tail]
+        if not lines:
+            raise ValueError('Decision export summary exceeds output budget')
+        total -= size(lines.popleft())  # preserve the newest complete rows, never a truncated JSON line
+        summary['exported'] -= 1
+        summary['omitted_for_size'] = len(latest) - summary['exported']
 
 
 # ---- database (not run by the offline tests) ----

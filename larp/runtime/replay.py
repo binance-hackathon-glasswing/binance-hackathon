@@ -58,6 +58,8 @@ def replay(batches,initial,target,*,run_id,wallet_id,chain_id,version_id,profile
                     runtime.record_rejection(record['round_id'],record,event.get('updates'))
                 else:
                     runtime.start(record['round_id'],doc(record['request']),record['started_ms'],defer_close=True,
+                        **(dict(assessment_audit=record['assessment_audit'])
+                           if 'assessment_audit' in record else {}),
                         **(dict(execution_parent_round=record['execution_parent_round'])
                            if 'execution_parent_round' in record else {}),
                         **{'ONLY':dict(assessment_override=None,use_accepted_evidence=True),
