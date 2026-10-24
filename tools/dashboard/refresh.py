@@ -19,6 +19,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import time
 
 from tools.dashboard import build, decisions
@@ -70,7 +71,32 @@ def seeds_from_primary(monitor):
     return sorted({int(r['blockNumber'], 16) for r in receipts if r})
 
 
-def poll(monitor_dir, seed_blocks):
+def poll(monitor_dir, seed_blocks, attempts=2):
+    """One monitor poll on a copy of its folder, kept only when the poll completes: the monitor appends transactions
+    before it reads balances and saves its state last, so a poll that fails midway would book them twice on the
+    next try."""
+    monitor_dir = Path(monitor_dir)
+    for attempt in range(attempts):
+        scratch = monitor_dir.with_name(monitor_dir.name + '.poll')
+        shutil.rmtree(scratch, ignore_errors=True)
+        if monitor_dir.exists():
+            shutil.copytree(monitor_dir, scratch)
+        else:
+            scratch.mkdir(parents=True)
+        try:
+            result = _poll(scratch, seed_blocks)
+        except (RuntimeError, OSError, ValueError, KeyError, TypeError):
+            shutil.rmtree(scratch, ignore_errors=True)
+            if attempt == attempts - 1:
+                raise
+            time.sleep(10)
+            continue
+        shutil.rmtree(monitor_dir, ignore_errors=True)
+        scratch.rename(monitor_dir)
+        return result
+
+
+def _poll(monitor_dir, seed_blocks):
     monitor = chain_monitor(monitor_dir)
     state = monitor.load_state()
     if state['block'] is None and not seed_blocks:
