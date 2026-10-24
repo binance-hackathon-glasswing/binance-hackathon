@@ -297,3 +297,24 @@ COVERED, Q1 10/10, CAP-02 `3241abd3…`, router policy `05759e90…`, the same d
   `d7389074…`; nothing started.
 
 Next: M4 (stamp `20261024T052155Z`).
+
+### S2-J3 — M4 PASS: run-4 package prepared and uploaded (Yao, 2026-10-24 05:27Z)
+
+M4 with stamp `20261024T052155Z`, `SCOPE_CONFIRMATION="IDEA-089 Decision (Yao, 2026-10-23)"`; package
+`package-20261024T052748Z`, prefix `releases/rehearsal-20261024t052748z/`.
+- Signer diff against run 3's `49cb1a08…`: exactly `build_id`, `database_name`, `run_id`; `signer.json` `56e029af…`
+  (the S2-A1 hash). Capture `captured: true`; `prepare` with the expected `gate_a_passed: false` /
+  `LIVE_INTELLIGENCE_SETTINGS_AND_SIGNED_GATE_B_ACCEPTANCE` (dev deterministic, as runs 2 and 3). Package check 7/7
+  PASS, `local_ready: true`, `remote_ci_verified: false` (local bundle, S2-A2). Bind `manifest_bound` to `55cf600b…`.
+  Local signer `check` `configuration_valid`, UNTRUSTED `05759e90…`, DEV-23, Gate B false.
+- Package read by the assistant: runtime `larp-dev-rehearsal-20261024-s2` / `2d160073` / `dev` / `larp_rehearsal4`,
+  service / deterministic / live, profile `eb55d76a…`; **router-policy pair present** (`/etc/larp/untrusted-router-policy.json`,
+  `05759e90…`) with 2 balance RPC providers, so the quote verifier is on (S2-10). Execution: same identity,
+  `larp_execution`, send RPC `BSC_BNBCHAIN_PUBLIC`, profile `eb55d76a…`, router policy `05759e90…`. Profile
+  `s1.execution`: `hours: KIT_OPEN_STATE`, `max_attempts_per_leg_session: 5`. Initial state: 96000000 USDT,
+  5325625054330011 BNB, five positions 0, no reservations, opening equity 99845905.
+- Hashes: `release.json` `46fdaa88…`, `runtime.json` `87c73e5e…`, `execution.json` `43507638…`, `initial-state.json`
+  `8e391bd8…`, `uploader.json` `d4b392e2…`, `operations.json` `f32495d7…`, `registration-evidence.json` `62a53de6…`;
+  `session-calendar.json` `bf4c2eca…` and `evidence.env` `c3add04b…` unchanged.
+
+Next: P3.
