@@ -1,7 +1,7 @@
 # IDEA-087 — Wallet dashboard published as a static GitHub Pages site
 
 - Date / author: 2026-10-23 / Keith (request), Claude Code (build)
-- Status: open (pre-registered below; built on branch `claude/idea087-pages-dashboard-20261023`)
+- Status: open (pre-registered below; built on branch `claude/idea087-pages-dashboard-20261023`); DX (decisions) built on branch `claude/zen-meitner-luu8xj`
 - What: two tools under `tools/dashboard/`.
   - `build` turns the SJ-08 chain monitor's output folder
     (`docs/build/ops/rehearsal-install-20261022/mac/chain-monitor.py`: `snapshots.jsonl`, `transactions.jsonl`,
@@ -100,3 +100,87 @@ tests with no errors.
   (Linux, Python 3.12).
 - Checked, no change: the template writes data only through text and attributes (no `innerHTML`); the embedded JSON
   escapes `<`, `>` and `&`; redaction is an allow-list; publishing pushes fast-forward only and stops on divergence.
+
+## Extension DX: the agent's decisions on the same page (2026-10-24, pre-registered)
+
+- Request: Cookiemunchrr (on PR 272, run 4 live), "a gh pages dashboard for us to take a look at the trades and the
+  decisions for the bot". The page above shows only what the chain monitor sees (trades). The decisions (each round's
+  policy targets, planner orders, rejections and close status) exist only in the run's database on the primary.
+- What: three parts. **None of them runs on the agent's path or changes the registered build.**
+  - `tools/dashboard/decisions-export.sh` (first written under the RC7 run folder's `checks/`, moved out 2026-10-24
+    because the run-4 sheet test pins that folder's file list): a read-only primary check, run over SSM
+    like `trading-status.sh`. It runs one READ ONLY transaction and prints one allow-listed JSON line per round (the
+    latest N, default 30; PR274-RV01 additionally bounds complete output to22,000 UTF-8 bytes below SSM's24,000-character inline limit and reports rows omitted for size).
+  - `python -m tools.dashboard.decisions merge <ssm stdout> --monitor-dir <dir>`: merges an export into
+    `<monitor dir>/decisions.jsonl` (git-ignored), keyed by round ID, so repeated exports build up the whole run.
+  - `tools/dashboard/build.py` reads `decisions.jsonl` when present and the page gains a "Decisions" section.
+- Fields, allow-listed both on the host and in the build: round time (decision, else start), close status, round kind,
+  error codes, orders (symbol, side, amount), intents (symbol, side, mandatory, reason codes), policy targets (symbol,
+  kind, reason code, weight), planner rejections and clamps (symbol and reason code), evidence assessment (issuer,
+  status, reason codes). Never: free-text `detail`, model text or reasoning, request or quote bodies, intent or quote
+  IDs, hashes, addresses, config, DSN or URLs.
+- Visibility: on a public Pages site the decisions show the strategy's targets and reasons as well as its trades. The
+  round ID (which can name a filing job) is shown only with `--full`. Whether to publish stays PAGES01.
+
+### Pass criteria (written before any test is run)
+
+Offline, synthetic data only (no database, no network):
+
+- **DX1 export allow-list:** the export's shaping code, run on synthetic `ROUND_PLANNED`, `PLAN_REJECTED` and
+  `ROUND_CLOSED` events that plant free text, `0x` addresses, hashes, intent and quote IDs and a model reasoning text,
+  emits only the allow-listed fields. No planted value appears in its output. A code-shaped field holding anything else
+  becomes `OTHER`. The script's database part reads in a READ ONLY transaction and writes nothing (checked by reading
+  the script: `SET TRANSACTION READ ONLY`, SELECT only).
+- **DX2 merge:** merging an export creates `decisions.jsonl`; merging the same export again leaves it byte-identical;
+  a later export in which an open round has closed updates that round; non-decision lines (the summary, other
+  sections, garbage) are ignored and counted; the result is sorted and deterministic.
+- **DX3 numbers:** with a synthetic `decisions.jsonl`, `data.json` reports the hand-computed counts: rounds, rounds
+  by close status, rounds that placed orders, orders by side, and the top rejection reason codes. Rows are newest
+  first and capped.
+- **DX4 redaction:** the redacted build contains no round ID and no `0x` with 8 or more hex digits, and none of the
+  planted values from DX1/DX2 reaches any output file. The full build keeps the round ID. D2, D3 and D5 still pass with
+  a decisions file present (D5's allowed reads gain `decisions.jsonl` and nothing else).
+- **DX5 page:** in headless Chromium, the fixture site shows the Decisions section with its rows, in light and dark,
+  and at 375 px wide without horizontal scroll, with no console errors. Without a decisions file the section says no
+  decisions have been exported yet and the rest of the page is unchanged.
+- **DX6 regression:** every existing `tests/test_dashboard.py` and `tests/test_contracts.py` test still passes.
+
+Not claimed by these criteria: a run of the export on the live primary (needs an SSM operator), real decision data,
+or a published site.
+
+### Results DX (2026-10-24)
+
+All six criteria are **supported offline**, on synthetic data only. Setup: Linux, Python 3.13 venv with pytest,
+headless Chromium (Playwright). `pytest tests/test_dashboard.py tests/test_dashboard_decisions.py tests/test_contracts.py`
+gives 40 passed with 44 subtests: 18 existing dashboard tests, 9 new, 13 contract tests.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| DX1 export allow-list | supported | `test_dx1_export_is_allow_listed` runs the script's own shaping code, taken from its heredoc up to the database part, on three rounds plus noise. Every planted value is absent from the output: addresses, hashes, intent and quote IDs, model text, a DSN and a URL. Non-codes become `OTHER`, a round ID carrying a hash is dropped, and the output keys are a subset of the allow-list. `test_dx1_export_limit` checks the latest-N cut. `test_dx1_database_part_is_read_only` finds `SET TRANSACTION READ ONLY`, only SET and SELECT statements, and no write keyword anywhere in the script. |
+| DX2 merge | supported | `test_dx2_merge_is_idempotent_and_updates_closed_rounds`: 4 noise lines skipped and counted; a re-merge is byte-identical; a later export closes the open round; an older export never reopens it; two merge orders give the same bytes. |
+| DX3 numbers | supported | `test_dx3_numbers`: 3 rounds (1 open, 1 complete, 1 rejected), 1 with orders, 1 buy, 0 sells, `NEW_RISK_HALTED` ×2 first of 8 top codes, target weight 19.00%, newest first. `test_dx3_rows_are_capped`: 305 rounds give 300 rows, newest first. |
+| DX4 redaction | supported | `test_dx4_redacted_build_has_no_round_ids_or_planted_values` checks the redacted site for round IDs, `0x…` and the planted values; the full build keeps the round IDs. `test_dx4_build_does_not_trust_the_file`: a hand-written hostile `decisions.jsonl` is reduced to `OTHER`/None in both builds. D2, D3 and D5 pass; D5's allowed reads gained only `decisions.jsonl`. |
+| DX5 page | supported | Headless Chromium on the fixture site: redacted light and dark at 1100 px, full light and redacted dark at 375 px, and a site without decisions at 900 px. Every page has `scrollWidth` = `clientWidth` and no console messages, and shows 3 decision rows, 11 chips and the "Decision rounds" tile. "Only rounds that placed orders" leaves 1 row. Without decisions there is one "No decisions exported yet" row and no tile. The browser check led to one fix: cells now align to the top. |
+| DX6 regression | supported | The existing 18 dashboard tests and 13 contract tests pass unchanged, apart from D5's allowed set. |
+
+- Release bundle unaffected: `tools/`, `tests/` and `docs/build/ops/` are outside `release_files`. No `larp/` file
+  changed.
+- Not done: the export has not been run on the live primary. Its database part copies `trading-status.sh`'s
+  read-only pattern but is untested against a real database, so the first SSM run is its check. No real decisions
+  have been seen, and nothing was published (PAGES01).
+
+
+### PR274-RV01 — decision export output bound (2026-10-24)
+
+The default30 rows did not guarantee SSM's inline output limit:30 copies of the existing synthetic DX fixture give
+24336 bytes (regression with distinct round IDs). The exporter now removes oldest complete rows until the entire
+output, including its summary and every newline, fits22000 UTF-8 bytes. Small exports keep their existing bytes;
+size-limited exports add `omitted_for_size`, retained in the merge report. Even a single over-budget row leaves a
+complete summary. The SQL/privacy allow-lists are unchanged. This is source/offline validation only; the first
+read-only host export and PAGES01 publishing decision remain open. Full review evidence: IDEA-090 PR274-RV01.
+
+
+PR274-RV01 also retains actual quote-follow-up round IDs (`/quoteN`, with optional `#attempt`) in the export and
+full-detail builder. The original round-ID filter excluded slash and silently dropped execution-bearing rounds.
+Only the specific driver suffix grammar is added; arbitrary slash paths, URLs and hex-bearing IDs remain refused.
+Default redacted pages still omit round IDs. A synthetic regression verifies order counts and both rendering modes.

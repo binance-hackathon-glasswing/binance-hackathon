@@ -863,14 +863,18 @@ class EvidenceWork:
             return None
         issuer = self.issuers[slot % len(self.issuers)]
         records = self._latest(issuer, now_ms)
-        if not records:
-            return None  # nothing to assess for this slot's issuer
-        payload = dict(kind='REASSESS_ISSUER', issuer_id=issuer, reason='SCHEDULED_CADENCE', slot=slot)
+        # IDEA-090 (S2-F2): a slot whose issuer has no records still plans, on the evidence already accepted and
+        # with no new assessment, so trading and mandatory exits never wait for an issuer with a filing.
+        payload = dict(kind='REASSESS_ISSUER', issuer_id=issuer,
+                       reason='SCHEDULED_CADENCE' if records else 'SCHEDULED_DECISION', slot=slot)
         job = dict(job_id='evidence:' + digest('larp.runtime.cadence-job.v1', payload), lane='evidence',
                    due_ms=slot * self.cadence, valid_until_ms=(slot + 1) * self.cadence, max_attempts=1,
                    priority=60, calendar_id='UTC', tzdata_version='utc-only-no-tzdata', missed='expire',
                    payload=payload)
-        return dict(round_id=round_id, job=job, issuer_id=issuer, records=records, claim=None, resume=resume)
+        item = dict(round_id=round_id, job=job, issuer_id=issuer, records=records, claim=None, resume=resume)
+        if not records:
+            item['planning_only'] = True
+        return item
 
     def next(self, now_ms, epoch):
         return self._review(now_ms, epoch) or self._ingested(now_ms) or self._cadence(now_ms)
@@ -917,12 +921,18 @@ class RoundDriver:
         event = self.coordinator.store.event(self.coordinator.run_id, 'plan:' + round_id)
         return (event or {}).get('record', {}).get('plan') or {}
 
+    @staticmethod
+    def runnable(item):
+        """An item with records to assess, or a planning-only cadence slot (IDEA-090)."""
+        return bool(item['records']) or item.get('planning_only') is True
+
     def _round(self, round_id, item, now_ms):
         c = self.coordinator
         if self.market is not None:
             self.market.refresh(now_ms)  # before the round: its decision time follows the fetch (#24)
         current = c.store.load(c.run_id).read()
-        c.start(round_id, self.work.request(item, current, now_ms), now_ms)
+        c.start(round_id, self.work.request(item, current, now_ms), now_ms,
+                **(dict(assessment_override=None, use_accepted_evidence=True) if item.get('planning_only') else {}))
 
     def _quotes(self, round_id, item, now_ms, summary, *, first=1, child=None):
         """Bounded follow-up rounds while the last plan asked for quotes and an executable one came back.
@@ -968,7 +978,8 @@ class RoundDriver:
                 c.start(round_id, self.work.request(item, current, now_ms), now_ms,
                         **(dict(execution_parent_round=source_round)
                            if getattr(c.context_builder, 'profile', {}).get('baseline') == 'TREND_GUARDED_VOL' else {}),
-                        **(dict(assessment_override=None, use_accepted_evidence=True) if self.assessments else {}))
+                        **(dict(assessment_override=None, use_accepted_evidence=True)
+                           if self.assessments or item.get('planning_only') else {}))
             finally:
                 self.market.clear_quotes()
 
@@ -1022,11 +1033,11 @@ class RoundDriver:
         if item is not None:
             summary['round_id'] = item['round_id']
             resume = item.get('resume')
-            if item['round_id'] is not None and item['records']:
+            if item['round_id'] is not None and self.runnable(item):
                 self._round(item['round_id'], item, now_ms)
                 if self.market is not None and self.max_quote_rounds:
                     self._quotes(item['round_id'], item, now_ms, summary)
-            elif resume is not None and item['records'] and self.market is not None:
+            elif resume is not None and self.runnable(item) and self.market is not None:
                 source, n, child = resume
                 self.work.tried.add(child)
                 summary['quote_resume'] = child

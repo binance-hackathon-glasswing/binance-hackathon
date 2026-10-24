@@ -117,6 +117,17 @@ def parent_authority(record):
                 quote_requests=record['plan'].get('quote_requests', []))
 
 
+def requested_legs(context):
+    """(symbol, side) pairs whose quotes this round's parent requested, in the same session; else empty (IDEA-090).
+
+    Ordering only: whether the parent's attempt may be reused is still decided by `_reuse`."""
+    parent = context.get('execution_parent')
+    if type(parent) is not dict or parent.get('session_index') != context.get('session_index'):
+        return set()
+    requests = parent.get('quote_requests')
+    return {(r.get('symbol'), r.get('side')) for r in requests if type(r) is dict} if type(requests) is list else set()
+
+
 def _reuse(context, state, key, start, end, symbol, side, quotes):
     if type(quotes) not in (list, tuple) or any(type(q) is not dict for q in quotes):
         return None

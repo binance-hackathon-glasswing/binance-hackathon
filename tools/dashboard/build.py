@@ -1,14 +1,16 @@
-"""Static wallet dashboard from the SJ-08 chain monitor's files (IDEA-087).
+"""Static wallet dashboard from the SJ-08 chain monitor's files, plus the agent's decisions (IDEA-087, DX).
 
   python -m tools.dashboard.build --monitor-dir deploy/activation/rehearsal-monitor --out <site dir> [--full]
 
 Reads only snapshots.jsonl, transactions.jsonl and alerts.jsonl from the monitor folder
-(docs/build/ops/rehearsal-install-20261022/mac/chain-monitor.py) and writes index.html (one self-contained page with
+(docs/build/ops/rehearsal-install-20261022/mac/chain-monitor.py), and decisions.jsonl when present (merged there by
+tools/dashboard/decisions.py from the primary's read-only decisions export), and writes index.html (one self-contained page with
 the data embedded), data.json and .nojekyll. No network, no credentials and no clock: the same input always gives
 byte-identical output, and the page works out staleness in the browser.
 
 Redacted by default, because a Pages site on the Free plan is public: output fields are allow-listed, and the wallet,
-transaction hashes, contract and spender addresses, block numbers and nonces are left out unless --full is given.
+transaction hashes, contract and spender addresses, block numbers, nonces and round IDs are left out unless --full
+is given.
 Equity excludes BNB and uses the monitor's Web3 prices; it is not the official score.
 """
 import argparse
@@ -16,19 +18,27 @@ import bisect
 import json
 import math
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 FILES = ('snapshots.jsonl', 'transactions.jsonl', 'alerts.jsonl')
+DECISIONS = 'decisions.jsonl'  # optional; written by tools/dashboard/decisions.py, not by the monitor
 OUTPUTS = ('index.html', 'data.json', '.nojekyll')
 TEMPLATE = Path(__file__).with_name('template.html')
 PLACEHOLDER = '__DASHBOARD_DATA__'
 STOCKS = ('NVDAB', 'GOOGLB', 'SKHYB', 'TSLAB', 'MSFTB')
 MAX_BUCKETS = 600  # chart buckets; each keeps its extremes, so troughs survive downsampling
 MAX_TRANSACTIONS = 500
+MAX_DECISIONS = 300
 E18 = 10**18
 NAME = re.compile(r'^[A-Za-z][A-Za-z0-9_]{0,39}$')  # symbols, kinds, error class names; never an 0x address
 HASH = re.compile(r'^0x[0-9a-fA-F]{64}$')
 UTC = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$')
+CODE = re.compile(r'^[A-Z][A-Z0-9_]{0,63}$')  # reason, status and error codes
+AMOUNT = re.compile(r'^[0-9]{1,30}(\.[0-9]{1,30})?$')
+ROUND_ID = re.compile(r'^[A-Za-z0-9_.:#-]{1,160}(?:/quote[1-9][0-9]*(?:#[1-9][0-9]*)?)*$')
+HEX = re.compile(r'0x[0-9a-fA-F]{8,}')
+ROUND_SOURCES = ('cadence', 'filing', 'review', 'safety')
 # Alert kinds written by chain-monitor.py. Unknown kinds show as warnings.
 CRITICAL = {'TX_FAILED', 'UNEXPECTED_TOKEN', 'SWAP_WITHOUT_ONE_STOCK_LEG', 'BUY_WITHOUT_USDT_DEBIT',
             'SELL_WITHOUT_USDT_CREDIT', 'TX_NOT_APPROVE_OR_ROUTER_SWAP', 'APPROVAL_TO_OTHER_SPENDER',
@@ -191,6 +201,7 @@ def alert_groups(alerts, latest_block, redact):
 def dashboard_data(monitor_dir, *, redact=True):
     root = Path(monitor_dir)
     (snapshots, s_report), (txs, t_report), (alerts, a_report) = (read_jsonl(root / f) for f in FILES)
+    decided, d_report = read_jsonl(root / DECISIONS)
     snapshots = [s for s in snapshots if utc(s.get('utc'))]
     snapshots.sort(key=lambda s: s['utc'])  # stable: polls that share a finalized block keep file order
     latest = snapshots[-1] if snapshots else {}
@@ -222,12 +233,95 @@ def dashboard_data(monitor_dir, *, redact=True):
         summary.update(block=latest_block, nonce=latest.get('nonce') if isinstance(latest.get('nonce'), int) else None)
     return dict(
         schema='LarpDashboard.v1', redacted=redact,
-        inputs=dict(zip(FILES, (s_report, t_report, a_report))),
+        inputs=dict(zip(FILES + (DECISIONS,), (s_report, t_report, a_report, d_report))),
         summary=summary,
         equity=dict(total=len(points), points=[[w, round(e, 6), round(d, 4)] for w, e, d in downsample(points)]),
         holdings=holdings(latest),
         transactions=dict(total=len(rows), rows=rows[::-1][:MAX_TRANSACTIONS]),
-        alerts=alert_groups(alerts, latest_block, redact))
+        alerts=alert_groups(alerts, latest_block, redact),
+        decisions=decisions_data(decided, redact))
+
+
+def code(value):
+    return value if isinstance(value, str) and CODE.match(value) else 'OTHER'
+
+
+def side(value):
+    return value if value in ('BUY', 'SELL') else None
+
+
+def items(value, limit=16):
+    return [v for v in value[:limit] if isinstance(v, dict)] if isinstance(value, list) else []
+
+
+def ms_utc(value):
+    if type(value) is not int or value <= 0:
+        return None
+    return datetime.fromtimestamp(value // 1000, timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def reason_row(r):
+    row = dict(symbol=name(r['symbol']) if r.get('symbol') else None, reason=code(r.get('reason')))
+    if isinstance(r.get('symbols'), list):
+        row['symbols'] = [name(s) for s in r['symbols'][:10]]
+    if isinstance(r.get('gates'), list):
+        row['gates'] = [code(g) for g in r['gates'][:10]]
+    return row
+
+
+def decision(d, redact):
+    """One round's decision, allow-listed again here: the export already is, but the page must not trust a file."""
+    rid = d.get('round_id') if isinstance(d.get('round_id'), str) else ''
+    source = rid.split(':', 1)[0]
+    weight = lambda w: (w[0] / w[1] * 100 if isinstance(w, list) and len(w) == 2 and all(type(x) is int for x in w)
+                        and w[1] > 0 else None)
+    a = d.get('assessment') if isinstance(d.get('assessment'), dict) else None
+    row = dict(
+        utc=ms_utc(d.get('decision_ms')) or ms_utc(d.get('started_ms')),
+        source=source.upper() if source in ROUND_SOURCES else 'OTHER',
+        event=d.get('event') if d.get('event') in ('PLANNED', 'REJECTED') else 'OTHER',
+        status=code(d['status']) if d.get('status') is not None else None,
+        round_kind=code(d.get('round_kind')), execution_pending=d.get('execution_pending') is True,
+        errors=[code(e) for e in (d.get('errors') or [])[:12]] if isinstance(d.get('errors'), list) else [],
+        orders=[dict(symbol=name(o.get('symbol')), side=side(o.get('side')),
+                     amount=o['amount'] if isinstance(o.get('amount'), str) and AMOUNT.match(o['amount']) else None)
+                for o in items(d.get('orders'))],
+        intents=[dict(symbol=name(i.get('symbol')), side=side(i.get('side')), mandatory=i.get('mandatory') is True,
+                      reasons=[code(r) for r in (i.get('reasons') or [])[:6]] if isinstance(i.get('reasons'), list)
+                      else []) for i in items(d.get('intents'))],
+        targets=[dict(symbol=name(t.get('symbol')), kind=code(t.get('kind')), reason=code(t.get('reason')),
+                      weight_pct=weight(t.get('weight'))) for t in items(d.get('targets'))],
+        rejections=[reason_row(r) for r in items(d.get('rejections'), 20)],
+        clamps=[reason_row(r) for r in items(d.get('clamps'), 8)],
+        assessment=None if a is None else dict(
+            issuer=name(a['issuer']) if a.get('issuer') else None, status=code(a.get('status')),
+            reasons=[code(r) for r in (a.get('reasons') or [])[:6]] if isinstance(a.get('reasons'), list) else []))
+    if not redact:
+        row['round_id'] = rid if ROUND_ID.match(rid) and not HEX.search(rid) else None
+    return row
+
+
+def decisions_data(rows, redact):
+    """Newest first, with counts by close status and side and the most frequent reason codes."""
+    def key(d):
+        seq = d.get('seq')
+        return (seq if type(seq) is int and not isinstance(seq, bool) else -1,
+                d.get('round_id') if isinstance(d.get('round_id'), str) else '')
+    shaped = [decision(d, redact) for d in sorted(rows, key=key)]
+    by_status, sides, reasons = {}, dict(BUY=0, SELL=0), {}
+    for d in shaped:
+        status = d['status'] or 'OPEN'
+        by_status[status] = by_status.get(status, 0) + 1
+        for o in d['orders']:
+            if o['side']:
+                sides[o['side']] += 1
+        for r in [x['reason'] for x in d['rejections']] + d['errors']:
+            reasons[r] = reasons.get(r, 0) + 1
+    top = sorted(reasons.items(), key=lambda kv: (-kv[1], kv[0]))[:8]
+    return dict(total=len(shaped), by_status=by_status, with_orders=sum(1 for d in shaped if d['orders']),
+                buys=sides['BUY'], sells=sides['SELL'], top_reasons=[[k, n] for k, n in top],
+                latest_utc=max((d['utc'] for d in shaped if d['utc']), default=None),
+                rows=shaped[::-1][:MAX_DECISIONS])
 
 
 def encode(data):

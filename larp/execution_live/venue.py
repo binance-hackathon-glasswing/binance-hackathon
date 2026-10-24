@@ -25,11 +25,10 @@ class LiveVenue:
     def __init__(self,client,chain,*,decoder,release=None):
         self.client,self.chain,self.decoder,self.release=client,chain,decoder,release
         self.vendors = {}
-    @boundary
-    def quote(self,intent,nonce):
+    def _quote(self,intent,slippage_bps):
         r=self.client.request('GET','aggregator/quote-and-swap',dict(binanceChainId='56',amount=str(intent.amount),
              fromTokenAddress=intent.pay_token,toTokenAddress=intent.receive_token,userWalletAddress=intent.wallet,
-             vendor='LiquidMesh',slippagePercent=slippage_percent(intent.max_slippage_bps)))
+             vendor='LiquidMesh',slippagePercent=slippage_percent(slippage_bps)))
         d=single(r);tx=d['tx']
         if d.get('executionMode')!='SWAP' or d.get('rfq') is not None:raise Blocked('unknown execution mode')
         vendor = d.get('routerResult', {}).get('vendorName')
@@ -38,6 +37,17 @@ class LiveVenue:
         minimum = integer(tx['minReceiveAmount'])
         if not 0 < minimum <= received or minimum < received * (10000 - intent.max_slippage_bps) // 10000:
             raise Blocked('fresh quote minimum output exceeds intent slippage limit')
+        return d,tx,vendor,received,minimum
+    @boundary
+    def quote(self,intent,nonce):
+        d,tx,vendor,received,minimum=self._quote(intent,intent.max_slippage_bps)
+        # IDEA-090 (S2-F6): at the plan's slippage, a fresh output below the planning quote's gives a minimum under the
+        # intent's authorized one, which validate_payload refuses. While the output still clears that minimum, ask once
+        # more at the largest whole-bps slippage keeping the minimum there: narrower than the intent's limit, never
+        # wider, and every check above applies again.
+        tighter=(received-intent.minimum_output)*10000//received
+        if minimum<intent.minimum_output and 1<=tighter<intent.max_slippage_bps:
+            d,tx,vendor,received,minimum=self._quote(intent,tighter)
         cash = intent.amount if intent.pay_token == '0x55d398326f99059ff775485246999027b3197955' else integer(d['routerResult']['toTokenAmount'])
         if intent.max_cash_units is not None and cash > intent.max_cash_units * 10**12:
             raise Blocked('fresh quote exceeds execution cash cap')
