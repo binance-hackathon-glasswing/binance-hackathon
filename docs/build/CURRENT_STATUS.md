@@ -1,5 +1,12 @@
 # Current shared build and remaining work
 
+PR276-RV01 (2026-10-24): IDEA-091 strategy research reviewed and corrected against canonical `59c878c0`.
+Verified code gaps are scoped; policy/rules and primary-source checks are separated from unverified leads.
+Unsupported profit/rank forecasts and unreproduced simulation tables are withdrawn. No strategy, parameter, gas,
+runtime or release change is adopted. [Review](../ledger/IDEA-091.md#pr276-rv01-results--pass-for-documentation-merge-2026-10-24-sgt) /
+[report](../research/strategy-alternatives-20261024/report.md) /
+[receipt](evidence/pr276-review-20261024.json). PF-IMPL01, PF-04 and later dev-run acceptance retain their owners/gates.
+
 PR274-RV01 (2026-10-24): S2-F2..F6 source fixes independently reviewed with three repairs: preserve original model
 assessment audits during replay, bound complete SSM decision exports, and retain actual quote-follow-up IDs in the
 dashboard. Full pinned Python3.12/PostgreSQL14.24 validation:2643 tests/4004 subtests PASS,10 expected skips; final

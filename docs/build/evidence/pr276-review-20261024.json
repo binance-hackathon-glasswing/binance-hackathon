@@ -1,0 +1,197 @@
+{
+  "review_id": "PR276-RV01",
+  "review_date_sgt": "2026-10-24",
+  "pull_request": "https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/276",
+  "base_ref": "codex/system-testing-20261012",
+  "base_sha": "59c878c03fb47c05e7a76c327057f5568ab21def",
+  "original_research_sha": "5d5b5e284fd0e70586ba83767a2d22b0fd726d1e",
+  "prospective_review_criteria_sha": "0d666b799b18a4a3e9fbe395f49ad5996cc43318",
+  "result": "PASS_FOR_DOCUMENTATION_MERGE_ONLY",
+  "source_scope": "Source and retained records at immutable base; relevant code/result/rule sections checked, not a new runtime or full literature replication.",
+  "reviewed_base_file_hashes": {
+    "larp/runtime/service.py": "b386ad284c867af345410e4791bb7ea9da100d1d3066a3015040f741bef887ba",
+    "larp/integration/runtime.py": "db5a7b87611601dae5d9914aac60068a0546a6a2578161cd45493d3dbfd2941f",
+    "larp/strategy/s1.py": "93a4deca34aece36c3f31d26622e864b73208e7b23502f27fdad8f1482bed7f9",
+    "larp/integration/exposure.py": "5b18b24baea6688509237d72fc44b038ce11969e9313ac8336f3a6a71149dd42",
+    "larp/strategy/policy.py": "84ada827759dc3c676df71d55322bd7790bae4fc267db4f8da18ba941a05554b",
+    "larp/risk/planner.py": "7763f831ab8c9eff283ac5d80661a7d2c89eec2f33e85caa012b2662d9b3d322",
+    "larp/risk/accounting.py": "5617d190eeecd23542bbd1d55d4956157e2294c17f08d7030a8f4fe292530507",
+    "larp/strategy/profiles.py": "e3360a39ca955dc3db83e8a16c736e365837a80a0e9e600676a54f2dbed2abc2",
+    "larp/strategy/execution_bounds.py": "b6153aaf8e00ddb2c83a5ce87c00fe252d6b54dfd147b510c62488f656cfabd4",
+    "larp/execution_live/venue.py": "0d798ff497201baae8b347b3185f2336fd1eae40b0c7bbdf857b62529d9a9d46",
+    "larp/execution.py": "5d2d79ff2c5f7e65cb0733f27dae366672ab0556a3cb1917dfc5ad9f85cb027e",
+    "tools/deploy/build_rehearsal_candidate.py": "aa7f2e9e121e717de1fa220cacb471a0129d6752ec01ec5d9e114a3700b12ed9",
+    "docs/build/evidence/s1-rehearsal-profile-20261023/README.md": "1f6ca51145278a4b5d4665ceef8685959816af9b5a2b405e0088870eb59b4c9b",
+    "docs/build/evidence/s1-rehearsal-profile-20261023/rehearsal-s1-deterministic.json": "6bcf1dfbd7f0c29893dd62bf67d9bcf7a04299b1d24a29d7310b6d769f8c1526",
+    "docs/ledger/IDEA-084.md": "9cc7055e66196c7697be30999f97f409130adafaeeb61dfc4b76e268c9d90140",
+    "docs/ledger/IDEA-089.md": "ededb50cc6c4cd4c68275b3e98160207b792f4bf17ba32fbf81a072cf6ec1b6c",
+    "docs/ledger/IDEA-090.md": "d975525deb4560caf33941eafa4c9f636888a71885e958365a2d86e75dbe5369",
+    "docs/ledger/EXP-007.md": "c8f406c295202eeb729965ad765b108a7d4e80c05e19636d78a9c33b3245e41e",
+    "docs/ledger/EXP-008.md": "e412f4c308da5a6265e10b8fdf7ba09b890c809f52e1248308f27a021e9a71c2",
+    "docs/build/QUOTE_COST_REVIEW_120_20261021.md": "5768a3d12b6f5ea8aa0361344255d42afad1c093ddbad4460920bce12d0de58c",
+    "docs/official/source_page.md": "da694f5688e297496cd78f8df923bba00ea4da01186978ca37dceec9faa99ce7",
+    "docs/official/kit/bstocks-trading-guide.md": "304f334da490c9fb995a4702503074f767db1a1b0a61aac13c9c45f96036f88e",
+    "docs/skill/SKILL.md": "ed56e77eed4def13564d10a93fe373ec7961acf12a0f340d9cbff2eb5545a4eb",
+    "docs/skill/reference/participant-kit.md": "d7a50d358c925afce9cead26ae8b62f353332eb1c10d993ce198ba8fbc867639"
+  },
+  "findings": {
+    "R1": "Removed universal net-return dominance, forecast profit effect bounds and calibrated prize-probability claims; candidates remain conditional.",
+    "R2": "Scoped missing-series persistence, limiter producer, target/minimum arithmetic and accounting/planner behavior; no inference of filled holdings.",
+    "R3": "Separated PF-04/internal cut line from rules; retained F-43/F-115/Q-39 uncertainty and F-120 settled bootstrap.",
+    "R4": "Withdrew two unreproduced 200000-draw simulation claims/tables as accepted evidence; originals retained in immutable history.",
+    "R5": "Corrected approval versus signed swap/completion; preserved transaction authorization/broadcast guards and candidate-specific gas/cost qualification.",
+    "R6": "Graded primary-source access, unverified leads and schedules; original URL register/hash retention and local link repair."
+  },
+  "external_source_checks": [
+    {
+      "url": "https://arxiv.org/html/2304.07619v6",
+      "access": "PRIMARY_FULL_TEXT_RELEVANT_RESULT_SECTIONS",
+      "checked": "Main cost analysis, size/long-short results and later-period limitations; no replication."
+    },
+    {
+      "url": "https://flora.insead.edu/fichiersti_wp/inseadwp2003/2003-27.pdf",
+      "access": "PRIMARY_FULL_TEXT_RELEVANT_MODEL_RESULT_SECTIONS",
+      "checked": "2003 working-paper version; distribution, variance/correlation and choice-cost assumptions; not financial portfolio calibration."
+    },
+    {
+      "url": "https://www.nber.org/papers/w22208",
+      "access": "PRIMARY_INDEXED_ABSTRACT_ONLY",
+      "checked": "Abstract retrieved from search index; direct refetch returned 403. No full-text verification or replication."
+    },
+    {
+      "url": "https://academic.oup.com/rfs/article-abstract/22/5/1915/1592901",
+      "access": "PRIMARY_INDEXED_METADATA_ONLY",
+      "checked": "Publisher title/authors/DOI; direct text unavailable. No quantitative result accepted from this listing."
+    },
+    {
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "access": "PRIMARY_SCHEDULE",
+      "checked": "2026 Oct27-28 and Dec8-9 scheduled meetings; no claim excluding unscheduled events."
+    },
+    {
+      "url": "https://news.microsoft.com/source/2026/10/07/microsoft-announces-quarterly-earnings-release-date-69/",
+      "access": "ISSUER_FULL_RELEASE",
+      "checked": "FY27Q1 Oct28 after close; webcast14:30 Pacific, not exact earnings-publication instant."
+    },
+    {
+      "url": "https://www.bea.gov/news/schedule/full",
+      "access": "PRIMARY_SCHEDULE",
+      "checked": "Oct29 GDP advance and September personal income/outlays08:30 Eastern; page modifiedOct24."
+    },
+    {
+      "url": "https://www.bls.gov/schedule/2026/11_sched_list.htm",
+      "access": "PRIMARY_SCHEDULE",
+      "checked": "Nov6 Employment Situation and Nov10 CPI/real earnings08:30 Eastern; schedule modifiedFeb18."
+    },
+    {
+      "url": "https://news.skhynix.com/en/?p=13734",
+      "access": "UNAVAILABLE",
+      "checked": "No confirmed earnings date accepted."
+    },
+    {
+      "url": "https://www.nber.org/papers/w15136",
+      "access": "UNAVAILABLE_DIRECT_FETCH",
+      "checked": "No financial concentration optimum accepted."
+    },
+    {
+      "url": "https://www.lehigh.edu/~xuy219/research/COWY.pdf",
+      "access": "DIRECT_FETCH_TIMEOUT_INDEXED_LEAD",
+      "checked": "No full-text verification or quantitative result used in reviewed synthesis."
+    },
+    {
+      "url": "https://dspace.mit.edu/handle/1721.1/107017",
+      "access": "UNAVAILABLE_DIRECT_FETCH",
+      "checked": "No quantitative stop-loss theorem accepted."
+    }
+  ],
+  "automated_documentation_checks": {
+    "original_external_source_urls_preserved_per_file": 282,
+    "research_relative_file_links_checked": 54,
+    "missing_research_file_links": [],
+    "arithmetic": {
+      "conditional_cut_usdt": "14.000",
+      "candidate_minimum_usdt": "18.63742",
+      "conditional_weight_threshold": "0.2662488571428571428571428571",
+      "action_bnb": "0.000384",
+      "exit_reserve_bnb": "0.00384",
+      "reserve_plus_action_bnb": "0.004224",
+      "gas_price_assumption_ratio": "3.2"
+    },
+    "utc_conversions": [
+      {
+        "local": "2026-10-28T14:30",
+        "zone": "America/Los_Angeles",
+        "utc": "2026-10-28T21:30:00+00:00"
+      },
+      {
+        "local": "2026-10-29T08:30",
+        "zone": "America/New_York",
+        "utc": "2026-10-29T12:30:00+00:00"
+      },
+      {
+        "local": "2026-11-06T08:30",
+        "zone": "America/New_York",
+        "utc": "2026-11-06T13:30:00+00:00"
+      },
+      {
+        "local": "2026-11-10T08:30",
+        "zone": "America/New_York",
+        "utc": "2026-11-10T13:30:00+00:00"
+      },
+      {
+        "local": "2026-10-30T09:30",
+        "zone": "America/New_York",
+        "utc": "2026-10-30T13:30:00+00:00"
+      },
+      {
+        "local": "2026-11-02T09:30",
+        "zone": "America/New_York",
+        "utc": "2026-11-02T14:30:00+00:00"
+      }
+    ],
+    "docs_only_changed_files": [
+      "docs/INCOMPLETE_WORK.md",
+      "docs/LEDGER.md",
+      "docs/build/CURRENT_STATUS.md",
+      "docs/build/evidence/pr276-original-sources-20261024.json",
+      "docs/build/evidence/pr276-review-20261024.json",
+      "docs/ledger/IDEA-091.md",
+      "docs/research/strategy-alternatives-20261024/notes/competition_and_llm_agents.md",
+      "docs/research/strategy-alternatives-20261024/notes/current_strategy_baseline.md",
+      "docs/research/strategy-alternatives-20261024/notes/portfolio_construction_and_risk.md",
+      "docs/research/strategy-alternatives-20261024/notes/timing_signals_and_events.md",
+      "docs/research/strategy-alternatives-20261024/notes/tokenized_stock_execution.md",
+      "docs/research/strategy-alternatives-20261024/report.md"
+    ],
+    "whitespace": "PASS",
+    "python": "3.12.14",
+    "added_line_relative_links_and_fragments_checked": 65,
+    "missing_added_line_files_or_fragments": []
+  },
+  "validation_method": "Python3.12.14 standard-library assertions using git-show originals, URL set inclusion per file, Path.resolve().exists(), Decimal arithmetic against committed candidate JSON, zoneinfo UTC conversions and docs-only diff; git diff --check. Review-result anchors and changed-line links checked in final pass.",
+  "application_tests": "NOT_RERUN_DOCS_ONLY",
+  "ci": "NOT_CLAIMED_DOCS_SKIP_CI",
+  "strategy_simulation": "NOT_RUN",
+  "backtest": "NOT_RUN",
+  "runtime_changes": false,
+  "profile_changes": false,
+  "wallet_or_host_actions": false,
+  "decision_adoption": false,
+  "remaining": [
+    {
+      "owner": "Keith / Keegan",
+      "record": "docs/INCOMPLETE_WORK.md PF-IMPL01 / PF-04; docs/ledger/IDEA-084.md",
+      "work": "Reconcile intentional S1 series/limiter/stop/size/calendar behavior and qualify exact final inputs/profile."
+    },
+    {
+      "owner": "Yao / Isaac; Keith / Keegan acceptance",
+      "record": "docs/INCOMPLETE_WORK.md S2-F2; docs/ledger/IDEA-089.md; docs/ledger/IDEA-090.md",
+      "work": "Later approved dev cycle, F7/post-approve swaps, sell/flatten, reconciliation and release/host qualification."
+    },
+    {
+      "owner": "Yao / team; Isaac exact approvals",
+      "record": "docs/ledger/IDEA-091.md; docs/ledger/IDEA-084.md",
+      "work": "Any strategy or parameter reopening needs separate recorded decision, prospective criteria, coverage and release approvals."
+    }
+  ]
+}
