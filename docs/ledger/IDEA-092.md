@@ -123,3 +123,30 @@ Red on base: the S3 tests cannot run on base (no `scheduled_flatten` module or c
 - H1: install with run 4's holdings needs a reviewed carry-over, or a flat wallet.
 - H2 at install: `gate_a` rejects dust.
 - The run decision and window (Yao), Isaac's approval, the pinned PG suite, and S3-L1.
+
+## PR277-RV01 — independent merge review (Isaac/Codex, 2026-10-24 SGT)
+
+Original PR head `08dd9a84`; canonical base `a0409d19`. User authorizes source review, repairs and merge;
+installation, wallet operations, carry-over accounting and profile/signer approval remain outside this review.
+
+R1 (source finding): the planner blocks new BUYs while the scheduled flatten is pending, but a BUY authorized just
+before the time retains its ordinary S2 execution window and finite command lifetime across that boundary. Neither
+`RuntimePlanner` nor `execution_bounds.permitted` applies the S3 cutoff to this in-flight authority. The fix must
+bound both the runtime command and independent execution/signer admission; settlement/reconciliation must continue
+for transactions already submitted. First flat/DONE rounds must still permit S2 rebuilding.
+
+Prospective pass criteria, recorded before review tests or changed runtime code run:
+- RV1: a pre-cut BUY's command authority expires no later than the scheduled instant; independent admission accepts
+  before and refuses at/after the boundary. Post-DONE BUYs retain their ordinary bounds, mandatory SELLs remain
+  admitted, and S2/profile bytes and other execution guards remain unchanged. Cover quote refinement/retry as needed.
+- RV2: real PostgreSQL coordinator commits, reloads and replays DONE, with a later re-held book not sold again by the
+  schedule; pending reservations prevent early DONE. Exercise risk-state persistence with the actual runtime adapter.
+- RV3: safety/discretionary attempt counts are not reset by the scheduled cycle. Scheduled and terminal sells share
+  SAFETY counts; exhausted SAFETY capacity can also prevent terminal exits. Record this remaining operational risk
+  alongside the existing BUY/leg/gas/install constraints, without granting more attempts or carrying holdings over.
+- RV4: validate/rebuild S3 and unchanged S2 candidates, review scope refusals, and run focused and full tests with
+  PostgreSQL14.24 and repository-pinned dependencies. Current workflow/Docker pin is Python3.12.15; the original
+  claim that3.12.14 is the repository pin is historical wording to correct. Document actual environment/skips.
+
+GitHub Actions run40098610551 did not start jobs: runtime annotation says failed account payments/spending limit.
+No code/CI pass is inferred from that run. No runtime release or live trading test is authorized by this source review.
