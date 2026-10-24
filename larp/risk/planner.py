@@ -383,7 +383,11 @@ def plan(snapshot, proposal_or_none):
 
     if s1 and actions and not actions[0][3]:
         # IDEA-075 §5.2: sells first, then buys, largest gap first (by notional at the current mark).
-        actions.sort(key=lambda a: (a[1] != "SELL", -value(a[2], market[a[0]]), a[0]))
+        # IDEA-090 (S2-F3): a quote follow-up plans the leg its parent asked a quote for, and notionals compare in
+        # whole cash units, so a sub-unit price move between the rounds cannot re-order near-equal legs.
+        asked = execution_bounds.requested_legs(c)
+        actions.sort(key=lambda a: (a[1] != "SELL", (a[0], a[1]) not in asked, -floor(value(a[2], market[a[0]])),
+                                    a[0]))
     if p["baseline"] == "EQUAL_WEIGHT" and actions and not actions[0][3]:
         # Candidate selection and actual child execution must use the same cost
         # priority; alphabetical planning otherwise spends the daily slot first.
