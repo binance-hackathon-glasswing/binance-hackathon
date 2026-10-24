@@ -274,3 +274,13 @@ script). Bindings written for `2d16007` (run `larp-dev-rehearsal-20261024-s2`, d
   (→ `larp-dev-rehearsal-20261024-s2`) (assistant field check).
 
 Next: A1 (Isaac): profile `eb55d76a…` and `signer.json` `56e029af…`.
+
+### S2-A1 — Isaac approves the run-4 S2 profile and signer.json (relayed by Yao, 2026-10-24T05:24Z)
+
+**Approval (Isaac, relayed by Yao in chat):** "Isaac approves A1, keep going", in reply to the A1 request for exactly
+profile `eb55d76a…` (`docs/build/evidence/s2-rehearsal-profile-20261024/rehearsal-s2-deterministic.json`) and
+run-4 `signer.json` `56e029afe93819b75edb39bd1b5b32e5a6cef2c4f9d7fcfcaff47007d3acc8c1` (M3 stamp
+`20261024T052155Z`; diff against run 3's `49cb1a08…` only `build_id`, `database_name`, `run_id`), with M3 86/86
+COVERED, Q1 10/10, CAP-02 `3241abd3…`, router policy `05759e90…`, the same dev wallet. Clears
+`OWNER_REVIEW_REQUIRED` for these hashes only; recorded as relayed. This is the P4 approval record
+("IDEA-089 S2-A1"). Next: R1p, P2, M4, P3, P4, T1, R1s, P2s, S1, S1b, S2, P5, C1, T2, M9.
