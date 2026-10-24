@@ -243,3 +243,19 @@ tested `e68fcb87` (all test jobs green; no artifact because of the quota). BUILD
   `d7905de4…` are unchanged. `MIRROR_RUN=LOCAL-BUILD-RUN4`. `M1_DONE`.
 
 Next: K soak for run 3 (before R1p), Q1, M2, M3.
+
+### Run-ID confirmation, run-3 overnight soak, Q1 and M2 — PASS (Yao, 2026-10-24 05:18–05:2xZ)
+
+- **Run ID (Yao, in chat):** "Confirmed: run ID larp-dev-rehearsal-20261024-s2" (database `larp_rehearsal4`). Clears
+  RC7 README gate 3.
+- **Run-3 soak before retirement** (`mac/soak-db-logins.sh 12` from the RC6 folder, `results/soak-20261024T051827Z`):
+  hours 2026-10-23 18 through 2026-10-24 04 (11 full hours) 81–82 IAM logins each, the partial hour 05 had 26; 0 auth
+  failures and 0 `ERROR:`/`FATAL:`/`PANIC:` lines in every file. With SJ-10 J6 (06:00–16:00Z on RC5) that is about 21
+  hours on the pooled connection code at about 82 an hour. RDS backend memory and service journals are still not
+  checked (SJ-06-DB01).
+- **Q1** (`mac/q1-quote-check.sh`, checked at 05:20:09Z, RC7 release checkout `2d160073`): all ten quotes (five names,
+  BUY 19 USDT and the hypothetical SELL) `VERIFIED_EXECUTABLE`, `quote_at_cap=True`, `token_open=True`,
+  `underlying_open=True`, impact 0–1 bps, `exit=0`; `Q1_DONE`. First live SELL-side check (S2-12).
+- **M2:** bundle uploaded, `bytes: 98434594`, SSE `aws:kms`, `M2_DONE`.
+
+Next: M3 (before R1p).
