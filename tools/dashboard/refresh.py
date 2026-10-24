@@ -20,6 +20,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import sys
 import time
 
 from tools.dashboard import build, decisions
@@ -59,19 +60,24 @@ def chain_monitor(monitor_dir):
     os.environ.setdefault('LARP_ENV_FILE', str(ROOT / '.env'))  # read-only Web3 key for prices, if present
     spec = importlib.util.spec_from_file_location('chain_monitor', MONITOR)
     monitor = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(monitor)
+    # No __pycache__ beside the monitor: its run-sheet folder is pinned file by file (tests/runtime/test_run4_sheet.py).
+    keep, sys.dont_write_bytecode = sys.dont_write_bytecode, True
+    try:
+        spec.loader.exec_module(monitor)
+    finally:
+        sys.dont_write_bytecode = keep
     return monitor
 
 
-def seeds_from_primary(monitor):
+def seeds_from_primary(monitor, runner):
     """Blocks of the transactions in the run's execution records (read-only export over SSM)."""
-    _, stdout = ssm_run(TX_EXPORT)
+    _, stdout = runner(TX_EXPORT)
     hashes = [row['tx_hash'] for row in map(json.loads, filter(None, stdout.splitlines())) if row.get('section') == 'tx']
     receipts = monitor.rpc(None, None, batch=[('eth_getTransactionReceipt', [h]) for h in hashes]) if hashes else []
     return sorted({int(r['blockNumber'], 16) for r in receipts if r})
 
 
-def poll(monitor_dir, seed_blocks, attempts=2):
+def poll(monitor_dir, seed_blocks, attempts=2, *, runner=None, settings=None):
     """One monitor poll on a copy of its folder, kept only when the poll completes: the monitor appends transactions
     before it reads balances and saves its state last, so a poll that fails midway would book them twice on the
     next try."""
@@ -84,7 +90,7 @@ def poll(monitor_dir, seed_blocks, attempts=2):
         else:
             scratch.mkdir(parents=True)
         try:
-            result = _poll(scratch, seed_blocks)
+            result = _poll(scratch, seed_blocks, runner or ssm_run, settings or {})
         except (RuntimeError, OSError, ValueError, KeyError, TypeError):
             shutil.rmtree(scratch, ignore_errors=True)
             if attempt == attempts - 1:
@@ -96,11 +102,32 @@ def poll(monitor_dir, seed_blocks, attempts=2):
         return result
 
 
-def _poll(monitor_dir, seed_blocks):
+def configure(monitor, settings):
+    """Point the monitor at another wallet (IDEA-091): `wallet`, and its opening `start_nonce` and `start_usdt`."""
+    if settings.get('wallet'):
+        monitor.WALLET = settings['wallet'].lower()
+    if settings.get('start_nonce') is not None:
+        monitor.START = dict(monitor.START, nonce=int(settings['start_nonce']))
+
+
+def restate_opening(monitor_dir, start_usdt):
+    """The RC7 monitor reports PnL against a fixed 96 USDT; restate the poll it just wrote against `start_usdt`."""
+    path = Path(monitor_dir) / 'snapshots.jsonl'
+    lines = path.read_text().splitlines()
+    snap = json.loads(lines[-1])
+    if snap.get('equity_ex_bnb_usdt') is not None:
+        snap['pnl_vs_start_ex_bnb_usdt'] = snap['equity_ex_bnb_usdt'] - float(start_usdt)
+    lines[-1] = json.dumps(snap, sort_keys=True, default=str)
+    path.write_text('\n'.join(lines) + '\n')
+    return snap
+
+
+def _poll(monitor_dir, seed_blocks, runner, settings):
     monitor = chain_monitor(monitor_dir)
+    configure(monitor, settings)
     state = monitor.load_state()
     if state['block'] is None and not seed_blocks:
-        seed_blocks = seeds_from_primary(monitor)
+        seed_blocks = seeds_from_primary(monitor, runner)
     if state['block'] is None and seed_blocks:
         scan = monitor.wallet_txs
 
@@ -116,6 +143,8 @@ def _poll(monitor_dir, seed_blocks):
             return found + scan(max(seed_blocks) + 1, end)  # else also scan after the last seed
         monitor.wallet_txs = seeded
     snap, alerts = monitor.poll(state)
+    if settings.get('start_usdt') is not None:
+        snap = restate_opening(monitor_dir, settings['start_usdt'])
     return dict(utc=snap['utc'], nonce=snap['nonce'], trades=snap['trades'], failed_txs=snap['failed_txs'],
                 alerts=sorted({a['kind'] for a in alerts}), price_error=snap['price_error'])
 
@@ -143,7 +172,7 @@ def ssm_run(script_path, *args, timeout_s=300):
     raise TimeoutError(Path(script_path).name + ' did not finish')
 
 
-def refresh(work, seed_blocks=()):
+def refresh(work, seed_blocks=(), *, runner=None, settings=None):
     work = Path(work)
     monitor_dir, site, out = work / 'monitor', work / 'site', work / 'artifact'
     for folder in (monitor_dir, site, out):
@@ -151,14 +180,20 @@ def refresh(work, seed_blocks=()):
     saved = work / 'refresh-state.json'
     if not seed_blocks and saved.is_file():
         seed_blocks = json.loads(saved.read_text()).get('blocks', [])
-    chain = poll(monitor_dir, sorted(seed_blocks))
-    command_id, stdout = ssm_run(EXPORT, 40)
+    chain = poll(monitor_dir, sorted(seed_blocks), runner=runner, settings=settings)
+    # Best effort: without the export (no SSM access, a timeout) the trades still refresh beside the last decisions.
+    try:
+        command_id, stdout = (runner or ssm_run)(EXPORT, 40)
+        export_error = None
+    except Exception as error:  # boto3 ClientError, TimeoutError, a failed command
+        command_id, stdout, export_error = None, '', type(error).__name__
     merged = decisions.merge(stdout, monitor_dir)
     data = build.build(monitor_dir, site)
     (out / 'larp-dashboard.html').write_text(artifact_page((site / 'index.html').read_text()))
     (out / 'data.json').write_bytes((site / 'data.json').read_bytes())
     saved.write_text(json.dumps(dict(blocks=known_blocks(monitor_dir)), sort_keys=True) + '\n')
     return dict(chain=chain, export_command=command_id, export=merged.get('summary'), rounds=merged['rounds'],
+                export_error=export_error,
                 as_of_utc=data['summary']['as_of_utc'], page=str(out / 'larp-dashboard.html'))
 
 

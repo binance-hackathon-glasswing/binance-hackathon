@@ -46,3 +46,29 @@ hosts except the two read-only SSM documents below.
 
 Not claimed: an apply in AWS or a real invocation (owners' step), whether SSM read access stays open during the scored
 run (PAGES01), or the final wallet's opening balances.
+
+## Results (2026-10-24, offline; nothing applied)
+
+Files: `tools/dashboard/aws/` (`handler.py`, `package.py`, `viewer-auth.js`, `versions.tf`, `variables.tf`,
+`main.tf`, `outputs.tf`, `dashboard.example.tfvars`, `tests/dashboard.tftest.hcl`), `tools/dashboard/refresh.py`
+(pluggable SSM runner, configurable wallet and opening values, best-effort export), `tests/test_dashboard_aws.py`,
+`docs/build/DASHBOARD.md` "Automated private hosting on AWS". The tests were written with the code (new module), and
+two mutations were run to check they bite: a runner sending `AWS-RunShellScript` fails A2; a partial upload before a
+failing poll fails A1.
+
+| # | Result | Evidence |
+|---|---|---|
+| A1 | **pass** | `test_a1_runs_upload_the_page_and_state_and_continue`: page and state uploaded, redacted, `no-cache`; the configured wallet and start nonce reach the monitor and PnL is restated against `START_USDT`; a second run continues (one transaction, two polls). `test_a1_a_failed_run_uploads_nothing`. Added while writing the guide: `test_a1_without_the_decisions_export_the_trades_still_refresh` (SSM refused: trades refresh, the last decisions stay, `export_error` reported). |
+| A2 | **pass** | Handler: only the two document names, only the primary, never `AWS-RunShellScript`, the tx document once (seeding); an unknown script is refused. Terraform: `ssm:SendCommand` resources are exactly the two documents and the instance; no secret read without `web3_secret_arn`, only that ARN with it. |
+| A3 | **pass** | Terraform test: all four public-access blocks on; the bucket policy's only statement is CloudFront reading `site/*` for this distribution; the login function is on `viewer-request`; HTTPS redirect. |
+| A4 | **pass** | `rate(1 hour)`, reserved concurrency 1, timeout 300 s. |
+| A5 | **pass** | Two builds are byte-identical (43,823 bytes); exactly the listed files plus the `.git` marker; the unmodified RC7 monitor finds its root inside the extracted package and the handler imports (`python -I`). |
+| A6 | **pass** | Node: the right credential passes; missing header, wrong credential, a non-Basic scheme, a missing key and an empty stored hash each get 401. |
+| A7 | **pass** | Terraform 1.13.5 (checksum-verified download), AWS provider 6.61.0: `fmt -check`, `validate`, `terraform test` 4 passed (mock provider, plan only). |
+
+Also fixed while testing: loading the RC7 monitor wrote `__pycache__` into its pinned run-sheet folder, which failed
+`tests/runtime/test_run4_sheet.py`; `refresh.chain_monitor` now loads it without writing bytecode.
+
+Open for the owners: review and apply (Isaac, Keegan); the backend state key; the Web3 read-only secret; setting the
+login hash; then stopping the Claude session's hourly task. PAGES01: SSM read access in the scored run, and the final
+wallet's start nonce and opening USDT.

@@ -93,6 +93,61 @@ python -m tools.dashboard.decisions merge deploy/activation/rehearsal-install-rc
 - **On a public page, the decisions show the strategy**: its targets, sizes and reasons, as well as its trades.
   Decide on that before publishing it for the scored run (PAGES01).
 
+## Automated private hosting on AWS (IDEA-091, proposal)
+
+The private claude.ai page is refreshed by an hourly Claude session (IDEA-087 DR). For the final, `tools/dashboard/aws/`
+runs the same refresh with no laptop and no Claude session: an hourly Lambda writes the redacted page to a private S3
+bucket, and CloudFront serves it behind a login. It is a separate Terraform stack outside the release files; it only
+reads the agent through two fixed, read-only SSM documents. **Not applied yet:** the owners (Isaac, Keegan) review
+and apply it.
+
+```
+EventBridge Scheduler (hourly) ──► Lambda: chain-monitor poll + SSM documents (decisions, tx hashes, read-only)
+                                         ──► s3://<bucket>/state/ (monitor state)   s3://<bucket>/site/ (page)
+viewer ──► CloudFront ──► login function (KeyValueStore hash) ──► Origin Access Control ──► s3://<bucket>/site/
+```
+
+1. Build the package (deterministic, about 44 KB; the AWS SDK comes from the Lambda runtime):
+
+   ```bash
+   python -m tools.dashboard.aws.package --out deploy/activation/dashboard-lambda.zip
+   ```
+
+2. Optional, for equity and drawdown: a Secrets Manager secret holding the **read-only** Web3 key as JSON
+   (`{"BINANCE_API_KEY": "...", "BINANCE_SECRET_KEY": "..."}`); pass its ARN as `web3_secret_arn`.
+3. Copy `tools/dashboard/aws/dashboard.example.tfvars` to a git-ignored `*.tfvars`, fill in the account, region,
+   bucket name, the run's primary instance ID, the wallet, its start nonce and opening USDT, then, with its **own**
+   state key:
+
+   ```bash
+   cd tools/dashboard/aws
+   terraform init -backend-config=<backend file with a dashboard state key>
+   terraform apply -var-file=<your>.tfvars
+   ```
+
+4. Set the login, outside Terraform (nothing secret is in the repo or the state). The stored value is the SHA-256
+   (hex) of the base64 `user:password` that browsers send:
+
+   ```bash
+   HASH=$(printf '%s' "$(printf '%s' 'user:password' | base64)" | sha256sum | cut -d' ' -f1)
+   KVS=$(terraform output -raw auth_key_value_store_arn)
+   ETAG=$(aws cloudfront-keyvaluestore describe-key-value-store --kvs-arn "$KVS" --query ETag --output text)
+   aws cloudfront-keyvaluestore put-key --kvs-arn "$KVS" --key basic-auth-sha256 --value "$HASH" --if-match "$ETAG"
+   ```
+
+5. Open `terraform output dashboard_url` and sign in. The first run happens within the hour; `aws lambda invoke
+   --function-name $(terraform output -raw lambda_function_name) /dev/stdout` runs it now. Then stop the Claude
+   session's hourly task.
+
+- **Least privilege:** the Lambda may `ssm:SendCommand` only the two documents, only on the primary; it cannot run
+  `AWS-RunShellScript`. It writes only `state/` and `site/` in its bucket and reads only the Web3 secret, if given.
+- **Failure:** a failed run uploads nothing; the page stays at the last good refresh, and its status pill turns
+  Delayed, then Stale.
+- **Scored run:** whether SSM read access to the primary stays open is still PAGES01. Without it, the trade side keeps
+  updating and the Decisions section keeps its last export; the run reports `export_error`.
+- Tests: `pytest tests/test_dashboard_aws.py` (handler, package, login function) and, from `tools/dashboard/aws`,
+  `terraform init -backend=false && terraform test` (IAM, privacy, schedule).
+
 ## Limits
 
 - GitHub's soft limit is 10 branch-based Pages builds an hour, so `--loop` must be at least 360 s (600 s is the
