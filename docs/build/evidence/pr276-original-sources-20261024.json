@@ -1,0 +1,41 @@
+{
+  "original_head": "5d5b5e284fd0e70586ba83767a2d22b0fd726d1e",
+  "files": {
+    "docs/research/strategy-alternatives-20261024/notes/competition_and_llm_agents.md": {
+      "original_sha256": "c0b4b1499613f05b8d90891ae18ed2a1e50b2f1bb1ef41511d972768f11f61cd",
+      "original_source_url_count": 46,
+      "original_word_count": 4923,
+      "reviewed_word_count": 868
+    },
+    "docs/research/strategy-alternatives-20261024/notes/current_strategy_baseline.md": {
+      "original_sha256": "41b25c6e1b0550dda84255917c073cba8198b3937490d81fb39142c8bc0c8dbf",
+      "original_source_url_count": 0,
+      "original_word_count": 7775,
+      "reviewed_word_count": 673
+    },
+    "docs/research/strategy-alternatives-20261024/notes/portfolio_construction_and_risk.md": {
+      "original_sha256": "eebcb214896f7a0ad5c511f034e8af93504092252f8089d2de77f5d51ad6a027",
+      "original_source_url_count": 38,
+      "original_word_count": 6129,
+      "reviewed_word_count": 920
+    },
+    "docs/research/strategy-alternatives-20261024/notes/timing_signals_and_events.md": {
+      "original_sha256": "c2fca5e67ce9f1255a7626992241950577d6c24b7ce44c9e17169737eb4247e0",
+      "original_source_url_count": 92,
+      "original_word_count": 6449,
+      "reviewed_word_count": 1168
+    },
+    "docs/research/strategy-alternatives-20261024/notes/tokenized_stock_execution.md": {
+      "original_sha256": "c9a3fdc80c63a7680fe07a096373fe72d2de693d87b3661584720b732b3ad078",
+      "original_source_url_count": 68,
+      "original_word_count": 6126,
+      "reviewed_word_count": 1022
+    },
+    "docs/research/strategy-alternatives-20261024/report.md": {
+      "original_sha256": "ab4ab8de75d5e3cb8657f7de2f369e396416bc04812fb4920d94168ea9b74e4e",
+      "original_source_url_count": 38,
+      "original_word_count": 4758,
+      "reviewed_word_count": 1467
+    }
+  }
+}

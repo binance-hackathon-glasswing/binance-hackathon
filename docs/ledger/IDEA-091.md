@@ -1,3 +1,8 @@
+> **PR276-RV01 reviewed status (2026-10-24):** the original proposal below is retained as authored. Its universal
+> return claims, profit-effect rankings, static-book characterization, gas/slippage recommendations and claimed
+> simulations are superseded by the [reviewed report](../research/strategy-alternatives-20261024/report.md) and
+> [review results](#pr276-rv01-results--pass-for-documentation-merge-2026-10-24-sgt). No strategy change is adopted.
+
 # IDEA-091 — Strategy alternatives research: execution first, equal 1/5 weights, retire the inert trend guard
 
 - Date / author: 2026-10-24 / requested in a Claude Code session; research, report and record by Claude Code
@@ -105,3 +110,37 @@ Findings to repair:
 Method: checked source/official captures and primary web sources; rewrite the synthesis and scope the notes to what
 this review can support. This is a research-document acceptance, not approval of a strategy, parameter exception,
 private-data evaluation, runtime change, live run, funding change, service use or release.
+
+## PR276-RV01 results — PASS for documentation merge (2026-10-24 SGT)
+
+Acceptance is for the corrected research documents only. R1–R6 above are repaired in the report and five notes:
+- R1/R4: unsupported numerical profit/rank forecasts, universal return claims and two unregistered simulation
+  tables withdrawn. No new simulation, market-data fetch, model call or backtest was run. Original prose remains
+  immutable at `5d5b5e28`; unreproduced claims there are not accepted experiment evidence.
+- R2: missing series preserves previous/start state, not guaranteed holdings; limiter reachability is scoped to the
+  current producer. The 14 USDT reduction example names its equity/weight/reserve assumptions and selected minimum.
+  Other mandatory controls and incomplete PF-02/PF-04 work remain explicit.
+- R3: checked the verbatim page, trading guide, kit reference and SKILL F/K/Q entries. PF-04 is team policy;
+  F-43 is proposed and F-115/Q-39 still qualify scoring. First-gas bootstrap is settled by F-120; BNB valuation remains
+  open. Hours permission retains `openState` and does not remove S2's dev scope.
+- R5: corrected four execution records versus signed swaps; generic mismatch/expiry is not a unique diagnosis.
+  Retained authorized minima, exact-amount approvals and Web3/local-signing path. Dated proxy quotes/gas are not
+  current all-in fill costs, a selected replacement slippage value, spike tolerance or a smaller FINAL seed approval.
+- R6: primary-source checks distinguish full-text result sections, indexed abstracts, metadata, unavailable links
+  and unverified leads. Event schedules are dated, with independently checked UTC conversions; no directional edge
+  is inferred from a calendar. All 282 original non-repository URL entries (counted per file) remain in lead registers;
+  immutable originals and source hashes preserve provenance. Unverified links are not availability or rights claims.
+
+Validation (prospective criteria committed/pushed at `0d666b79` before checks): Python3.12.14 standard-library
+assertions PASS for original-source URL retention, 54 research relative-file links, conditional sizing/reserve
+arithmetic and six UTC conversions including the DST boundary. Final added-line file/fragment checks: 65 PASS.
+`git diff --check` PASS; diff is docs-only.
+Full application tests were not rerun for these documentation changes; no CI pass is claimed.
+[Review receipt](../build/evidence/pr276-review-20261024.json) /
+[original provenance](../build/evidence/pr276-original-sources-20261024.json).
+
+Open items retain their existing owners and records: Keith/Keegan PF-IMPL01 and PF-04; Yao/Isaac later dev execution,
+sell/flatten and reconciliation under IDEA-089/090/S2-F2; Yao/team any strategy reopening; Isaac exact
+profile/signer/gas/caps acceptance. Any new hypothesis requires prospective criteria and pushed code; any adopted
+change needs the existing parameter exception, decision/deviation, coverage, run-pin and release gates. No backlog
+line is closed, runtime/profile changed, deployment/funding authorized or organiser message sent by this review.

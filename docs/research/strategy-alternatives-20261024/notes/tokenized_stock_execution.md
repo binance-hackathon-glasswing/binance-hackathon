@@ -1,200 +1,136 @@
-# Tokenized-stock (bStock) microstructure, pricing and execution for a small long-only agent
+# Tokenized-stock execution — measured evidence and preserved guards
 
-Scope note: research compiled 2026-10-24 from public web pages only (no wallet, API or trading system touched). Items dated before 2026 are marked "(older)". Many 2026 sources are company announcements or crypto-media rewrites of them; these are flagged as company-reported where relevant. "Inferences" are my own calculations or reasoning from the cited findings, not sourced facts. The agent's own live numbers (8 bp limit, 3/4 buy aborts, 13–56 bp round trip, 0.0000242 BNB per approve+swap) come from the research brief, not from public sources.
+PR276-RV01, checked 2026-10-24 SGT against source at `59c878c0`. This note adopts no execution or gas change.
 
-## 1. What is publicly known about Binance bStocks, and how do they compare with other tokenized equities?
+## Sources and dated observations
 
-### Takeaway
-bStocks are BEP-20 certificates issued by BTech Holdings (a Binance affiliate regulated in ADGM), marketed as 1:1 backed by custodied US shares. They trade 24/7 on Binance Spot and on-chain; on-chain liquidity comes from Native's RFQ/market-maker network. Binance itself warns that prices can trade above or below the underlying, especially outside US hours. No public source describes how bStock market makers price off-hours, but every comparable issuer (xStocks, Ondo) says the same: inside US hours quotes are anchored to the live underlying; outside them, market makers infer fair value from futures, overnight ATSs and models, spreads widen, and primary-market arbitrage is limited or closed.
+Checked the [verbatim trading guide](../../../official/kit/bstocks-trading-guide.md),
+[participant-kit reference](../../../skill/reference/participant-kit.md), [SKILL](../../../skill/SKILL.md) F/K/Q
+items and the local execution sources. The guide specifies exact-pay-amount approval, local signing, confirmation
+before re-quote, RFQ expiry of about 30 seconds and Web3 API broadcast. Retain the `openState` guard. Standing
+allowances or direct/private RPC submission are not compatible drop-in optimizations for this harness; an alternative
+architecture would need separate rule, policy and security review. No such alternative is recommended or authorized.
 
-### Cited Findings
-**bStocks: launch, tickers, issuer, structure**
-- BNB Chain's launch blog is dated 11 June 2026. Tickers are paired with USDT on Spot. The "as of 2 July 2026" list of 15 includes NVDAB, TSLAB and MSFTB, but not GOOGLB or SKHYB. Backing is shown on a daily "Proof of Collateral" page; tokens can be withdrawn to any BSC wallet; "withdrawal liquidity [is] powered by Native"; settlement is claimed to be under 1 second; DeFi venues are Venus, Lista DAO, PancakeSwap and Aster; the minimum is $5; and stock↔bStock conversion is described as free — [BNB Chain blog](https://www.bnbchain.org/en/blog/introducing-bstocks-on-bnb-chain-trade-24-7-with-zero-fees-deploy-across-defi-protocols-with-full-self-custody)
-- Launch dates differ by source: announced 10 June, launched 11 June, or admitted to trading 12 June 2026. The initial five were Circle, Micron, NVIDIA, Sandisk and Tesla. The issuer is BTech Holdings, a Binance affiliate approved by ADGM's FSRA — [HackerNoon](https://hackernoon.com/binance-opens-bstocks-collateral-to-every-eligible-user-as-tokenized-stock-volume-tops-$30-billion); [Blockchain.News](https://blockchain.news/news/binance-bstocks-tokenized-securities-24-7-access)
-- Binance's materials (as paraphrased by the press) say "prices can trade above or below the underlying security, particularly outside regular stock-market hours". Holders get no direct shareholder ownership or voting rights. Conversions between securities positions and tokens are handled by Nest Trading Limited. Backing and redemption "depend on legal documents, custody arrangements, eligible assets, taxes, fees, and operational limits". US persons are excluded — [Blockchain.News](https://blockchain.news/news/binance-bstocks-tokenized-securities-24-7-access)
-- **Dividends: sources conflict.** Blockchain.News says there are no dividend rights. The BNB Chain blog says holders "keep receiving dividends" while using bStocks in DeFi. Eco.com says dividends are "reinvested via multiplier after 30% US withholding" — [Blockchain.News](https://blockchain.news/news/binance-bstocks-tokenized-securities-24-7-access); [BNB Chain blog](https://www.bnbchain.org/en/blog/introducing-bstocks-on-bnb-chain-trade-24-7-with-zero-fees-deploy-across-defi-protocols-with-full-self-custody); [Eco.com comparison](https://eco.com/support/en/articles/15254023-best-tokenized-stock-platforms-2026-fees-us-access-and-backing-compared)
-- SKHYB/USDT spot trading was set to start at 22:30 KST on 13 July 2026 (09:30 ET, the US open). SKHYB is backed 1:1 by SK hynix shares held with a regulated US broker-dealer; the issuer is BTECH Holdings Limited (ADGM) — [Traders Union](https://tradersunion.com/news/brokers-news/show/2658271-binance-lists-sk-hynix-tokenized/)
-- SK hynix listed ADRs on Nasdaq (ticker SKHY) on 10 July 2026; each ADR is one-tenth of a KRX common share (000660). This comes from a search summary of a company-release reprint; I did not fetch the page — [Thailand Business News](https://www.thailand-business-news.com/pr-news/sk-hynix-lists-adrs-on-nasdaq-elevating-global-status-at-the-heart-of-capital-markets)
-- Scale (company-reported): bStocks passed $1B in assets on 15 October 2026 (Dune data cited by Binance), with $6B in share conversions — [Finance Magnates](https://www.financemagnates.com/cryptocurrency/exchange/binance-claims-fastest-1-billion-sprint-in-bstocks-with-6-billion-in-share-conversions/). Outstanding value was $334M on 16 July and $678M on 6 September (vs Ondo $947M and xStocks $693M). Cumulative volume passed $30B in under 90 days — [HackerNoon](https://hackernoon.com/binance-opens-bstocks-collateral-to-every-eligible-user-as-tokenized-stock-volume-tops-$30-billion). On 19 October BNB Chain claimed 42.6% of the tokenized-stock market (not independently confirmed) — [crypto.news](https://crypto.news/bnb-chain-claims-42-6-of-tokenized-stock-market/)
-- Conversion fees: the fee-free conversion promotion ended 11 October 2026 at 19:59 ET. Post-promotion fees were not disclosed in the article. The same article describes 1:1 conversion of eligible tokens (TSLAon, MSTRon, COINon, CRCLon) into bStocks — [Wisevoter](https://wisevoter.com/world/2026/10/05/binance-end-fee-free-bstock-conversion)
-- **Off-hours reference pricing (Binance collateral index):** from about 24 October 2026, Binance updates the bStocks collateral index price 24/7. When external market data is unavailable (weekends, public holidays and *daily maintenance windows*), it uses prices derived from trading on its own platform, for Cross Margin and Portfolio Margin — [Phemex News](https://phemex.com/news/article/binance-to-enable-247-dynamic-updates-for-bstocks-collateral-index-price-100584); [The Defiant](https://thedefiant.io/converge/tradfi-and-fintech/binance-to-reprice-bstocks-collateral-while-us-stock-markets-are-closed); [Hokanews](https://www.hokanews.com/2026/10/binance-to-reprice-bstocks-collateral.html)
-- bStocks became usable as margin collateral for all eligible users on 21 September 2026 (previously VIP 3+), in Cross and Portfolio Margin, with up to 5x leveraged acquisition — [HackerNoon](https://hackernoon.com/binance-opens-bstocks-collateral-to-every-eligible-user-as-tokenized-stock-volume-tops-$30-billion)
+[IDEA-090](../../../ledger/IDEA-090.md) records four BUY executions: one approve-plus-swap completion, two
+approval-only aborts and one abort without a prepared signed attempt. Calling them four signed buys confuses
+intent, approval and swap. The “encoded swap economics mismatch/expired” message covers output and deadline checks;
+without payloads and clocks it does not prove price movement was the unique cause of every abort. These are dated
+retained records, not independently queried chain observations in this review.
 
-**bStocks: on-chain liquidity and market makers**
-- Native describes itself as the on-chain liquidity source for bStocks. Issuers and LPs provide inventory, market makers "proactively quote" (RFQ + CLOB) via Native Relay, and Native says this lets pricing continue outside market hours. Binance Web3 Wallet runs its own cross-DEX aggregator and RFQ router (Binance Web3 Trading API). This comes from a search summary of Native's own post — [Native on X](https://x.com/native_fi/article/2065075659790270758)
-- BNB Chain says market makers can quote through a shared credit pool, an RFQ desk or their own prop AMM — [BNB Chain market-making landscape](https://www.bnbchain.org/en/blog/bnb-chain-market-making-landscape-liquidity-venues-how-to-integrate)
-- Native's model is "intents-based… credit-based" and links LPs, private market makers and relayers. In October 2025 (older), Native also supplied liquidity to a different BNB Chain stock-token issuer (StableStock), which should not be confused with bStocks — [TradingView/Chainwire](https://tr.tradingview.com/news/chainwire%3A2dd28640d094b%3A0-stablestock-and-native-launch-24-7-tokenized-stock-trading-on-bnb-chain)
+PR274's repair in [venue.py](../../../../larp/execution_live/venue.py) keeps the original intent's authorized minimum and
+allows a bounded narrower-slippage quote after approval; it does not authorize widening minima on retry. Offline
+source tests passed in the [PR274 review record](../../../ledger/IDEA-090.md), while later dev-cycle slot/quote,
+sell/flatten, profile/config and host qualification remain open in [INCOMPLETE_WORK](../../../INCOMPLETE_WORK.md).
 
-**Comparison: other tokenized equities (2026 unless noted)**
-- **xStocks (Backed Assets (JE) Ltd; Kraken, Bybit, OKX):** shares are custodied at Alpaca Securities (InCore Bank is secondary custodian), with weekly on-chain proof of reserves. Ten xStocks (incl. TSLAx, NVDAx, GOOGLx, SPYx) trade 24/7 on Kraken Pro and the rest 24/5; all trade 24/7 on-chain after withdrawal. Kraken: "during regular market hours… anchored to the underlying… outside hours market makers use alternative data sources including ATS platforms, index futures and internal models", spreads widen, and the historical mismatch at Monday open is "under 1%" — [Kraken xStocks FAQ](https://support.kraken.com/articles/xstocks-faq)
-- xStocks fees on Kraken: maker -2 bp, taker 10 bp. Primary mint minimum is $100,000; redemption settles in 2–4 business days. Float is small: about 7,655 NVDAx (~$1.77M) and about 1,000 TSLAx (~$359k) — [CoinPaprika](https://coinpaprika.com/education/tokenized-stocks-price-tracking/). xStocks use Chainlink Data Streams as the reference feed — [DeGate playbook](https://degate.com/playbook/tokenized-stocks-24-7-price-discovery.md). Bybit charges 0.20% maker/taker at VIP 0 and caps holdings at 300,000 USDT per token — [Eco.com](https://eco.com/support/en/articles/15254023-best-tokenized-stock-platforms-2026-fees-us-access-and-backing-compared)
-- **Ondo Global Markets (BVI):** Ethereum, BNB Chain and Solana; generally 24/5; no mint or burn fees; atomic minting. Since 25 June 2026 it has offered 24/7 instant mint/redeem for six tickers (SPYon, QQQon, CRCLon, NVDAon, TSLAon, GOOGLon). A 26 August 2026 snapshot showed 26 assets eligible for weekend off-hours. "Most assets have an off-hours limit of $0"; AAPLon had a $1M off-hours maximum net notional vs $3M in the regular session. Off-hours quotes can be declined because of per-asset limits. Ondo says its quotes are guaranteed for about 30 seconds and come from its own pricing model and inventory off-hours (SyntheticSharesOracle) — [DeGate playbook](https://degate.com/playbook/tokenized-stocks-24-7-price-discovery.md); [Eco.com](https://eco.com/support/en/articles/15254023-best-tokenized-stock-platforms-2026-fees-us-access-and-backing-compared)
-- **Robinhood Stock Tokens:** issued by Robinhood Assets (Jersey) Ltd as tokenized debt securities, 1:1 backed, trading 24/7 on Robinhood Chain; the "Classic" EU tokens are non-withdrawable derivative contracts trading Mon 02:00 – Sat 02:00 CET. **Dinari dShares:** Ethereum, Avalanche, Arbitrum and Base; US tokens are non-transferable; not SIPC-protected. **Coinbase tokens on Base:** shares held 1:1 by Alpaca under ADGM; 24/7; DEX pool fee plus slippage. **Bitget (Reality rTokens):** 0.1% base fee; 24/5 primary market — [Eco.com](https://eco.com/support/en/articles/15254023-best-tokenized-stock-platforms-2026-fees-us-access-and-backing-compared)
-- **Earlier generations (older):** Binance launched stock tokens in April 2021 (AAPL, COIN, MSFT, MSTR, TSLA) via the German broker CM-Equity. They had no dividends or votes, drew warnings from German and Hong Kong regulators, and were wound down: new purchases halted in July 2021 and positions closed on 15 October 2021 — [The Block](https://www.theblock.co/post/111661/binance-ceases-stock-tokens-trading); [Decrypt](https://decrypt.co/82495/binance-lets-customers-move-stock-tokens-before-service-shuts-down). FTX offered 24/7 tokenized stocks from October 2020 and listed GME on 27 January 2021 (about $141k spot volume in the first hours) — [The Block](https://www.theblock.co/news/markets/2021-01-27-ftx-lists-gme-stock-for-tokenized-spot-futures-trading-92756); [Crypto Briefing](https://cryptobriefing.com/ftx-adds-silver-stocks-reddit-market-surge/). Mirror Protocol mAssets (Terra) were synthetic tokens tied to a Band oracle that updated about every 30 s. Arbitrage was mint-and-sell when the DEX price exceeded the oracle (and the reverse). Mirror was exploited for over $2M in 2022 through a stale LUNC oracle price — [Coin Bureau](https://coinbureau.com/review/mirror-protocol-mir); [Veradiverdict](https://veradiverdict.beehiiv.com/p/synthetic-assets-blockchain); [CertiK](https://www.certik.com/blog/mirror-protocol-exploited-due-to-incorrect-oracle-price)
+## Costs are not interchangeable
 
-### Inferences
-- bStocks are the only one of these products where the agent's venue (on-chain RFQ via Native and the Binance aggregator) is *not* where primary arbitrage happens. Conversion runs through a Binance account (Nest Trading), is limited by eligibility, and may now carry fees after 11 October. An on-chain agent therefore cannot itself arbitrage a premium or discount; it can only *avoid* paying one or *harvest* one when entering or exiting.
-- SKHYB is structurally different from the other four. Its underlying has two live markets: KRX (Korean session, during the US night) and the SKHY ADR (US hours, when KRX is closed). The token's "underlying" at any moment depends on which reference the market maker uses; a 1/10 ADR ratio means a per-share reference price may differ from the ADR price by about 10x. The agent should check that its referencePrice scaling for SKHYB matches the token (per KRX share vs per ADR).
-- The "daily maintenance windows" in Binance's collateral notice suggest a scheduled daily pause in external data. It may be related to when the API's `openState` turns false, but this is unconfirmed (see Gaps).
-- Measured on-chain round trips of 13–56 bp all-in (from the brief) are in the same range as CEX alternatives: Kraken xStocks taker 10 bp per side is ≥20 bp round trip before spread, and Bybit VIP 0 at 0.20% per side is 40 bp. Switching venues would not obviously save cost, and the agent is restricted to the Binance Web3 API in any case.
+[IDEA-012](../../../ledger/IDEA-012.md)'s 13–56 bp Roll estimates derive from trade prints, not executable quotes.
+[IDEA-022](../../../ledger/IDEA-022.md) and GAP-66 retain correction/rerun limits. They cannot serve as current route
+costs. The [dated DC-01 review](../../../build/QUOTE_COST_REVIEW_120_20261021.md) reports quote-pair summaries of
+2–5 bp for four names and 17 bp for MSFTB under its aggregation convention. These are sampled proxy statistics,
+not guaranteed fill spreads or one-way all-in costs. Do not halve them and omit gas, route fees, quote ageing or
+adverse movement. Actual quote/fill fee attribution and selected-size/full-exit acceptance remain GAP-50/#119/#120.
 
-### Gaps
-- I found no public bStock-specific document on: who the market makers behind Native's bStock RFQ are; whether quotes have "last look"; how off-hours bStock quotes are priced; or what `openState=false` corresponds to (maintenance, corporate actions, halts). The brief's facts (RFQ ~30 s expiry, `referencePrice` described as a derived per-share reference) were not found in public docs.
-- GOOGLB's listing date and existence were not confirmed in any source found (no result mentioned GOOGLB).
-- I could not resolve the dividend-treatment conflict between sources.
-- Securitize's tokenized-equity offering was not covered by any source I retrieved.
-- I found no empirical study of 2021 Binance/FTX stock-token premiums, or of Mirror mAsset premiums over time.
+One recorded approve-plus-swap used about 0.0000242 BNB. That observation cannot size whole-run spending, repeated
+failed approvals, gas spikes or exit reserves. Current gas/BNB prices were not remeasured for this review. BscScan,
+chain marketing, press estimates and other venues' tokenization arrangements remain leads unless specifically
+verified; their numbers are not this route's executable guarantees or independent MEV measurements.
 
-## 2. Do tokenized-stock prices deviate from the underlying in exploitable ways (premium/discount, weekend/overnight behaviour)?
+## Gas, slippage and attempts need a joint case
 
-### Takeaway
-The available evidence is thin (snapshots, small samples, vendor research), but it points one way. During and just after US hours, deviations are small (about 4–32 bp for xStocks four hours after the Friday close). Weekend and overnight moves of 0.3–1.7% happen, but they look like partial price discovery, not noise that reverses. Academic work on overnight US trading finds that most overnight price changes do *not* reverse, and the largest weekend-perp study found weekend prices no better than Friday's close at predicting Monday's open. For a long-only agent paying 13–56 bp per round trip, a systematic "fade the weekend move" or "buy the off-hours discount" edge is not supported. The defensible use is defensive: avoid buying off-hours at a premium, and treat off-hours deviations from referencePrice as uninformative unless an independent live anchor exists (index futures, the overnight ATS, KRX for SKHYB).
+The [S1 rehearsal candidate](../../../build/evidence/s1-rehearsal-profile-20261023/README.md) reserves
+0.000384 BNB per action and 0.00384 BNB for ten exit children, so reserve plus one action is 0.004224 BNB. This is
+candidate-specific arithmetic, not a FINAL funding recommendation. The [action-budget formula](../../../../tools/deploy/build_rehearsal_candidate.py)
+uses 0.16 gwei, only 3.2 times a quoted 0.05 gwei observation; actual signer binding/acceptance remains separate.
+Larger wallet funds do not allow signing above an approved ceiling. The original
+“roughly twentyfold spike headroom” conflated spend, gas-limit and gas-price constraints and is withdrawn.
 
-### Cited Findings
-- **Post-close gap (4 h after the 25 Sep 2026 close):** NVDAx 0.04%, GOOGLx +0.07% premium, TSLAx -0.11% discount, SPYx +0.32% premium, SPYon (Ondo) +0.99% premium — [CoinPaprika](https://coinpaprika.com/education/tokenized-stocks-price-tracking/)
-- **Weekend drift (Fri 20:00 ET to Sun 20:00 ET, 26–27 Sep 2026):** NVDAx +1.11%, SPYx -0.30%, GOOGLx -0.55%, TSLAx -1.69%. Ondo equivalents drifted slightly more, on average about 0.10 pp more — [CoinPaprika](https://coinpaprika.com/education/tokenized-stocks-price-tracking/)
-- **Monday convergence (same single weekend):** the token's weekend direction matched Monday's real move in 4/4 names. The share of the Monday move already captured was NVDA 67%, SPY 53%, TSLA 44% (TSLA had extra Monday news: a JPM price-target cut) and GOOGL 95%. The author calls it a one-weekend snapshot — [CoinPaprika](https://coinpaprika.com/education/tokenized-stocks-price-tracking/)
-- **Issuer statement:** Kraken says xStock mismatch at Monday open has historically been under 1%, with off-hours divergences corrected by arbitrage at reopen — [Kraken xStocks FAQ](https://support.kraken.com/articles/xstocks-faq)
-- **Weekend equity perps (Hyperliquid HIP-3; 23 equity markets, 146 weekend samples):** the pre-open mid was closer to the Monday oracle open than Friday's close only 50.7% of the time, with a median improvement of about 0.4 bp; the authors conclude there is "effectively no predictive value". Weekend volume is about 0.31x weekdays and the median trade falls from $1,245 to $196. The quoted median spread was 0.93 bp on weekends vs 2.4 bp in normal hours — [Blockworks Research (0xResearch)](https://blockworks-research.beehiiv.com/p/when-markets-sleep)
-- **Korean names on Hyperliquid (62 weekends; Samsung, SK hynix, Hyundai, EWY):** 45/62 (73.8%) correct opening direction, but driven mostly by Samsung; for EWY, "always up" did better. The author attributes the difference to how long after the perp's weekend close each underlying reopens — [4pillars](https://research.4pillars.io/en/research/can-hyperliquids-weekend-trading-predict-monday-opens-for-korean-stocks)
-- **Commodities as a contrast:** across 30 weekend closures, the WTI perp's weekend move explained about three-quarters of the futures reopen, with a large miss in one war weekend ($70 perp vs $75 reopen) — [Dune](https://dune.com/blog/hyperliquid-priced-wti-while-futures-were-shut)
-- **Overnight US equity trading ("Nocturnal Trading", Eaton, Shkilko & Werner; Blue Ocean ATS, Jan–May 2024):** liquidity was supplied by only two market makers; effective spreads overnight are *worse* than in regular hours while realized spreads are similar or better; costs are "broadly in line with other extended-hours sessions"; and overnight trading contributes meaningful price discovery, mostly for non-US stocks and macro ETFs — [AEA 2026 listing](https://www.aeaweb.org/conference/2026/program/paper/kRz7yE6Q); [Neudata review](https://www.neudata.co/literature-reviews/trading-in-the-dark-retail-flow-in-the-overnight-session). A search summary of the paper's PDF reports that about two-thirds of nocturnal price changes do not reverse by the next close, and that ETF nocturnal price discovery exceeds 17% of the 24-hour total. I could not extract the PDF text to confirm this — [Eaton et al. PDF](https://haslam.utk.edu/wp-content/uploads/2024/11/Eaton-Paper.pdf). A Nasdaq commentary on the paper reports overnight quoted spreads about 40% higher for stocks that trade every night (search summary; the page timed out) — [Nasdaq](https://www.nasdaq.com/articles/looking-all-day-data-24-hour-trading)
-- **BMLL Level-3 study of the overnight session (26–27 Jan 2025, DeepSeek night; older):** TSLA overnight spreads were "comparable to" consolidated regular-hours spreads, and the overnight decline for MSFT and INTC persisted without the regular-session recovery. Charts only; no bp figures — [BMLL](https://www.bmlltech.com/news/market-insight/there-is-a-clear-trend-towards-24-7-equity-trading-but-how-much-liquidity-is-available-for-participants-during-overnight-trading)
-- **Weekend liquidity of xStocks:** "drops approximately 70%" (source of the figure not given; older, Oct 2025) — [BlockEden](https://blockeden.xyz/blog/2025/10/30/xstocks/)
-- **Weekend volatility in the underlying (older, classic):** Friday-close-to-Monday-close volatility runs about 10–20% higher than for other three-day spans — [Boston Fed WP 98-6](https://www.bostonfed.org/-/media/Documents/Workingpapers/PDF/wp98_6.pdf)
-- **Mechanism:** off-hours token prices mostly reflect expectations about the next open, plus whatever LPs and oracles infer from adjacent signals. Arbitrage is limited because issuance, redemption and hedging are harder off-hours, and off-hours moves "can be pulled back toward conventional levels at the reopen" — [DeGate playbook](https://degate.com/playbook/tokenized-stocks-24-7-price-discovery.md)
-- **Binance collateral regime change:** from about 24 October 2026, weekend/holiday bStock collateral is valued from Binance's own trading, which "allow[s] weekend trading to weaken account buffers before underlying shares resume trading" — [The Defiant](https://thedefiant.io/converge/tradfi-and-fintech/binance-to-reprice-bstocks-collateral-while-us-stock-markets-are-closed); [Phemex News](https://phemex.com/news/article/binance-to-enable-247-dynamic-updates-for-bstocks-collateral-index-price-100584)
+[profiles.py](../../../../larp/strategy/profiles.py) allows fixed slippage up to 50 bp by team policy, and
+[execution_bounds.py](../../../../larp/strategy/execution_bounds.py) allows one to five attempts. A validation ceiling
+is not a recommendation. Neither the generic aborts nor an assumed volatility model selects 20 bp or five attempts.
+Changing them requires actual-size quote age, approval-to-swap latency, adverse movement, fee/gas costs and acceptable
+loss bounds, together with retry/exit coverage. PF-06's no automatic widening on retry remains in force.
 
-### Inferences
-- **No evidence of a mean-reversion edge.** The two stronger datasets point the other way: Eaton et al. find most overnight changes persist, and CoinPaprika finds 4/4 directional agreement with tokens *under*-reacting by 5–56%. Blockworks finds weekend prices have no predictive value either way. Taken together, a weekend move is neither a reliable fade nor a reliable momentum signal. Any strategy built on it would need its own pass criteria and backtest; the published samples (one weekend; 146 perp-weekends) are too small or too different to justify one.
-- **Hurdle arithmetic.** A long-only round trip costs 13–56 bp. Typical intra- or post-session deviations (4–32 bp for xStocks; up to about 99 bp for one Ondo ticker) are at or below that cost. Only weekend-sized dislocations (about 50–170 bp in the September sample) clear it, and those were informational (they predicted Monday's direction), so buying a weekend "discount" would have bought into a move that continued down (TSLA: -1.69% weekend, then -3.94% Monday).
-- **Where a small edge may exist (unproven):** (a) selling an existing holding into an off-hours *premium* when no news explains it (long-only can harvest premiums on exit); (b) avoiding entry when the RFQ price is above referencePrice by more than the usual RTH half-spread. Both are cost-avoidance rules, not alpha. They need the agent's own logs (quote vs referencePrice vs underlying, by hour) to calibrate.
-- **New weekend-liquidation risk.** Binance's 24/7 collateral repricing (from 24 October) plus 5x leveraged bStock acquisition creates a mechanism for forced weekend selling. That could produce transient discounts on the two weekends in the scored run (31 Oct – 1 Nov, 7–8 Nov). This is speculative, and the agent currently does not trade off-hours. If anyone wants to test it, it should be logged as a ledger idea with pass criteria first, not traded.
-- **SKHYB is the only name with a live home-market anchor during the US night** (KRX trades about 09:00–15:30 KST, roughly 19:00/20:00–01:30/02:30 ET depending on DST; general knowledge, not from a fetched source). Its off-hours token price may be better anchored than the other four, and its US-hours price is effectively "ADR off home-market hours".
+F-120 already answers first-BNB bootstrap: permitted pre-trading/pre-scored-run MetaMask funding swaps from wallet
+USDT, with the funding record and opening snapshot after the last seed. BNB valuation remains Q-39. The roughly
+6 USDT FINAL seed is existing team policy; reducing it to 4 USDT has no approved measured reserve case here, and
+an unresolved valuation convention is not permission to optimize against an assumed score. Preserve current gates.
 
-### Gaps
-- I found no public dataset or study of bStock premium/discount vs the underlying, by hour or by weekend. The agent's own quote logs are the only bStock-specific evidence available.
-- I could not extract exact bp spread figures from the Eaton/Shkilko/Werner paper (the PDF was not machine-readable here) or the Nasdaq commentary (fetch timed out).
-- No source quantified how quickly bStock (or xStock) premiums decay after the US open (minutes vs hours).
+Isaac/Keith own any revised cost/gas/cap proposal and exact acceptance; Keith/Keegan own runtime/profile semantics;
+Yao operates a later approved dev run. No wallet operation, RPC test, fee measurement or new live run occurred here.
 
-## 3. RFQ aggregator execution: slippage vs quote expiry, 10–60 s price moves, recommended slippage, and MEV risk on BSC
+## Provenance and original source leads
 
-### Takeaway
-An RFQ fill settles at the market maker's signed price if it lands before expiry, so slippage tolerance mainly bounds (i) re-routes onto AMM legs and (ii) the agent's own "plan vs re-quote" drift check. At current implied vols, a one-standard-deviation move over 30 s is about 8.5 bp for NVDA and about 11.5 bp for TSLA (about 7 bp for a 30%-vol name). An 8 bp drift guard therefore aborts roughly 12–25% of trades from pure market noise at 30–60 s. The observed 3/4 abort rate implies either minutes of elapsed time between plan and re-quote, or a structural gap (half-spread or reference-price basis) being counted as "movement". Recommended: approve before quoting, submit within seconds of the quote, use a 10–25 bp minOut tolerance vs the *fresh* quote (per name), and use a separate, wider, time-scaled decision-drift guard. Sandwich risk on BSC fell sharply in 2025 (self-reported >95%), pure RFQ fills are not sandwichable in the AMM sense, and private RPCs are available. Residual MEV exposure is capped by the tolerance on any AMM legs.
+The [original research text](https://github.com/binance-hackathon-glasswing/binance-hackathon/blob/5d5b5e284fd0e70586ba83767a2d22b0fd726d1e/docs/research/strategy-alternatives-20261024/notes/tokenized_stock_execution.md) is retained immutably.
+PR276-RV01 replaces unsupported conclusions and repairs local references. The register preserves the original
+external URLs for follow-up; inclusion does not verify availability, quality, rights or any claimed result. Only
+sources explicitly assessed above have been rechecked; all other entries remain unverified leads.
 
-### Cited Findings
-**RFQ mechanics and expiry**
-- In RFQ, the market maker returns a signed quote and the contract checks the signature and funds; "once a market maker signs a quote, the price cannot change during settlement"; quotes are short-lived (30 s given as an example) — [Spark glossary](https://www.spark.money/glossary/request-for-quote); [Ethernal blog](https://tryethernal.com/blog/the-dex-trade-that-was-never-on-a-dex)
-- 0x RFQ quotes last about 60 s on mainnet, and 0x recommends refreshing about every 30 s; 0x uses the RFQ quote only if it beats its 100+ aggregated AMMs — [0x Help](https://help.0x.org/articles/3310442497-understanding-0x-rfq-request-for-quote). Coinbase Prime RFQ quotes are held for at most 2.5 s, tuned to limit slippage vs the order book — [Coinbase CDP docs](https://docs.cdp.coinbase.com/prime/concepts/trading/rfq). Ondo off-hours quotes are guaranteed for about 30 s and can be declined because of per-asset limits — [DeGate playbook](https://degate.com/playbook/tokenized-stocks-24-7-price-discovery.md)
-- RFQ trades avoid the public-mempool sandwich vector because the quote is negotiated privately (Hashflow-style "MEV-protected trades"); sources support "avoids sandwiching", not full MEV immunity — [Consensys on Hashflow](https://consensys.io/blog/hashflow-a-dex-for-bridgeless-cross-chain-swaps-zero-slippage-and-mev-protected-trades); [Spark glossary (sandwich)](https://www.spark.money/glossary/sandwich-attack)
-
-**Current volatility inputs (for 10–60 s move sizing)**
-- NVDA 30-day ATM implied vol was 37.6% (realized 24.8%) on 19 October 2026 — [thetrading.tools](https://www.thetrading.tools/nvda-options); 30-day IV was 32 on 14 October (52-week range 29–75) — [Market Rebellion](https://marketrebellion.com/news/mid-session-iv-report-october-14-2026)
-- TSLA ATM IV on 20 October 2026: 74.0% (23 Oct expiry, event-inflated), 55.0% (30 Oct), 51.1% (4 Nov) — [MarketChameleon](https://marketchameleon.com/Overview/TSLA/OptionChain/)
-
-**MEV on BNB Smart Chain**
-- Baseline before the Goodwill Alliance (older, Dec 2024): sandwich attacks hit a record, with 35.5% of blocks containing one and over $1.5B of volume across 43,400 transactions in a day — [Decrypt](https://decrypt.co/294648/bnb-smart-chain-blocks-hits-record-high-sandwich-attacks)
-- The Goodwill Alliance launched in March 2025; builders (48 Club, BlockRazor) added sandwich filters and validators route through MEV-protected builders. BNB Chain reports attack volume down over 95% and daily attacks down from about 140,000 to under 1,000 (self-reported, July 2025) — [BNB Chain blog](https://www.bnbchain.org/en/blog/how-the-goodwill-alliance-slashed-sandwich-attacks-by-95)
-- BlockRazor (a builder) says 2021–22 was the peak of BSC sandwiching; another forum post calls protocol-level sandwich filtering impractical because searchers adapt (older, about 2024–25) — [BNB Chain forum](https://forum.bnbchain.org/t/call-for-proposal-addressing-malicious-mev-attacks-on-bnb-chain/3167)
-- Binance Web3 Wallet and Trust Wallet have MEV protection on by default. Free private RPCs are PancakeSwap (`bscrpc.pancakeswap.finance`), 48 Club (`rpc-bsc.48.club`) and Merkle (`bsc.merkle.io`) (Feb 2025; older) — [BNB Chain blog](https://www.bnbchain.org/en/blog/protecting-users-from-sandwich-attacks-bnb-chain-introduces-mev-protection-with-several-wallets)
-- Chainstack's BSC endpoints route through private builders and reduce, but do not eliminate, MEV exposure or guarantee inclusion (vendor claim, 2026) — [Chainstack](https://chainstack.com/build-better-with-bnb-smart-chain/)
-- A general-audience estimate (derivation not given) is that about 1.2% of DEX trades are sandwiched, at an average loss of 0.41% — via [Spark glossary](https://www.spark.money/glossary/sandwich-attack) (low-quality figure; cross-chain, undated)
-
-### Inferences
-**Short-horizon move sizes.** Model: σ_T ≈ IV × √(T / (252 × 23,400 s)), with all variance assigned to regular-session seconds and no jumps; √(252 × 23,400) ≈ 2,428. This slightly overstates mid-session per-second vol (some variance is overnight; midday is calmer than the open) and ignores market-maker quote discreteness.
-
-| Name (vol input) | bp per √s | 10 s | 30 s | 60 s | 5 min |
-|---|---|---|---|---|---|
-| NVDA (IV 37.6%) | 1.55 | 4.9 | 8.5 | 12.0 | 26.8 |
-| NVDA (realized 24.8%) | 1.02 | 3.2 | 5.6 | 7.9 | 17.7 |
-| TSLA (IV 51.1%, 4 Nov exp.) | 2.10 | 6.6 | 11.5 | 16.3 | 36.4 |
-| 30%-vol name (assumed for MSFT/GOOGL; not sourced) | 1.24 | 3.9 | 6.8 | 9.6 | 21.4 |
-| 60%-vol name (assumed for SKHY; not sourced) | 2.47 | 7.8 | 13.5 | 19.1 | 42.8 |
-
-**Probability that an adverse move exceeds the tolerance τ** (one-sided, 1 − Φ(τ/σ_T)):
-
-| Name | Elapsed | τ = 8 bp | τ = 15 bp | τ = 25 bp |
-|---|---|---|---|---|
-| NVDA (37.6%) | 30 s | 17% | 4% | 0.2% |
-| NVDA (37.6%) | 60 s | 25% | 11% | 2% |
-| NVDA (37.6%) | 5 min | 38% | 29% | 18% |
-| TSLA (51.1%) | 30 s | 24% | 10% | 1.5% |
-| TSLA (51.1%) | 60 s | 31% | 18% | 6% |
-| 30%-vol name | 30 s | 12% | 1.4% | ~0% |
-| 30%-vol name | 60 s | 20% | 6% | 0.3% |
-
-- **The live 75% abort rate (3/4) is far above what 30–60 s of noise explains** (12–31% at 8 bp). Two likely explanations, both checkable in the agent's logs. (1) The plan price is minutes old by the time of the re-quote (LLM decision latency plus an approve transaction), which pushes abort rates toward 30–40% or more. (2) The plan price is effectively a mid/referencePrice while the re-quote is an executable ask; any half-spread of 6.5–28 bp (half of the measured 13–56 bp round trip) then exceeds 8 bp almost every time.
-- **Recommended structure (for the competition agent; not personal advice):**
-  1. **Two separate guards.** Execution tolerance: minOut vs the *fresh* quote, submitted at once (≤5 s). Decision-drift guard: fresh quote vs decision price, scaled by elapsed time.
-  2. **Execution tolerance:** about 10–15 bp for NVDAB, MSFTB and GOOGLB, and 15–25 bp for TSLAB and SKHYB. That is about 2σ over 30 s, keeping noise aborts at roughly 2–5%. With a pure RFQ route, the realized fill is the quoted price, so the expected *cost* of a wider tolerance is close to zero; it only matters if the route includes AMM legs.
-  3. **Decision-drift guard:** max(25 bp, 2.5 × σ_bp/√s × √elapsed_s), or re-run the decision on the fresh quote instead of aborting. For a long-only signal held for days, 10–25 bp of entry drift is usually small relative to the signal; a missed trade has its own cost.
-  4. **Never** compare an executable quote to referencePrice with a tolerance below the name's typical RTH half-spread (measure it per name from logs).
-  5. **Remove approve latency from the quote window.** Approve first (or keep a bounded standing allowance for USDT and each token for the run), confirm it, *then* fetch the quote and swap immediately. An approve ahead of the swap otherwise eats part of the ~30 s quote life (BscScan shows about 3–16 s confirmation estimates depending on tier; see Q4).
-  6. Log per trade: quote timestamp, submit timestamp, block timestamp, route composition (RFQ vs AMM legs), quote vs referencePrice, and fill vs quote. This is what is needed to set tolerances from bStock-specific evidence.
-- **MEV exposure for this agent is small but not zero.** A pure RFQ fill cannot be sandwiched (its price does not depend on pool state). If the aggregator splits the order across a PancakeSwap bStock pool, that leg can be sandwiched up to the minOut tolerance. On a $19–60 trade, a 25 bp tolerance caps extraction at $0.05–0.15, about the cost of a couple of BSC transactions, so these trades are unattractive but not impossible targets. The post-GWA environment, with sandwich-filtering builders, lowers this further. If the agent broadcasts its own signed transaction, using a private RPC (48 Club, PancakeSwap or Merkle) is a free extra layer. Whether the Binance Web3 Open API broadcast path has the same default MEV protection as Binance Web3 Wallet is unknown.
-- **Off-hours quotes** will likely be wider and more often declined. Kraken says spreads widen off-hours; Ondo sets most off-hours limits to $0; overnight US venues have only two market makers. This supports keeping the RTH-only rule.
-
-### Gaps
-- No public documentation of the Binance Web3 Open API / LiquidMesh RFQ quote validity, last-look policy, route composition for bStocks (pure RFQ vs mixed AMM), or whether its broadcast uses a private or MEV-protected path.
-- No independent 2026 measurement of current BSC sandwich rates. The >95% reduction is BNB Chain's own July 2025 figure.
-- No IV figures were found for MSFT, GOOGL or SKHY; the 30% and 60% rows are labelled assumptions. Realized 30–60 s moves of the *tokens* (as opposed to the underlying) have not been measured publicly.
-
-## 4. BNB Smart Chain gas: current price, recent changes, spike frequency, and gas reserve for ~30 trades
-
-### Takeaway
-On 24 October 2026, BscScan shows 0.05 gwei Standard/Fast and 0.051 gwei Rapid, with a 0 base fee and about 21% utilization. The 0.05 gwei floor has been in place since about October 2025, and 2026 hardforks (Osaka/Mendel in April, Pasteur in August) aimed at more predictable gas rather than lower prices. At the agent's measured 0.0000242 BNB per approve+swap (about 484k gas), each trade leg costs about $0.018. That is negligible in absolute terms but **3–9 bp of a 19–60 USDT trade**, so gas matters more than its dollar size suggests. A reserve of 0.01 BNB covers 60 legs up to about 0.34 gwei (about 7x today); 0.02 BNB covers a return to about 0.7 gwei.
-
-### Cited Findings
-- BscScan gas tracker, 24 Oct 2026 10:50 UTC: Standard 0.05, Fast 0.05, Rapid 0.051 gwei; base fee 0; estimated confirmation about 16 s (Standard), 8 s (Fast), 3 s (Rapid); swap about $0.007, BEP-20 transfer $0.002; BNB $732.46; 13 pending transactions; utilization 21.45% — [BscScan Gas Tracker](https://bscscan.com/gastracker)
-- Minimum gas price cut from 0.1 to 0.05 gwei, adopted by all validators and builders, about $0.005 per transfer; Binance Wallet and Trust Wallet default to 0.05 gwei — [Bitget News](https://www.bitget.com/news/detail/12560604996708); [Bitcoin.com](https://news.bitcoin.com/bnb-chain-validators-move-to-halve-gas-fees-with-new-proposal/). Dated about 1 October 2025 together with 450 ms blocks; earlier steps were 3 → 1 gwei (2024) and → 0.1 gwei (May 2025) (older) — [ECOIN Wallet blog](https://ecoinwallet.org/blog/bnb-chain-cuts-gas-fees-to-0-05-gwei-and-speeds-up-blocks-cheaper-than-ever/)
-- Osaka/Mendel hardfork (28 April 2026): "predictable gas", tighter execution limits, a per-transaction gas cap (BEP-652) and about 0.45 s blocks — [Chainwire](https://chainwire.org/2026/04/28/bnb-chain-activates-osaka-mendel-hard-fork-faster-finality-predictable-gas-and-enhanced-stability/); [BNB Chain blog](https://bnbchain.org/en/blog/osaka-mendel-hard-fork-strengthening-bnb-chain-after-sub-second-speed-gains). Pasteur hardfork (August 2026) focused on bridge and validator security; gas effects were not reported — [Cointelegraph](https://cointelegraph.com/news/bnb-chain-pasteur-hard-fork-bridge-security)
-- Historical spikes (older): in February 2025 BSC fees surged 388% week-on-week (about $15M in 7 days) during a memecoin frenzy, and time-sensitive swaps sometimes failed to be included — [The Block](https://www.theblock.co/post/341215/bnb-chain-will-prioritize-memecoin-transactions-as-gas-fees-surge-400). In a 2023 congestion episode, BscScan urged gas above 5 gwei and confirmations slowed from 5–15 s to 10–15 min — [The Defiant](https://thedefiant.io/news/defi/binance-smart-chain-congestion-is-slowing-down-pancakeswap)
-- I found no report of a 2026 gas-price spike in search results (absence of evidence, not proof).
-
-### Inferences
-- **Per-leg cost:** 0.0000242 BNB × $732.46 ≈ **$0.0177**. The implied gas is 0.0000242 / 0.05 gwei ≈ 484k gas per approve+swap, about 2.5x BscScan's generic swap estimate (about 191k gas), which fits a heavier aggregator/RFQ settlement path.
-- **As a share of notional:** $0.0177 / 19 USDT ≈ 9.3 bp per leg; / 60 USDT ≈ 3.0 bp. A buy-and-sell round trip adds about 6–19 bp. If the measured 13–56 bp round trips did not include gas, all-in cost is higher. Larger, fewer trades (toward 60 USDT) cut gas drag about 3x. Removing a per-trade approve (about 46k gas for a standard ERC-20 approve; standard figure, not sourced here) would save about 10%.
-- **Reserve sizing (gas units are in BNB, so BNB's USD price does not change how many legs a reserve covers):**
-
-| Scenario | Gas price | BNB per leg | 30 legs | 60 legs (30 buy+sell round trips) |
-|---|---|---|---|---|
-| Today | 0.05 gwei | 0.0000242 | 0.00073 BNB (~$0.53) | 0.00145 BNB (~$1.06) |
-| "Rapid" tier | 0.051 gwei | 0.0000247 | 0.00074 | 0.00148 |
-| 10x spike | 0.5 gwei | 0.000242 | 0.0073 (~$5.3) | 0.0145 (~$10.6) |
-| Return to the 2025 1 gwei regime | 1 gwei | 0.000484 | 0.0145 | 0.029 (~$21) |
-
-  Recommendation: hold **0.01–0.02 BNB** for the run, plus an alert if the balance falls below the cost of about 10 legs at 0.5 gwei (0.0024 BNB). Paying 0.051 gwei (Rapid, +2% cost) for the swap leg may shorten confirmation from about 16 s to about 3 s per BscScan, which matters against a 30 s RFQ expiry.
-- The bigger gas-related risk is **non-inclusion during congestion** (the 2025 memecoin episode), not cost. In that case an RFQ quote expires and the trade aborts, so retry logic should re-quote rather than resubmit a stale quote.
-
-### Gaps
-- No BEP number was found for the 0.05 gwei change (it appears to be a validator-coordinated minimum, not a BEP). No 2026 gas-spike frequency statistics were found; BscScan's historical charts were not machine-readable via fetch.
-- The meaning of BscScan's 16 s/8 s/3 s confirmation estimates on a 0.45 s block chain is unclear (possibly mempool queueing at exactly the minimum price).
-
-## 5. Execution timing for US large caps: spreads and volatility by time of day, and implications for the scored run (Oct 29 – Nov 12, 2026)
-
-### Takeaway
-Classic microstructure evidence (NYSE TAQ-type studies; older) shows spreads and volatility are highest at the open, lowest midday, and rise again into the close (U- or reverse-J-shape). Modern US large-cap spreads are a tick or so (well under 1 bp at current prices), so the underlying's spread is not what drives bStock cost. What matters is the market maker's hedging conditions and short-horizon volatility, both worst in the first 30 minutes and around the 16:00 close. The agent's current window (open+30 min to close−15 min) is consistent with this evidence. Midday (about 11:30–14:30 ET) should minimize re-quote drift. The scored run contains concrete hazards: MSFT earnings (28 Oct after close, so the first scored day is a reaction day), the 1 November US DST change (the session shifts by +1 h in UTC), two weekends, and Veterans Day (markets open).
-
-### Cited Findings
-- NYSE minute-by-minute spreads follow "a crude reverse J-shaped pattern"; controlling for activity, risk, information and competition, spreads remain higher at the start and end of the day (McInish & Wood 1992, J. Finance; older) — [Univ. of Memphis Digital Commons](https://digitalcommons.memphis.edu/facpubs/11507/)
-- 30 NYSE stocks: spreads mostly follow an inverse J-shape, and volume is high at the open and close and lowest midday (older) — [Hinich et al., UT Austin](http://www.la.utexas.edu/hinich/files/Economics/Signal-NYSE.pdf)
-- NASDAQ dealer-market spreads are fairly stable and narrow near the close, unlike the NYSE U-shape; the difference is attributed to market structure (Chan, Christie & Schultz; older) — [HKUST Research Portal](https://researchportal.hkust.edu.hk/en/publications/market-structure-and-the-intraday-pattern-of-bid-ask-spreads-for-)
-- CBOE equity options: an L-shaped spread pattern that settles after about 90 minutes; the underlying stock spread shows a reverse S-shape (older) — [Univ. of Saskatchewan](https://harvest.usask.ca/items/185eee73-6ce2-422e-9a11-c6fb47c0e9d0)
-- London Stock Exchange: spreads are wide at the open, flat through the day and slightly higher at the close, while volatility is U-shaped (older) — [Univ. of Southampton ePrints](https://eprints.soton.ac.uk/37372)
-- Underlying price levels (25 Sep 2026 closes): NVDA $225.07, GOOGL $343.92, TSLA $372.11 — [CoinPaprika](https://coinpaprika.com/education/tokenized-stocks-price-tracking/)
-- Microsoft will report fiscal Q1 2027 results after the close on **Wednesday 28 October 2026** — [Microsoft News](https://news.microsoft.com/source/2026/10/07/microsoft-announces-quarterly-earnings-release-date-69/)
-- NVIDIA's next report is projected (unconfirmed) for 18 November 2026 after the close, outside the window — [Wall Street Horizon](https://www.wallstreethorizon.com/nvidia-earnings-calendar); [days.to](https://days.to/nvidia-earnings)
-- NYSE/Nasdaq are **open** on Veterans Day, Wed 11 November 2026; bond markets and banks are generally closed. The next closure is Thanksgiving, 26 November — [Fidelity](https://www.fidelity.com/learning-center/smart-money/stock-market-holidays); [Kiplinger](https://www.kiplinger.com/investing/stock-market-holidays)
-- TSLA's nearest-expiry IV was 74% on 20 October vs 51–55% for later expiries, an event-inflated front month — [MarketChameleon](https://marketchameleon.com/Overview/TSLA/OptionChain/)
-
-### Inferences
-- **Underlying spread vs token cost.** One cent on NVDA ($225) is about 0.44 bp, on GOOGL ($344) about 0.29 bp, and on TSLA ($372) about 0.27 bp. Measured bStock round trips of 13–56 bp are therefore about 30–200x the underlying's one-tick spread. The bStock cost is a market-maker risk/hedging/inventory premium plus aggregator overhead, so the time-of-day effects that matter are those affecting the market maker's hedge: the open auction and first minutes, the close, and the hand-off to extended hours.
-- **Keep open+30 to close−15, and consider weighting toward midday.** The first 30 minutes carry the highest volatility, so the most re-quote drift and the widest quotes are likely. In the last 15 minutes the market maker's hedge venue is about to close and the closing auction concentrates flow. Midday has the lowest per-second vol, so it gives the fewest drift aborts under any fixed tolerance. This is inference from classic patterns; bStock quotes by hour have not been measured publicly.
-- **DST hazard: US daylight saving ends Sunday 1 November 2026** (US calendar rule: first Sunday of November; general knowledge, not from a fetched source). The regular session moves from 13:30–20:00 UTC to 14:30–21:00 UTC, and from 22:30–05:00 KST to 23:30–06:00 KST. If any schedule, cron or "US session" check is in UTC or SGT rather than America/New_York, it will be off by an hour for most of the scored run.
-- **Scored-run calendar risk** (verify dates): Oct 29 is the MSFT earnings reaction day (likely wide MSFTB quotes and high drift at the open; avoid the first hour or skip MSFTB entries that day). Alphabet and SK hynix Q3 reports are likely near late October but **unconfirmed**. The weekends of 31 Oct – 1 Nov and 7–8 Nov fall under Binance's new 24/7 collateral repricing. US Election Day, Tuesday 3 November 2026 (midterms), is a normal trading day but may raise overnight volatility into 4 November (unsourced inference).
-- **SKHYB timing:** during the US session the Korean market is closed, so SKHYB/SKHY behave like an ADR trading on stale home-market prices plus US semiconductor flow. Expect higher drift for SKHYB than for MSFTB at any given hour, and size its tolerance like TSLAB.
-
-### Gaps
-- I found no modern (2023–2026) TAQ-based study giving US large-cap spreads in bp by time of day; the U/J-shape evidence is from older papers. No public source gives closing-auction volume share for 2025–26.
-- Earnings dates for Alphabet (Q3 2026), SK hynix (Q3 2026) and Tesla's already-reported Q3 date were not confirmed from official sources. Macro release dates in the window (FOMC, payrolls, CPI) were not checked.
-- No source measures bStock or other tokenized-stock RFQ spreads by hour of day; the agent's own quote logs during the run are the only way to close this gap.
+- Lead 01: [BNB Chain blog](<https://www.bnbchain.org/en/blog/introducing-bstocks-on-bnb-chain-trade-24-7-with-zero-fees-deploy-across-defi-protocols-with-full-self-custody>)
+- Lead 02: [HackerNoon](<https://hackernoon.com/binance-opens-bstocks-collateral-to-every-eligible-user-as-tokenized-stock-volume-tops-$30-billion>)
+- Lead 03: [Blockchain.News](<https://blockchain.news/news/binance-bstocks-tokenized-securities-24-7-access>)
+- Lead 04: [Eco.com comparison](<https://eco.com/support/en/articles/15254023-best-tokenized-stock-platforms-2026-fees-us-access-and-backing-compared>)
+- Lead 05: [Traders Union](<https://tradersunion.com/news/brokers-news/show/2658271-binance-lists-sk-hynix-tokenized/>)
+- Lead 06: [Thailand Business News](<https://www.thailand-business-news.com/pr-news/sk-hynix-lists-adrs-on-nasdaq-elevating-global-status-at-the-heart-of-capital-markets>)
+- Lead 07: [Finance Magnates](<https://www.financemagnates.com/cryptocurrency/exchange/binance-claims-fastest-1-billion-sprint-in-bstocks-with-6-billion-in-share-conversions/>)
+- Lead 08: [crypto.news](<https://crypto.news/bnb-chain-claims-42-6-of-tokenized-stock-market/>)
+- Lead 09: [Wisevoter](<https://wisevoter.com/world/2026/10/05/binance-end-fee-free-bstock-conversion>)
+- Lead 10: [Phemex News](<https://phemex.com/news/article/binance-to-enable-247-dynamic-updates-for-bstocks-collateral-index-price-100584>)
+- Lead 11: [The Defiant](<https://thedefiant.io/converge/tradfi-and-fintech/binance-to-reprice-bstocks-collateral-while-us-stock-markets-are-closed>)
+- Lead 12: [Hokanews](<https://www.hokanews.com/2026/10/binance-to-reprice-bstocks-collateral.html>)
+- Lead 13: [Native on X](<https://x.com/native_fi/article/2065075659790270758>)
+- Lead 14: [BNB Chain market-making landscape](<https://www.bnbchain.org/en/blog/bnb-chain-market-making-landscape-liquidity-venues-how-to-integrate>)
+- Lead 15: [TradingView/Chainwire](<https://tr.tradingview.com/news/chainwire%3A2dd28640d094b%3A0-stablestock-and-native-launch-24-7-tokenized-stock-trading-on-bnb-chain>)
+- Lead 16: [Kraken xStocks FAQ](<https://support.kraken.com/articles/xstocks-faq>)
+- Lead 17: [CoinPaprika](<https://coinpaprika.com/education/tokenized-stocks-price-tracking/>)
+- Lead 18: [DeGate playbook](<https://degate.com/playbook/tokenized-stocks-24-7-price-discovery.md>)
+- Lead 19: [The Block](<https://www.theblock.co/post/111661/binance-ceases-stock-tokens-trading>)
+- Lead 20: [Decrypt](<https://decrypt.co/82495/binance-lets-customers-move-stock-tokens-before-service-shuts-down>)
+- Lead 21: [The Block](<https://www.theblock.co/news/markets/2021-01-27-ftx-lists-gme-stock-for-tokenized-spot-futures-trading-92756>)
+- Lead 22: [Crypto Briefing](<https://cryptobriefing.com/ftx-adds-silver-stocks-reddit-market-surge/>)
+- Lead 23: [Coin Bureau](<https://coinbureau.com/review/mirror-protocol-mir>)
+- Lead 24: [Veradiverdict](<https://veradiverdict.beehiiv.com/p/synthetic-assets-blockchain>)
+- Lead 25: [CertiK](<https://www.certik.com/blog/mirror-protocol-exploited-due-to-incorrect-oracle-price>)
+- Lead 26: [Blockworks Research (0xResearch)](<https://blockworks-research.beehiiv.com/p/when-markets-sleep>)
+- Lead 27: [4pillars](<https://research.4pillars.io/en/research/can-hyperliquids-weekend-trading-predict-monday-opens-for-korean-stocks>)
+- Lead 28: [Dune](<https://dune.com/blog/hyperliquid-priced-wti-while-futures-were-shut>)
+- Lead 29: [AEA 2026 listing](<https://www.aeaweb.org/conference/2026/program/paper/kRz7yE6Q>)
+- Lead 30: [Neudata review](<https://www.neudata.co/literature-reviews/trading-in-the-dark-retail-flow-in-the-overnight-session>)
+- Lead 31: [Eaton et al. PDF](<https://haslam.utk.edu/wp-content/uploads/2024/11/Eaton-Paper.pdf>)
+- Lead 32: [Nasdaq](<https://www.nasdaq.com/articles/looking-all-day-data-24-hour-trading>)
+- Lead 33: [BMLL](<https://www.bmlltech.com/news/market-insight/there-is-a-clear-trend-towards-24-7-equity-trading-but-how-much-liquidity-is-available-for-participants-during-overnight-trading>)
+- Lead 34: [BlockEden](<https://blockeden.xyz/blog/2025/10/30/xstocks/>)
+- Lead 35: [Boston Fed WP 98-6](<https://www.bostonfed.org/-/media/Documents/Workingpapers/PDF/wp98_6.pdf>)
+- Lead 36: [Spark glossary](<https://www.spark.money/glossary/request-for-quote>)
+- Lead 37: [Ethernal blog](<https://tryethernal.com/blog/the-dex-trade-that-was-never-on-a-dex>)
+- Lead 38: [0x Help](<https://help.0x.org/articles/3310442497-understanding-0x-rfq-request-for-quote>)
+- Lead 39: [Coinbase CDP docs](<https://docs.cdp.coinbase.com/prime/concepts/trading/rfq>)
+- Lead 40: [Consensys on Hashflow](<https://consensys.io/blog/hashflow-a-dex-for-bridgeless-cross-chain-swaps-zero-slippage-and-mev-protected-trades>)
+- Lead 41: [Spark glossary (sandwich)](<https://www.spark.money/glossary/sandwich-attack>)
+- Lead 42: [thetrading.tools](<https://www.thetrading.tools/nvda-options>)
+- Lead 43: [Market Rebellion](<https://marketrebellion.com/news/mid-session-iv-report-october-14-2026>)
+- Lead 44: [MarketChameleon](<https://marketchameleon.com/Overview/TSLA/OptionChain/>)
+- Lead 45: [Decrypt](<https://decrypt.co/294648/bnb-smart-chain-blocks-hits-record-high-sandwich-attacks>)
+- Lead 46: [BNB Chain blog](<https://www.bnbchain.org/en/blog/how-the-goodwill-alliance-slashed-sandwich-attacks-by-95>)
+- Lead 47: [BNB Chain forum](<https://forum.bnbchain.org/t/call-for-proposal-addressing-malicious-mev-attacks-on-bnb-chain/3167>)
+- Lead 48: [BNB Chain blog](<https://www.bnbchain.org/en/blog/protecting-users-from-sandwich-attacks-bnb-chain-introduces-mev-protection-with-several-wallets>)
+- Lead 49: [Chainstack](<https://chainstack.com/build-better-with-bnb-smart-chain/>)
+- Lead 50: [BscScan Gas Tracker](<https://bscscan.com/gastracker>)
+- Lead 51: [Bitget News](<https://www.bitget.com/news/detail/12560604996708>)
+- Lead 52: [Bitcoin.com](<https://news.bitcoin.com/bnb-chain-validators-move-to-halve-gas-fees-with-new-proposal/>)
+- Lead 53: [ECOIN Wallet blog](<https://ecoinwallet.org/blog/bnb-chain-cuts-gas-fees-to-0-05-gwei-and-speeds-up-blocks-cheaper-than-ever/>)
+- Lead 54: [Chainwire](<https://chainwire.org/2026/04/28/bnb-chain-activates-osaka-mendel-hard-fork-faster-finality-predictable-gas-and-enhanced-stability/>)
+- Lead 55: [BNB Chain blog](<https://bnbchain.org/en/blog/osaka-mendel-hard-fork-strengthening-bnb-chain-after-sub-second-speed-gains>)
+- Lead 56: [Cointelegraph](<https://cointelegraph.com/news/bnb-chain-pasteur-hard-fork-bridge-security>)
+- Lead 57: [The Block](<https://www.theblock.co/post/341215/bnb-chain-will-prioritize-memecoin-transactions-as-gas-fees-surge-400>)
+- Lead 58: [The Defiant](<https://thedefiant.io/news/defi/binance-smart-chain-congestion-is-slowing-down-pancakeswap>)
+- Lead 59: [Univ. of Memphis Digital Commons](<https://digitalcommons.memphis.edu/facpubs/11507/>)
+- Lead 60: [Hinich et al., UT Austin](<http://www.la.utexas.edu/hinich/files/Economics/Signal-NYSE.pdf>)
+- Lead 61: [HKUST Research Portal](<https://researchportal.hkust.edu.hk/en/publications/market-structure-and-the-intraday-pattern-of-bid-ask-spreads-for->)
+- Lead 62: [Univ. of Saskatchewan](<https://harvest.usask.ca/items/185eee73-6ce2-422e-9a11-c6fb47c0e9d0>)
+- Lead 63: [Univ. of Southampton ePrints](<https://eprints.soton.ac.uk/37372>)
+- Lead 64: [Microsoft News](<https://news.microsoft.com/source/2026/10/07/microsoft-announces-quarterly-earnings-release-date-69/>)
+- Lead 65: [Wall Street Horizon](<https://www.wallstreethorizon.com/nvidia-earnings-calendar>)
+- Lead 66: [days.to](<https://days.to/nvidia-earnings>)
+- Lead 67: [Fidelity](<https://www.fidelity.com/learning-center/smart-money/stock-market-holidays>)
+- Lead 68: [Kiplinger](<https://www.kiplinger.com/investing/stock-market-holidays>)
