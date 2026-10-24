@@ -72,3 +72,26 @@ Also fixed while testing: loading the RC7 monitor wrote `__pycache__` into its p
 Open for the owners: review and apply (Isaac, Keegan); the backend state key; the Web3 read-only secret; setting the
 login hash; then stopping the Claude session's hourly task. PAGES01: SSM read access in the scored run, and the final
 wallet's start nonce and opening USDT.
+
+## Decision 2026-10-24: Keith's always-on computer and Cloudflare Pages (chosen); the AWS stack stays unapplied
+
+- Asked "will this strain the server": measured on run 4 (read-only SSM, ~10:55Z): the decisions export takes about
+  1.6 s on the primary, but it reads and decodes **every** event of the run each time (83 events = 29.26 MB of
+  batches; `db.t4g.micro`, 90 MB shared buffers). With a round every slot, a 14-day run would plausibly reach
+  2–3 GB, read in full every hour and held in memory on the trading host. Not acceptable for the final; fine for
+  run 4.
+- The user then chose the simplest hosting: a scheduled script on Keith's always-on computer posts the page to
+  Cloudflare Pages behind Cloudflare Access (email login), instead of the AWS stack (kept as an unapplied
+  alternative). The export becomes incremental for both.
+
+### Pass criteria for the incremental export and the Cloudflare job (written before any test is run)
+
+| # | Pass when | How |
+|---|---|---|
+| E1 | Given a cursor, the export reads only events after it, streamed through a server-side cursor in small batches; it emits rows oldest-first within the byte budget and reports the last sequence it fully covered, so a trimmed row comes in the next export; a closure of an earlier round becomes a small closure line | export test on a synthetic journal |
+| E2 | Merging successive incremental exports of a growing journal, with the stored cursor, ends with the same `decisions.jsonl` as one full export, closures included | merge test |
+| E3 | Work per run follows new events only: with 1,000 events behind the cursor and 5 new ones, the export decodes 5 batches | count in the export test |
+| C1 | `tools.dashboard.cloudflare` refreshes, then deploys exactly `index.html`, `data.json` and `_headers` (no monitor state, seeds or keys); no deploy when the refresh fails; an overlapping run exits without deploying; missing Cloudflare credentials stop it before any work | job test with a fake `wrangler` |
+| C2 | `_headers` sets `Cache-Control: no-store` and `X-Robots-Tag: noindex` for every path | job test |
+| C3 | The wrangler version is pinned exactly (no range or tag) | job test |
+| C4 | Operator (Keith): an Access application covers the project's production and preview hostnames before the first deploy | setup guide; checked once by hand |
