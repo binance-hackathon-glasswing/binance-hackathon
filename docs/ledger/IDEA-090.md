@@ -89,6 +89,19 @@ such plan spends one of the next name's attempts for nothing (`max_attempts_per_
 | F6 | Full suite on Python 3.12 with PostgreSQL 14.24, test commit red on base first | as in IDEA-088 |
 | F7 | Rehearsal check before the final: in a dev run, rounds appear in consecutive slots in `checks/trading-status.sh` | operator, next dev run |
 
+### Added 2026-10-24 (implementation, before the F9 test was written)
+
+**Finding S2-F4 — a better-than-mark BUY quote is dropped with one follow-up round.** When the follow-up's quote would
+receive more tokens than the target (the quote is about 2 bps or more better than the mark), the planner asks for a
+smaller quote (`BUY_RECEIVE_TARGET_REQUOTE`). With `max_quote_rounds: 1` (`config/runtime/runtime.example.json`, which
+`gate_a.prepare` turns into every run's `runtime.json`), the driver stops there, the round plans nothing and the next
+round reserves a new attempt. An exploratory check in the S1 planner fixture (not a pass test) showed: at −10 bps the
+child requests 37950023 instead of 37980000, and a second follow-up with that quote plans the intent on attempt 1.
+
+| # | Pass when | How |
+|---|---|---|
+| F9 | A parent → follow-up → second follow-up chain with a better-than-mark quote plans the parent's leg on the parent's attempt (ordinal 1, no other leg's count), and the example runtime config allows two follow-up rounds | planner chain test; config test |
+
 Fail or partial: record it here; do not loosen the evidence, `openState` or execution guards to make rounds appear.
 
 ## Not covered
