@@ -1,5 +1,14 @@
 # Current shared build and remaining work
 
+PR274-RV01 (2026-10-24): S2-F2..F6 source fixes independently reviewed with three repairs: preserve original model
+assessment audits during replay, bound complete SSM decision exports, and retain actual quote-follow-up IDs in the
+dashboard. Full pinned Python3.12/PostgreSQL14.24 validation:2643 tests/4004 subtests PASS,10 expected skips; final
+dashboard/contract follow-up42 tests/44 subtests PASS. GitHub jobs never started due to billing/spending limits.
+[Review and remaining owners](../ledger/IDEA-090.md#pr274-rv01-results--pass-for-source-merge-2026-10-24-sgt) /
+[receipt](evidence/pr274-review-20261024.json). Later dev-run F7/post-approve swaps, strategy/profile/config,
+final release/host/signing acceptance and PAGES01 remain. Active run4 stays on RC7; original install/trade reports
+from PR272 are retained in IDEA-089 as dated evidence, not independently rerun by this review.
+
 IDEA-089 S2 (2026-10-24): the weekend trade test for run 4 is implemented and tested offline (PR270): `KIT_OPEN_STATE` hours for both planner and execution/signer admission, the S2-1 scope in five places, the runtime router-policy pair (with PR268's quote verifier, merged at `398255f`), S2 profile `eb55d76a…` and the RC7 run sheet `build/ops/rehearsal-install-rc7-20261024/`. RC7 build, the Q1 live quote check, Isaac's approval and the install (Yao) remain. Run 3 (RC6 `9dc5edab`) stays a no-trade soak until R1p. See [IDEA-089](../ledger/IDEA-089.md).
 
 PR262-RV01 (2026-10-23 SGT): IDEA-086 fixes the hosted entry blocker with a basis verifier and ratio-scaled token
