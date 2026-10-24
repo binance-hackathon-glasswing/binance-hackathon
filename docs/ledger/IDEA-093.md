@@ -2,8 +2,8 @@
 
 - Date / author: 2026-10-25 SGT (2026-10-24 ~16:30Z) / team request in a Claude Code session on Keith's machine (request and the
   hours choice below); Claude Code (design, implementation, record). Strategy owner for review: Keith
-- Status: **open — design and pass criteria pre-registered before any test or code.** Results are added below.
-  Not approved, built into a release or installed.
+- Status: **open — implemented and tested offline 2026-10-25 (S4-1..S4-9 PASS, local CI replica; see the end of this
+  entry).** Not approved, built into a release or installed.
 - Base: canonical `codex/system-testing-20261012` at `4b164649` (PR277 merged).
 - Related: IDEA-076 / IDEA-084 PF-01, PF-04 (S1 and the final calendar), IDEA-089 (S2, run 4), IDEA-090 (S2-F2..F6),
   IDEA-091 (strategy research), IDEA-092 (S3), SKILL.md F-95, F-115, F-117, F-119, F-121, F-124.
@@ -106,3 +106,36 @@ cost over the run; a daily sell-all and rebuy, about 1–1.5% and a risk of idle
 | S4-9 | Local CI replica, because GitHub Actions cannot start (account billing): the `runtime` job's steps on Python 3.12.15 with PostgreSQL 14.24 and `deploy/requirements-test.lock` (`pip check`, full `pytest`, offline demo, Docker image build and run); the infrastructure job's Terraform `fmt`/`validate`/`test` if a pinned Terraform runs locally; the host-bundle build and its test if they run locally. Each failure is reported with its cause; only environment-only failures already recorded (nested bubblewrap in Docker, systemd) may remain | command output and a receipt in `docs/build/evidence/` |
 
 Fail or partial: record it here; do not loosen the `openState`, cost, impact, attempt or signer guards to pass.
+
+## Implementation and results (2026-10-25 SGT; branch `claude/final-strategy-20261025`)
+
+Commits: `6f0141d1` (criteria, before any test or code), `4fffd75e` (tests, red on base), `d9db07c9` (code and
+profile), `d1260bc4` (evidence README, backlog). Red on base: with the code change removed, 8 of the 14 new tests fail
+(every scope, builder and service-start test); the 6 that pass on base are the refusal guards, the planner/admission
+tests (the hours already worked for any profile the scope let through) and the venue test (IDEA-090 F11 existed).
+
+**Code.**
+- `larp/strategy/execution_bounds.py`: `require_open_state_scope` accepts `KIT_OPEN_STATE` in S2's scope or S4's (live
+  FINAL, decided v1 scope); the five call sites are unchanged.
+- `tools/deploy/build_final_candidate.py` (new) builds the S4 profile; `build_rehearsal_candidate.py` now shares its
+  pinned inputs through `pinned_profiles` / `gas_formulas` (S2 and S3 profiles still rebuild byte for byte).
+
+**Profile** `docs/build/evidence/s4-final-profile-20261025/final-s4.json`: file `bb59b190…`, digest `429b7025…`,
+probe `14257e77…` (full hashes in the README).
+
+| # | Result | Evidence |
+|---|---|---|
+| S4-1 | **PASS.** FINAL with the v1 scope accepted in `live` and `None`, refused in `dev`, `offline` and `''`; SHADOW evidence/falsifiers/BOUNDED statements, REHEARSAL or another environment refused; S2's rule unchanged (all `test_s2_weekend.py` tests pass); the S3 scheduled flatten is still refused for FINAL | `test_s4_1_*` |
+| S4-2 | **PASS.** Saturday 23:00Z and Sunday 12:00Z in a Friday-to-Monday session: discretionary BUY intent with authority Friday open → Monday open; NYSE hours refuse the same snapshot; `token_open` or `underlying_open` false → `MARKET_CLOSED_OR_UNKNOWN`; before `trade_after` / after `new_risk_end` no attempt; 5 quote rounds then `LEG_ATTEMPT_LIMIT`. The Sunday round needs the risk day rolled to Sunday (the runtime's UTC day roll, S2-12); without it the planner says `NEW_RISK_HALTED`, as designed | `test_s4_2_*` |
+| S4-3 | **PASS.** `permitted` admits the weekend BUY on Saturday, Sunday and Monday 13:29:59Z, refuses it at Monday's open and under NYSE hours | `test_s4_3_*` |
+| S4-4 | **PASS.** Every listed regression file passes unchanged in the full run below | full suite |
+| S4-5 | **PASS.** A requote 12 bp below the planning output: at 20 bp the minimum reaches the authorized one; at 8 bp it does not (run 4's block); no request wider than the limit | `test_s4_5_*` |
+| S4-6 | **PASS, with one correction to the criterion's wording.** Rebuilds byte for byte; values as designed. Against the generator's FINAL S1 profile it differs in `s1.execution`, `trade_after`, `new_risk_end`, `flatten_start`, `slippage_bps`, `policy_id`, **and `exit_gas_reserve_units`** (two exit children, as S2; the criterion omitted it), plus the provenance of those keys and of the two gas-budget formulas. `signing_end` is equal (both 14:45) | `test_s4_6_*` |
+| S4-7 | **PASS.** Refusals: 3 attempts, no hours, NYSE hours, MODEL limiter, non-1/5 weights, blank decision, non-bytes block; the CLI writes once | `test_s4_7_*` |
+| S4-8 | **PASS.** Runtime and execution starts in `live` get past the scope check; `dev` (and a missing execution mode) refuse with the scope message | `test_s4_8_*` |
+| S4-9 | **PASS (local replica, not GitHub CI).** Full suite on Python 3.12.15 / PostgreSQL 14.24 / pinned lock, clean clone of `d1260bc4`: **2675 passed, 9 skipped, 4004 subtests, 0 failed**, `pip check` clean, no deselection (bubblewrap ran in a privileged container); offline demo PASS; Docker image build and run PASS; Terraform 1.13.5 (amd64) `deploy/aws` 19/19 and `deploy/bootstrap` 1/1 with fmt/validate; x86_64 host bundle built and `test_host_bundle.sh` PASS for primary and signer. Not run: `LARP_TEST_SYSTEMD=1` systemd conditions (needs a disposable systemd runner) | [receipt](../build/evidence/idea093-local-ci-20261025.json) |
+
+**Open (owners as in the backlog line "IDEA-093 S4"):** Keith accepts the values (20 bp, 24/7 hours, PF-04 kept);
+Keegan reviews code, release and GAP-62; a dev REHEARSAL with this block and 20 bp shows a post-approve swap,
+consecutive-slot rounds (IDEA-090 F7) and a sell before the freeze; Isaac approves the exact profile, final
+`signer.json` and caps/gas coverage; Yao builds and installs the final release before `trade_after`.
