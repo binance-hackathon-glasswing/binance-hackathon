@@ -189,3 +189,70 @@ def test_s3_7_builder_refuses_a_scheduled_flatten_without_s2_hours():
         build(2, s1_raw=json.dumps(value).encode(), s1_decision='synthetic', scheduled_flatten_at='2026-10-25T04:00:00Z')
     with pytest.raises(ContractError):
         build(2, scheduled_flatten_at='2026-10-25T04:00:00Z')
+
+# PR277-RV01: authority must respect the phase boundary, including already planned BUYs.
+def admitted(snapshot, result):
+    planned = result['intents'][0]
+    buy = planned['side'] == 'BUY'
+    economic = intent(intent_id=planned['intent_id'], pay_token=USDT if buy else TOKENS[planned['symbol']],
+        receive_token=TOKENS[planned['symbol']] if buy else USDT,
+        amount=planned['pay_units'] * (10**12 if buy else 1),
+        minimum_output=planned['min_receive_units'] * (1 if buy else 10**12))
+    record = dict(policy_input=dict(context=snapshot.context.read()), plan=result)
+    return dict(round_records={'round': record}), economic
+
+
+def test_rv1_pre_cut_buy_command_expires_at_the_scheduled_time():
+    from larp.integration.runtime import RuntimePlanner
+    from larp.strategy.policy import decide
+    cutoff = '2026-10-10T23:05:00Z'
+    snapshot = with_quotes(at(AFTER_CLOSE, profile_changes=dict(S2, scheduled_flatten_at=cutoff,
+        execution_authority_seconds=660, submission_margin_seconds=30)))
+    result = RuntimePlanner(job_validity_ms=60000, job_max_attempts=3).plan(
+        snapshot, decide(snapshot, snapshot.policy_state)).read()
+    planned = result['intents'][0]
+    assert planned['side'] == 'BUY'
+    assert planned['expires_ms'] == milliseconds(cutoff)
+    assert planned['authority']['authority_ms'] == milliseconds(cutoff)
+
+
+def test_rv1_pre_cut_buy_is_independently_refused_at_and_after_the_time():
+    cutoff = '2026-10-10T23:05:00Z'
+    snapshot = with_quotes(at(AFTER_CLOSE, profile_changes=dict(S2, scheduled_flatten_at=cutoff)))
+    projection, economic = admitted(snapshot, run(snapshot))
+    assert bounds.permitted(projection, economic, milliseconds(cutoff) - 1)
+    assert not bounds.permitted(projection, economic, milliseconds(cutoff))
+    assert not bounds.permitted(projection, economic, milliseconds(cutoff) + 1)
+
+
+def test_rv1_first_flat_done_round_reopens_buy_authority_and_sells_keep_their_lane():
+    from larp.integration.runtime import RuntimePlanner
+    from larp.strategy.policy import decide
+    snapshot = with_quotes(at(AFTER_CLOSE, profile_changes=dict(S3,
+        execution_authority_seconds=660, submission_margin_seconds=30)))
+    assert snapshot.context.read()['portfolio']['risk'].get('scheduled_flatten') is None
+    result = RuntimePlanner(job_validity_ms=60000, job_max_attempts=3).plan(
+        snapshot, decide(snapshot, snapshot.policy_state)).read()
+    assert result['risk_state']['scheduled_flatten'] == 'DONE'
+    assert result['intents'][0]['expires_ms'] == milliseconds(AFTER_CLOSE) + 660000
+    projection, economic = admitted(snapshot, result)
+    assert bounds.permitted(projection, economic, milliseconds(AFTER_CLOSE) + 1)
+    held = with_quotes(at(AFTER_CLOSE, profile_changes=S3, held=HELD))
+    projection, economic = admitted(held, run(held))
+    assert bounds.permitted(projection, economic, milliseconds(AFTER_CLOSE) + 1)
+
+
+def test_rv3_done_does_not_reset_buy_attempts_or_terminal_safety_attempts():
+    spent = dict(session=80, counts={'DISCRETIONARY:BUY:' + n: 5 for n in NAMES})
+    result = round_at(S3, state=EVER_HELD, execution_attempt_budget=spent)
+    assert result['risk_state']['scheduled_flatten'] == 'DONE'
+    assert not buys(result) and 'LEG_ATTEMPT_LIMIT' in reasons(result)
+    assert result['execution_attempt_budget']['counts'] == spent['counts']
+    spent = dict(session=80, counts={'SAFETY:SELL:NVDAB': 5})
+    result = round_at(dict(S3, new_risk_end='2026-10-10T22:15:00Z',
+        flatten_start='2026-10-10T22:30:00Z'), held=dict(NVDAB=AT_95), risk=dict(scheduled_flatten='DONE'),
+        execution_attempt_budget=spent)
+    assert result['requirements'][0]['reasons'] == ['TERMINAL_FLATTEN']
+    assert result['requirements'][0]['status'] == 'LEG_ATTEMPT_LIMIT'
+    assert not result['intents'] and not result['quote_requests']
+    assert result['execution_attempt_budget']['counts'] == spent['counts']
