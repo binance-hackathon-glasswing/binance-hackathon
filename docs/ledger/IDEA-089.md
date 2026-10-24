@@ -331,3 +331,27 @@ Next: P3.
   `larp_rehearsal4`.
 
 Next: T1, R1s, P2s, S1, S1b, S2, P5.
+
+### T1, R1s, P2s, S1, S1b and S2 — PASS; run-4 signer started (Yao, 2026-10-24 05:35–06:0xZ)
+
+- **T1:** plan `signer-access-on-run4.tfplan` 8 add / 0 change / 0 destroy, the same eight resources as run 3's T1
+  (assistant check); apply `8 added`. SA9 (05:38:49Z): both hosts `Online`, endpoints `available` from 05:36:09Z,
+  `AmazonSSMManagedInstanceCore` on `larp-dev-signer`, EC2 ok/ok.
+- **R1s** (SSM `e622b814…`, Success): `larp-signer` inactive, disabled; moved run 3's `release.json` `590edf38…`,
+  `signer.json` `49cb1a08…`, router policy `05759e90…`; key `600 root:root`, 1 link. Delivered at once (no stuck
+  agent this time).
+- **P2s** (SSM `e0043cfd…`, Success; symlink stderr only): RC7 on the signer, manifest `55cf600b…`, CA `d7389074…`.
+- **S1** (SSM `99004e88…`, Success, exit 0): installed `release.json` `46fdaa88…` (primary's bytes), `signer.json`
+  `56e029af…`, router policy `05759e90…`; `release_verified: true`; `check` `configuration_valid`, UNTRUSTED, DEV-23;
+  routes PASS `3b789f6e…`, 6 destinations. **Finding:** the output stops there: the script's last two lines (`chronyc
+  tracking` and `S1_DONE`) are missing although SSM reports exit 0. The script is byte-identical to RC6's, which printed
+  both. A read-only check right after (`checks/signer-clock.sh`, kept in the git-ignored run folder) showed the signer's
+  uptime as 270 s, so it had rebooted after S1; chronyd active on Amazon Time Sync, 0.0000046 s fast, Leap Normal,
+  `NTPSynchronized=yes`; the three S1 files with the hashes above; `larp-signer` inactive/disabled; key `600 root:root`.
+  The reboot's cause is to be confirmed with Yao (a manual reboot from the T1/R1s fallback would explain both).
+- **S1b** (SSM `d7389978…`): copy `0o400`, owner the reading process, `key_loader: PASS`.
+- **S2** (SSM `56298cfb-9c90-41ad-80e0-1218f6dada03`, Success; stderr the symlink line): `key_loader: PASS`,
+  **`wallet_matches: true`**; `larp-signer active restarts=0`; `release_verified: true`; `started: true`,
+  `signing_enabled: true`, UNTRUSTED `05759e90…`, DEV-23, CAP-02. `S2_DONE`.
+
+Next: P5, C1, T2, M9; then J (first S2 entry).
