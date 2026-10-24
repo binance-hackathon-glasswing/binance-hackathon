@@ -55,10 +55,10 @@ class EverySlot(DriverHarness):
                 issuer = FIVE[slot % 5]
                 self.assertEqual(record['request']['issuer_id'], issuer)
                 if issuer in (EXSEMI, EXMEM):  # an evidence round, as before
-                    self.assertNotIn('accepted_evidence_only', record)
+                    self.assertNotIn('accepted_evidence', record)
                     self.assertTrue(record['request']['evidence_refs'])
                 else:  # planning only: prior accepted evidence, no new assessment and no assessment error
-                    self.assertIs(record['accepted_evidence_only'], True)
+                    self.assertEqual(record['accepted_evidence'], 'ONLY')
                     self.assertIsNone(record['assessment'])
                     self.assertEqual(record['request']['evidence_refs'], [])
                     self.assertNotIn('ASSESSMENT_UNAVAILABLE', record['errors'])
@@ -78,7 +78,7 @@ class EverySlot(DriverHarness):
                            slot=slot)
             self.assertEqual(record['request']['job_id'],
                              'evidence:' + digest('larp.runtime.cadence-job.v1', payload))
-            self.assertNotIn('accepted_evidence_only', record)
+            self.assertNotIn('accepted_evidence', record)
             self.assertIsNotNone(record['assessment'])
 
     def test_f3_a_mandatory_sell_is_planned_in_a_slot_whose_issuer_has_no_records(self):
@@ -90,7 +90,7 @@ class EverySlot(DriverHarness):
         round_id = self.slot_round(driver, slot)
         self.assertEqual(round_id, f'cadence:{slot}#1')
         record = self.record(round_id)
-        self.assertIs(record['accepted_evidence_only'], True)
+        self.assertEqual(record['accepted_evidence'], 'ONLY')
         sells = [i for i in record['plan']['intents'] if i['side'] == 'SELL' and i['mandatory']]
         self.assertTrue(sells, record['plan'])
 
@@ -176,5 +176,6 @@ class SignedReplay(DriverHarness):
         record = self.store.event(RUN, 'plan:' + item['round_id'])['record']
         self.assertIsNotNone(record['assessment'])
         self.assertIn('assessment_available', record['policy_input']['context'])
+        self.assertEqual(record['accepted_evidence'], 'WITH_ASSESSMENT')
         head, expected = self.replay(driver)
         self.assertEqual(head, expected)
