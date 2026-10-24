@@ -205,6 +205,27 @@ intent.minimum_output`. Nothing is ever requested wider than the intent's slippa
 | F15 | Full suite: no new failures against the F6 runs above | as F6 |
 | F16 | Operator: confirm from run 4's 07:15Z execution record that S2-F6 is this cause (`blocked_reason`, `NOT_SUBMITTED` reason) | `checks/trading-status.sh` |
 
+### F16 — S2-F6 confirmed from run 4's database (2026-10-24 ~09:00Z)
+
+Read-only `checks/trading-status.sh` on the primary over SSM (command `636400b6-bbf7-445c-9dad-eaae346e45b5`, run from a
+Claude Code session as IAM user `larp-claude-session`; one READ ONLY transaction, public values only). All units
+active with 0 restarts, no HALT, run not quarantined; 15 rounds, all closed. Execution records (all terminal):
+
+| Round | Intent amount (USDT) | Attempts | Status | `blocked_reason` |
+|---|---|---|---|---|
+| `cadence:1992024#1/quote1` (06:00Z) | 18.951721 | approve nonce 4, swap nonce 5 | COMPLETED | — |
+| `cadence:1992029#1/quote1` (07:15Z) | 18.940509 | approve nonce 6 only | ABORTED | `encoded swap economics mismatch/expired` |
+| `cadence:1992032#1/quote1` (08:00Z) | 18.928356 | none (blocked at the pre-approve requote) | ABORTED | `encoded swap economics mismatch/expired` |
+| `cadence:1992034#1/quote1` (08:30Z) | 18.932548 | approve nonce 7 only | ABORTED | `encoded swap economics mismatch/expired` |
+
+Events: 3 × `ABORTED_BEFORE_SWAP_BROADCAST`; signing requests 4, signatures 4, **refusals 0** (the signer and its
+policy are not the cause). `max_slippage_bps` 8 on every intent. **F16 passes:** the swaps were blocked by
+`validate_payload`'s economics check on the execution service's requote, in 3 of 4 buys; at 08:00Z already at the
+pre-approve requote, seconds after the planning quote. That message also covers a swap deadline outside the
+authority, but the same path passed at 06:00Z and fails intermittently, which fits the minimum-output comparison under
+price noise, not a fixed deadline mismatch. The S2-F6 fix (F11–F14) covers both requotes. Run 4 keeps RC7 and stays
+exposed, including the Sunday flatten's SELL swaps.
+
 ## Not covered
 
 - Run 4 (`larp-dev-rehearsal-20261024-s2`, RC7 `2d160073`) keeps running as it is; a run cannot change build.
