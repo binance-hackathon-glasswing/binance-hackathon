@@ -1,0 +1,27 @@
+{
+  "actual_deployment_accepted": false,
+  "bounded_report_sha256": "531f15351d5c6d2b3d0a27c507ab74e3aa5c105552002d40ec62fcdbe6c1a8f3",
+  "live_probe_commit": "fe91326e33d5876b7fe017c06e0002afe3ae7b62",
+  "live_report_sha256": "9eaad5d29797d3057b74e7544a369fd8970b0d3fcaf5d9c76788fffec7b3ff02",
+  "platform": "macOS arm64",
+  "private_original_hashes_verified": 213,
+  "python": "3.12.14",
+  "ready_to_install": false,
+  "schema": "GC01RP01Verification.v1",
+  "signing_enabled": false,
+  "source_commit": "ffe91d951ab0bfd0369c2668adb8bee999352cd5",
+  "source_sha256": {
+    "tests/execution/test_initial_gas_bounds.py": "50cddcd7f5cae009563dbe707c02e6cf87b58b2f59af17726da48c03f23f9816",
+    "tests/execution/test_router_readonly_probe.py": "b1f62cd841cabf610a682ebbef66cd229ace01055052399a21ac9f21489dcb1a",
+    "tools/deploy/replay_router_readonly.py": "9722137cc5362daa5db6c1a7f730edc51aaa3a656c02488b917fd44725325022",
+    "tools/deploy/review_initial_gas.py": "b3dc0266c1ea5b29e2668788db2a694b8ced6afab25884781cb356dffef2ab3d"
+  },
+  "tests": {
+    "full_suite_run": false,
+    "passed": 68,
+    "skip_reason": "Disposable PostgreSQL not configured",
+    "skipped": 3,
+    "subtests_passed": 280
+  },
+  "whole_run_seeding_accepted": false
+}

@@ -267,6 +267,75 @@ class Composition(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_driver(self.config(**settings), Store(), self.secrets)
 
+    def routed_settings(self):
+        from larp.intelligence.model_budget import ModelBudget
+        raw = (Path(__file__).resolve().parents[2] / 'config/intelligence/aiand-routing.example.json').read_bytes()
+        (self.root / 'routing.json').write_bytes(raw)
+        ModelBudget.initialize(self.root / 'openai-budget.sqlite', json.loads(raw)['budget_account'],
+                               initial_spent=0)
+        return dict(model_routing_file=str(self.root / 'routing.json'),
+                    model_routing_sha256=hashlib.sha256(raw).hexdigest(), model_budget_root=str(self.root))
+
+    def test_sg1_routed_model_artifacts_go_to_a_private_runtime_store(self):
+        from larp.sources.store import FileArtifacts, OverlayArtifacts
+        secrets = dict(self.secrets, LARP_AIAND_API_KEY='synthetic-aiand-runtime-key')
+        driver = build_driver(self.config(assessor='aiand_routed', **self.routed_settings()), Store(), secrets)
+        router = driver.coordinator.assessor
+        model_root = (self.root / 'market' / 'model').resolve()
+        self.assertIsInstance(router.artifacts, FileArtifacts)
+        self.assertEqual(router.artifacts.root, model_root)
+        for model in (router.routine, *router.external):
+            self.assertIs(model._artifacts, router.artifacts)
+        reader = router.make_assessor(router.routine).reader
+        self.assertIsInstance(reader.artifacts, OverlayArtifacts)
+        self.assertIs(reader.artifacts.private, router.artifacts)
+        self.assertEqual(reader.artifacts.shared.root, (self.root / 'evidence' / 'artifacts').resolve())
+        # SG-7a: the deterministic path writes its tool results to the same private store.
+        plain = build_driver(self.config(), Store(), self.secrets).coordinator.assessor
+        self.assertIsInstance(plain.reader.artifacts, OverlayArtifacts)
+        self.assertEqual(plain.reader.artifacts.private.root, model_root)
+        self.assertEqual(plain.reader.artifacts.shared.root, (self.root / 'evidence' / 'artifacts').resolve())
+
+    def test_sg3_shadow_example_builds_in_dev_shadow_and_refuses_service_or_live(self):
+        from larp.intelligence.routing import RoutedAssessor
+        root = Path(__file__).resolve().parents[2] / 'config/runtime'
+        base = json.loads((root / 'runtime.example.json').read_text())
+        example = json.loads((root / 'runtime.aiand-shadow.example.json').read_text())
+        routing = ('assessor', 'execution', 'model_routing_file', 'model_routing_sha256', 'model_budget_root')
+        self.assertEqual({k: v for k, v in example.items() if k != 'driver'}, {k: v for k, v in base.items() if k != 'driver'})
+        self.assertEqual({k: v for k, v in example['driver'].items() if k not in routing},
+                         {k: v for k, v in base['driver'].items() if k not in routing + ('expiry_grace_ms',)})
+        d = example['driver']
+        self.assertEqual((d['assessor'], d['execution'], d['model_routing_sha256']), ('aiand_routed', 'shadow', None))
+        for key in ('model_budget_root', 'market_artifact_root'):
+            self.assertTrue(d[key].startswith('/var/lib/larp-runtime/'), key)  # the unit's StateDirectory
+        self.assertTrue(d['model_routing_file'].startswith('/etc/larp/'))
+        # Fill the placeholders and host paths with synthetic values; every other setting comes from the example.
+        live_profile = json.dumps(synthetic_profile(mode='LIVE')).encode()
+        (self.root / 'live-profile.json').write_bytes(live_profile)
+        # With PR #87 (IDEA-058) a hosted dev run takes only the explicit `shadow` evidence settings (GA03); before
+        # it, `development` stands in, since the `live` values are unset.
+        shadow = (root.parents[1] / 'config/intelligence/intelligence.shadow.v1.json').exists()
+        filled = dict(self.driver_block, **self.routed_settings(),
+                      balance_rpc_providers=[dict(url='https://rpc.invalid/', source_id='synthetic-rpc')],
+                      intelligence_mode='shadow' if shadow else 'development', day_roll_window_ms=900_000,
+                      strategy_profile_file=str(self.root / 'live-profile.json'),
+                      strategy_profile_sha256=hashlib.sha256(live_profile).hexdigest())
+        driver_block = dict(d, **{k: v for k, v in filled.items() if k not in ('assessor', 'execution')})
+        self.assertFalse([k for k, v in driver_block.items() if v is None])  # every placeholder filled
+        config = dict(example, run_id='run', build_id='a' * 40, wallet_address=self.wallet, driver=driver_block)
+        self.assertEqual(config['mode'], 'dev')
+        secrets = dict(self.secrets, LARP_AIAND_API_KEY='synthetic-aiand-runtime-key')
+        driver = build_driver(config, Store(), secrets)
+        self.assertIsInstance(driver.coordinator.assessor, RoutedAssessor)
+        self.assertFalse(driver.signing)
+        for change in (dict(config, driver=dict(driver_block, execution='service')),
+                       dict(config, driver=dict(driver_block, execution='service', expiry_grace_ms=30000)),
+                       dict(config, mode='live')):
+            with self.subTest(execution=change['driver']['execution'], mode=change['mode']), \
+                    self.assertRaises(ContractError):
+                build_driver(change, Store(), secrets)
+
     def test_e9_service_execution_builds_and_binds_the_profile_to_quotes(self):
         from larp.runtime.driver import ServiceExecution, ShadowExecution
         driver = build_driver(self.config(execution='service', expiry_grace_ms=5000, day_roll_window_ms=900_000,
@@ -281,6 +350,61 @@ class Composition(unittest.TestCase):
         shadow = build_driver(self.config(), Store(), self.secrets)
         self.assertIsInstance(shadow.execution, ShadowExecution)
         self.assertIsNone(shadow.day_roll)
+
+    def test_hosted_market_port_gets_the_basis_check_with_the_pinned_tickers(self):
+        """IDEA-086 (SJ-10-BASIS01): without a verifier every observation is unverified and no entry is planned."""
+        from larp.marketdata.basis import BasisVerifier
+        for execution in ('shadow', 'service'):
+            extra = dict(expiry_grace_ms=5000, day_roll_window_ms=900_000) if execution == 'service' else {}
+            with self.subTest(execution=execution):
+                market = build_driver(self.config(execution=execution, **extra), Store(), self.secrets).ports['market']
+                self.assertIsInstance(market.basis_verifier, BasisVerifier)
+                self.assertEqual(market.basis_verifier.expected, {'NVDAB': 'NVDA'})
+
+    def untrusted_settings(self, **changes):
+        """IDEA-088 QV7: the run-3 S1 profile (initial-only gas), a pinned test router policy and balance RPCs."""
+        from tests.execution.test_untrusted_router import policy
+        raw = json.dumps(policy()).encode()
+        (self.root / 'router-policy.json').write_bytes(raw)
+        profile = (Path(__file__).resolve().parents[2] / 'docs/build/evidence/s1-rehearsal-profile-20261023/'
+                   'rehearsal-s1-deterministic.json').read_bytes()
+        (self.root / 's1-profile.json').write_bytes(profile)
+        value = dict(untrusted_router_policy_file=str(self.root / 'router-policy.json'),
+                     untrusted_router_policy_sha256=hashlib.sha256(raw).hexdigest(),
+                     strategy_profile_file=str(self.root / 's1-profile.json'),
+                     strategy_profile_sha256=hashlib.sha256(profile).hexdigest(),
+                     balance_rpc_providers=[dict(url='https://rpc-a.invalid/', source_id='a'),
+                                            dict(url='https://rpc-b.invalid/', source_id='b')],
+                     balance_check_interval_ms=600_000, balance_check_max_age_ms=1_800_000,
+                     price_jump_check_bps=3000)
+        value.update(changes)
+        return {k: v for k, v in value.items() if v is not None}
+
+    def test_qv7_a_pinned_untrusted_router_policy_gives_the_market_port_its_quote_verifier(self):
+        from larp.marketdata.quote_verifier import ProviderRpc, UntrustedQuoteVerifier
+        settings = self.untrusted_settings()
+        market = build_driver(self.config(**settings), Store(), self.secrets).ports['market']
+        verifier = market.quote_verifier
+        self.assertIsInstance(verifier, UntrustedQuoteVerifier)
+        self.assertEqual((verifier.decoder.mode, verifier.decoder.policy_sha256),
+                         ('untrusted', settings['untrusted_router_policy_sha256']))
+        self.assertIsInstance(verifier.decoder.rpc, ProviderRpc)
+        self.assertEqual([p.source_id for p in verifier.decoder.rpc.providers], ['a', 'b'])
+        self.assertIsNone(build_driver(self.config(), Store(), self.secrets).ports['market'].quote_verifier)
+
+    def test_qv7_the_policy_pair_is_pinned_complete_and_needs_its_inputs(self):
+        top_up = json.dumps(synthetic_profile()).encode()
+        (self.root / 'top-up-profile.json').write_bytes(top_up)
+        for name, change in (
+                ('hash', dict(untrusted_router_policy_sha256='0' * 64)),
+                ('file only', dict(untrusted_router_policy_sha256=None)),
+                ('hash only', dict(untrusted_router_policy_file=None)),
+                ('no balance providers', dict(balance_rpc_providers=None, balance_check_interval_ms=None,
+                                              balance_check_max_age_ms=None, price_jump_check_bps=None)),
+                ('top-up profile', dict(strategy_profile_file=str(self.root / 'top-up-profile.json'),
+                                        strategy_profile_sha256=hashlib.sha256(top_up).hexdigest()))):
+            with self.subTest(name), self.assertRaises(ContractError):
+                build_driver(self.config(**self.untrusted_settings(**change)), Store(), self.secrets)
 
     def test_e9_execution_mode_must_be_named_and_known(self):
         for change in (dict(execution=None), dict(execution='sign'), dict(signing=False),

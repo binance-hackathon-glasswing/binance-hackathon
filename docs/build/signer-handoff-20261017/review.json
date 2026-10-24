@@ -1,0 +1,42 @@
+{
+  "checked_handoff_commit": "7f5e5ac",
+  "checks": {
+    "actual_selected_profile": "NOT_RUN_MISSING_FILE",
+    "candidate_policy_identity": "PASS",
+    "current_full_holdings": "NOT_RUN_MISSING_FILE",
+    "host_and_manifest_binding": "NOT_RUN_YAO_OWNED",
+    "nominal_equal_weight_100_usdt": "PASS_20.10_WITHIN_35",
+    "nominal_proposed_s1_100_usdt": "PASS_28.60_WITHIN_35",
+    "proposal_suite": "PASS_8_TESTS_0_SKIPS",
+    "real_policy_boundaries": "PASS_14_ACCEPTED_34_REFUSED",
+    "top_up_input_and_execution_gas_envelope": "NOT_RUN_MISSING_FILES",
+    "unfinished_signer_refusal": "PASS_MISSING_RUN_ID_BUILD_ID",
+    "verified_router_source_and_recorded_routes": "NOT_RUN_MISSING_EVIDENCE"
+  },
+  "config_sha256": "339c42025c9771f7d06eb16b5cf4b3ae165556f68d071f977abbe44e6fa31442",
+  "deployment_performed": false,
+  "environment": "DEVELOPMENT_ONLY",
+  "issues": {
+    "handoff_slice": 160,
+    "policy_acceptance": 44,
+    "router_source": 138,
+    "signing_lifetime": 27
+  },
+  "policy_canonical_sha256": "254f5c31b2b1bb22f706acfb95343f9e885097786d22918747eb6951c5a42033",
+  "policy_hash_encoding": "UTF-8 JSON sorted keys compact separators followed by LF",
+  "ready_to_install": false,
+  "reviewed_at": "2026-10-17",
+  "reviewer": "Isaac delegated technical review by assistant; not Keith personal approval",
+  "schema": "SignerHandoffReview.v1",
+  "signing_enabled": false,
+  "source_integration": "0672fb8d51056702c1d9e05450b422072bcb3138",
+  "status": "ASSEMBLY_DRAFT_EXTERNAL_INPUTS_REQUIRED",
+  "unset_config_fields": [
+    "build_id",
+    "database_ca_sha256",
+    "database_host",
+    "router_evidence_file",
+    "router_evidence_sha256",
+    "run_id"
+  ]
+}

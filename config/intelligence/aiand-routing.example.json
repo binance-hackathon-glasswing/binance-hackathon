@@ -1,5 +1,5 @@
 {
-  "schema": "AIandRouting.v1",
+  "schema": "AIandRouting.v2",
   "provenance": {
     "source": "https://api.aiand.com/v1/models",
     "checked": "2026-10-15",
@@ -21,6 +21,10 @@
         "high",
         "max"
       ]
+    },
+    "prompt": {
+      "name": "routine.md",
+      "sha256": "0e9341e0967c8ab191bb30953f9806251fb82b3a32edee36db8a261ef12ab93e"
     }
   },
   "external_reviewers": [
@@ -42,6 +46,10 @@
           "high",
           "max"
         ]
+      },
+      "prompt": {
+        "name": "review.md",
+        "sha256": "2cd46e3c515829d7f7d37d591927788b8c6374be4781acf26555238721d52fbc"
       }
     },
     {
@@ -60,11 +68,19 @@
           "high",
           "max"
         ]
+      },
+      "prompt": {
+        "name": "review.md",
+        "sha256": "2cd46e3c515829d7f7d37d591927788b8c6374be4781acf26555238721d52fbc"
       }
     }
   ],
   "openai_model": "gpt-6.1-sol",
   "openai_effort": "medium",
+  "openai_prompt": {
+    "name": "review.md",
+    "sha256": "2cd46e3c515829d7f7d37d591927788b8c6374be4781acf26555238721d52fbc"
+  },
   "max_output_tokens": 4096,
   "budget_account": "larp-openai-2026",
   "audit_sample_bps": 1000,

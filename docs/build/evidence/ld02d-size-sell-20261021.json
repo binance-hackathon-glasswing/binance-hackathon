@@ -1,0 +1,445 @@
+{
+ "_receipt": {
+  "host": "primary",
+  "note": "Packet re-indented for review; the hash is of the single-line sanitized packet as printed on the host.",
+  "packet_sha256": "86857178d8f5f7f4d88499d5cf3a8130a3d49420efdfebab7401dec138b567d0",
+  "script_commit": "99b443c",
+  "ssm_command_id": "06e58b76-dd41-4ae6-ae90-2f72d25fc0ae"
+ },
+ "claims": "Quotes and override simulations only; not fills, not signed-path evidence.",
+ "generated_utc": "2026-10-20T18:45:56.564Z",
+ "minimum_trade_units": 19443104,
+ "provider_fingerprint": "2e478f4aa0413423",
+ "schema": "LD02dCheck.v1",
+ "signing_enabled": false,
+ "sizes_usdt": [
+  10,
+  20,
+  40,
+  100
+ ],
+ "slot_proofs": {
+  "GOOGLB": {
+   "allowance_base": "0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace01",
+   "balance_base": "0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00",
+   "proven": true
+  },
+  "MSFTB": {
+   "allowance_base": "0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace01",
+   "balance_base": "0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00",
+   "proven": true
+  },
+  "NVDAB": {
+   "allowance_base": "0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace01",
+   "balance_base": "0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00",
+   "proven": true
+  },
+  "SKHYB": {
+   "allowance_base": "0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace01",
+   "balance_base": "0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00",
+   "proven": true
+  },
+  "TSLAB": {
+   "allowance_base": "0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace01",
+   "balance_base": "0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00",
+   "proven": true
+  },
+  "USDT": {
+   "allowance_base": "0x2",
+   "balance_base": "0x1",
+   "proven": true
+  }
+ },
+ "sweep": {
+  "GOOGLB": {
+   "max_buy_gas": 731192,
+   "max_sell_gas": 782156,
+   "sizes": {
+    "10": {
+     "buy": {
+      "calldata": "835000b81c8c038f",
+      "gas": 515373,
+      "out_units": 29406793439120375,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -5.83,
+     "sell": {
+      "calldata": "9e2731e46f49d71d",
+      "gas": 747812,
+      "in_units": 29406793439120375,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 10005832364953383817
+     }
+    },
+    "100": {
+     "buy": {
+      "calldata": "f17456fa53b4510f",
+      "gas": 554085,
+      "out_units": 294055862324180585,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": 0.43,
+     "sell": {
+      "calldata": "08d4ae550994100a",
+      "gas": 782156,
+      "in_units": 294055862324180585,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 99995677153294006905
+     }
+    },
+    "20": {
+     "buy": {
+      "calldata": "e7b07ce810444174",
+      "gas": 731144,
+      "out_units": 58813394131956160,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -1.23,
+     "sell": {
+      "calldata": "7bc82eacf4db272d",
+      "gas": 716112,
+      "in_units": 58813394131956160,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 20002450462376439000
+     }
+    },
+    "40": {
+     "buy": {
+      "calldata": "706d808eb5e65b9d",
+      "gas": 731192,
+      "out_units": 117626788263912320,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": 0.05,
+     "sell": {
+      "calldata": "2f10bffce16bb4cc",
+      "gas": 782137,
+      "in_units": 117626788263912320,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 39999781847062433737
+     }
+    }
+   }
+  },
+  "MSFTB": {
+   "max_buy_gas": 515483,
+   "max_sell_gas": 516912,
+   "sizes": {
+    "10": {
+     "buy": {
+      "calldata": "23d00d68268b3e6e",
+      "gas": 515385,
+      "out_units": 18751959913702986,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": 6.7,
+     "sell": {
+      "calldata": "7ff82c6e06e5446f",
+      "gas": 516778,
+      "in_units": 18751959913702986,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 9993300394501398287
+     }
+    },
+    "100": {
+     "buy": {
+      "calldata": "b3e559878be23963",
+      "gas": 515483,
+      "out_units": 187521001474007992,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": 6.65,
+     "sell": {
+      "calldata": "87f08fc236c9f8ab",
+      "gas": 516912,
+      "in_units": 187521001474007992,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 99933529033316332856
+     }
+    },
+    "20": {
+     "buy": {
+      "calldata": "c8cb1125450576f7",
+      "gas": 515434,
+      "out_units": 37503765255360650,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": 6.7,
+     "sell": {
+      "calldata": "8246902388a23e26",
+      "gas": 516851,
+      "in_units": 37503765255360650,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 19986600929831890738
+     }
+    },
+    "40": {
+     "buy": {
+      "calldata": "5f167e2ba995cff2",
+      "gas": "execution reverted: Min return not reached: 0x08c379a000000000000000000000000000",
+      "out_units": 75008399573739892,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": 6.72,
+     "sell": {
+      "calldata": "6ed7bcf26ac26499",
+      "gas": 516912,
+      "in_units": 75008399573739892,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 39973128239501313884
+     }
+    }
+   }
+  },
+  "NVDAB": {
+   "max_buy_gas": 623697,
+   "max_sell_gas": 741350,
+   "sizes": {
+    "10": {
+     "buy": {
+      "calldata": "e1855a1578d0757c",
+      "gas": 623608,
+      "out_units": 46126876800803475,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -0.03,
+     "sell": {
+      "calldata": "a135c5f29df3af97",
+      "gas": 741245,
+      "in_units": 46126876800803475,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 10000029484680335678
+     }
+    },
+    "100": {
+     "buy": {
+      "calldata": "04a7ac006ccb61f2",
+      "gas": 623697,
+      "out_units": 461268768008034758,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -0.93,
+     "sell": {
+      "calldata": "e2e570db5cd2b7a3",
+      "gas": 741350,
+      "in_units": 461268768008034758,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 100009285560880544018
+     }
+    },
+    "20": {
+     "buy": {
+      "calldata": "391c6f2b56f8883a",
+      "gas": 550948,
+      "out_units": 92235864129341872,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": 1.69,
+     "sell": {
+      "calldata": "ec3aed2f6018d76e",
+      "gas": 551888,
+      "in_units": 92235864129341872,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 19996620387976160097
+     }
+    },
+    "40": {
+     "buy": {
+      "calldata": "ceb6f0536b5d4529",
+      "gas": 623684,
+      "out_units": 184507507203213903,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -0.93,
+     "sell": {
+      "calldata": "18bff55a533da93f",
+      "gas": 741331,
+      "in_units": 184507507203213903,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 40003714224352217564
+     }
+    }
+   }
+  },
+  "SKHYB": {
+   "max_buy_gas": 731134,
+   "max_sell_gas": 930548,
+   "sizes": {
+    "10": {
+     "buy": {
+      "calldata": "5326d4486445480d",
+      "gas": 731049,
+      "out_units": 71570889713180980,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -3.59,
+     "sell": {
+      "calldata": "1dca8e0274be899f",
+      "gas": 930448,
+      "in_units": 71570889713180980,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 10003587402107464709
+     }
+    },
+    "100": {
+     "buy": {
+      "calldata": "31d2098ec45186a4",
+      "gas": 731134,
+      "out_units": 715536788356867100,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": 0.68,
+     "sell": {
+      "calldata": "2c670418363fd8db",
+      "gas": 758760,
+      "in_units": 715536788356867100,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 99993200115599992085
+     }
+    },
+    "20": {
+     "buy": {
+      "calldata": "de39d56e2083cb9d",
+      "gas": 731134,
+      "out_units": 143141779426361960,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -0.41,
+     "sell": {
+      "calldata": "9f406d260c76b59b",
+      "gas": 930548,
+      "in_units": 143141779426361960,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 20000819857448748596
+     }
+    },
+    "40": {
+     "buy": {
+      "calldata": "4660a9ddc27306ec",
+      "gas": 731134,
+      "out_units": 286275350173802200,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -1.44,
+     "sell": {
+      "calldata": "5ac67e9556ab6439",
+      "gas": 758760,
+      "in_units": 286275350173802200,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 40005753504061246286
+     }
+    }
+   }
+  },
+  "TSLAB": {
+   "max_buy_gas": 944814,
+   "max_sell_gas": 759857,
+   "sizes": {
+    "10": {
+     "buy": {
+      "calldata": "91dede9032a5014f",
+      "gas": 897259,
+      "out_units": 26620394323673020,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -3.57,
+     "sell": {
+      "calldata": "433734863bc0ecd4",
+      "gas": 758663,
+      "in_units": 26620394323673020,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 10003569145329714613
+     }
+    },
+    "100": {
+     "buy": {
+      "calldata": "7e97234c2f4f57af",
+      "gas": 423362,
+      "out_units": 266093944324218479,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": 0.48,
+     "sell": {
+      "calldata": "5d8ab56881a836a1",
+      "gas": 552118,
+      "in_units": 266093944324218479,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 99995206379958906454
+     }
+    },
+    "20": {
+     "buy": {
+      "calldata": "9804da4094350092",
+      "gas": 944814,
+      "out_units": 53231308391961106,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -2.56,
+     "sell": {
+      "calldata": "021244e68c5a00fa",
+      "gas": 759857,
+      "in_units": 53231308391961106,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 20005111162663225217
+     }
+    },
+    "40": {
+     "buy": {
+      "calldata": "a458f9c5b8ab1a3e",
+      "gas": 944798,
+      "out_units": 106443756732961218,
+      "pinned": true,
+      "quoted_gas": 250000
+     },
+     "round_trip_bp": -0.11,
+     "sell": {
+      "calldata": "f7417bc2d587b213",
+      "gas": 552118,
+      "in_units": 106443756732961218,
+      "pinned": true,
+      "quoted_gas": 250000,
+      "usdt_out_units": 40000448623314514259
+     }
+    }
+   }
+  }
+ }
+}

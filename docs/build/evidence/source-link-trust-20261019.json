@@ -1,0 +1,51 @@
+{
+  "T01_qualified": false,
+  "bindings": {
+    "config/intelligence/aiand-routing.openai-trial.example.json": "a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d",
+    "config/intelligence/intelligence.shadow.v1.json": "8241812d9df3fe39ceb97ca19e0fa0d07801fd7589c102b2de2a86e17bb184f5",
+    "config/intelligence/prompts/routing/primary.md": "50a5c46eba1a78670cf00db4daf63410e615c7fefb47f8fa65ab1e853fee7def",
+    "config/intelligence/prompts/routing/review.md": "2cd46e3c515829d7f7d37d591927788b8c6374be4781acf26555238721d52fbc",
+    "larp/intelligence/tools.py": "3684e0a11ff60f8cc885eafe6435859272026dbb9743d054ce87f6e77c339c69",
+    "tests/intelligence/test_source_link_trust.py": "d623cce9bfea1fd4d18ebda7f821ede6a67c708824db545652e3cc0f67abf20d"
+  },
+  "criteria_commit": "47fa8f9",
+  "detector_changed": false,
+  "historical_outputs_changed": false,
+  "host_actions": false,
+  "independent_review": "PENDING_KEEGAN",
+  "intelligence_suite": {
+    "environment": "macOS arm64/Python3.12.14",
+    "passed": 425,
+    "seconds": 13.39,
+    "skipped": 2,
+    "skips": [
+      "optional private source fixture (passed in targeted run)",
+      "Disposable PostgreSQL not configured (AC-I04)"
+    ],
+    "subtests": 1394
+  },
+  "live_model_quality": "NOT_QUALIFIED",
+  "paid_calls": false,
+  "record_id": "PC-LABEL02-INJ01-R1",
+  "result": {
+    "benign_public_link": "FLAG_RETAINED_COVERAGE_INCOMPLETE_ALL_THREE_STAGES",
+    "instruction_examples": "10_FLAGGED",
+    "ordinary_text": "NO_INSTRUCTION_FLAG",
+    "prompt_composition": "EXACT_PINNED_PRIMARY_AND_REVIEW",
+    "total_tools": "AT_MOST_SIX",
+    "url_tool_destination": "REFUSED"
+  },
+  "runtime_changed": false,
+  "saved_plain_text_sha256": "83855c72f0c1874633cf7ee13f7c844151e14ccf26e82c2020347fb0ea2f2d9d",
+  "schema": "SourceLinkTrustReview.v1",
+  "scope": "OFFLINE_REAL_PUBLIC_SOURCE_TEXT_WITH_SYNTHETIC_ISSUER_RECORDS_AND_TRANSPORTS",
+  "source_bytes": 13253,
+  "source_sha256": "74b6088ac81ecc53f7707d1135cdb5928f156f13c0c67b52a07a27ced9a977c3",
+  "targeted": {
+    "passed": 5,
+    "skipped": 0,
+    "subtests": 13
+  },
+  "test_source_commit": "35f42b9",
+  "v3_M9_qualified": false
+}

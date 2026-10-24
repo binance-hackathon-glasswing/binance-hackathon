@@ -111,7 +111,8 @@ class Publishing(unittest.TestCase):
         publish_health(client, 'larp-dev', True, self.SERVICES)
         self.assertEqual(self.sent(client), {
             ('archive', 'Heartbeat'): 1, ('archive', 'Healthy'): 1, ('runtime', 'Heartbeat'): 1,
-            ('runtime', 'Halted'): 1, ('runtime', 'Quarantined'): 0, ('uploader', 'OverdueLogs'): 2,
+            ('runtime', 'Halted'): 1, ('runtime', 'Quarantined'): 0, ('runtime', 'GasPairUnaffordable'): 0,
+            ('uploader', 'OverdueLogs'): 2,
             ('signer', 'UnansweredRequests'): 0})
 
     def test_r5_a_database_failure_reports_the_runtime_down(self):

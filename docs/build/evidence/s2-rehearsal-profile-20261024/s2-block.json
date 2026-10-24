@@ -1,0 +1,63 @@
+{
+ "execution": {
+  "close_buffer_seconds": 900,
+  "hours": "KIT_OPEN_STATE",
+  "max_attempts_per_leg_session": 5,
+  "open_delay_seconds": 1800
+ },
+ "hard_name_weight": [
+  7,
+  20
+ ],
+ "levels": {
+  "high": [
+   19,
+   20
+  ],
+  "low": [
+   3,
+   10
+  ],
+  "mid": [
+   3,
+   5
+  ]
+ },
+ "limiter_mode": "DETERMINISTIC",
+ "llm_expiry_sessions": 3,
+ "max_legs_per_symbol_session": 3,
+ "top_up_band": [
+  1,
+  20
+ ],
+ "trend_band_bps": 100,
+ "trend_delay_seconds": 900,
+ "trend_start_state": "UP",
+ "trend_window_sessions": 5,
+ "weight_cap": [
+  3,
+  10
+ ],
+ "weights": {
+  "GOOGLB": [
+   1,
+   5
+  ],
+  "MSFTB": [
+   1,
+   5
+  ],
+  "NVDAB": [
+   1,
+   5
+  ],
+  "SKHYB": [
+   1,
+   5
+  ],
+  "TSLAB": [
+   1,
+   5
+  ]
+ }
+}

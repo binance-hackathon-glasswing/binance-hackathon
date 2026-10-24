@@ -1,0 +1,168 @@
+{
+  "actual_config_binding_accepted": false,
+  "canonical_release_source": "b22207e050ea50338d48cf7129378caf480ef290",
+  "decision_id": "IDEA-049-C LD10-P02",
+  "execution_cash_checks": [
+    {
+      "cash_raw": "18637420000000000000",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "e0b6a3ecf39ad67511298d93008eee0f8a2c0a559ac7262e8ebe305b2ab61704",
+      "side": "BUY",
+      "symbol": "NVDAB"
+    },
+    {
+      "cash_raw": "20100000000000000000",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "06c3b194aa6fadb766143f07599f5167c2fc8a89c697c4652ccfa994a2bdab91",
+      "side": "BUY",
+      "symbol": "NVDAB"
+    },
+    {
+      "cash_raw": "20106983099120719276",
+      "covered": false,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "0bffd4b90e4b71957b37af41ce31a7bb35cc46a36af7970df3c85a2ce545eb13",
+      "side": "SELL",
+      "symbol": "NVDAB"
+    },
+    {
+      "cash_raw": "18637420000000000000",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "3f454aafdaa6636a35ecb57199e56dbd225fe49da6932ec1e8e49606ce3eddf8",
+      "side": "BUY",
+      "symbol": "GOOGLB"
+    },
+    {
+      "cash_raw": "20100000000000000000",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "3bdc4396275b907cc0a12cf070cc8a2ac0652077378867dfd6ebc8f52476ef3a",
+      "side": "BUY",
+      "symbol": "GOOGLB"
+    },
+    {
+      "cash_raw": "20098365204303241896",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "c6d144e5b879d19a9804dd1ba4a9dff2d664625594792a96a105974790aa565f",
+      "side": "SELL",
+      "symbol": "GOOGLB"
+    },
+    {
+      "cash_raw": "18637420000000000000",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "406ed5278e5a818cd6e4eb9175d1a5cf177db2b42a68fbd7d5746a7dba3588e4",
+      "side": "BUY",
+      "symbol": "SKHYB"
+    },
+    {
+      "cash_raw": "20100000000000000000",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "c23c1181430788a8e1ae62583d7690b543476961c605aef8e7c369d4cdef1e68",
+      "side": "BUY",
+      "symbol": "SKHYB"
+    },
+    {
+      "cash_raw": "20089936368384943246",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "33a8773c579fcbfa93d499fe55b7f660b55ca638f9d1885a3807421cf3e865f3",
+      "side": "SELL",
+      "symbol": "SKHYB"
+    },
+    {
+      "cash_raw": "18637420000000000000",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "5e2829e347f82826f7e872aa60948fb135de5d2598f2a96518858b77fedd3841",
+      "side": "BUY",
+      "symbol": "TSLAB"
+    },
+    {
+      "cash_raw": "20100000000000000000",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "f1a485eff5cf38ef08b34a370e9ebb1d0850dce709dd0a153627cab792aec400",
+      "side": "BUY",
+      "symbol": "TSLAB"
+    },
+    {
+      "cash_raw": "20096060593040391909",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "6dcc13d768511a36e4fca61ccd86ccda7016927d84bb7cdc854c85ed2c3df740",
+      "side": "SELL",
+      "symbol": "TSLAB"
+    },
+    {
+      "cash_raw": "18637420000000000000",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "ddfd7e0d53a88fd16e4c03125f60c00daa8124738186afc26f383128c0bee3f3",
+      "side": "BUY",
+      "symbol": "MSFTB"
+    },
+    {
+      "cash_raw": "20100000000000000000",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "77b633744e5c41855995352529489990d998da7c1a4bee07cc081b3e5ec48817",
+      "side": "BUY",
+      "symbol": "MSFTB"
+    },
+    {
+      "cash_raw": "20084517561129640484",
+      "covered": true,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "58b078367f6410c5f3dc05b6d96943246e814ce8f56b489e89d071b0b22f0131",
+      "side": "SELL",
+      "symbol": "MSFTB"
+    }
+  ],
+  "execution_cash_failures": [
+    {
+      "cash_raw": "20106983099120719276",
+      "covered": false,
+      "execution_cash_cap_raw": "20100000000000000000",
+      "quote_projection_sha256": "0bffd4b90e4b71957b37af41ce31a7bb35cc46a36af7970df3c85a2ce545eb13",
+      "side": "SELL",
+      "symbol": "NVDAB"
+    }
+  ],
+  "full_exit_reserve_accepted": false,
+  "full_ld10_owner_acceptance": false,
+  "new_current_clock_caps_review_run": false,
+  "numeric_scope_build": "b2a5622cd7365aa072f42cf11cd6aead2a74bbeb",
+  "private_originals_replayed": false,
+  "ready_to_install": false,
+  "recorded_numeric_rows_consistent": 50,
+  "recorded_snapshot_at": "2026-10-21T14:10:31.629Z",
+  "remaining": [
+    "Keith/Keegan resolve full-size exit cash-cap/requote and complete exit-child reserve coverage",
+    "operator recollect applicable quotes/state against the reviewed exit plan",
+    "Isaac finish deployment review against corrected evidence",
+    "LD16 actual release/run/DB/RPC/CA/config/reservation binding",
+    "funding disposition, LD17 host/session and later #119 receipt verification"
+  ],
+  "schema": "LD10OwnerPacketReview.v1",
+  "scope_and_hash_checks": "PASS",
+  "seed_target_wei": 7296000000000000,
+  "seeding_scope": "reported planning count plus four exits; not a proven maximum strategy count",
+  "seeding_target_funded": false,
+  "selected_profile_reproduced": true,
+  "signing_enabled": false,
+  "source_hashes": {
+    "docs/build/evidence/ab-rel-rc2-20261021.json": "2ddd8b8d80d47f183b0d9b4bc59e7d0953f34111bc690e95d2ba5c48e3c08c34",
+    "docs/build/evidence/rehearsal-qualified-inputs-20261021/coverage-decision-deterministic.json": "4609efe5de3f8144dc02b6913408d377b6a72cf3c737e2e9abffe006c1352cbf",
+    "docs/build/evidence/rehearsal-qualified-inputs-20261021/rehearsal-deterministic-scope.json": "dd8a3fa32abc9b4fa2627969d16e7cc1fc0c101da228c0bfc21d5ff4a23b3e8f",
+    "docs/build/evidence/rehearsal-qualified-inputs-20261021/rehearsal-deterministic.json": "41332056bf18e9f07a35f0d4446e2fb02a3d7ebbddabd25b054e03203c3a0a7a",
+    "docs/build/evidence/signer-numeric-ceilings-20261021.json": "049d98337019d6579162504067fdf26e33a65e57bc7710add98797b6bd8e18ef",
+    "docs/build/evidence/untrusted-router-policy-ld03-20261020.json": "05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5"
+  },
+  "status": "BLOCKED_EXECUTION_CASH_CAP"
+}

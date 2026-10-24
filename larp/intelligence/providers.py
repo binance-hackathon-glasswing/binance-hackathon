@@ -58,9 +58,45 @@ ANTHROPIC_HOSTS = frozenset({"api.anthropic.com"})
 ANTHROPIC_VERSION = "2023-06-01"
 OPENAI_ENDPOINT = "https://api.openai.com/v1/responses"
 OPENAI_HOSTS = frozenset({"api.openai.com"})
+OPENAI_INPUT_LABEL = "Model input (JSON). Reply with one JSON object as the instructions specify."
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
 MAX_REPLY_BYTES = 8_000_000
 MAX_USAGE_TOKENS = 10**9
+
+
+def reply_audit(payload, provider):
+    """Validated billing metadata, independently of content eligibility. No usable output.
+
+    Missing/malformed usage is unknown. This helper can also inspect immutable
+    recorded replies offline; it never fabricates tokens, prices or ledger refunds.
+    """
+    if type(payload) is not dict:
+        return {}
+    audit = {}
+    usage = payload.get('usage')
+    if type(usage) is dict:
+        keys = ('prompt_tokens', 'completion_tokens') if provider == 'aiand' else ('input_tokens', 'output_tokens')
+        if all(type(usage.get(k)) is int and 0 <= usage[k] <= MAX_USAGE_TOKENS for k in keys):
+            audit['usage'] = dict(input_tokens=usage[keys[0]], output_tokens=usage[keys[1]])
+            details = usage.get('completion_tokens_details' if provider == 'aiand' else 'output_tokens_details')
+            if type(details) is dict:
+                reasoning = details.get('reasoning_tokens')
+                if type(reasoning) is int and 0 <= reasoning <= usage[keys[1]]:
+                    audit['usage_details'] = dict(reasoning_tokens=reasoning)
+    if provider == 'aiand':
+        choices = payload.get('choices')
+        if type(choices) is list and len(choices) == 1 and type(choices[0]) is dict:
+            reason = choices[0].get('finish_reason')
+        else:
+            reason = None
+    elif provider == 'anthropic':
+        reason = payload.get('stop_reason')
+    else:
+        details = payload.get('incomplete_details')
+        reason = details.get('reason') if type(details) is dict else payload.get('status')
+    if type(reason) is str and 0 < len(reason) <= 100:
+        audit['finish_reason'] = reason
+    return audit
 
 
 def _nullable(schema: dict) -> dict:
@@ -347,21 +383,61 @@ class HostedModel:
         if self._artifacts.put(data) != sha256_hex(data):
             raise IntelligenceError("Artifact store returned a different content address")
 
-    def step(self, request, remaining_ms: int):
+    def _late_audit(self, raw, metadata):
+        """Extract audit fields only; a late reply never supplies output or a usage refund."""
+        audit = self._usage_audit(raw)
+        try:
+            served,_,usage,reasoning=self._parse_reply(json.loads(raw.decode('utf-8')),metadata)
+            if not all(type(usage.get(k)) is int and 0<=usage[k]<=MAX_USAGE_TOKENS
+                       for k in ('input_tokens','output_tokens')):return audit
+            return dict(audit, served_model=served, reasoning=reasoning)
+        except (_ProviderReply,AttributeError,KeyError,IndexError,TypeError,ValueError,UnicodeDecodeError,
+                OverflowError,RecursionError,MemoryError):
+            return audit
+
+    def _usage_audit(self, raw):
+        try:
+            audit = reply_audit(json.loads(raw.decode('utf-8')), self.provider)
+        except (ValueError, UnicodeDecodeError, RecursionError, MemoryError):
+            return {}
+        usage = audit.get('usage')
+        if usage is not None:
+            audit['usage_known'] = True
+        if usage is not None and self.price:
+            audit['cost'] = dict(amount_micro_usd=(
+                usage['input_tokens'] * self.price['input_micro_usd_per_mtok']
+                + usage['output_tokens'] * self.price['output_micro_usd_per_mtok']) // 1_000_000,
+                basis='TOKENS_X_PUBLISHED_PRICE:' + self.price['source'])
+        return audit
+
+    def step(self, request, remaining_ms: int, *, before_dispatch=None):
+        from larp.intelligence.time_budget import remaining
         r = request.read()
         body = self.request_payload(request)
         record = dict(artifacts=self._artifacts, request_payload=body,
+                      usage=dict(input_tokens=None, output_tokens=None),
+                      usage_known=False,
                       cost=dict(amount_micro_usd=None, basis='UNKNOWN_PROVIDER_USAGE'))
         self._keep(body)  # before the call: a call cut off or abandoned at the deadline still has its request
         started = self.clock()
+        headers = self._headers()
+        remaining_ms = remaining(remaining_ms)
+        if remaining_ms <= 0:
+            return response(r,status="TIMEOUT",output=None,latency_ms=0,error="DEADLINE_EXCEEDED",**record)
+        if before_dispatch is not None:
+            before_dispatch()  # after preparation, immediately before any network I/O
+        remaining_ms = remaining(remaining_ms)
+        if remaining_ms <= 0:
+            return response(r,status="TIMEOUT",output=None,latency_ms=0,error="DEADLINE_EXCEEDED",**record)
         try:
-            result = self._transport(self._endpoint, self._headers(), body, max(remaining_ms, 1) / 1000)
+            result = self._transport(self._endpoint, headers, body, max(remaining_ms, 1) / 1000)
             status, raw = result[:2]
             metadata = result[2] if len(result) == 3 else {}
         except LateReply as exc:  # paid for and complete, but late: a timeout whose bytes are kept
             if type(exc.raw) is bytes and not reflects_secret(exc.raw, (self._key,)):
                 self._keep(exc.raw)
                 record["raw"] = exc.raw
+                record.update(self._late_audit(exc.raw, {}))
             return response(r, status="TIMEOUT", output=None, latency_ms=self.clock() - started,
                             error="DEADLINE_EXCEEDED", **record)
         except (socket.timeout, TimeoutError):
@@ -386,9 +462,12 @@ class HostedModel:
             record['provider_metadata'] = metadata
         self._keep(raw)  # before any parsing
         record["raw"] = raw
+        record.update(self._usage_audit(raw))
         latency = self.clock() - started
-        if latency > remaining_ms:
-            return response(r, status="TIMEOUT", output=None, latency_ms=latency, error="DEADLINE_EXCEEDED", **record)
+        if latency > remaining_ms or remaining(remaining_ms) <= 0:
+            record.update(self._late_audit(raw, metadata))
+            return response(r, status="TIMEOUT", output=None, latency_ms=latency, error="DEADLINE_EXCEEDED",
+                            **record)
         if status != 200:
             if self.provider == 'openai':
                 try:
@@ -425,7 +504,9 @@ class HostedModel:
                                          + usage["output_tokens"] * self.price["output_micro_usd_per_mtok"]) // 1_000_000,
                     "basis": "TOKENS_X_PUBLISHED_PRICE:" + self.price["source"]}
         record['cost'] = cost
-        return response(r, status="OK", output=output, latency_ms=latency, usage=usage,
+        record['usage'] = usage
+        record['usage_known'] = True
+        return response(r, status="OK", output=output, latency_ms=latency,
                         reasoning=reasoning, served_model=served, **record)
 
 
@@ -507,12 +588,16 @@ class OpenAIResponsesModel(HostedModel):
         super().__init__(endpoint=endpoint, allowed_hosts=allowed_hosts, **kwargs)
 
     def _revision(self) -> str:
-        return f"responses;reasoning={self.effort}+summary-auto;format=json_object;store=false;" \
+        return f"responses;reasoning={self.effort}+summary-auto;format=json_object;input=json-labelled;store=false;" \
                f"max_output_tokens={self.max_output_tokens}"
 
     def _body(self, model_input: dict) -> dict:
+        # json_object output requires the word "json" in the input messages; `instructions` does not count
+        # (HTTP 400 invalid_request_error, first hosted request PC-DEPLOY01). The label is one line; the model
+        # input follows unchanged.
         return {"model": self.identity.model_id, "instructions": self._prompt,
-                "input": json.dumps(model_input, sort_keys=True), "reasoning": {"effort": self.effort, "summary": "auto"},
+                "input": OPENAI_INPUT_LABEL + "\n" + json.dumps(model_input, sort_keys=True),
+                "reasoning": {"effort": self.effort, "summary": "auto"},
                 "text": {"format": {"type": "json_object"}}, "max_output_tokens": self.max_output_tokens,
                 "store": False}
 

@@ -1,0 +1,97 @@
+{
+  "authority": "Isaac explicitly delegated technical review and approval in this session",
+  "current_full_holdings_checked": false,
+  "date_sgt": "2026-10-21",
+  "decision_id": "IDEA-049-C CAP-02",
+  "evidence": {
+    "ld02-execution-packet-20261020.json": "ad43b6346542f157c84fa113b6802f6bfce6c6aad1d5393680bc7ac24bc4ced4",
+    "ld02d-size-sell-20261021.json": "0acea18fc87890cb5a19a96e00ca6dbadcc2a260991ca9d595951a13a02511a6",
+    "ld09b-gas-budget-profiles-20261021/final-live.json": "0497a820821524cbcbd5234c937aa211b8b94da9409b6b8e787f49b33cde5f40",
+    "ld09b-gas-budget-profiles-20261021/rehearsal-live.json": "cee1a869b3a0a31d9f1d579089218fa54413728778a1232dd82ff1010bd52be3",
+    "signer-caps-proposal-20261017.json": "2ca75fd48a65ae6b494be310e97f08c8ea443f5854ff5a38ee4bc351ec7d900a",
+    "signer-caps-reference-20261010.json": "1bfa428d77a8a15e2399f38cc890fcdd97b11e4bace98fca81c2c5777da41861"
+  },
+  "execution_ceiling": {
+    "max_gas": 1200000,
+    "max_gas_price_wei": 160000000,
+    "max_transaction_fee_wei": 192000000000000
+  },
+  "initial_gas_only": true,
+  "limits": [
+    "Per-request bounds, not cumulative spend/loss or token USDT-value caps",
+    "Historical half-price floor is a cap-sizing choice, not a guaranteed market floor",
+    "20/40-USDT quote samples are not current full holdings or proof all future positions exit in one action",
+    "MSFTB40 BUY simulation refusal remains; numeric approval does not qualify that route",
+    "Final-wallet activation requires its own fresh profile/holdings/config coverage review"
+  ],
+  "policies": {
+    "development": {
+      "reviewed_quote_size_usdt": 20,
+      "sha256_canonical_json_lf": "3241abd36dfeb216ffe3bb06a3ce800f42e8206ccc261240da6f059b0dd5ea61",
+      "signing_policy": {
+        "allowance_recovery": false,
+        "allowed_spenders": [
+          "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5"
+        ],
+        "allowed_tokens": [
+          "0x55d398326f99059ff775485246999027b3197955",
+          "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+          "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+          "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+          "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+          "0x5b1910eaad6450e50f816082aa078c41f10c292f"
+        ],
+        "cap_basis": "IDEA-049-C CAP-02 (Isaac delegated, 2026-10-21): numeric ceilings; actual deployment coverage required",
+        "max_fee_wei": "200000000000000",
+        "max_input_units": {
+          "0x02fca66c1d1afb4e2a7884261eb00f63598a7436": "303543664881272184",
+          "0x3f53de71c126bdabae20f9cd64848d317f6c3238": "198599352431777696",
+          "0x55d398326f99059ff775485246999027b3197955": "35000000000000000000",
+          "0x5b1910eaad6450e50f816082aa078c41f10c292f": "182786714017129727",
+          "0x80106cb3ead06659a5ad19df39d9b4733863b9b0": "130728070832380858",
+          "0xca750ef65f295bbecd685abf54e82caf297bdb61": "410076157000585824"
+        }
+      }
+    },
+    "final": {
+      "reviewed_quote_size_usdt": 40,
+      "sha256_canonical_json_lf": "717879d24ef6fb7154e7b2c32c77394924b8f560842909438266af00ecd161c7",
+      "signing_policy": {
+        "allowance_recovery": false,
+        "allowed_spenders": [
+          "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5"
+        ],
+        "allowed_tokens": [
+          "0x55d398326f99059ff775485246999027b3197955",
+          "0x3f53de71c126bdabae20f9cd64848d317f6c3238",
+          "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
+          "0x02fca66c1d1afb4e2a7884261eb00f63598a7436",
+          "0xca750ef65f295bbecd685abf54e82caf297bdb61",
+          "0x5b1910eaad6450e50f816082aa078c41f10c292f"
+        ],
+        "cap_basis": "IDEA-049-C CAP-02 (Isaac delegated, 2026-10-21): numeric ceilings; actual deployment coverage required",
+        "max_fee_wei": "200000000000000",
+        "max_input_units": {
+          "0x02fca66c1d1afb4e2a7884261eb00f63598a7436": "607087329762544368",
+          "0x3f53de71c126bdabae20f9cd64848d317f6c3238": "397198704863555392",
+          "0x55d398326f99059ff775485246999027b3197955": "70000000000000000000",
+          "0x5b1910eaad6450e50f816082aa078c41f10c292f": "365573428034259453",
+          "0x80106cb3ead06659a5ad19df39d9b4733863b9b0": "261456141664761715",
+          "0xca750ef65f295bbecd685abf54e82caf297bdb61": "820152314001171647"
+        }
+      }
+    }
+  },
+  "ready_to_install": false,
+  "remaining": [
+    "Actual selected S1 or permitted fallback profile and calendar / #120",
+    "Fresh reconciled complete holdings, token scales and request-bound quotes / GateBCapsInputs.v1 numeric coverage",
+    "Actual signed child gas limits, full exit/cleanup reserve and whole-run seeding N; proposed pair budget is not a worst-case two-max-gas envelope",
+    "Exact execution/signer/release/manifest/run/DB/CA bindings, fresh router replay/preflight and host acceptance"
+  ],
+  "router_mode": "untrusted",
+  "schema": "SignerNumericCeilingDecision.v1",
+  "selected_profile_approved": false,
+  "signing_enabled": false,
+  "status": "APPROVED_NUMERIC_CEILINGS_ONLY"
+}

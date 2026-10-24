@@ -1,10 +1,13 @@
 """EDGAR parsing, the opt-in HTTP adapter (fake transport only), issuer mapping and configuration."""
 
 import json
+from pathlib import Path
+import shutil
+import tempfile
 import unittest
 
 from larp.intelligence.common import IntelligenceError
-from larp.intelligence.config import live_model_settings, load_config, load_registry, sec_user_agent
+from larp.intelligence.config import CONFIG_DIR, live_model_settings, load_config, load_registry, sec_user_agent
 from larp.intelligence.edgar import (
     EdgarHttpSource, check_identity, history_files, listing_rows, parse_acceptance_ms, parse_filing_index,
     select_documents,
@@ -12,6 +15,11 @@ from larp.intelligence.edgar import (
 from larp.intelligence.issuers import IssuerRegistry
 
 UA = "Glasswing research team-contact@university.edu.sg"
+# IDEA-049-A amendment 32 (LV-01): amendment 14 candidates, adopted for the development signed rehearsal only.
+LV01 = dict(initial_backfill_ms=2_592_000_000, max_clock_skew_ms=0, max_source_staleness_ms=1_800_000,
+            result_ttl_ms=1_800_000, reassess_delay_ms=300_000, retry_delay_ms=600_000, job_validity_ms=86_400_000,
+            job_max_attempts=3, max_review_attempts=3, max_review_backoff_ms=1_800_000,
+            statement_retention_ms=2_764_800_000)
 
 
 class EdgarParsingTests(unittest.TestCase):
@@ -158,13 +166,26 @@ class IssuerMappingTests(unittest.TestCase):
 class ConfigurationTests(unittest.TestCase):
     def test_development_config_pins_prompt_and_declared_budget(self):
         config = load_config("development")
-        self.assertEqual((config.max_tool_calls, config.max_deadline_ms), (6, 60000))
+        self.assertEqual((config.max_tool_calls, config.max_deadline_ms), (6, 180000))
         self.assertEqual(config.tools, ("fetch_document", "prior_context", "compare_facts"))
         self.assertEqual(len(config.prompt_sha256), 64)
 
     def test_live_startup_fails_while_parameters_are_unset(self):
-        with self.assertRaisesRegex(IntelligenceError, "unset"):
-            load_config("live")
+        # LV-01 (IDEA-049-A amendment 32) sets the committed live values; any unset one still refuses startup.
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp) / "intelligence"
+            shutil.copytree(CONFIG_DIR, base)
+            raw = json.loads((base / "intelligence.v1.json").read_text("utf-8"))
+            raw["parameters"]["reassess_delay_ms"]["live"] = None
+            (base / "intelligence.v1.json").write_text(json.dumps(raw), "utf-8")
+            with self.assertRaisesRegex(IntelligenceError, "unset"):
+                load_config("live", base)
+
+    def test_lv01_live_values_are_the_adopted_rehearsal_values(self):
+        config = load_config("live")
+        self.assertEqual({name: config.p(name) for name in LV01}, LV01)
+        development = load_config("development")
+        self.assertEqual((development.p("max_clock_skew_ms"), development.p("reassess_delay_ms")), (300000, 21600000))
 
     def test_live_model_settings_need_explicit_provider_and_one_credential_kind(self):
         with self.assertRaises(IntelligenceError):
@@ -182,6 +203,34 @@ class ConfigurationTests(unittest.TestCase):
             with self.subTest(env=env), self.assertRaises(IntelligenceError):
                 sec_user_agent(env)
         self.assertEqual(sec_user_agent({"SEC_USER_AGENT": UA}), UA)
+
+    def test_sec_user_agent_rejects_template_contacts(self):
+        # IDEA-066 PC-TERMS01: a copied template passed the old check and sec.gov answered 403.
+        refusals = {
+            "LARP Team Your Name your.real@email": "template text",
+            "LARP Team YourName ops@larp-team.org": "template text",
+            "LARP Team firstname.lastname@uni.edu": "template text",
+            "LARP Team ops@example.org": "template text",
+            "LARP Team ops@larp-team": "no email address",
+            "LARP Team ops@larp-team.c": "no email address",
+            "LARP Team ops at larp-team.org": "no email address",
+            "LARP Team @larp-team.org": "no email address",
+            "ops@larp-team.org": "no name",
+            "  ops@larp-team.org  ": "no name",
+            "   ": "not set",
+        }
+        for agent, reason in refusals.items():
+            with self.subTest(agent=agent), self.assertRaises(IntelligenceError) as caught:
+                sec_user_agent({"LARP_SEC_USER_AGENT": agent})
+            self.assertIn(reason, str(caught.exception))
+            self.assertNotIn("larp-team", str(caught.exception))  # the value is never echoed
+
+    def test_sec_user_agent_accepts_name_and_real_address(self):
+        for agent in (UA, "LARP Hackathon Team Jane Tan jane.tan+sec@mail.uni-x.edu.sg",
+                      "LARP test runner ops@larp-test.invalid", "LARP Test test-contact@larp.test",
+                      "Glasswing ops@larp-team.org (EDGAR research)"):
+            with self.subTest(agent=agent):
+                self.assertEqual(sec_user_agent({"LARP_SEC_USER_AGENT": f"  {agent} "}), agent)
 
 
 if __name__ == "__main__":

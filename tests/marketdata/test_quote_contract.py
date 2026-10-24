@@ -79,3 +79,49 @@ class QuoteContractTests(unittest.TestCase):
         with self.assertRaises(Unavailable):
             MarketPort(QuoteClient(),WALLET,quote_verifier=proof,
                        quote_limits=dict(self.limits,impact_bps=0)).observe(self.request)
+
+
+class SellClient(QuoteClient):
+    def request(self, method, endpoint, params):
+        r = super().request(method, endpoint, params)
+        if endpoint == 'aggregator/quote-and-swap':
+            q = r['response']['data'][0]
+            q['routerResult'].update(fromToken=dict(tokenContractAddress=TOKENS['NVDAB'], decimal='18'),
+                                     toToken=dict(tokenContractAddress=USDT, decimal='18'),
+                                     fromTokenAmount=str(4 * 10**17), toTokenAmount=str(40 * 10**18),
+                                     priceImpactPercent='0.5')
+            q['tx']['minReceiveAmount'] = str(39_900 * 10**15)
+            r['artifact_sha256'] = hashlib.sha256(encoded(q)).hexdigest()
+        return r
+
+
+def sell_proof(raw, request, observation):
+    tx = raw['response']['data'][0]['tx']
+    return dict(proof(raw, request, observation),
+                economics=SwapEconomics(TOKENS['NVDAB'], USDT, 4 * 10**17, WALLET,
+                                        int(tx['minReceiveAmount']), 1791734430, 0))
+
+
+class MandatoryExitQuoteParity(unittest.TestCase):
+    """LD10-P03 D2: the port validates with the same mandatory flag as its planner consumer."""
+    limits = dict(QuoteContractTests.limits, impact_bps=2)
+    request = dict(schema='MarketRequest.v1', symbol='NVDAB', side='SELL', amount_kind='EXACT_IN',
+                   pay_asset='NVDAB', pay_units=4 * 10**17, pay_decimals=18)
+
+    def observe(self, request, **limits):
+        return MarketPort(SellClient(), WALLET, quote_verifier=sell_proof,
+                          quote_limits=dict(self.limits, **limits)).observe(request)
+
+    def test_mandatory_exit_ignores_impact_exactly_like_the_planner(self):
+        row = self.observe(dict(self.request, mandatory=True))
+        self.assertEqual(row['quotes'][0]['impact_bps'], 50)
+        with self.assertRaises(Unavailable):
+            self.observe(dict(self.request, mandatory=False))
+        with self.assertRaises(Unavailable):
+            self.observe(self.request)
+
+    def test_mandatory_exit_still_refuses_over_cap_and_slippage(self):
+        with self.assertRaises(Unavailable):
+            self.observe(dict(self.request, mandatory=True), per_trade_cap_units=39_999_999)
+        with self.assertRaises(Unavailable):
+            self.observe(dict(self.request, mandatory=True), slippage_bps=20)

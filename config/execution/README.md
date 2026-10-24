@@ -83,9 +83,13 @@ Replace the public-address placeholders before use. The public endpoint is liste
 in the [BNB endpoint documentation](https://docs.bnbchain.org/bnb-smart-chain/developers/json_rpc/json-rpc-endpoint/).
 It is an optional observation provider, not an approved production dependency.
 The probe verifies chain56 and the canonical identity of a finalized block before
-and after reading its wallet balance and router code. Latest/pending nonces are
-separate snapshots requiring fresh reconciliation before any signing. Zero BNB,
-pending nonce differences or missing router code are explicit blockers. Presence
+and after reading its wallet balance, the USDT and pinned bStock balances, and
+router code, all at that block. Finalized/latest/pending nonces are separate
+snapshots requiring fresh reconciliation before any signing. Zero BNB, pending
+nonce differences, a finalized nonce behind latest (a mined but unfinalized
+transaction) or missing router code are explicit blockers. The report's DR-06
+also requires the pinned starting cash and positions to equal those finalized
+balances (IDEA-039 GB-CHAIN-20261016). Presence
 and SHA-256 of bytecode do not qualify ABI, proxy implementation or route safety.
 The command saves each raw structured RPC observation and a hash-addressed
 `GateBChainEvidence.v1` file externally. Exit 0 means observations collected with
@@ -135,6 +139,9 @@ bracketed by matching canonical/finalized receipt evidence. Provider support and
 semantics must be independently qualified. Execution config `native_trace` is
 boolean and defaults to false. Enabling it permits only a fixed read-only trace
 request; it does not qualify the provider or lift the Executor/router gates.
+With `native_trace` false or absent, the service refuses every `GAS_TOP_UP`
+command before signing (`map_command`, IDEA-061): a top-up fill can settle only
+through the native trace, so it is never started without one.
 The trace is trusted-provider evidence, not a cryptographic state proof. Its
 `trace_sha256` hashes the canonical encoded trace result; the enclosing raw RPC
 observation has its own artifact hash. Whole-block balance differences cannot

@@ -2,6 +2,18 @@
 
 Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)). This is the order of work once the open reviews and final tests pass. The detail behind each step is in [AWS_RUNBOOK.md](AWS_RUNBOOK.md) and [runbook.md](runbook.md); this page says what is ready, what each person brings, and what still blocks.
 
+**2026-10-16 update:** [GATE_A.md](GATE_A.md) is the current assembly procedure
+for inputs 2–6 below. IDEA-050's driver/init/activate and #25's issuer fix are
+already on main (PR81); IDEA-054 supplies the calendar. IDEA-058 builds on
+`codex/system-testing-20261012`, which adds #84's balance check (IDEA-055) and
+is not yet promoted to main, so deploy from that branch plus IDEA-058, or from
+main after the promotion. IDEA-058 adds strictly
+unsigned shadow settings and derives the issuer map/initial state from captured
+real responses. The user owns input 1's summary/profile tool; Yao Zhu sets the
+public wallet address and SEC contact locally. Missing terms bytes/captures and
+host checks remain required. The original descriptions below retain their dated
+context; no hosted run or Gate A pass is established by this update.
+
 ## What this deployment can and cannot do
 
 - **It can run in shadow** (`execution: "shadow"`): real market data, real decisions, and real round logs uploaded to ai-seeds from the dev wallet. Every planned order ends `NOT_SUBMITTED`. This is **Gate A** in [DEPLOYMENT_BUILD.md](DEPLOYMENT_BUILD.md), which was planned for Oct 14.
@@ -20,7 +32,7 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 | Session Manager plugin on the Mac | **Not installed** (needed for SSM shells and the database port-forward) | Yao Zhu |
 | Release bundle | CI builds it on every push; take it from the **final** merged head | step 4 |
 | Candidate AMI | `ami-0c82c1a90be4dccc1` (AL2023 x86_64, released 2026-10-14); pin it after a look at its release notes | Yao Zhu |
-| How to reach `signer` | **Undecided** (AWS_RUNBOOK step 5). Not needed for a shadow run | team |
+| How to reach `signer` | **Decided 2026-10-17:** temporary SSM interface endpoints, torn down afterwards ([IDEA-080](../ledger/IDEA-080.md), AWS_RUNBOOK step 5 option b). Not needed for a shadow run | Yao Zhu builds; Keegan reviews |
 
 ## What each person brings (never into a chat, a commit or a shared doc)
 
@@ -62,10 +74,44 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
 
 ### 5. Initial state file (team, from a balance read)
 - **What it is:** a `PortfolioState.v1` with the dev wallet's actual starting balances (USDT, BNB, any tokens) and run ID, pinned by SHA-256 in `runtime.json`. `service init` builds the run from it and refuses an unpinned file.
-- **Open:** whether the dev wallet holds any BNB for its first gas payment (Q-03). It matters at Gate B, not for shadow.
+- **First gas (answered 2026-10-16, SKILL.md F-120).** The organisers send USDT only, and say to buy the first BNB in MetaMask, paying that swap's gas in USDT. Gate B reports `FIRST_BNB_REQUIRED` until the wallet holds BNB. Steps, done by the wallet holder in MetaMask: **Isaac** for both wallets (assigned by Yao Zhu, 2026-10-16; Yao Zhu has no MetaMask access):
+  1. Before the wallet's first agent trade (dev wallet: before Gate B; final wallet: after funding and before the scored run starts on Oct 29 00:00 UTC, never during it, F-114), open the wallet in MetaMask on BNB Smart Chain.
+  2. Swap USDT for BNB, choosing USDT as the network-fee token. **Size (decided by Yao Zhu, 2026-10-16): enough for the whole run's gas, so the agent's top-ups are a backup only: about 4 USDT in total for the dev wallet, about 6 USDT for the final wallet.** Basis: one approve + swap cost about 0.000022–0.000046 BNB in the organisers' tests (F-93), about $0.02–0.035, so about 150 trades cost about $3–5; these sizes give 170–300 trades of headroom, inside IDEA-055 D6's 5 % bound. One or more swaps are allowed per wallet, all before its first agent trade (SKILL.md F-120). No BNB is swapped back to USDT at the end (G-13); leftover BNB is accepted.
+  3. Write each swap's tx hash, USDT paid, BNB received and UTC time into the funding notes below. It is not a trade and not an agent round, so it gets no ai-seeds log (confirmed by Yao Zhu, 2026-10-16). [Inference: the daily fill check (F-100) covers bStock fills, not this swap.]
+  4. Take the initial balance read after the last manual swap, so the `PortfolioState.v1` above includes the BNB.
+
+  **Funding notes (deployment record).**
+
+  | Wallet | Date (UTC) | Tx hash | USDT paid | BNB received | Note |
+  |---|---|---|---|---|---|
+  | dev | 2026-10-16 08:27:44 UTC | `0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55` | 2 (verified wallet net USDT debit) | 0.002684720969362886 (BscScan transfer relayed by Isaac) | Isaac identifies this as the MetaMask trial. Chain56 success, dev-wallet sender, canonical/finalized inclusion and USDT debit verified (IDEA-039 FG-01). BNB amount is attributed explorer evidence, not independently RPC-verified; additional planned dev funding and fresh opening balance remain #106. |
+  | dev | 2026-10-21 17:27:41 UTC | `0xab19e680522a72632fd3e0ad296c69b9901643de66d3fa218795bf35c57a168d` | 2 (receipt Transfer logs) | 0.002643168034967125 (RPC balance change plus BNB gas; MetaMask showed 0.00264317) | Seed 2 by Isaac, nonce 3; its exact 2 USDT approve to the MetaMask router is nonce 2 (`0x2acb339f…dcd5`), gas 0.0000120418 BNB for both. Seed 1's approve was nonce 0 (`0x3288d4ea…3ca0`). All four wallet transactions are accounted for and every allowance reads 0 at finalized block 129111365 (IDEA-049-C SJ-05). Dev total 4 USDT; no more dev seed planned. |
+  | final | — | — | — | — | Isaac, after funding and before Oct 29 00:00 UTC, about 6 USDT in total. |
+
+  FG-01 evidence: [dev-gas-funding-20261016.json](evidence/dev-gas-funding-20261016.json).
+  The transaction's block time is also 16:27:44 SGT. The receipt's network gas
+  product is 0.00001129764 BNB (188294 gas × 60000000 wei/gas); this does not
+  independently establish MetaMask's UI fee-token economics. Receipt Transfer
+  logs show exactly 2 USDT leaving this wallet and none returning; no separate
+  USDT fee is classified. On 2026-10-17 Isaac copied the BscScan Internal
+  Transactions transfer of **0.002684720969362886 BNB** from
+  `0xc590175e458b83680867afd273527ff58f74c02b` to the dev wallet
+  `0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479`. This is the gross incoming
+  transfer, not a net or current balance. The explorer's USD display is not
+  used. Both public providers lack historical trie state for the prestate
+  trace; native credit remains independently unverified by RPC. The historical
+  funding note is complete with that source attribution (IDEA-039 FG-01 U1);
+  it does not qualify production native tracing or complete #106.
+  No new swap, hosted capture, agent round or final-wallet action occurred.
+
+  **SJ-03 subsequent update (2026-10-22 SGT):** the additional dev seed above is now verified; [receipt/current public balance](evidence/dev-gas-funding-20261022.json). The0.003072BNB signer exit floor is covered. This does not create the hosted PortfolioState or qualify all fresh quote/configuration inputs. No further wallet swap is requested to satisfy that minimum. The separate live-challenge wallet is excluded from this task.
+
+  Later top-ups are the agent's own logged USDT → BNB rounds (G-13). Still open: whether BNB counts in equity (Q-39).
 
 ### 6. Driver values (team decision)
 `driver.cadence_ms` (how often a cadence round runs) and `driver.day_roll_window_ms` (how long after UTC midnight the daily risk anchor may roll). They are null in the example and recorded as open in IDEA-050.
+
+Also `driver.balance_rpc_providers`: the ordered list of manifested BSC RPC providers (`url`, `source_id`; primary first, then a backup) for the chain-balance check ([IDEA-055](../ledger/IDEA-055.md), #36). A check fails over to the next provider and fails only when every provider fails (PR 5). They are account-specific: Isaac chooses both (#92), and both are null in the example. At least one is required for a `dev` or `live` start, and a provider left null refuses the start. The legacy single pair `driver.balance_rpc_url` + `driver.balance_rpc_source_id` is still accepted. The interval and maximum age are set in the example (10 and 30 minutes). `driver.price_jump_check_bps` (3000 in the example, required with them) is the price-jump guard's threshold: a held symbol whose mark moves at least 30 % between rounds is not traded, and the loss stops wait, until a balance check confirms the chain (IDEA-055 PR 4).
 
 ## Order of work
 
@@ -104,12 +150,12 @@ Prepared 2026-10-15 SGT (Claude for Yao Zhu, [IDEA-051](../ledger/IDEA-051.md)).
    - Don't start `larp-execution`: it would only exit 2 at the capability gate.
 9. **Gate A evidence.**
    - One shadow round logged and ACKed by the real receiver (R-01).
-   - Hosted routes from `primary` to Web3, RPC, SEC and ai-seeds (#32, R-07).
-   - `chronyc tracking` (R-08).
+   - Hosted routes from `primary` to Web3, RPC, SEC and ai-seeds (#32, R-07): `python -m larp.runtime.routes --role primary …` on `primary`, and `--role signer` on the signer once its access route exists; commands and the approved list are in [architecture-deployment.md](architecture-deployment.md) "Approved network destinations" (IDEA-062). Keep both `RouteCheck.v1` reports.
+   - `chronyc tracking` (R-08). Also check that `/etc/chrony.conf` has `rtcsync` and that `cd /opt/larp/current && .venv/bin/python -c 'from larp.runtime.supervision import kernel_clock_synchronized as k; print(k())'` prints `True` on `primary` (D-DN-10). Without `rtcsync`, chrony leaves the kernel's `STA_UNSYNC` flag set, so a `CLOCK` HALT would never clear.
    - An alarm email received.
    - Record each in IDEA-051 and review Gate A in IDEA-042 before leaving it running.
 
 ## After Gate A
 
 - **Gate B:** Isaac lifts the capability gates. Choose the signer access route (Terraform change, IDEA entry, review). Place the key file. Prove signing on the dev wallet with a small trade, then review Gate B.
-- **Decisions due:** D-DN-02 (rehearsal shape, Oct 19); D-DN-01/03 before activation. See IDEA-049-D §5.
+- **Decisions due:** D-DN-01/03 before activation. D-DN-02 (rehearsal shape) was decided 2026-10-17: signed Oct 21–26 if Gate B passes by Oct 21, otherwise a shadow rehearsal with a shorter signed window, recorded as a deviation. See IDEA-049-D §5.

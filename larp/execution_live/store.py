@@ -10,8 +10,10 @@ import json
 
 from larp.execution import (Attempt, Conflict, Execution, Intent, Payload, Signed,
                             TERMINAL, canonical, digest)
+from larp.storage.backup import without_signed_bytes
 from larp.storage.postgres import IntegrityError
-from larp.contracts import Document
+from larp.contracts import ContractError, Document
+from larp.runtime import faults, halts
 
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS execution_records (
@@ -80,6 +82,12 @@ class ExecutionStore:
         self.store._owned(run, epoch)
         if version != epoch or run['chain_id'] != 56:
             raise Conflict('execution release authority changed')
+        # Same locked-run transaction as signing/broadcast and observation publication:
+        # no crash gap between the durable incident and runtime projection ingestion.
+        run['abnormal_outcome'] = db.execute(
+            "SELECT EXISTS (SELECT 1 FROM execution_observations WHERE run_id=%s "
+            "AND convert_from(observation, 'UTF8')::jsonb->>'kind'='ABNORMAL')",
+            (self.run_id,)).fetchone()[0]
         return run
 
     def execution_authority(self):
@@ -100,9 +108,11 @@ class ExecutionStore:
         with self.store.transaction() as db:
             return self._attempt(db, attempt_id)
 
-    def check_broadcast(self, signed, epoch, version):
+    def check_broadcast(self, signed, epoch, version, *, now_ms=None, decoder=None):
         with self.store.transaction() as db:
-            self._release_authority(db, epoch, version)
+            run = self._release_authority(db, epoch, version)
+            if run.get('abnormal_outcome'):
+                raise Conflict('abnormal finalized outcome; broadcast quarantined')
             keys = db.execute('SELECT economic_key FROM execution_records WHERE run_id=%s', (self.run_id,)).fetchall()
             for key, in keys:
                 state = self._load(db, key)
@@ -112,6 +122,24 @@ class ExecutionStore:
                             and self._signature(db, attempt.attempt_id, attempt.payload.hash) == signed
                             and attempt.epoch == epoch
                             and attempt.guard_version == version):
+                        if state.intent.authority_margin:
+                            # The executor's tick predates the durable possible-send write. Recheck finite
+                            # authority with the release clock immediately before bytes reach the submitter.
+                            margin_ms = state.intent.authority_margin * 1000
+                            if (type(now_ms) is not int or now_ms < state.last_observed_at * 1000
+                                    or now_ms + margin_ms >= state.intent.valid_until * 1000):
+                                raise Conflict('execution authority submission margin exhausted or clock unavailable')
+                            if attempt.step == 'SWAP':
+                                if decoder is None:
+                                    raise Conflict('finite swap release needs the pinned decoder')
+                                deadline = decoder.decode(attempt.payload).deadline
+                                if (type(deadline) is not int
+                                        or not now_ms + margin_ms < deadline * 1000 <= state.intent.valid_until * 1000):
+                                    raise Conflict('swap deadline submission margin exhausted')
+                        if now_ms is not None:
+                            from larp.strategy.execution_bounds import permitted
+                            if not permitted(Document(bytes(run['projection'])).read(), state.intent, now_ms):
+                                raise Conflict('S1 execution window/attempt authority expired')
                         return
             raise Conflict('signed bytes have no current possible-send authority')
 
@@ -172,6 +200,8 @@ class ExecutionStore:
                 new = replace(current, revision=1 if previous is None else previous.revision + 1,
                               attempts=tuple(replace(a, raw_hex=None) for a in current.attempts))
                 raw, checksum = canonical(asdict(new)).encode(), digest(asdict(new))
+                if without_signed_bytes('execution_records', 'state', raw) != raw:  # any key, any depth (#23)
+                    raise Conflict('signed bytes cannot enter archive-readable execution state')
                 if stored is None:
                     db.execute('INSERT INTO execution_records VALUES(%s,%s,%s,%s,%s,%s,%s,%s)',
                                (new.intent.key, self.run_id, self.wallet, 56, new.status in TERMINAL,
@@ -184,11 +214,13 @@ class ExecutionStore:
                     prior = db.execute('SELECT head FROM execution_journal WHERE economic_key=%s '
                                        'AND revision=%s', (new.intent.key, stored.revision)).fetchone()[0]
                 public = {**event, 'revision': new.revision}
-                if 'raw_hex' in canonical(public) or 'signedTransaction' in canonical(public):
+                encoded_event = canonical(public).encode()
+                if ('raw_hex' in canonical(public) or 'signedTransaction' in canonical(public)
+                        or without_signed_bytes('execution_journal', 'event', encoded_event) != encoded_event):
                     raise Conflict('signed bytes cannot enter public execution journal')
                 head = digest([prior, public, checksum])
                 db.execute('INSERT INTO execution_journal VALUES(%s,%s,%s,%s,%s,%s)',
-                           (new.intent.key, new.revision, canonical(public).encode(), checksum, prior, head))
+                           (new.intent.key, new.revision, encoded_event, checksum, prior, head))
                 return new
         except IntegrityError:
             raise Conflict('wallet barrier or execution uniqueness conflict') from None
@@ -237,14 +269,26 @@ class ExecutionStore:
             return Signed(**stored)
 
     @staticmethod
-    def check_signing_run(run, intent, build_id=None, manifest_sha256=None):
+    def check_signing_run(run, intent, build_id=None, manifest_sha256=None, *, now_ms=None):
         """Independent signing facts from the locked run, writable only by runtime.
 
         This check is specific to new signatures. Receipt publication and lookup
         keep using release authority so HALT never prevents reconciliation.
         """
         projection = Document(bytes(run['projection'])).read()
-        if (projection.get('halt') or {}).get('reasons'):
+        if run.get('abnormal_outcome') or projection.get('abnormal_outcomes'):
+            raise Conflict('abnormal finalized outcome; signing quarantined')
+        try:
+            faults.check(run['mode'])  # RG2-H01: no new signature in a final run while a drill point is armed
+        except ContractError as refused:
+            raise Conflict(str(refused)) from None
+        if now_ms is not None:
+            from larp.strategy.execution_bounds import permitted
+            if not permitted(projection, intent, now_ms):
+                raise Conflict('S1 execution window/attempt authority expired')
+        # D-DN-09 (larp/runtime/halts.py): CLOCK or any unlisted reason blocks every signature; a pausing HALT signs
+        # only a mandatory bStock SELL that the open round planned.
+        if not halts.permits(projection, intent.round_id, intent.intent_id):
             raise Conflict('run is halted; signing blocked')
         registered = projection.get('registered_version')
         if registered is not None and type(registered) is not dict:

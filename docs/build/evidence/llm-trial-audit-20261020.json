@@ -1,0 +1,348 @@
+{
+  "current_code_witnesses": {
+    "aiand_served_identity": {
+      "metadata_present": 71,
+      "model_and_effort_match": 71
+    },
+    "aiand_usage_recovery": {
+      "moonshotai/kimi-k3": {
+        "normalized_input_tokens": 219476,
+        "normalized_output_tokens": 25142,
+        "raw_input_tokens": 259663,
+        "raw_output_tokens": 53814,
+        "raw_reasoning_tokens": 45349
+      },
+      "zai-org/glm-5.3": {
+        "normalized_input_tokens": 53812,
+        "normalized_output_tokens": 996,
+        "raw_input_tokens": 77134,
+        "raw_output_tokens": 17380,
+        "raw_reasoning_tokens": 16792
+      }
+    },
+    "canonical_sha": "697ff3a9e4f310aae7980dc61f0fedc376d148a7",
+    "cap_errors": {
+      "all_reasoning_consumed_cap": 9,
+      "by_model": {
+        "moonshotai/kimi-k3": 7,
+        "zai-org/glm-5.3": 4
+      },
+      "count": 11,
+      "current_codec_reproduction": "11/11 refused same way; current routing cap unchanged"
+    },
+    "citations": {
+      "current_review_outcomes": {
+        "DISSENT": 6
+      },
+      "rejected_claims": 15,
+      "same_input_prompt_replay": "PASS on all 6 current-assessor replays using original HTTP inputs",
+      "stages": 6
+    },
+    "credential_pattern_scan": {
+      "candidate_files": [],
+      "scope": "Access-key, OpenAI key and explicit secret-valued JSON patterns; not proof of absence of every possible secret"
+    },
+    "current_mutable_input_witness": {
+      "actual_capture_mismatches": {
+        "compared": 174,
+        "gpt-6.1-sol": 35,
+        "mismatched": 81,
+        "moonshotai/kimi-k3": 34,
+        "zai-org/glm-5.3": 12
+      },
+      "dispatches": 2,
+      "drifted_steps": [
+        0
+      ],
+      "field": "tool_results"
+    },
+    "limits": {
+      "blind_labels": false,
+      "counterfactual_new_router_performance_estimated": false,
+      "new_provider_calls": 0
+    },
+    "reporting_witness": {
+      "bakeoff_deadline_ms": 60000,
+      "current_declared_max_ms": 180000,
+      "elapsed_ms": 120000,
+      "kind": "synthetic reporting-only witness; not a provider/latency projection",
+      "within_deadline_reported": 0
+    },
+    "tool_time_allowlist_and_accepted_deadline_checks": "70/70 PASS"
+  },
+  "data": {
+    "archive_sha256": "587aeb67bafde94061889eeff55bf57a91811e64864e998e20d20f87dbe398d0",
+    "canonical_sha": "697ff3a9e4f310aae7980dc61f0fedc376d148a7",
+    "capture_build": "ea25b52325656a19b29e8ddb07b94dd792be6e18"
+  },
+  "finding_ids": {
+    "R1": "P1 mutable normalized model inputs",
+    "R2": "P2 reviewer token-cap exhaustion",
+    "R3": "P2 reviewer citations/output schema",
+    "R4": "P2 deadline/error/usage reporting"
+  },
+  "focused_test_log_sha256": "ba649c0da77951de7c6bb65085c4e0bf7b7e6701aba7cc46cff30894744f1d08",
+  "hashes": {
+    "docs/build/ops/trial-audit-20261020/audit_capture.py": "68906b48a3dba85520b33a750449d7e7ac66428cb8c8ae4dbf6c1599b7c16e1c",
+    "docs/build/ops/trial-audit-20261020/witnesses.py": "5a07015c2031defef285439b9b1244fea3b3c64d9b5c340aa946068b1c71b448"
+  },
+  "private_artifact_hashes": {
+    "baseline-results.json": "4abbd19b0a08cb785f8c7efabfc8a3d21bb30d69f3cf9b8cf3d0c08b0a3586dc",
+    "input-mismatches.json": "7f95a32d1758d059f2fcbff946d4986bf2c2781f1f49a96df1c82415cb3212a1",
+    "per-job.json": "5f9238e71f2f133225bf5562295dc97535194014ae3900647ac18d103eebda4a",
+    "private-witness-cases.json": "43b36cc02dbd43f5aba4edae540ec1cd679a7240b98b64c8da536930158423f5",
+    "summary.json": "86f12ca7842b586888ac2b804af7c31f6592da77080d5d2970dc8d8c1da61551",
+    "witnesses.json": "79bbb62854b23b4b34f6b4159e25ec3bbc2965b80efe3496f647dfb742566b78"
+  },
+  "record_id": "PC-AUDIT01",
+  "scope": "Retrospective engineering audit; remaining findings checked against latest merged canonical; no current live-performance projection",
+  "summary": {
+    "accounting": {
+      "routing_spec_unchanged": true,
+      "settled_micro_usd": 880356,
+      "settled_usage_ledger_matches": 103,
+      "unknown_charges": 3,
+      "unknown_micro_usd": 337180
+    },
+    "artifact_refs": {
+      "missing": [],
+      "unique": 496
+    },
+    "audit_id": "PC-AUDIT01",
+    "baseline": {
+      "claim_metric_agreement_jobs": 41,
+      "finding_set_agreement_jobs": 41,
+      "independent_labels": false,
+      "jobs": 70,
+      "status_counts": {
+        "ASSESSED": 70
+      }
+    },
+    "by_issuer": {
+      "SEC-CIK-0001318605": {
+        "baseline_statuses": {
+          "ASSESSED": 35
+        },
+        "empty_claims": 29,
+        "jobs": 35,
+        "statuses": {
+          "ASSESSED": 6,
+          "UNAVAILABLE": 29
+        }
+      },
+      "SEC-CIK-0002120882": {
+        "baseline_statuses": {
+          "ASSESSED": 35
+        },
+        "empty_claims": 35,
+        "jobs": 35,
+        "statuses": {
+          "ASSESSED": 35
+        }
+      }
+    },
+    "canonical_sha": "697ff3a9e4f310aae7980dc61f0fedc376d148a7",
+    "claims_reverified": {
+      "PASS": 24
+    },
+    "data_sha256": "587aeb67bafde94061889eeff55bf57a91811e64864e998e20d20f87dbe398d0",
+    "historical_config_sha256": "4b85cda7750ace218eae93b451f7aae489a3f20e18eb7fd9aefc4feae10fadb7",
+    "integrity": {
+      "audit_ACKs": 109,
+      "closed_rounds": 70,
+      "execution_signing_commands": 0,
+      "journal_events_verified": 188,
+      "outboxes_and_chunk_bytes_match": true,
+      "terminal_projection_matches": true
+    },
+    "latency": {
+      "all_jobs": {
+        "p50": 25735,
+        "p95": 60022
+      },
+      "decision_delay_ms": {
+        "max": 76309,
+        "median": 26452.5,
+        "min": 11514
+      }
+    },
+    "normalized_input_vs_wire": {
+      "compared": 174,
+      "gpt-6.1-sol": 35,
+      "mismatched": 81,
+      "moonshotai/kimi-k3": 34,
+      "zai-org/glm-5.3": 12
+    },
+    "population": {
+      "accepted_claim_metric_counts": {
+        "ITEM:2.02": 12,
+        "ITEM:9.01": 12
+      },
+      "all_hold_targets": {
+        "MISSING_MARKET_OR_BASIS": 350
+      },
+      "evidence_rejections": {
+        "UNKNOWN_TOKEN": 69
+      },
+      "jobs": 70,
+      "market_usability": {
+        "basis_unverified_rows": 350,
+        "rounds": 70,
+        "usable_rows": 175,
+        "zero_usable_rows": 35
+      },
+      "referenced_records": {
+        "rec:8b254c95b848a3d030c3b5e85febe61f66596dc9cbc0b0ead777aaa1e8409afe": 35,
+        "rec:df6f2395ab466faccbc0ceee9f81070e282b09613fefb9a31e79c618053aba8f": 35
+      },
+      "review_reasons": {
+        "EVENT_INTERPRETATION": 33,
+        "INCOMPLETE_OR_CONFLICTING_EVIDENCE": 35,
+        "PRIMARY_NOT_ASSESSED": 2,
+        "SEEDED_CLEAN_CASE_AUDIT": 4
+      },
+      "theses": {
+        "INTACT": 6,
+        "NONE": 29,
+        "UNKNOWN": 35
+      },
+      "unique_source_reference_sets": 2
+    },
+    "providers": {
+      "gpt-6.1-sol": {
+        "OK": 103,
+        "input_tokens": 364573,
+        "known_cost_micro_usd": 880356,
+        "output_tokens": 15121,
+        "recorded_steps": 103,
+        "schema_valid": 103,
+        "served_model_match": 103
+      },
+      "moonshotai/kimi-k3": {
+        "ERROR": 7,
+        "OK": 48,
+        "input_tokens": 219476,
+        "output_tokens": 25142,
+        "recorded_steps": 55,
+        "schema_invalid": 1,
+        "schema_valid": 47,
+        "served_model_match": 55
+      },
+      "zai-org/glm-5.3": {
+        "ERROR": 4,
+        "OK": 12,
+        "input_tokens": 53812,
+        "output_tokens": 996,
+        "recorded_steps": 16,
+        "schema_valid": 12,
+        "served_model_match": 16
+      }
+    },
+    "stages": {
+      "external-review-0": {
+        "assessments": 37,
+        "claim_verification_pass_rate": 0.5714,
+        "claims_proposed": 35,
+        "claims_rejected": 15,
+        "cost_micro_usd": {
+          "assessments_with_unknown_cost": 37,
+          "calls_abandoned_at_deadline": 16,
+          "calls_without_usage": 0,
+          "lower_bound": true,
+          "per_assessment_mean": null,
+          "total_known": 0
+        },
+        "finding_agreement_with_baseline": null,
+        "latency_ms": {
+          "max": 48762,
+          "p50": 39374,
+          "p95": 48282,
+          "within_deadline": 37
+        },
+        "model_replies": 55,
+        "provider_errors": 0,
+        "schema_valid_rate": 0.8545,
+        "status_counts": {
+          "ABSTAIN": 6,
+          "ASSESSED": 8,
+          "UNAVAILABLE": 23
+        },
+        "tool_calls": {
+          "max": 1,
+          "mean": 0.919
+        }
+      },
+      "external-review-1": {
+        "assessments": 13,
+        "claim_verification_pass_rate": null,
+        "claims_proposed": 0,
+        "claims_rejected": 0,
+        "cost_micro_usd": {
+          "assessments_with_unknown_cost": 13,
+          "calls_abandoned_at_deadline": 9,
+          "calls_without_usage": 0,
+          "lower_bound": true,
+          "per_assessment_mean": null,
+          "total_known": 0
+        },
+        "finding_agreement_with_baseline": null,
+        "latency_ms": {
+          "max": 26304,
+          "p50": 9430,
+          "p95": 22931,
+          "within_deadline": 13
+        },
+        "model_replies": 16,
+        "provider_errors": 0,
+        "schema_valid_rate": 0.75,
+        "status_counts": {
+          "UNAVAILABLE": 13
+        },
+        "tool_calls": {
+          "max": 1,
+          "mean": 0.923
+        }
+      },
+      "openai-primary": {
+        "assessments": 70,
+        "claim_verification_pass_rate": 1.0,
+        "claims_proposed": 58,
+        "claims_rejected": 0,
+        "cost_micro_usd": {
+          "assessments_with_unknown_cost": 2,
+          "calls_abandoned_at_deadline": 2,
+          "calls_without_usage": 0,
+          "lower_bound": true,
+          "per_assessment_mean": 12730,
+          "total_known": 865696
+        },
+        "finding_agreement_with_baseline": null,
+        "latency_ms": {
+          "max": 30003,
+          "p50": 10075,
+          "p95": 20611,
+          "within_deadline": 70
+        },
+        "model_replies": 103,
+        "provider_errors": 0,
+        "schema_valid_rate": 1.0,
+        "status_counts": {
+          "ASSESSED": 68,
+          "UNAVAILABLE": 2
+        },
+        "tool_calls": {
+          "max": 1,
+          "mean": 0.5
+        }
+      }
+    }
+  },
+  "validation": {
+    "AWS_operations": 0,
+    "environment": "Python3.12.14/macOS; synthetic transports; localhost HTTP allowed for two transport tests",
+    "focused_tests_passed": 38,
+    "independent_accuracy_labels": false,
+    "new_provider_calls": 0,
+    "runtime_changes": false
+  }
+}

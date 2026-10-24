@@ -165,10 +165,10 @@ Mapped severity per protocol §3. "Resolved here" means verified on `review/fina
 | ID | Question | Options | Recommendation |
 |---|---|---|---|
 | D-DN-01 | Standby (D-CON-03): declared "one primary runtime plus a fenced cold standby"; IDEA-046 B1 built two hosts and no standby; DEV-18 is OPEN. | (a) Decide DEV-18 as a deviation: no standby; recovery = supervisor restart + EC2 recover/reboot + RDS; record reason (budget, B1) and evidence. (b) Build a fenced cold standby (third host, cost). | (a), with the RTO/RPO in §6 stated in the register. Final activation is refused until DEV-18 is decided (D-FND-010). |
-| D-DN-02 | Rehearsal (D-CON-04): declared 5+ days incl. a weekend at minimum size, signer on; signing is still gated (C) and Gate B (Oct 20) is at risk. | (a) Keep: signed rehearsal Oct 21–26 covering Oct 24–25. (b) Shadow rehearsal + shorter signed window, recorded as a deviation. | Decide by Oct 19; if C's gates are not lifted by Oct 20, take (b) and record it the same day (GAP-04). |
+| D-DN-02 | Rehearsal (D-CON-04): declared 5+ days incl. a weekend at minimum size, signer on; signing is still gated (C) and Gate B (Oct 20) is at risk. | (a) Keep: signed rehearsal Oct 21–26 covering Oct 24–25. (b) Shadow rehearsal + shorter signed window, recorded as a deviation. | **Decided 2026-10-17 (Keegan, conditional):** (a) if Gate B passes by Oct 21, so the signed rehearsal runs Oct 21–26 and covers Oct 24–25; otherwise (b) automatically, recorded as a deviation (GAP-04) the day Gate B is missed. Gate A cannot pass before Oct 21 (24 h ingestion from Oct 20), so the signed part cannot start earlier. The rehearsal profile's buy window is Oct 21 00:00 – Oct 22 00:00 UTC (`WINDOWS`), so a late Gate B also means no signed buy unless a dev window is added (checklist "Decisions due Oct 19"). |
 | D-DN-03 | Every DEV row is DRAFT; DEV-19 (assessor) and DEV-20 (event planner) are OPEN. | Finalize each row by Oct 26. | Required: the live activation now refuses otherwise. |
 | D-DN-04 | Delivery bound before the 02:00 UTC deadline (D-REQ-025): today signing continues while round logs are undelivered until the deadline passes. | (a) Add a guard HALT when the oldest unacknowledged log is older than B (e.g. 2 h). (b) Accept the risk. | (a) with B = 2 h: it limits how many fills can become "fill without log" during a receiver outage. Needs B's view on HALT semantics (#34). |
-| D-DN-05 | Routes for migrations/roles on RDS and for provisioning the signer (D-REQ-108): no host can read the RDS admin secret; the signer has no internet. | (a) One-off development SSM session on `primary` to run migrations with the admin secret, before Gate A; signer bundle from the S3 gateway endpoint (artifact bucket) with the key copied over SSM. (b) Temporary bastion. | (a); never during the scored run; record each step in the AWS runbook. |
+| D-DN-05 | Routes for migrations/roles on RDS and for provisioning the signer (D-REQ-108): no host can read the RDS admin secret; the signer has no internet. | (a) One-off development SSM session on `primary` to run migrations with the admin secret, before Gate A; signer bundle from the S3 gateway endpoint (artifact bucket) with the key copied over SSM. (b) Temporary bastion. | (a); never during the scored run; record each step in the AWS runbook. **Signer part decided 2026-10-17 (Keegan, [IDEA-080](IDEA-080.md)):** temporary SSM interface endpoints for the signer, destroyed after provisioning and key placement (AWS_RUNBOOK step 5 option b). |
 | D-DN-06 | Watchdog timeout (`cycle_timeout_seconds`, example 600 s). | Value per measured cycle length. | Keep 600 s unless rehearsal shows cycles above 300 s (D-ASM-031). |
 | D-DN-07 | Crash loop on a deterministic error (D-FND-014): restarts every 10 s forever, one RESTART incident each. | (a) Accept (the agent fails closed; incidents are rate-limited for backups). (b) Escalate to a HALT after N restarts per hour. | (a) for v1.0 unless rehearsal shows a loop; incident volume is bounded by D-FND-021. |
 | D-DN-08 | Memory (#60): unit `MemoryMax` sum 3 GiB on a 2 GiB `t3.small`. | (a) `t3.medium` (cost vs credit). (b) Tighter limits + `MemoryHigh` + swap. | Measure RSS in the hosted shadow run (Gate A), then choose; instance-status reboot now covers an OOM hang. |
@@ -350,3 +350,519 @@ Finding (integrator review): the CI manifest's `repository` was the checkout's `
 Note (integrator, no change): the #23 redaction catches the known signed-bytes keys and whole hex-encoded signed transactions, not a base64-encoded transaction under an unknown key (already listed under "Still open"); C's PR70 handles base64 reflections on the response side.
 
 WR-D3f result: criterion pushed at `06b29b8`; failing test `de5d443` (2 failed: no `build_origin`, no registered-repository file); fix `3a1d3d8`: `config/release/repository.v1.json` (`RegisteredRepository.v1`, manifested under `files`) gives the manifest's `repository`; the checkout's origin is `build_origin`; a mirror or SSH origin builds, a credentialed origin or a missing/invalid registered file refuses. Test change disclosed: the bundle fixture commits that file and WR-D3a now expects the registered URL as `repository` and the origin as `build_origin`. Retest: bundle/bind/procedure tests 13 passed, 21 subtests; full suite at `3a1d3d8` (macOS, PostgreSQL 14.24): **1434 passed, 7 skipped, 0 xfailed, 2077 subtests** (log SHA-256 `b29c67ad…b34a`). This replaces the #62.3 "activation bundle must come from the registered repository's CI" item: a mirror-built bundle now names the registered repository. The local aarch64 host-bundle run predates `3a1d3d8`; the mirror `host-bundle` job covers it.
+
+## WR-T — test gaps on #31 (daily anchor) and #59 (runtime unit) (2026-10-15)
+
+Yao Zhu with Claude Code, branch `claude/wr-tests-31-59` from `codex/system-testing-20261012` at `b6ab0a9` (after WR-B #77, WR-C #79 and WR-D #78 merged). Scope: the missing tests for #31 acceptance 2–3 and #59 acceptance 1. Code changes only if a test exposes a defect. `day_roll_window_ms` stays a team value (still `null` in `config/runtime/runtime.example.json`): every test uses an explicit test value (15 min) and none of them chooses or proposes the production value.
+
+### Pre-registered pass criteria (written and pushed before any new test is written or run)
+
+Environment: Python 3.12 from `deploy/requirements-test.lock`, PostgreSQL 14.24 (`postgres:14.24-bookworm@sha256:5a05f61a…1ac2`, trust auth, `larp_test`), `LARP_TEST_DATABASE_URL` set. The #31 tests run on real PostgreSQL through `RoundDriver` with `DayRoll`, the real coordinator, strategy and planner; only market, evidence source and venue are synthetic. A test that fails on this base is pushed failing before any fix and is the finding's evidence.
+
+| ID | Issue | Test | Pass criterion |
+|---|---|---|---|
+| WR-T1 | #31 acc. 2 (consecutive days) | `tests/runtime/test_round_driver_service.py::DayRolls::test_wr_t1_consecutive_days_in_one_run` | One driver object, ticked inside the window after three consecutive UTC midnights (D+1, D+2, D+3) with marks that differ by day, plus later ticks on each day. Exactly one `DAY_ROLLED` per day (`day:D+1`, `day:D+2`, `day:D+3`), each with `boundary` = that midnight and `anchor_units` = equity at that cycle's prefetched marks; `risk.day` equals that day after each roll; later ticks the same day report no `day_roll`. `peak_units`, `run_halt` and `deep_cut` seeded before the first roll are unchanged by every roll; `daily_halt` is cleared by each roll. Replay reproduces the journal head. |
+| WR-T2 | #31 acc. 2 (missing boundary) | `…::test_wr_t2_a_missed_boundary_blocks_that_day_and_the_next_one_rolls` | First tick of D+1 is outside the window, at lower (post-loss) marks: `OUTSIDE_WINDOW`, no event, and `risk.day` and `day_anchor_units` unchanged through further ticks up to 23:59 of D+1. The first tick of D+2 inside the window rolls straight to D+2: one event `day:D+2` at D+2's marks, none for D+1. |
+| WR-T3 | #31 acc. 2 (restart across midnight) | `…::test_wr_t3_a_restart_across_midnight_rolls_exactly_once` | Real `Service` processes on one store (as `Restart` in the same file): process A runs a cycle at D 23:59:30 and dies with its session open; process B (new driver, new objects) starts at D+1 00:01, records a `RESTART` incident and rolls; process C restarts at D+1 00:05 and does not roll. The journal holds exactly one `DAY_ROLLED` for D+1. |
+| WR-T3b | #31 acc. 2 (no reset from a post-loss mark) | `…::test_wr_t3_a_restart_after_the_window_never_resets_from_a_post_loss_mark` | The process is down across midnight and restarts at D+1 00:30 (outside the window) with marks below the D anchor: no roll; `risk.day` and `day_anchor_units` are unchanged; another restart later on D+1 still does not roll. |
+| WR-T4 | #31 acc. 3 (entries) | `…::test_wr_t4_stock_entries_resume_only_after_a_valid_new_day_anchor` | Driver rounds on PostgreSQL with a market where the strategy wants a new BUY. On D+1 without a valid anchor (first tick outside the window) the round's plan has no BUY intent and its rejections include `NEW_RISK_HALTED`. After a valid roll on D+2, a round with the same inputs plans a BUY intent. `peak_units`, `run_halt` and `deep_cut` are unchanged by the roll. |
+| WR-T5 | #31 acc. 3 (gas) | `…::test_wr_t5_gas_top_ups_resume_only_after_a_valid_new_day_anchor` | Profile with a gas floor (test values) and BNB below it. Before a valid anchor: `GAS_TOP_UP_SPENDING_BLOCKED`, and no BNB intent or BNB quote request. After a valid roll: the plan asks for the BNB top-up (intent, or BNB quote request where no gas quote is supplied) and that rejection is gone. |
+| WR-T6 | #31 acc. 3 (latches) | `…::test_wr_t6_a_valid_anchor_does_not_clear_run_halt_or_deep_cut` | With `run_halt` (and separately `deep_cut`) latched before the roll, a valid roll commits its `DAY_ROLLED` and clears only `daily_halt`; afterwards entries are still `NEW_RISK_HALTED` and the gas top-up is still `GAS_TOP_UP_SPENDING_BLOCKED`; `peak_units` unchanged. |
+| WR-T7 | #59 acc. 1 | `tests/runtime/test_systemd_conditions.py::RuntimeUnit::test_wr_t7_the_runtime_unit_gets_past_directory_binding` | Gated on `LARP_TEST_SYSTEMD=1` (and `LARP_TEST_DATABASE_URL`); skipped, never passed, when `/var/lib/larp-runtime` already exists (not a disposable host). A disposable unit with every directive of `deploy/systemd/larp-runtime.service`, changing only the host paths (`/etc/larp/*.json`, `/opt/larp/current`, the interpreter) and the service body after `--`: the real `larp.runtime.service.main(['run', …])`, with three external boundaries replaced — `open_store` (the CI PostgreSQL instead of RDS IAM), `runtime_secrets` (test values instead of Secrets Manager) and `build_driver` (a driver with no ports that records its cycles). User `larp-runtime` and group `larp-evidence` are created if absent and removed afterwards. Config: `config/runtime/runtime.example.json` with test values for its required nulls only, paths unchanged; the manifest pins its SHA-256 and the real launch preflight verifies the release and the config. The run is created and activated in PostgreSQL beforehand. Pass: `/var/lib/larp-runtime/ai-seeds/.larp-wallet` and `/var/lib/larp-runtime/nonce/.larp-wallet` hold the test wallet and are owned by `larp-runtime`; a session for this build is open and the fixture driver ran at least one cycle; the unit is active with `NRestarts=0`; after `systemctl stop` the main process exits 0 and the session is ended. |
+| WR-T8 | #59 control | `…::test_wr_t7_without_its_state_directory_the_start_is_refused` | The same unit without `StateDirectory=`/`StateDirectoryMode=`: main process exits 4 (`LIVE_START_REFUSED`), `NRestarts=0`, no marker file and no session. This shows WR-T7 would catch the original EROFS defect. |
+
+Overall: the full suite on PostgreSQL 14.24 shows no new failures against this base. WR-T7/WR-T8 need real systemd and run only in CI's runtime job (`LARP_TEST_SYSTEMD=1 … tests/runtime/test_systemd_conditions.py`); org Actions is out of quota, so they are checked on mirror CI (`Cookiemunchrr/larp-ci-mirror`), which Yao Zhu dispatches. A local Linux-container run with systemd, if done, is recorded as supporting evidence only.
+
+### WR-T continuation (2026-10-15, before execution)
+
+The handover is continued by Codex on the same branch. WR-T1..6 live in
+`tests/runtime/test_daily_anchor_window.py::DailyAnchorWindow` to keep the existing
+service harness small; WR-T3b and WR-T8 have their own unambiguous method names.
+Criteria are unchanged. The restart fixtures use real `Service` objects and an
+unclosed process session, following the existing `Restart` harness; they do not
+claim OS process-kill coverage. WR-T7/8 copy the full manifested release into a
+readable `/var/lib/larp-wrt-*` fixture (outside `PrivateTmp` and `ProtectHome`).
+The CA and initial-state paths are also substituted with synthetic host files;
+the wallet state paths and every sandbox directive remain the production ones.
+Only the three pre-registered external boundaries are replaced in the subprocess.
+The orphan `claude/issue31-day-roll-tests` branch was inspected but is not merged:
+its direct planner checks do not establish the registered driver-to-planner path.
+
+First execution at `ea25577` stopped in test setup: `build_world([])` rejects an
+empty filing list (six test failures plus four subtest failures). This is a fixture
+defect, not a runtime finding. The fixture now ingests the neutral Q2 filing into
+a distinct evidence store for each scenario; acceptance assertions are unchanged.
+
+WR-T fixture corrections after the second execution (`2a43dce`): seven test
+methods passed, three latch subtests passed, and the deep-cut-only stock subtest
+failed its expected rejection reason. The planner was servicing a mandatory sale
+and therefore never entered its discretionary-entry rejection branch. WR-T6 now
+uses a flat portfolio (same equity) and reachable latches: `run_halt`, then
+`run_halt + deep_cut` (the 8% run halt precedes the 12% deep cut). This retains the
+registered `NEW_RISK_HALTED` and gas refusal assertions after the real roll and
+round; no production code or threshold changes. The earlier isolated deep-cut
+state was not a reachable drawdown state. The systemd first run at `ea25577`
+passed the three existing R13 tests; both new tests failed because the fixture
+script's import path omitted the verified release. Cleanup also attempted to
+remove a group already removed by `userdel`. Both are test harness corrections;
+preflight, service main and sandbox directives remain real and unchanged.
+
+Focused verification at pushed `8c6e0f9`: WR-T1..6 **7 passed + 4 subtests**
+(macOS, PostgreSQL 14.24); real systemd **5 passed + 5 subtests**, including
+WR-T7/8, in the existing native ARM64 Debian container. Before the full suite,
+WR-T4/5 are strengthened to start with `daily_halt=False`, so their stale-day
+refusals cannot be masked by a separate daily-loss latch. Production remains
+unchanged. Real host/RDS/Secrets Manager qualification and mirror CI remain
+separate from this disposable-container evidence.
+
+### WR-T publication and mirror CI handoff
+
+PR [#80](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/80)
+targets `codex/system-testing-20261012`; it is not merged and neither issue is
+closed. No production file changed. The example's `day_roll_window_ms` is still
+`null`; the 900,000 ms window exists only in synthetic tests.
+
+**Yao Zhu — mirror CI** (run from this repository; these push normally, never
+rewrite history). The mirror was not dispatched by this continuation:
+
+```sh
+git push mirror claude/wr-tests-31-59:refs/heads/claude/wr-tests-31-59
+gh workflow run runtime.yml --repo Cookiemunchrr/larp-ci-mirror --ref claude/wr-tests-31-59
+gh run list --repo Cookiemunchrr/larp-ci-mirror --workflow runtime.yml --branch claude/wr-tests-31-59 --limit 1 --json databaseId,headSha,status,conclusion,url
+```
+
+Verify `headSha` equals PR #80's head and retain the URL/results before claiming
+mirror acceptance. The runtime job runs the full suite followed by the opt-in
+systemd file; require **5 passed** in that separate systemd step. Infrastructure,
+Docker, demo and host-bundle jobs remain part of the existing workflow.
+
+Remaining owners: Yao Zhu dispatches mirror CI; D/Keegan reviews and integrates
+PR #80; the team chooses the production window/cadence under #31. Existing
+first-host/RDS/IAM/Secrets Manager and live qualification work is unchanged.
+No whole item from `INCOMPLETE_WORK.md` is completed by these synthetic tests.
+
+### WR-T final verification (2026-10-15)
+
+Test code revision: `9c8f9c3e5a0adcb30c6bae0a576d85484dff2fbe`, pushed before
+execution. Target remained `b6ab0a9`. All subsequent changes are documentation.
+
+| Check | Result |
+|---|---|
+| Full suite, macOS Python 3.12.14, pinned test lock, PostgreSQL 14.24 | **1526 passed, 9 skipped, 0 failed, 0 xfailed; 2127 subtests**, 195.39 s. The skips are the opt-in external dataset, three Linux isolation checks and five opt-in systemd checks. |
+| Focused native ARM64 Linux container, pinned test lock, PostgreSQL 14.24, `LARP_TEST_SYSTEMD=1` | **12 passed, 9 subtests**, 18.69 s: all seven daily-anchor methods and all five systemd methods (including existing R13 tests). No skips. |
+| Dependencies and diff | `pip check` passes in both environments; `git diff --check` passes. |
+| Production changes | None. No signing, broadcast, AWS changes or real service credentials. No policy/window selected. |
+| Cleanup | Removed `larp-wr-tests-pg`, `larp-wrt-sysd`, and the task's scratchpad `venv` after testing. Other containers/worktrees and user files were retained. |
+
+PostgreSQL reports `14.24 (Debian 14.24-1.pgdg12+2)`; container image ID matches
+the workflow pin `sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2`.
+Raw logs retained outside Git:
+- `/private/tmp/larp-wrt-full-macos.log`, SHA-256 `886ca9942bde7cd4a3b480dcbc9487364599e188e26c269b86b947dd5a439d25`.
+- `/private/tmp/larp-wrt-linux-focused.log`, SHA-256 `6a54c9682998045947bc869293359d4c6f7529faed38323ef362843e41fb9bee`.
+
+All WR-T behavior passes with the documented fixture corrections; no runtime
+regression was exposed and no production fix was necessary. Container systemd
+results are supporting evidence only. Mirror CI and review/merge remain owned
+as above; #31 and #59 stay open. The feature branch is pushed, but this is not a
+strict main-branch handoff: the work intentionally remains in PR #80, not `main`.
+
+Status updates posted with PR and validation links:
+[#31](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/31#issuecomment-6195202713)
+and [#59](https://github.com/binance-hackathon-glasswing/binance-hackathon/issues/59#issuecomment-6195203392).
+
+### WR-T acceptance decision (2026-10-15)
+
+**WR-T-D1 — Yao Zhu:** “dont need to run the mirror should be fine just merge”.
+The user accepts the recorded full PostgreSQL14.24 suite and native Linux/systemd
+results and authorizes merging PR #80 into `codex/system-testing-20261012` without
+dispatching mirror CI. This supersedes the WR-T mirror-dispatch and additional
+review handoff above; mirror CI remains **NOT RUN**, not passed. The WR-T-specific
+backlog line is removed with this acceptance/merge change. The production
+day-roll window/cadence remains a team decision under #31 and the existing
+IDEA-048/050 backlog entry; real-host qualification and unrelated CI obligations
+are unchanged. No issue is closed by this decision.
+
+### #23 acceptance 2: the archive role cannot read signed bytes (2026-10-16)
+
+Claude Code session at the user's request ("complete the issues you can"). Pass criteria, written before the change:
+(1) as `larp_execution`, inserting or updating `execution_records.state` or inserting `execution_journal.event` with a
+non-null `raw_hex` is refused by the database; (2) the same holds for `signedTransaction`/`rawTransaction` at any
+depth and for a non-JSON value; (3) `ExecutionStore.commit` refuses a whole signed transaction under any key; (4) the
+restore marker is still accepted, so legacy backups restore closed as before; (5) the full suite stays green.
+
+- **Migration 011** (`migrations/011_execution_public_bytes.sql`): a `BEFORE INSERT OR UPDATE` trigger on both
+  archive-readable columns requires UTF-8 JSON with no non-null signed-bytes field, except `SIGNED_MARKER`.
+- **`ExecutionStore.commit`** also checks the state and the journal event with `backup.without_signed_bytes`, which
+  finds a whole RLP-encoded signed transaction under any key.
+- **Tests:** `tests/runtime/test_anchors_roles.py::Roles::test_g2_23_execution_role_cannot_store_signed_bytes_where_archive_reads`
+  and `tests/runtime/test_final_review_d.py::ArchiveReadableTables` (2 tests). Red without the change (11 failures
+  and subtest failures), green with it. Fixtures that model rows written before the guard now say so
+  (`SET LOCAL session_replication_role = replica`); role fixtures store `{}` instead of `\x00`.
+- **Result: PASS (1–5).** Full suite on local PostgreSQL 16.15, Python 3.13: 1547 passed, 10 skipped, 2157
+  subtests (base `7a8a246`: 1518 passed, 8 skipped, before the base moved to the integration branch). Mirror CI
+  (PostgreSQL 14.24) not run.
+- **Limit:** the trigger matches field names only; a bare hex signed transaction under another key is refused by
+  `commit` and scrubbed by the export, not by the database. A compromised `larp_execution` role already receives
+  signed bytes from the signer, so this guard protects archive and backup readers, not against that role.
+- 2026-10-16 correction (Claude Code, PR #99 review): PostgreSQL's jsonb refuses the escape `\u0000`, so the first version of migration 011 would have refused a legitimate state holding a NUL character, and that execution would have stopped at a `Conflict`. The trigger now replaces `\u0000` with ` ` in its own copy before parsing; stored bytes are unchanged. The test `ArchiveReadableTables::test_d_req_023_a_nul_character_in_state_still_commits` failed before and passes after. Full suite: 1549 passed, 10 skipped, 2157 subtests (PostgreSQL 16.15). Migration 011 is not applied to any hosted database yet, so editing it in place is safe.
+- 2026-10-16 decision D-DN-09 (Keegan, section B): split by reason. `CLOCK` and any unlisted reason block every signature; the integrity quarantine stays total. `DELIVERY_DEADLINE` and `REPEATED_FAILURES` pause only new spending and discretionary trades, so planned mandatory bStock sells still execute under every existing check. Criteria HS1–HS6 and results are in IDEA-049-B "D-DN-09: HALT split by reason".
+- 2026-10-16 mirror CI on the merged head (#104): run [38874982203](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874982203) on `codex/system-testing-20261012` at `1388f80` (#99, #100, #101, #102 and #103 merged). All four jobs pass:
+  - runtime: Python 3.12.15, PostgreSQL 14.24 service container; full suite **1582 passed, 6 skipped, 2194 subtests, 0 failed**; real-systemd 5 passed; offline demo and restricted Docker smoke run pass;
+  - host bundle (x86_64 build and Amazon Linux provisioning);
+  - Terraform `deploy/aws` and `deploy/bootstrap` (fmt, validate, test).
+
+  Migration 011 and its trigger therefore pass on the CI-pinned PostgreSQL 14.24 as well as on local 16.15. The automatic push run [38874933769](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/38874933769) on the same commit also passed. Org-repo Actions remain billing-blocked (#98).
+- 2026-10-16 decision D-DN-10 (Keegan, section B): option (b) is agreed. A `CLOCK` HALT clears autonomously once the clock has been monotonic and NTP-synchronised for 30 minutes. An integrity quarantine stays latched. F-114 forbids a person clearing a HALT, so the clear must be automatic. **Not built yet:** `larp/runtime/supervision.py` still lists `CLOCK` in `LATCHED`. The guard change and its tests follow, with criteria written first; it needs a host signal for NTP synchronisation. D-DN-09 (#34, #52) is decided separately (entry above).
+
+### PR112-L01 — independent local review (2026-10-16)
+
+Prospective acceptance, recorded before execution: review `a0212bd892ca5336a6478f50e33d882fb105fbaf`
+against integration base `1388f807cd97dfbbb70fbb5f38b324f0b73a9310`; require the full existing offline
+suite on Python 3.12.15 / PostgreSQL 14.24 to have no failures or unexpected expected-failures,
+including migration 011, the NUL regression, backup redaction and the least-privilege role checks.
+Run in disposable local Linux containers without production credentials or external networking.
+Account for every skip and report real-systemd/host-bundle/Terraform verification separately.
+Confirm the PR changes documentation only. Mirror run links must be distinguished from independently
+retrieved CI evidence; both the private mirror repository and run API return HTTP 404 to this reviewer.
+No hosted/RDS or live-wallet acceptance follows from local tests.
+
+- **PR112-D01 (P2, tracking):** the new mirror record left the live backlog saying the WR-D mirror
+  dispatch was still pending, and the ledger index omitted the new verification. Reconcile those
+  summaries with this record; keep the actual evidence-access, org Actions and deployment gates open.
+- **Evidence qualification:** the preceding mirror-CI paragraph records the PR author's report.
+  This reviewer cannot independently inspect either linked run or its job logs because the private
+  mirror returns HTTP 404. Its all-four-job result and counts remain author-reported. The full
+  reported source revision is `1388f807cd97dfbbb70fbb5f38b324f0b73a9310`; PR head
+  `a0212bd892ca5336a6478f50e33d882fb105fbaf` changes only this Markdown file relative to it.
+  Keegan owns accessible all-job evidence/confirmation for #104; the account owner owns the org
+  Actions rerun under #98. This review does not close either issue.
+
+**PR112-L01 result: PASS (local offline scope).** On native ARM64 Linux in a disposable Docker
+systemd runner, Python 3.12.15 and the workflow-pinned PostgreSQL 14.24 image
+(`sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2`),
+`LARP_TEST_SYSTEMD=1 python -m pytest -q -ra -p no:cacheprovider` gives **1587 passed,
+1 skipped, 0 failed, 0 xfailed, 2199 subtests passed** (194.94 s). The sole skip is the opt-in
+external recorded-market dataset. Migration 011, NUL handling, signed-byte archive/backup checks,
+least-privilege roles, bubblewrap and all five real-systemd checks run. A separate systemd run
+also passes 5 tests / 5 subtests. `pip check` passes. A direct probe after migrations and
+`roles.sql` confirms normal execution inserts and the signer's `UPDATE (revision)` succeed.
+The environment contains only synthetic test settings; external networking is disabled.
+
+Initial harness attempt: 1581 passed / 1 failed / 6 skipped. The failure was the reviewer's
+read-only repository mount refusing synthetic files in `deploy/activation`; the complete rerun
+uses a writable disposable copy and requires no source change. Final full-suite log SHA-256:
+`bf3f93ffadad994734d253dbb0f283a8b45c4fe712f5c0179d030ac3d7b7bf93`.
+Logs and `summary.json` are retained outside Git at `/private/tmp/larp-pr112-artifacts/`.
+
+**Disposition:** PR112-D01 is fixed in the ledger index and live backlog. No runtime defect was
+found in this documentation-only PR, and no executable file is changed by this review.
+Terraform, Amazon Linux host-bundle provisioning, Docker smoke and the offline demo are not
+independently rerun here; the preceding mirror report remains their author-reported evidence.
+Hosted RDS/IAM/TLS and live-wallet behavior are not tested. #104's accessible all-job evidence
+(Keegan), #98's org Actions rerun (account owner), and the existing hosted/deployment gates
+remain open with their recorded owners.
+
+
+### PR99-RV1: reject container-valued signed-byte fields (2026-10-16)
+
+Follow-up to [the P1 review](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/99#discussion_r4291176074).
+PR #99 is merged; remediation starts from integration commit `793b382` on
+`codex/pr99-archive-guard-fix`. Migration 011's JSONPath comparisons miss objects and nested arrays:
+`larp_execution` can write `{"raw_hex":{"x":SIGNED_TX}}` or `{"raw_hex":[[SIGNED_TX]]}` and
+`larp_archive` can read the original usable bytes. This invalidates the earlier blanket acceptance-2 claim.
+
+Pass criteria registered before running the regressions:
+1. As `larp_execution`, INSERT/UPDATE of execution state and INSERT of journal events reject every
+   signed-byte field value except JSON null and the exact string `SIGNED_MARKER`, at any depth.
+   Cover all five aliases, object/array containers, empty containers, other scalar types, and duplicate JSON keys.
+2. Rejected writes are atomic; archive reads retain the original clean rows. Null and marker values remain
+   readable byte-for-byte, and the existing NUL-character/backup/restore/execution checks still pass.
+3. An additive migration upgrades an already-migrated 011 database without changing 011's checksum;
+   rerunning migrations is idempotent.
+4. Run the focused PostgreSQL 14.24 suite and the full offline suite. No credentials, live RPC, broadcasts
+   or cloud changes. Alternate-key/other-encoding signed bytes remain outside this field-name guard;
+   do not claim that this closes #23's entire archive-read boundary.
+
+Implementation: migration `012_execution_public_field_values.sql` replaces the trigger function without
+editing 011 or changing role grants. It walks `json` objects and arrays and explicitly permits only JSON null
+or the exact restore-marker string under signed-byte keys. Using `json` preserves duplicate keys that
+`jsonb` would discard; checking the original field types rejects containers, booleans and numbers.
+The existing NUL-escape handling changes only the check's copy, never the stored bytes.
+
+Verification:
+- Finalized container/scalar and duplicate-key regressions against the original 011 function:
+  **122 failing cases, zero errors**, using isolated disposable schemas.
+- After 012: four new role/upgrade tests **PASS**, including 152 subtests, on PostgreSQL 14.24 / Python 3.12.14.
+- The original direct-write probe now refuses ordinary, object and nested-array signed-byte forms.
+  The unrelated-key case is still readable, confirming the documented limitation.
+- Full offline suite on macOS / Python 3.12.14 / PostgreSQL 14.24: **1561 passed, 9 skipped,
+  2321 subtests passed**, in 337.73 seconds. Command: `python -m pytest -q -p no:cacheprovider`,
+  with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, a disposable `LARP_TEST_DATABASE_URL`, and credentials unset.
+  This includes existing backup/restore, NUL-character and execution integrity/recovery regressions.
+  No hosted migration or Linux/systemd acceptance is claimed.
+
+Local implementation and regression verification are complete at `0a8fbb4`. The user approved pushing the
+branch and opening a follow-up PR on 2026-10-16. Review/integration (Keith) and the first-host migration
+check (Keegan) remain in `docs/INCOMPLETE_WORK.md`; the alternate-key/encoding archive-read limitation
+above remains open.
+
+
+### All-open-PR review: prospective remediation (2026-10-16)
+
+ALLPR-R108: additive migration 013 validates every existing execution state/journal byte string with the 012 guard, refuses unsafe upgrades transactionally and leaves source bytes unchanged; safe upgrade/idempotency passes and 011/012 hashes stay unchanged. Add pre-012 seeded-row regression; verification follows approved push.
+
+
+### RR2 observed results and publication status
+
+RR2 current pushed head b6a8dad: role/archive module 13 passed / 182 subtests on Linux/Python3.12/PostgreSQL14.24. A seeded pre-012 forbidden row remains readable by larp_archive after PostgresStore.migrate, confirming RV-108-01. Additive 013 and regression changes remain unexecuted pending approved push; no unsafe hosted data is inferred. All runs used synthetic inputs, no production credentials and no external network.
+
+
+### ALLPR-R108 /RV-108-01 verified (2026-10-16)
+
+PR108 is merged into codex/system-testing-20261012. Migration013 validates transaction-local copies of all existing execution record/journal bytes using 012's trigger, refusing an unsafe upgrade atomically without modifying source rows or editing 011/012 checksums. Clean upgrade and idempotence pass. Published focused role/archive tests: 14 passed /184 subtests. A direct seeded-row probe through PostgresStore.migrate refuses unsafe data, preserves original bytes and does not mark013 applied. Final combined source `af9ffbfccf1f682669ada56fa5fb90db2896a6c1` passes **1760 passed, 1 external-data skip, 2561 subtests** on Linux/Python3.12.15/PostgreSQL14.24 including roles, archive/backup and migration tests. Detailed full-suite evidence is IDEA-055 RR2 final verification. This supersedes earlier prepared/unexecuted status. Keegan still verifies 012/013 on the first hosted database; alternate keys/encodings remain outside this field-name guard and #23's entire read boundary remains open.
+
+### D-DN-10 build: automatic CLOCK HALT clear (criteria pre-registered 2026-10-16)
+
+This builds decision D-DN-10, option (b), agreed by section B via #113. A `CLOCK` HALT clears automatically once the clock has been monotonic and NTP-synchronised for 30 minutes. The integrity quarantine stays latched. No person clears anything (F-114). Branch `claude/d-dn-10-clock-clear` from `eda2ed2`.
+
+**Design choices:**
+- **Sync signal:** the kernel's own clock status (`adjtimex(2)`): synchronised means the call returns a non-error state and `STA_UNSYNC` is clear. This works with chrony on AL2023 or any other daemon, and needs no subprocess. A failed call counts as *not* synchronised (fail closed).
+- **The window:** in-process, so a restart starts it again (conservative). It holds only across consecutive guard evaluations that each read synchronised, with time never stepping back between evaluations or behind the last decision.
+- **Wiring:** `Guard` takes `clock_sync` (a callable) and `clock_clear_after_ms`. Without `clock_sync`, a `CLOCK` HALT never clears (the old latch, unchanged for every other caller). The production service passes the kernel signal and 30 minutes.
+
+**Pass criteria:**
+- **CK1, signal:** `kernel_clock_synchronized()` returns a bool. It is False when `adjtimex` reports `TIME_ERROR`, has `STA_UNSYNC` set, or the call fails or is unavailable; True only for a clean synchronised state. Tested with an injected syscall.
+- **CK2, clear:** with a signal reading synchronised and no backward step, a `CLOCK` HALT is cleared by the first evaluation at least 30 minutes after the window opened, and not earlier. The clear is one journaled `HALT_CLEARED` event with the window in its detail. A later round then plans normally.
+- **CK3, resets:** an unsynchronised reading, or a time earlier than the previous evaluation, restarts the window. A time behind the last decision raises the HALT again (as today) and also restarts the window.
+- **CK4, unchanged elsewhere:**
+  - with no signal, `CLOCK` stays latched, so the existing H3/H4 test is unchanged;
+  - the integrity quarantine is untouched;
+  - `DELIVERY_DEADLINE` and `REPEATED_FAILURES` keep their own rules;
+  - a `CLOCK` clear leaves any other active reason in place.
+- **CK5, wiring:** `larp.runtime.service` builds its `Guard` with `kernel_clock_synchronized` and 30 minutes.
+- **CK6:** a mutation of each check is caught. The full suite shows no new failures against the base `eda2ed2`.
+
+### D-DN-10 build results (2026-10-16)
+
+- **Order of commits:** criteria in `dc1aa30`, red tests in `ecde05d` (8 failing; the passing test was CK4's "no signal stays latched", today's behaviour), implementation in `8158a82`.
+- **One test correction, `e5e8356`:** CK2's "trading resumes" step checked for a new command. The round after the clear was not halted, but the fake assessor answered `ASSESSMENT_UNAVAILABLE` for a request 30 minutes later, which is unrelated to the HALT. The test now checks that the round has no `HALTED` error and that the planner ran.
+- **CK1–CK5: PASS.** `tests/runtime/test_clock_clear.py` has 9 tests.
+  - The kernel signal is fail closed: `TIME_ERROR`, `STA_UNSYNC`, a negative state or a failed call all mean not synchronised. In this container the real `adjtimex` reads *not* synchronised, so a CLOCK HALT would not clear here, which is correct.
+  - The CLOCK HALT clears at exactly 30 minutes and not 1 ms earlier, journaled as `HALT_CLEARED` with `synchronized_since_ms`.
+  - The window restarts on an unsynchronised reading, on a step back between evaluations, and on a time behind the last decision.
+  - With no signal it stays latched.
+  - Other reasons stay in place.
+  - The service passes `kernel_clock_synchronized` and 30 minutes.
+- **CK6 mutations:** 9, each caught: `STA_UNSYNC` ignored; `TIME_ERROR` or negative state ignored; failed call not fail closed; window ignored; unsynchronised reading does not reset; step back between evaluations ignored; step behind the last decision ignored; no signal clears; service wiring dropped.
+- **Full suite** (PostgreSQL 16.15, Python 3.12.3, run as root): **1763 passed, 7 skipped, 2562 subtests, 0 failed**. Base `eda2ed2` gives 1754 passed and 7 skipped locally (CI at `e4f3d59`, run non-root: 1755 passed and 6 skipped), so this is +9.
+- **Still open:** confirming on the real `primary` host (AL2023 with chrony) that `kernel_clock_synchronized()` reads True once chrony has synchronised. That is a Gate A host check.
+
+### D-DN-10 review of PR #125 (criteria pre-registered 2026-10-17)
+
+Adversarial review of `claude/d-dn-10-clock-clear` after merging `codex/system-testing-20261012` (14 commits, no conflicts; nothing merged touches `supervision.py`, `service.py` or `halts.py`).
+
+**Findings before any change:**
+- **No code bug confirmed** in the signal, the window or the wiring (details in the results below).
+- **Gap in CK4's tests:** `test_ck4_clearing_the_clock_leaves_other_reasons_in_place` asserts only that `CLOCK` is gone, not that the other reason is still there. The "integrity quarantine is untouched" bullet has no test.
+- **Host dependency:** chrony on Linux clears the kernel's `STA_UNSYNC` flag only when `rtcsync` is configured (chrony `sys_timex.c`: "On Linux clear the UNSYNC flag only if rtcsync is enabled"). Without `rtcsync`, `kernel_clock_synchronized()` reads False for ever, so a `CLOCK` HALT never clears. This fails closed, but it loses the run, which is the problem D-DN-10 solves.
+- **Stale operator text:** `docs/build/runbook.md` §3 says a `CLOCK` HALT clears "Never during the run (latched)".
+
+**Pass criteria:**
+- **CKR-1:** after the `CLOCK` clear in CK4's test, the active reasons are exactly `['REPEATED_FAILURES']`, and `halts.pausing_only` is True, so D-DN-09's mandatory-sell rule applies to what remains. Mutation check: a `_clear` that drops every reason fails the test.
+- **CKR-2:** on a quarantined run with a `CLOCK` HALT and a full synchronised window, `evaluate` commits nothing: the store refuses the clear (`Conflict`), the run stays quarantined and `CLOCK` stays active.
+- **CKR-3 (docs, no test):** the runbook §3 row states the D-DN-10 rule. The Gate A evidence list in `docs/build/DEPLOYMENT_DAY.md` checks `rtcsync` in `/etc/chrony.conf` on `primary` and that `kernel_clock_synchronized()` reads True there.
+- The full suite has no new failures against the merged head before these changes.
+
+### D-DN-10 review of PR #125: results (2026-10-17)
+
+- **Merge:** `codex/system-testing-20261012` merged into the branch with a merge commit, no conflicts. #117's HALT-by-reason split (`halts.py`, D-DN-09) was already in the branch; the merge adds nothing that touches the guard.
+- **CKR-1: PASS.** After the `CLOCK` clear the active reasons are exactly `['REPEATED_FAILURES']`, and `halts.pausing_only` is True. The mutation (a `_clear` that drops every reason) fails the strengthened test; the old assertion let it pass.
+- **CKR-2: PASS.** On a quarantined run the clear is refused with `Conflict`. The run stays quarantined and `CLOCK` stays active. In the service, the exception ends the process, and the next start exits 3 (quarantined), so nothing restarts it. That is the same path as any other guard write under quarantine. An integrity failure itself returns `QUARANTINED:INTEGRITY` before the clock check runs.
+- **CKR-3: done.** `docs/build/runbook.md` §3 states the D-DN-10 rule. `docs/build/DEPLOYMENT_DAY.md` step 9 checks `rtcsync` and `kernel_clock_synchronized()` on `primary`.
+- **Checked, no change needed:**
+  - `struct timex` is 208 bytes, with `status` at offset 40. That matches glibc on LP64, so x86_64 and aarch64 (t4g) have the same layout. `modes=0` makes the call read-only, and it needs no `CAP_SYS_TIME`. `larp-runtime.service` has no `SystemCallFilter` or `ProtectClock`, so the call is not blocked by seccomp.
+  - The return handling is right. States 0–4 count as synchronised; `TIME_ERROR` (5), -1 or `STA_UNSYNC` do not, and any exception means not synchronised.
+  - The window restarts on an unsynchronised reading, on a step back between evaluations, on a time behind the last decision, and on a process restart (the state is in-process).
+  - `runtime_guard()` is the only production `Guard` and is used by `service run`. A second CLOCK HALT after a clear, and its later clear, use distinct event IDs.
+- **Not changed (judged not worth fixing now):**
+  - The 30 minutes are measured with the wall clock. A forward step inside the window shortens it in real time. That needs a second clock error after the window opens.
+  - "Synchronised" does not mean "correct". If chrony slews a large offset rather than stepping it, the kernel reports synchronised while the clock is still minutes off. The absolute-drift check stays R-08/G-05.
+  - If chronyd stops, the kernel keeps `STA_UNSYNC` clear until `maxerror` passes 16 s, which takes about 9 h.
+  - `find_library('c')` runs `ldconfig -p` on each evaluation, but only while a CLOCK HALT is active.
+  - The CLOCK HALT event and its projection still carry `latched: true`. Nothing reads that field.
+- **Full suite** (merged head `bb9dc7a`, PostgreSQL 16.15, Python 3.12.3, root): **1774 passed, 10 skipped, 2607 subtests, 0 failed**. Against the PR body's 1763/7, that is +13 tests from the merged base and +1 from CKR-2. The 3 extra skips are the bubblewrap cases, because `bwrap` is not installed in this container. `git diff --check` is clean.
+- **Still open:** the Gate A host check on `primary` (CKR-3).
+
+
+### C05-RV01 — delegated Isaac review, 2026-10-19
+
+[PC-OPS01 dispositions](../build/OPERATIONS_DECISIONS_20261019.md#c05-rv01--isaacs-review-and-dispositions-2026-10-19)
+record ACCEPT for D-DN-01/07/11 candidate risk choices and D-DN-04 requirements,
+under the user's explicit delegation to the assistant. No illustrative number,
+new runtime path, RTO/RPO, host acceptance, #27/#44 or installation is approved.
+Keegan independent review/D-05/DEV18 recording, D-DN-04 code, measurements and
+final numeric decisions remain open. Original dated findings above are retained;
+the old incident-backup rate limit does not bound all restart/journal/disk growth.
+DEV18 remains OPEN/DRAFT pending Keegan's scope decision. Criteria/results:
+IDEA-066 C05-RV01. C05 is partial, not wholly complete.
+
+## LD13 — Keegan's operations review and the D-DN-04 guard (2026-10-20, prospective)
+
+**Keegan's review of Isaac's C05-RV01 dispositions (2026-10-20): all three accepted as decided.**
+- **D-DN-01 / D-05 / DEV-18:** no fenced standby. The candidate is primary
+  plus an isolated signer; a primary or availability-zone failure may end
+  trading for the run. DEV-18 is recorded as a decided omission (still DRAFT
+  until C10).
+- **D-DN-07:** keep the current supervision (`Restart=always`, `RestartSec=10`,
+  no start limit, restart suppressed on exits 2/3/4), accepting the residual
+  exit-1 crash-loop and resource-growth risk. The operator still measures it.
+- **D-DN-11:** a restored run stays quarantined for the rest of the scored run;
+  availability is lost rather than reactivating restored state.
+
+No numeric value is adopted by these reviews. D-DN-06 (watchdog) and D-DN-08
+(memory) stay measurement-blocked.
+
+**D-DN-04 guard design (implements Isaac's accepted requirements):**
+- **The bound B is optional.** It is `delivery_age_halt_seconds` in the runtime
+  config, with no default. The guard is off until Isaac sets B after the
+  operator's dispatch/ACK measurements. 2 h is not adopted.
+- **Pending**, re-derived from the database at every evaluation: any audit
+  event not positively ACKed (`status='ACK'` with a stored acknowledgement)
+  on every chunk, plus any open round with no log yet (age from its
+  `started_ms`). There is no in-memory first-seen time, so a restart cannot
+  reset an age.
+- **HALT `DELIVERY_AGE`** (not pausing, so it blocks all signing;
+  reconciliation continues) when the oldest pending age ≥ B, or when any
+  pending timestamp is in the future.
+- **Clear** only when no pending timestamp is in the future and the oldest
+  pending age is < B. Every log that was overdue must therefore have been
+  positively ACKed.
+- The hard `DELIVERY_DEADLINE` rule is unchanged, and the CLOCK checks run
+  first, as before.
+
+**Pass criteria, written before any code (G1–G9):**
+- G1. Without B, no `DELIVERY_AGE` is ever raised, and all existing supervision
+  tests pass unchanged.
+- G2. Boundary: one log at t; with B = 1000 ms, nothing at t + 999 and a HALT
+  at t + 1000.
+- G3. The HALT blocks a command claim, i.e. a signature, like any non-pausing
+  HALT.
+- G4. A 200 reply without `STORED` leaves the log pending, and the HALT stays.
+- G5. With two overdue logs, delivering one keeps the HALT. It clears only when
+  every overdue log is ACKed and the oldest remaining is younger than B.
+- G6. A fresh `Guard` (a restart) reaches the same decision from the same
+  database.
+- G7. A pending log timestamped in the future HALTs, and does not clear while
+  it remains.
+- G8. An open round with no log yet counts from its `started_ms`.
+- G9. The runtime config refuses a non-positive or non-integer
+  `delivery_age_halt_seconds`, and the service passes B to its guard.
+
+### LD13 results at `3959a4d` (2026-10-20)
+
+Criteria were pushed first, at `05f7305`. Python 3.12 on Linux with a
+disposable PostgreSQL 16.
+
+- **G1–G9 PASS:** 9 new tests in `tests/runtime/test_delivery_age.py`. The
+  existing 14 supervision tests are unchanged and pass.
+- **G7 note:** a future timestamp is tested with the pending-times query
+  patched. Rewriting a stored log trips the journal integrity check (the run
+  is quarantined), and a log made under a later clock trips the CLOCK HALT
+  first, so the guard's own fail-closed branch can't be reached honestly
+  through the database.
+- **Register:** DEV-18 is now decided, so no row remains `OPEN`. The
+  register test that checks "an OPEN row cannot be FINAL" now makes its own
+  OPEN row in the test copy; the validator rule is unchanged.
+- **Full suite: 2166 passed, 11 skipped (environment), 3634 subtests**,
+  438.4 s.
+
+Not done: Isaac sets B, the watchdog and memory values after the operator's
+measurements (LD12/LD14), and host qualification. With no B configured, the
+deployed behaviour is unchanged.
+
+### LD13-RV01 — PR 201 review criteria (2026-10-20)
+
+Before running new checks: with an unacknowledged log already overdue, a clock
+step back from t+B to t+B-1 must not clear DELIVERY_AGE, including through a
+fresh Guard after restart. It must fail closed through CLOCK while retaining
+the delivery halt and reconciliation. Verify a multipart log whose later
+chunks are ACKed first stays pending until the missing first chunk receives
+its own positive ACK. Reconcile current D-05/DEV-18 status summaries with the
+recorded decision while keeping exact-host and numeric-value gates open.
+Run focused delivery/supervision/replay checks and the combined full Linux
+suite with disposable PostgreSQL before merging.
+
+LD13-RV01 results: `8d9d82e` reproduced the defect: after a fresh Guard saw
+the clock step from t+B back to t+B-1, it returned `CLEAR:DELIVERY_AGE` despite
+an unacknowledged overdue log. `2b60387` fixes this by including the durable
+delivery HALT's `since_ms` in the CLOCK refusal boundary. Restart cannot erase
+that boundary; CLOCK and DELIVERY_AGE remain active, signing stays blocked and
+reconciliation remains available. Multipart out-of-order ACK coverage passes:
+later chunks do not release the first pending chunk or reset its age.
+Current D-05/DEV-18 summaries and the remaining-work text are reconciled with
+the recorded decision; host/numeric/release acceptance is still open.
+
+Verification at `2b60387`, including merged PR199 (`db506bd`) and PR200
+(`c54642c`), on native ARM64 Linux / Python 3.12.15 / disposable PostgreSQL14.24:
+- Delivery/supervision/ACK/register selection: **38 passed, 13 subtests**.
+- Final complete suite: **2194 passed, 8 skipped, 3656 subtests**, 249 s.
+  Skips: two external/private fixtures, one root-only permission case and five
+  separately opt-in real-systemd cases. No systemd or host acceptance inferred.
+- `pip check`, deviation rendering and offline runtime demo PASS; whitespace
+  checks PASS. The checkout remained mounted read-only, with generated activation
+  fixtures on a disposable scratch mount.
+- First full attempt: 2189 passed / 5 failed / 8 skipped. Three failures were
+  read-only activation-fixture writes; two were Docker denying bubblewrap's
+  nested `/proc` mount. Fixing only the disposable runner (scratch mount and
+  Docker system-path/AppArmor settings) made all 55 affected-module tests pass,
+  then the full suite above. No application isolation limit was weakened.
+- Current Actions run `39387539536` has no executed runtime steps: its annotation
+  reports account payment/spending-limit refusal. This is local test evidence,
+  not hosted CI, release qualification or live signing acceptance.
+
+Remaining owners: Isaac chooses B/watchdog/memory after operator measurements
+(LD12/LD14); operator supplies exact-host recovery evidence; Keegan reviews the
+qualified release (LD15). The bound remains unset and disabled by default.
+
+## LD14-I01 — interim rehearsal operations values and measurement plan (2026-10-21; prospective)
+
+Keegan asked for LD14 to be completed under "follow the recommended option" (2026-10-21). The recorded policy
+(PF-08, C05-RV01) holds that exact watchdog, memory and delivery-age values are MISSING_MEASUREMENT until the
+operator measures them and Isaac decides; the 600 s, 2 h and sum-of-`MemoryMax` examples are not adopted. Real ACK
+latency and per-unit RSS are unmeasured (LD12-M01-RV01). The runtime still requires `cycle_timeout_seconds` for any
+dev or live run, so the rehearsal can't be installed without one.
+
+Scope: **interim values for the signed development rehearsal only**, each derived from a measured or declared
+bound, plus the measurement plan that replaces them. Final LD14 values (LD24) remain Isaac's decision after
+measurement. Criteria, written before the derivation (I1–I5):
+
+- I1. Each value is a formula over named measured or declared inputs, with the inputs cited. None is copied from the
+  historical examples.
+- I2. Watchdog: `cycle_timeout_seconds` must exceed the worst legitimate cycle, which is the DEV-22 assessment bound
+  plus the measured non-assessment part of a cycle, with a stated margin.
+- I3. Delivery age: `delivery_age_halt_seconds` must cover the normal positive-ACK path (uploader interval, request
+  time and one transient retry) plus one complete-cycle allowance, and stay far below the hard daily upload
+  deadline.
+- I4. Memory: no change to `MemoryMax` without measurement. Keep the existing unit limits for the rehearsal, citing
+  the 43.6 h trial (no OOM or watchdog lines with these limits), and state the capacity risk (the sum of unit limits
+  exceeds host RAM; no swap).
+- I5. The measurement plan names read-only collectors, when they run during the rehearsal (LD19/LD21), the decision
+  rule Isaac applies (PF-08), and what would change each value. No config or host change is made by this record.
+
+### LD14-I01 results (2026-10-21)
+
+[LD14_INTERIM_OPERATIONS_VALUES_20261021.md](../build/LD14_INTERIM_OPERATIONS_VALUES_20261021.md):
+
+- **I1/I2.** `cycle_timeout_seconds` **300** = (DEV-22 180 s + measured non-assessment max 16.3 s) × 1.5, rounded up.
+- **I1/I3.** `delivery_age_halt_seconds` **600** = (5 s poll + 15 s request + 30 s retry + 15 s request + 300 s
+  cycle allowance) × 1.5 ≈ 548 s, rounded up. That is about 1/12 of the shortest 2 h hard-deadline window. The
+  request-time term is an assumption, measured in the rehearsal.
+- **I4.** `MemoryMax` is unchanged. The 43.6 h trial shows no OOM or watchdog lines. The capacity risk is stated:
+  the unit limits add up to 3 GiB on 2 GiB, and `larp-execution` will be added.
+- **I5.** Measurement plan. Code change: `DeliveryWorker(observe=...)`, which the uploader service journals as
+  `delivery_attempt` lines (event, chunk, attempt, code, outcome, `duration_ms`, wall time; no payload or secret). A
+  failing observer can't change delivery. `tests/audit/test_delivery_timing.py` (3 tests) passes, and the related
+  delivery, delivery-age, supervision and Gate A suites pass (112 tests).
+
+Interim values apply to the development rehearsal only. Isaac makes the final LD14 decision after the rehearsal
+measurements (PF-08).

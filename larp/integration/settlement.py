@@ -23,6 +23,7 @@ from larp.contracts import ContractError, Document
 from larp.integration.runtime import INCOMING, iso_ms
 from larp.ports import validate_execution_observation
 from larp.risk.accounting import advance_accounting
+from larp.execution import REVOKE_TOKENS
 
 SCHEMA = "ExecutionState.v1"
 
@@ -47,11 +48,13 @@ class ExecutionBridge:
         if entry["round_id"] != o["round_id"]:
             raise ContractError("Observation names another round for this intent")
         kind = o["kind"]
+        cleanup = o.get('maintenance') == 'ALLOWANCE_REVOKE'
         if kind == "BROADCAST_ATTEMPTED":
-            entry["status"] = "APPROVE_SUBMITTED" if o["step"] == "approve" else "SWAP_SUBMITTED"
+            entry["status"] = ('ALLOWANCE_REVOKE_SUBMITTED' if cleanup else
+                               'APPROVE_SUBMITTED' if o['step'] == 'approve' else 'SWAP_SUBMITTED')
             entry["tx_hashes"] = sorted(set(entry["tx_hashes"]) | {o["tx_hash"].lower()})
         elif kind == "APPROVAL":
-            entry["status"] = "APPROVED"
+            entry["status"] = 'ALLOWANCE_REVOKE_CONFIRMED' if cleanup else 'APPROVED'
         else:
             entry["status"] = kind if o["intent_terminal"] else entry["status"]
         if kind != "BROADCAST_ATTEMPTED" and o["intent_terminal"]:
@@ -125,15 +128,26 @@ def settle(current, observation):
                 previous_session = projection.get("last_discretionary_session")
                 projection["last_discretionary_session"] = max(session, previous_session) \
                     if type(previous_session) is int else session
+                profile = record.get("policy_input", {}).get("context", {}).get("profile", {})
+                if profile.get("baseline") == "TREND_GUARDED_VOL":
+                    # IDEA-076 Q14: S1 budgets discretionary swaps per name per session.
+                    legs = projection.get("discretionary_legs")
+                    if type(legs) is not dict or type(legs.get("session")) is not int or legs["session"] < session:
+                        legs = {"session": session, "counts": {}}
+                    if legs["session"] == session:
+                        counts = dict(legs["counts"])
+                        counts[intent["symbol"]] = counts.get(intent["symbol"], 0) + 1
+                        projection["discretionary_legs"] = {"session": session, "counts": counts}
                 observed_ms = iso_ms(o["observed_at"])
                 projection["last_discretionary_observed_ms"] = max(
                     observed_ms, projection.get("last_discretionary_observed_ms", observed_ms))
         return Document.from_dict({"projection": projection, "reservation_deltas": []})
-    if o.get("step") == "approve" and kind in ("APPROVAL", "REVERT"):
-        expected = record.get("execution_broadcasts", {}).get(o["intent_id"] + ":approve")
+    supporting_approval = o.get('step') in {'approve', *(s.lower() for s in REVOKE_TOKENS)}
+    if supporting_approval and kind in ("APPROVAL", "REVERT"):
+        expected = record.get("execution_broadcasts", {}).get(o["intent_id"] + ':' + o['step'])
         if expected != o["tx_hash"].lower():
             raise ContractError("Final approval fact names an unrecorded broadcast")
-    if kind in ("FILL", "REVERT") and o.get("step", "swap") != "approve" and o["tx_hash"].lower() != (record["orders"][index].get("tx_hash") or "").lower():
+    if kind in ("FILL", "REVERT", "ABNORMAL") and not supporting_approval and o["tx_hash"].lower() != (record["orders"][index].get("tx_hash") or "").lower():
         raise ContractError("Final swap fact names a hash this round never broadcast")
     if kind != "NOT_SUBMITTED":
         portfolio = deepcopy(projection["portfolio"])
@@ -144,6 +158,9 @@ def settle(current, observation):
         after["reservations"] = {}
         projection["portfolio"] = after
         projection["balances"] = balances_of(after)
+        block = (o.get("receipt") or {}).get("block_number")
+        if type(block) is int:  # balance checks compare only at or after the newest applied receipt (IDEA-055)
+            projection["settled_block"] = max(block, projection.get("settled_block") or 0)
     elif record["orders"][index].get("tx_hash") is not None:
         raise ContractError("A broadcast swap cannot end as NOT_SUBMITTED")
     else:
@@ -152,6 +169,11 @@ def settle(current, observation):
         record.setdefault("aborted", []).append({"intent_id": o["intent_id"], "symbol": order["symbol"],
                                                  "side": order["side"], "amount": order["amount"],
                                                  "reason": o.get("reason", "NOT_SUBMITTED")})
+    if kind == "ABNORMAL":
+        # Immutable observation bytes are also journaled by Coordinator.observe. Keep
+        # a durable incident/latch in the projection so replay and every signing gate agree.
+        projection.setdefault("abnormal_outcomes", {})[o["event_id"]] = deepcopy(o)
+        record.setdefault("abnormal_outcomes", []).append(o["event_id"])
     if o["intent_terminal"]:
         final.append(o["intent_id"])
         deltas = [{"intent_id": o["intent_id"], "asset": asset, "units": -units}

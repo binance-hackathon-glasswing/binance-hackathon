@@ -56,7 +56,7 @@ def advance_accounting(portfolio: Document, observation: Document):
         d["accounting"]["service_units"] += integer(e["cost_units"])
         applied[event_id] = digest
         return Document.from_dict(d)
-    if e["kind"] not in ("FILL", "APPROVAL", "REVERT"):
+    if e["kind"] not in ("FILL", "APPROVAL", "REVERT", "ABNORMAL"):
         raise ContractError("Only settled fills/approval/revert observations allowed")
     if e.get("settlement") != "FINAL":
         raise ContractError("Provisional events require execution/finality integration")
@@ -86,6 +86,14 @@ def advance_accounting(portfolio: Document, observation: Document):
     gas_value = integer(e["gas_value_units"])
     d["accounting"]["gas_value_units"] += gas_value
     # Gas expense uses observed USDT valuation, not inferred token quote amounts.
+    if e["kind"] == "ABNORMAL":
+        from larp.ports import validate_execution_observation
+        validate_execution_observation(e)
+        # The existing portfolio is the last reconciled asset snapshot, not an assumed
+        # normal fill. Exact chain deltas are retained separately until reconciliation.
+        # All spending and economic reports remain blocked; no automatic clearing exists.
+        d.setdefault("unreconciled_outcomes", {})[event_id] = e
+        d["accounting_status"] = "QUARANTINED_UNRECONCILED"
     if e["kind"] == "FILL":
         symbol, side = reservation["symbol"], reservation["side"]
         if e["symbol"] != symbol or e["side"] != side:
@@ -174,6 +182,8 @@ def _final_receipt(e, reservation):
 
 def economic_views(portfolio: Document, *, equity_units):
     d = portfolio.read()
+    if d.get("unreconciled_outcomes"):
+        raise ContractError("Economic views unavailable for unreconciled abnormal outcomes")
     wallet = integer(equity_units) - integer(d["opening_equity_units"])
     return Document.from_dict({"schema": "EconomicViews.v1", "wallet_net_units": wallet,
                               "off_wallet_service_units": d["accounting"]["service_units"],

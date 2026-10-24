@@ -1,7 +1,8 @@
-"""W04 execution machine and integration ports. Fake capability bundles only.
+"""W04 execution machine and integration ports.
 
 No network, credential lookup, wallet signing, scheduler or portfolio ledger.
-Production adapters require W01/W02/W06 integration and W08 capability proof.
+The Executor accepts an all-fake bundle, or live ports only with a swap decoder pinned to router evidence
+(larp/execution_live/router.py; IDEA-070, GAP-29).
 """
 from __future__ import annotations
 
@@ -10,6 +11,8 @@ import hashlib
 import json
 import re
 from typing import Protocol
+
+from larp.runtime import faults
 
 USDT = "0x55d398326f99059ff775485246999027b3197955"
 NATIVE_BNB = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
@@ -20,6 +23,14 @@ BSTOCKS = frozenset({
     "0x5b1910eaad6450e50f816082aa078c41f10c292f",
     "0x80106cb3ead06659a5ad19df39d9b4733863b9b0",
 })
+REVOKE_TOKENS = {'REVOKE:' + token: token for token in BSTOCKS | {USDT}}
+
+
+def approval_step(step):
+    """Trade approval or one of the six zero-only maintenance steps (LD06)."""
+    return step == 'APPROVE' or type(step) is str and step in REVOKE_TOKENS
+
+
 FINAL = frozenset({"FINAL_SUCCESS", "FINAL_REVERT", "ABORTED", "NOT_SUBMITTED"})
 TERMINAL = frozenset({"COMPLETED", "FAILED", "ABORTED"})
 
@@ -97,6 +108,8 @@ class Intent:
     kind: str = "BSTOCK_TRADE"
     max_cash_units: int | None = None
     max_slippage_bps: int = 50
+    # #27 Option A (IDEA-049-C LD04): seconds that must remain before the authority end and each route deadline.
+    authority_margin: int = 0
 
     @property
     def key(self):
@@ -123,6 +136,7 @@ class Intent:
         integer(self.max_slippage_bps)
         if self.max_slippage_bps >= 10000:
             raise Blocked('invalid slippage authorization')
+        integer(self.authority_margin)
         if self.max_cash_units is not None:
             integer(self.max_cash_units, positive=True)
             if self.pay_token == USDT and self.amount > self.max_cash_units * 10**12:
@@ -288,6 +302,9 @@ class Decoder(Protocol):
 
 def validate_payload(intent, step, payload, gates, now, decoder):
     gates.check(intent, now)
+    margin = intent.authority_margin
+    if now + margin >= intent.valid_until:
+        raise Blocked("no submission margin left inside the execution authority")
     if (payload.chain_id != intent.chain_id or type(payload.chain_id) is not int
             or payload.sender != intent.wallet or payload.nonce != gates.nonce):
         raise Blocked("chain/wallet/nonce mismatch")
@@ -301,15 +318,20 @@ def validate_payload(intent, step, payload, gates, now, decoder):
         raise Blocked("gas exceeds authorization budget")
     if not isinstance(payload.data, str) or not re.fullmatch(r"0x(?:[0-9a-fA-F]{2})+", payload.data):
         raise Blocked("malformed calldata")
-    if step == "APPROVE":
-        if payload.to != intent.pay_token or payload.value != 0:
+    if approval_step(step):
+        revoke = step in REVOKE_TOKENS
+        token, amount = (REVOKE_TOKENS[step], 0) if revoke else (intent.pay_token, intent.amount)
+        if revoke and (getattr(decoder, 'mode', None) != 'untrusted'
+                       or getattr(decoder, 'router', None) != intent.router or intent.kind != 'BSTOCK_TRADE'):
+            raise Blocked('allowance recovery requires a stock intent and its selected untrusted router')
+        if payload.to != token or payload.value != 0:
             raise Blocked("approve destination/value mismatch")
         if not re.fullmatch(r"0x095ea7b3[0-9a-fA-F]{128}", payload.data):
             raise Blocked("unknown approve selector/shape")
         if payload.data[10:34] != "0" * 24:
             raise Blocked("noncanonical spender padding")
         if ("0x" + payload.data[34:74].lower() != intent.router
-                or int(payload.data[74:], 16) != intent.amount):
+                or int(payload.data[74:], 16) != amount):
             raise Blocked("approve spender/amount mismatch")
     elif step == "SWAP":
         if payload.to != intent.router or payload.value != 0:
@@ -317,10 +339,13 @@ def validate_payload(intent, step, payload, gates, now, decoder):
         economics = decoder.decode(payload)  # MUST bind decoded fields to bytes.
         for value in (economics.amount, economics.minimum_output, economics.deadline):
             integer(value, positive=True)
+        # Only an untrusted-router decoder may leave the recipient unverified (IDEA-070 B02-U, DEV-23); its
+        # preflight bounds what the router can take instead.
+        unverified = economics.recipient is None and getattr(decoder, "mode", None) == "untrusted"
         if (economics.pay_token != intent.pay_token or economics.receive_token != intent.receive_token
-                or economics.amount != intent.amount or economics.recipient != intent.wallet
+                or economics.amount != intent.amount or (economics.recipient != intent.wallet and not unverified)
                 or economics.minimum_output < intent.minimum_output
-                or not now < economics.deadline <= intent.valid_until
+                or not now + margin < economics.deadline <= intent.valid_until
                 or economics.native_value != payload.value):
             raise Blocked("encoded swap economics mismatch/expired")
     else:
@@ -329,9 +354,20 @@ def validate_payload(intent, step, payload, gates, now, decoder):
 
 def validate_sequence(state, step, payload, gates):
     """Checks across the execution's steps; the remote signer repeats them (larp/signer/service.py)."""
-    if step == "SWAP" and state.attempts:
-        approval = state.attempts[0]
-        if approval.state != "FINAL_SUCCESS" or gates.nonce != approval.payload.nonce + 1:
+    matching = [a for a in state.attempts if a.step == step]
+    if len(matching) > 1:
+        raise Blocked('duplicate execution step')
+    prior = tuple(a for a in state.attempts if a.step != step)
+    if (len({a.step for a in prior}) != len(prior)
+            or any(not approval_step(a.step) or a.state != 'FINAL_SUCCESS' for a in prior)
+            or any(a.step == 'APPROVE' for a in prior[:-1])):
+        raise Blocked('invalid preceding execution steps')
+    if step in REVOKE_TOKENS and any(a.step == 'APPROVE' for a in prior):
+        raise Blocked('allowance cleanup cannot follow trade approval')
+    if step == "SWAP" and prior and prior[-1].step != 'APPROVE':
+        raise Blocked('swap requires final trade approval after cleanup')
+    if prior:
+        if gates.nonce != prior[-1].payload.nonce + 1:
             raise Blocked("approved nonce consumption and current wallet count disagree")
     previous_cost = sum((attempt.gas_used if attempt.state in {"FINAL_SUCCESS", "FINAL_REVERT"}
                          and attempt.gas_used is not None
@@ -342,9 +378,24 @@ def validate_sequence(state, step, payload, gates):
 
 
 class Executor:
-    def __init__(self, store: Store, guards: GuardPort, venue: Venue, signer: Signer, decoder: Decoder):
-        if any(getattr(port, "mode", None) != "fake" for port in (guards, venue, signer, decoder)):
-            raise Blocked("only fake capability bundles are implemented")
+    def __init__(self, store: Store, guards: GuardPort, venue: Venue, signer: Signer, decoder: Decoder,
+                 *, allowance_recovery=False):
+        # A bundle is all fake (offline fixtures), or all live with a swap decoder built from pinned router
+        # evidence (IDEA-070; GAP-29) or an untrusted-router policy bound to a live RPC for its preflight (B02-U).
+        # Never a mix, and never live with UnverifiedRouter.
+        ports = tuple(getattr(port, "mode", None) for port in (guards, venue, signer))
+        fake = ports == ("fake",) * 3 and getattr(decoder, "mode", None) == "fake"
+        live = False
+        if ports == ("live",) * 3:
+            from larp.execution_live.router import PinnedRouterDecoder
+            from larp.execution_live.untrusted_router import UntrustedRouterDecoder
+            live = (type(decoder) is PinnedRouterDecoder
+                    or (type(decoder) is UntrustedRouterDecoder and decoder.rpc is not None))
+        if not (fake or live):
+            raise Blocked("live execution needs live ports and a decoder pinned to router evidence")
+        if type(allowance_recovery) is not bool or allowance_recovery and getattr(decoder, 'mode', None) != 'untrusted':
+            raise Blocked('allowance recovery must explicitly select the untrusted router')
+        self.allowance_recovery = allowance_recovery
         self.store, self.guards, self.venue, self.signer, self.decoder = store, guards, venue, signer, decoder
 
     def create(self, intent: Intent, now: int):
@@ -387,6 +438,15 @@ class Executor:
             raise Blocked("clock regression")
         validate_payload(state.intent, step, payload, gates, now, self.decoder)
         validate_sequence(state, step, payload, gates)
+        if step in REVOKE_TOKENS:
+            if not self.allowance_recovery:
+                raise Blocked('allowance recovery is disabled')
+            self.decoder.allowances(state.intent)  # current code/facet pins; no relaxed swap preflight
+        if step == "SWAP" and getattr(self.decoder, "mode", None) == "untrusted":
+            # The live router state still bounds the swap (B02-U); before this execution's approve, the approve will
+            # overwrite the pay token's allowance.
+            approved = any(a.step == "APPROVE" and a.state == "FINAL_SUCCESS" for a in state.attempts)
+            self.decoder.preflight(state.intent, payload, approved=approved)
 
     def prepare(self, key, now):
         state = self._load(key)
@@ -400,15 +460,32 @@ class Executor:
         if state.prepare_probes >= state.intent.max_prepare_probes:
             raise Blocked('prepare probe budget exhausted')
         gates = self.guards.snapshot(state.intent, now)
-        step = "SWAP" if state.attempts else "APPROVE"
+        approved = any(a.step == 'APPROVE' and a.state == 'FINAL_SUCCESS' for a in state.attempts)
+        step = "SWAP" if approved else "APPROVE"
         # Persist the work budget before any quote/estimate I/O; restart cannot reset it.
         state = self._save(state, replace(state, prepare_probes=state.prepare_probes + 1,
                            last_observed_at=now), "PREPARE_PROBE", gates)
         try:
             gates.check(state.intent, now)
             quote = self.venue.quote(state.intent, gates.nonce)
-            self._validate(state, "SWAP", quote, gates, now)
-            payload = self.venue.approve(state.intent, gates.nonce) if step == "APPROVE" else quote
+            if self.allowance_recovery and not approved:
+                # Validate fresh quote economics before spending cleanup gas. Every zero-only step
+                # remains inside this original intent's authority and aggregate reservation.
+                validate_payload(state.intent, 'SWAP', quote, gates, now, self.decoder)
+                allowances = self.decoder.allowances(state.intent)
+                dirty = sorted(token for token, amount in allowances.items() if amount)
+                if dirty:
+                    step = 'REVOKE:' + dirty[0]
+                    if any(a.step == step for a in state.attempts):
+                        raise Blocked('confirmed cleanup did not clear allowance; no repeat authority')
+            if step in REVOKE_TOKENS:
+                payload = self.venue.revoke(state.intent, REVOKE_TOKENS[step], gates.nonce)
+            else:
+                if self.allowance_recovery and not approved:
+                    self.decoder.preflight(state.intent, quote, approved=False)
+                else:
+                    self._validate(state, "SWAP", quote, gates, now)
+                payload = self.venue.approve(state.intent, gates.nonce) if step == "APPROVE" else quote
             estimate = self.venue.estimate_gas(payload)
             integer(estimate, positive=True)  # Missing estimate cannot use quote fallback.
             payload = replace(payload, gas=max(payload.gas, (estimate * 6 + 4) // 5))
@@ -446,6 +523,7 @@ class Executor:
         signed = self.signer.sign(attempt.attempt_id, attempt.payload, attempt.epoch, attempt.guard_version)
         if not self.signer.verify(attempt.payload, signed):
             raise Blocked("signed bytes/hash do not bind authorized payload")
+        faults.point("F5")
         return self._update_attempt(state, replace(attempt, state="SIGNED_DURABLE",
                                    raw_hex=signed.raw_hex, tx_hash=signed.tx_hash), "SIGNED_DURABLE", gates, last_observed_at=now)
 
@@ -471,8 +549,10 @@ class Executor:
         attempt = replace(attempt, state="BROADCAST_ATTEMPTED", broadcast_at=now,
                           probes=0, next_probe=now)
         state = self._update_attempt(state, attempt, "BROADCAST_ATTEMPTED", gates, last_observed_at=now)
+        faults.point("F7a")
         try:
             tx_hash = self.venue.broadcast(signed, attempt.epoch, attempt.guard_version)
+            faults.point("F7b")
             phase = "PENDING" if tx_hash == attempt.tx_hash else "UNKNOWN"
         except Rejected as rejection:
             # Still non-terminal: reconcile ends it only after the timeout and a nonce check.
@@ -513,6 +593,7 @@ class Executor:
         except Blocked:
             return self._update_attempt(state, attempt, 'RECOVERY_BLOCKED', gates,
                                         blocked_reason='receipt evidence rejected; wallet barrier retained')
+        faults.point("F8")
         absent = outcome.status == 'UNKNOWN' and outcome.sender is None and outcome.nonce is None
         if absent:
             outcome = replace(outcome, sender=state.intent.wallet, nonce=attempt.payload.nonce)
@@ -560,7 +641,7 @@ class Executor:
         return self._update_attempt(state, replace(attempt, state=phase, included_block=outcome.block_hash,
                                                   finalized_at=now if finalized else None,
                                    gas_used=outcome.gas_used), phase, gates, status=status,
-                                   prepare_probes=0 if finalized and attempt.step == 'APPROVE' else state.prepare_probes,
+                                   prepare_probes=0 if finalized and approval_step(attempt.step) else state.prepare_probes,
                                    blocked_reason=("receipt gas unavailable; signed gas allowance retained"
                                                    if finalized and outcome.gas_used is None
                                                    else None if finalized else "canonical finality unproved"))

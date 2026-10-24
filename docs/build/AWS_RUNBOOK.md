@@ -1,11 +1,22 @@
 # AWS runbook: current state and how to resume
 
-Last updated 2026-10-14 (Claude for Yao Zhu). Read this first when continuing the AWS deployment in a new thread. Background and decisions are in [IDEA-046](../ledger/IDEA-046.md) (layout, cost, apply log) and [IDEA-047](../ledger/IDEA-047.md) (host services, review fixes, offline readiness). The full deployment guide is [architecture-deployment.md](architecture-deployment.md).
+Last updated 2026-10-16 UTC (Claude for Yao Zhu; hosts started, see IDEA-066 PC-AWS02). Read this first when continuing the AWS deployment in a new thread. Background and decisions are in [IDEA-046](../ledger/IDEA-046.md) (layout, cost, apply log) and [IDEA-047](../ledger/IDEA-047.md) (host services, review fixes, offline readiness). The full deployment guide is [architecture-deployment.md](architecture-deployment.md).
+
+**2026-10-16 input-preparation update (IDEA-058):** use [GATE_A.md](GATE_A.md)
+for the reviewed dev-shadow settings, read-only metadata/balance capture and
+pinned host-input assembly. Driver/activation/calendar and the four section
+review fixes are on main via PR #81 (`e410e49`), but IDEA-058 also needs #84's
+balance check (IDEA-055), which is on `codex/system-testing-20261012` and not yet on
+main: build from that branch plus IDEA-058, or from main once that integration
+branch is promoted (updated 2026-10-16 after the PR #87 retarget). Yao Zhu supplies the
+public wallet address and SEC contact locally. The user's cost-summary/profile
+tool supplies the separately reviewed measured rehearsal profile. The AWS state
+below is the last recorded state, not a fresh observation on Oct 16.
 
 ## Rules that still apply
 
 - **Spend:** every step that costs money needs Yao Zhu's explicit OK in that thread. Never share AWS passwords or keys in chat or in commits.
-- **Hosts:** they stay off until the team has reviewed and fixed PR #20 (Yao Zhu, 2026-10-14). Do not set `enable_hosts` before that.
+- **Hosts:** PR #20 was reviewed and promoted (PR #81). Yao Zhu approved and applied `enable_hosts` on 2026-10-16 UTC; both hosts now bill while running, even before LARP is installed. Stopping them (disks still bill) or re-planning with `enable_hosts = false` needs the same approval.
 - **Region:** Sydney (`ap-southeast-2`). The organisers said it is fine (SKILL.md F-118). The account's AWS-managed policy blocks Singapore.
 - **Never commit** the ignored files listed below, any state or plan file, or the account ID.
 
@@ -17,16 +28,18 @@ The team's credit project: Free plan, $100 credits, expiring 2027-04-12. Run `aw
 |---|---|---|
 | Terraform state bucket (`deploy/bootstrap`) | 2026-10-14 | cents/month |
 | Budget `larp-dev-monthly`: $90/month, emails at 50/75/90 % of actual spend | 2026-10-14 | free |
-| Core stack (`deploy/aws`, hosts and egress off): VPC, private subnets, S3 gateway endpoint, security groups, KMS key, archive bucket (COMPLIANCE, 82 days), artifact bucket, 3 service secrets, host IAM roles, alarms, an SNS alarm topic with one email subscription, and RDS `larp-dev` | 2026-10-14 | ≈ $24/month in total, almost all the database |
+| Core stack (`deploy/aws`, initially hosts and egress off): VPC, private subnets, S3 gateway endpoint, security groups, KMS key, archive bucket (COMPLIANCE, 82 days), artifact bucket, 3 service secrets, host IAM roles, alarms, an SNS alarm topic with one email subscription, and RDS `larp-dev` | 2026-10-14 | ≈ $24/month in total, almost all the database |
 
 Database `larp-dev`:
 - PostgreSQL 14.24 on `db.t4g.micro`, single-AZ, private, encrypted, IAM authentication.
 - **1-day automated backups**, because the Free plan refuses more. The daily logical backup to the locked archive is separate.
-- **Not migrated yet:** no tables, and no service roles (`roles.sql` not run).
+- **Migrated 2026-10-17** (IDEA-066 PC-AWS06): migrations 001–013 and `roles.sql` applied through an SSM port-forward from Yao Zhu's Mac; 21 tables and the five IAM-only service roles exist.
 
-No EC2 instance, internet gateway, NAT gateway or public IP exists.
+| Hosts and primary egress (`deploy/aws`, Gate A plan, IDEA-066 PC-AWS02): `primary` t3.small (public IPv4, HTTPS-only egress through a new internet gateway on the public route table, development SSM) and `signer` t3.micro (private subnet, no public IP, no SSM), AL2023 x86_64 `ami-0587b5bb1bc9eab99`, encrypted 20 GiB gp3, IMDSv2, termination protection; 6 host and 5 service alarms | 2026-10-16 UTC | ≈ $23/month more |
 
-**Pending on the next core-stack apply (2026-10-15, IDEA-049 WR-L2, #61):** the configuration no longer defines the unused `evidence` service secret (nothing reads it). The next `terraform plan` should show `aws_secretsmanager_secret.service["evidence"]` destroyed (AWS keeps it for the 30-day recovery window) and primary's role policy losing that one read grant, and nothing else from this change.
+Instance IDs: `primary` `i-040fc5fea8b700e9a` (rebuilt 2026-10-16 so SSM works; SSM `Online`; read-only host smoke check passed, IDEA-066 PC-AWS02), `signer` `i-0f8fe5d5fe5ccba36` (also `terraform output host_ids`). No NAT gateway exists. `primary` is provisioned with build `bb46234` from the mirror-CI bundle (IDEA-066 PC-AWS06; units enabled, none started); `signer` carries only the cloud-init role file. The service alarms (`treat_missing_data = breaching`) sit in ALARM until the services publish metrics.
+
+**Applied 2026-10-16 UTC with the host plan (IDEA-049 WR-L2, #61):** the configuration no longer defines the unused `evidence` service secret (nothing reads it). The plan showed `aws_secretsmanager_secret.service["evidence"]` destroyed (AWS keeps it for the 30-day recovery window) and primary's role policy losing that one read grant, and nothing else from this change; both were applied.
 
 The alarm email subscription must be confirmed from the email AWS sent to the account owner's address.
 
@@ -39,6 +52,71 @@ The alarm email subscription must be confirmed from the email AWS sent to the ac
 | `deploy/bootstrap/bootstrap.tfvars`, `deploy/bootstrap/terraform.tfstate` | the state bucket's own (local) state; keep it safe |
 
 Terraform 1.13.5 is at `~/.local/opt/terraform-1.13.5/terraform`, and AWS CLI 2 is on the PATH.
+
+**2026-10-17 check from Isaac's checkout (IDEA-066 PC-AWS01):** those are
+Yao Zhu's local files/tool paths. This Mac has no AWS CLI/Terraform/Session
+Manager plugin on PATH or at the documented/common install locations, no
+`~/.aws/config` or credentials file, no project-local `.aws` directory, no AWS
+environment-variable names in the process or `.env`, and neither private
+Terraform input file. The prepared Gate A directory and reviewed rehearsal
+profile are also absent. No AWS connection or live stack observation was made.
+Resume on the already-configured Mac, or restore access to the same account and
+its existing private backend/input files locally before proceeding. Do not
+initialize a replacement stack to work around missing local files. The last
+recorded applied AWS state above is not a fresh observation.
+
+From the repository root on the configured Mac, this connects and makes a saved
+plan only (no infrastructure apply):
+
+```bash
+aws login --profile larp --region ap-southeast-2
+aws sts get-caller-identity --profile larp --region ap-southeast-2
+
+(
+  set -e
+  test -f deploy/aws/backend.local.hcl
+  test -f deploy/aws/development.tfvars
+  larp_tf_config=$(mktemp)
+  chmod 600 "$larp_tf_config"
+  trap 'rm -f "$larp_tf_config"' EXIT
+  printf '[profile larp-tf]\nregion = ap-southeast-2\ncredential_process = /usr/bin/env AWS_CONFIG_FILE=%s/.aws/config aws configure export-credentials --profile larp --format process\n' "$HOME" > "$larp_tf_config"
+  export AWS_CONFIG_FILE="$larp_tf_config" AWS_PROFILE=larp-tf AWS_REGION=ap-southeast-2
+  export PATH="$HOME/.local/opt/terraform-1.13.5:$PATH"
+  terraform -chdir=deploy/aws init -input=false -reconfigure -backend-config=backend.local.hcl
+  terraform -chdir=deploy/aws plan -input=false -var-file=development.tfvars -out=gate-a.tfplan
+)
+```
+
+**SSM attach order (learned 2026-10-16, IDEA-066 PC-AWS02):** the development SSM policy must be attached before `primary` first boots. If the agent starts without it, it registers the instance for account-wide Default Host Management, saves that on disk and keeps failing after the policy arrives (reboot does not clear it). Without a shell, the fix is to rebuild `primary` (nothing is installed on a fresh host): `aws ec2 modify-instance-attribute --instance-id <primary id> --no-disable-api-termination`, then plan/apply with `-replace='aws_instance.host["primary"]'` (expect 1 add, 3 alarm updates, 1 destroy; the new instance gets termination protection back). Do not enable Default Host Management: it is account-wide and would cover `signer`. When using `aws iam simulate-principal-policy`, pass `--context-entries ContextKeyName=aws:RequestedRegion,ContextKeyValues=ap-southeast-2,ContextKeyType=string`; without it the account's region restriction shows a false `explicitDeny`.
+
+Confirm the account matches the team's existing credit project. This plan uses
+the current flags in `development.tfvars`; if they remain false it does not
+start hosts. For a host-start plan, use the reviewed AMI and three flags in
+"Next steps" step 4, then re-plan using the same refreshing-credential setup.
+Only apply a reviewed saved plan with the spend approval required above. The
+plan block's subshell deletes its temporary AWS config on exit, so a bare
+`terraform apply` afterwards would run without the `larp-tf` profile. Apply in
+a subshell that rebuilds the same refreshing-credential setup (re-run
+`aws login` first if the session has expired; `init` already ran above):
+
+```bash
+(
+  set -e
+  test -f deploy/aws/gate-a.tfplan
+  larp_tf_config=$(mktemp)
+  chmod 600 "$larp_tf_config"
+  trap 'rm -f "$larp_tf_config"' EXIT
+  printf '[profile larp-tf]\nregion = ap-southeast-2\ncredential_process = /usr/bin/env AWS_CONFIG_FILE=%s/.aws/config aws configure export-credentials --profile larp --format process\n' "$HOME" > "$larp_tf_config"
+  export AWS_CONFIG_FILE="$larp_tf_config" AWS_PROFILE=larp-tf AWS_REGION=ap-southeast-2
+  export PATH="$HOME/.local/opt/terraform-1.13.5:$PATH"
+  terraform -chdir=deploy/aws apply gate-a.tfplan
+)
+```
+
+Starting hosts is only infrastructure provisioning: it still needs the exact CI
+bundle, input preparation, migrations, manifest binding and unsigned activation
+below. As checked on 2026-10-17, #98/#49 (CI/bundle), #118–120 (measured profile)
+and #92 (hosted RPC) remain open; #127 tracks the hosted evidence.
 
 ## Log in and run Terraform
 
@@ -58,9 +136,9 @@ Terraform 1.13.5 is at `~/.local/opt/terraform-1.13.5/terraform`, and AWS CLI 2 
 
 ## Next steps, in order
 
-1. **Team review of PR #20** (Keegan, Isaac, Keith), fixes, then merge into `codex/system-testing-20261012`. Re-run CI, and `tools/system_test.py` if code changed (see [SYSTEM_TESTING.md](SYSTEM_TESTING.md)). The runner only accepts `codex/system-testing-*` branches, so for another head push an alias branch at the same commit.
-2. **Evidence service live settings** (Yao Zhu): set every `parameters.*.live` in `config/intelligence/intelligence.v1.json` with provenance, and capture the source terms hashes. Until then `larp-evidence` refuses to start (exit 4). Claude can draft values for approval.
-3. **Release bundle:** download the CI artifact `larp-bundle-x86_64` (the `.tar.gz`, its `.sha256` and the `.release.json` release manifest, kept 90 days) from the `host-bundle` job of the merged head's CI run. Do not rebuild it locally. Check that `sha256sum` of the bundle and of the `.release.json` match the job summary, and record the CI run ID and both SHA-256 values in the activation pack (#49, #62 item 3, [IDEA-049-D](../ledger/IDEA-049-D.md) D-FND-011 and WR-D3). The bundle carries the same manifest as `release-manifest.json`. Upload the `.tar.gz` and `.sha256` to `s3://<artifact bucket>/releases/`.
+1. **Reviewed release.** PR #20 and the later integration/review work were promoted to main by PR #81. IDEA-058 (PR #87) targets `codex/system-testing-20261012`, which also carries #84 (IDEA-055); review/integrate it there, then qualify the exact pushed release head and its CI bundle; use the current accepted branch formats in [SYSTEM_TESTING.md](SYSTEM_TESTING.md) for the system runner. Existing main acceptance does not qualify a later runtime change.
+2. **Evidence settings and terms** (Yao Zhu): Gate A uses the user-approved unsigned `shadow` settings in `config/intelligence/intelligence.shadow.v1.json`, with the corresponding `dev`/`shadow` runtime configuration and `LARP_EVIDENCE_CONFIG_MODE=shadow`. The poller verifies this config against the bound manifest; signed/final operation cannot use these settings. Capture missing source terms and install all original terms bytes in the host artifact store before startup. For Gate B/final, the pending `parameters.*.live` values in `intelligence.v1.json` still need review and provenance; do not bypass them with development mode.
+3. **Release bundle** (from the CI mirror; accepted release builds since 2026-10-17, IDEA-066 PC-DEC01): download the CI artifact `larp-bundle-x86_64` (the `.tar.gz`, its `.sha256` and the `.release.json` release manifest, kept 90 days) from the `host-bundle` job of the merged head's CI run. Do not rebuild it locally. Check that `sha256sum` of the bundle and of the `.release.json` match the job summary, and record the CI run ID and both SHA-256 values in the activation pack (#49, #62 item 3, [IDEA-049-D](../ledger/IDEA-049-D.md) D-FND-011 and WR-D3). The bundle carries the same manifest as `release-manifest.json`. Upload the `.tar.gz` and `.sha256` to `s3://<artifact bucket>/releases/`.
 4. **Start `primary`** (≈ $23/month more; needs OK):
    - Pin a reviewed AL2023 x86_64 AMI ID. To find the latest: `aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64`.
    - In `development.tfvars` set `ami_id`, `enable_hosts = true`, `enable_external_https = true` and, for access during development, `enable_development_ssm = true`. This also starts `signer`, and the service alarms appear.
@@ -70,7 +148,7 @@ Terraform 1.13.5 is at `~/.local/opt/terraform-1.13.5/terraform`, and AWS CLI 2 
    `enable_development_ssm` attaches only to `primary` and requires development mode and `enable_external_https`;
    unsupported combinations fail the plan. It provides no signer access.
 
-   **Open decision before this step: how to reach `signer`.** It has no internet route and no SSM endpoints (IDEA-046 B2, cost), and there is no SSH access. Options, none chosen yet:
+   **Open decision before this step: how to reach `signer`.** It has no internet route and no SSM endpoints (IDEA-046 B2, cost), and there is no SSH access. Options (**(b) chosen 2026-10-17 by Keegan, [IDEA-080](../ledger/IDEA-080.md)**; Yao Zhu builds it, with pass criteria SA1–SA7):
    - (a) an EC2 Instance Connect Endpoint (no hourly charge), with SSH from that endpoint only, during provisioning;
    - (b) temporary SSM interface endpoints (`ssm`, `ssmmessages`, `ec2messages`, about $0.01/hour each per AZ), destroyed after provisioning;
    - (c) a user-data script that fetches the bundle from the artifact bucket and runs `provision.sh` with the pinned hash at boot. This needs no interactive access, but the key file still has to be placed.

@@ -23,6 +23,7 @@ from larp.contracts import Document
 from larp.execution import Blocked, Conflict, Rejected, TERMINAL, digest, possibly_submitted
 from larp.storage.postgres import IntegrityError
 from larp.contracts import ContractError
+from larp.runtime import halts
 
 
 def intent_key(run_id, wallet, intent_id):
@@ -32,9 +33,12 @@ def intent_key(run_id, wallet, intent_id):
 class RunAuthorization:
     """`LiveGuards.authorization`: run facts for one intent, from the journal at the moment of the snapshot."""
 
-    def __init__(self, store, *, run_id, build_id, manifest_sha256=None):
+    def __init__(self, store, *, run_id, build_id, manifest_sha256=None, settlement_hold=None):
         self.store, self.run_id, self.build_id = store, run_id, build_id
         self.manifest_sha256 = manifest_sha256
+        # Untrusted-router mode (IDEA-070 B02-U): True while a terminal execution has no stored final fact, e.g. a
+        # fill settlement refused below its minimum. No new signature until it is resolved.
+        self.settlement_hold = settlement_hold
 
     def facts(self, intent, now_s):
         from larp.runtime.coordinator import halt_reasons
@@ -54,7 +58,12 @@ class RunAuthorization:
             and ((self.manifest_sha256 is not None
                   and registered.get('manifest_sha256') == self.manifest_sha256)
                  or (run['mode'] == 'offline' and self.manifest_sha256 is None)))
-        facts['risk_valid'] = not halted and not run['quarantined']
+        # D-DN-09: under a pausing HALT, only a planned mandatory bStock sell keeps valid risk authority.
+        facts['risk_valid'] = not run['quarantined'] and halts.permits(projection, intent.round_id, intent.intent_id)
+        from larp.strategy.execution_bounds import permitted
+        facts['risk_valid'] = facts['risk_valid'] and permitted(projection, intent, now_s * 1000)
+        if facts['risk_valid'] and self.settlement_hold is not None and self.settlement_hold() is not False:
+            facts['risk_valid'] = False
         last = projection.get('last_decision_ms')
         facts['clock_trusted'] = 'CLOCK' not in halted and (last is None or now_s * 1000 >= last - 1000)
         record = projection.get('round_records', {}).get(intent.round_id)
@@ -159,11 +168,14 @@ class FencedRelease:
     send of an active attempt under this epoch and authority (`ExecutionStore.check_broadcast`), submits them through
     the Web3 Open API (`Web3Broadcaster`), and accepts only the transaction's own hash back."""
 
-    def __init__(self, registry, submitter):
-        self.registry, self.submitter = registry, submitter
+    def __init__(self, registry, submitter, *, clock_s=None, decoder=None):
+        self.registry, self.submitter, self.clock, self.decoder = registry, submitter, clock_s, decoder
 
     def __call__(self, signed, epoch, guard_version):
-        self.registry.check_broadcast(signed, epoch, guard_version)
+        options = {} if self.clock is None else {'now_ms': self.clock() * 1000}
+        if self.decoder is not None:
+            options['decoder'] = self.decoder
+        self.registry.check_broadcast(signed, epoch, guard_version, **options)
         tx_hash = self.submitter.send(signed.raw_hex)
         if type(tx_hash) is not str or tx_hash.lower() != signed.tx_hash.lower():
             raise Blocked('submission returned another transaction hash')

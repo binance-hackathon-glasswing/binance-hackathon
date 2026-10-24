@@ -94,7 +94,9 @@ class HostUnits(unittest.TestCase):
         env = (examples / 'evidence.example.env').read_text(encoding='utf-8')
         self.assertIn('LARP_ARTIFACT_ROOT=/var/lib/larp-evidence', env)
         names = [line.split('=', 1)[0] for line in env.splitlines() if '=' in line and not line.startswith('#')]
-        self.assertEqual(names, ['LARP_SEC_USER_AGENT', 'LARP_ARTIFACT_ROOT'])  # no key or secret setting
+        self.assertEqual(names, ['LARP_SEC_USER_AGENT', 'LARP_ARTIFACT_ROOT', 'LARP_EVIDENCE_CONFIG_MODE'])
+        self.assertIn('LARP_EVIDENCE_CONFIG_MODE=live', env)  # shadow is opt-in, never the final/live default
+        self.assertIn('--shadow-runtime-config /etc/larp/runtime.json', value(directives('larp-evidence'), 'ExecStart')[0])
 
 
 if __name__ == '__main__':

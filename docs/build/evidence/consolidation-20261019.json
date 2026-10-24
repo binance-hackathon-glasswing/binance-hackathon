@@ -1,0 +1,91 @@
+{
+  "schema": "CanonicalConsolidationEvidence.v1",
+  "id": "CONS-01",
+  "date": "2026-10-19",
+  "canonical_branch": "codex/system-testing-20261012",
+  "starting_commit": "eb430b8815029f87a285ab42fea9fa10ed88e94d",
+  "runtime_test_source": "bd4dbeef652819a15ceb195588fc987b25b40f30",
+  "promotion_pr": 195,
+  "noticeboard_pr": 133,
+  "noticeboard_head_excluded": "31182ce404022192963b701504d8762c70bab3c3",
+  "retained_pr_heads": {
+    "194": "f32d59563b53f2abc7f9983f5c3b03d262cd12d5",
+    "193": "89ba2896ba2272071ce983a8058d33da744fa6ac",
+    "192": "75e5d7f707f8f87c17364b1dcfd2cadbba02a8a1",
+    "191": "90ef371c54f892bfb5c626bb1640067cc53e68b7",
+    "172": "d1682ea0c2d7cbfc64231ed87713fc6f5be1d932",
+    "139": "757e4f89653510486c9010644a41d617894f6bdc"
+  },
+  "full_suite": {
+    "passed": 2162,
+    "skipped": 7,
+    "subtests_passed": 3628,
+    "seconds": 154.04,
+    "python": "3.12.15",
+    "postgres": "14.24",
+    "platform": "Linux aarch64",
+    "environment": "DISPOSABLE_LOCAL_DOCKER"
+  },
+  "systemd": {
+    "passed": 5,
+    "subtests_passed": 5,
+    "seconds": 9.57
+  },
+  "remaining_external_fixture_skips": [
+    "tests/intelligence/test_source_link_trust.py:115",
+    "tests/marketdata/test_recorded.py:29"
+  ],
+  "initial_environment_run": {
+    "passed": 2157,
+    "failed": 5,
+    "skipped": 7,
+    "cause": "READ_ONLY_ACTIVATION_DIR_AND_CONTAINER_PROC_NAMESPACE",
+    "production_code_changed_to_fix": false
+  },
+  "docker": {
+    "test_image": "sha256:750132bb93c250e52f14f9ea69ce517f993414f2f5060b7af58e78dcaabbb004",
+    "runtime_image": "sha256:0c8c28f51ba58175e5d85427030544bf378e4f1d9ce5e75b436b14ed3e599275",
+    "build": "PASS",
+    "network_disabled_smoke": "PASS"
+  },
+  "runtime_demo": "PASS_VALID_JSON",
+  "renderer": "PASS",
+  "interim_provenance": "PASS_EXACT_REPRODUCTION",
+  "preserved_open_gap_ids": 62,
+  "preserved_ledger_index_ids": 79,
+  "original_evidence_files_byte_identical": 15,
+  "org_ci": {
+    "run": 39271681737,
+    "runtime_job": 118125327031,
+    "executed_steps": 0,
+    "status": "NOT_STARTED_ACCOUNT_BILLING_SPENDING_LIMIT"
+  },
+  "terraform_source_changed": false,
+  "host_bundle_published": false,
+  "aws_operations": false,
+  "wallet_key_access": false,
+  "funding_or_signing": false,
+  "real_provider_model_receiver_calls": false,
+  "policy_adoption": false,
+  "deployment": false,
+  "ready_to_install": false,
+  "runtime_component_git_listing_sha256": "924a0ad67361405586aabaa5b14c6a1182a189579542f690cc70839b6d1d3f19",
+  "new_local_links_checked": 361,
+  "final_changes_after_test_source": "DOCUMENTATION_AND_RESULT_EVIDENCE_ONLY",
+  "promotion": {
+    "pull_request": 195,
+    "merge_commit": "dfabdea27b2125daaee23b7a2b997d29adc2171d",
+    "merged_at": "2026-10-19T14:55:15Z",
+    "absorbed_prs": {
+      "139": "MERGED",
+      "172": "MERGED",
+      "191": "MERGED",
+      "192": "MERGED",
+      "193": "MERGED",
+      "194": "MERGED"
+    },
+    "only_open_pr": 133,
+    "canonical_workspace_selected": true,
+    "old_branch_deletion_performed": false
+  }
+}

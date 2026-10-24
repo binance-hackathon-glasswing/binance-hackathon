@@ -601,3 +601,218 @@ deployment readiness.
 
 B-DEC-08 (gas reservation margin) is added to the DECISION-NEEDED table above.
 WR-B does not change the PARTIAL REVIEW / DEPLOYMENT BLOCKED status.
+
+## WR-38 — #38 current-convention characterization tests (2026-10-16)
+
+Owner: Claude Code session, branch `claude/issue-38-convention-tests` from base
+`7a8a246` on `codex/system-testing-20261012`. Part of #38 only. #38's four
+acceptance criteria are team decisions or measurements (B-DEC-02 risk mark,
+B-DEC-03 concentration/staggered build, B-DEC-06 exit costs; C's quote, fill
+and gas measurements) and stay open; nothing here decides, adopts or accepts
+them. Scope: tests in `tests/strategy/` that pin three conventions the issue
+says are untested, so a later decision that changes one must change its test
+on purpose. No production code or profile change is planned. Synthetic only:
+no keys, signing, chain, ai-seeds or AWS.
+
+Already covered at base (not repeated): the 25%/90% hard triggers are strict
+at exact fractions (`test_b_req_015_016_*`), drift between 20%/80% and
+25%/90% is held (`test_p06`, `test_p07`, `test_no_trim_for_drift_without_a_prior_trigger`),
+and a triggered trim goes back to 20%/80% even after crossing below the trigger
+(`test_trim_replanning.py`).
+
+### Pass criteria (registered before any test is written)
+
+All on the IDEA-037 equal-weight fixture (`tests/strategy/test_equal_weight.py`
+`ew`/`five_names`: 200 USDT book, 100 USDT token mark, 20%/80% operating,
+25%/90% hard lines).
+
+- **WR38-1 (REQ005/ASM004, B-DEC-02 open): risk equity is the token mark, not
+  executable liquidation proceeds.** Four names held at 4,500 units each
+  (22.5% each, gross 90%, no trim). Adding an exact-size SELL quote for every
+  held name whose `cash_units` is 10% below the mark leaves `plan()`'s
+  `risk_equity_lower_bound_units`, `valuation_status` and `risk_state`
+  (`peak_units`, `run_halt`, `deep_cut`, `daily_halt`) identical to the run
+  without quotes, with no halt set, and leaves the policy's targets unchanged.
+  The test also computes the quote-implied liquidation equity (cash + BNB +
+  quoted proceeds) and asserts it is at or below the 92% run-halt line, so the
+  test records a case where the two conventions disagree on the halt.
+- **WR38-2 (REQ011/ASM013, B-DEC-02/06 open): entry ranking uses the static
+  `measured_roundtrip_bps`, not the exact-size quote's all-in cost.** Five-name
+  fixture (measured NVDAB 20 < GOOGLB 30 < TSLAB 40 < MSFTB 50 < SKHYB 60).
+  Exact-size BUY quotes give NVDAB a 15 bp spread and 20,000 gas units and
+  GOOGLB zero spread and zero gas, both inside the cost reserve and the 50 bp
+  entry cap. The test asserts the all-in cost (spread + fee + gas value, as the
+  planner computes it) of NVDAB is strictly higher than GOOGLB's, yet the single
+  planned intent is a non-mandatory NVDAB BUY, and the policy still proposes
+  entries for exactly the four lowest measured costs whatever the quotes.
+- **WR38-3 (REQ024/REQ042, B-DEC-03 open): a fresh four-name book takes four
+  distinct sessions.** From all cash, each session runs policy → exact-size
+  quotes → plan → reservation → final fill and sets `last_discretionary_session`.
+  Each of sessions 80–83 yields exactly one non-mandatory BUY intent, for a name
+  not held before; a second plan in the same session yields no intent and a
+  `DISCRETIONARY_CADENCE` rejection; the policy proposes entries for every unheld
+  name in session 80 at once (the planner, not the policy, staggers the build);
+  three names are held after session 82 and four only after session 83; session
+  84 plans nothing.
+- **WR38-4 mutation checks** (each mutation of committed code is restored with
+  `git checkout` of the file): M1 remove the planner's one-child `break` → WR38-3
+  fails; M2 remove the `DISCRETIONARY_CADENCE` check → WR38-3 fails; M3 make the
+  planner's equal-weight action sort ignore `measured_roundtrip_bps` → WR38-2
+  fails; M4 feed `update_risk` a 10% lower equity in the planner → WR38-1 fails.
+- **WR38-5:** no production code changes; the full suite passes with no existing
+  test changed, skipped or removed; counts recorded below against base `7a8a246`
+  on the same machine. A test that contradicts a documented convention is
+  recorded as a finding, not fixed by changing policy.
+
+### WR-38 results (2026-10-16)
+
+Tests: `tests/strategy/test_wr38_conventions.py` (commit `5368b27`), three tests
+plus four subtests. All pass on unchanged production code; no production code,
+profile or existing test was changed, skipped or removed.
+
+| Criterion | Result |
+|---|---|
+| WR38-1 | PASS. With 10%-below-mark sell quotes, risk equity stays 200,000,000 (COMPLETE), peak 200,000,000, no halt, same targets; quote-implied liquidation equity is 182,000,000 = 91% of peak, below the 92% run-halt line. |
+| WR38-2 | PASS. NVDAB (measured 20 bp) all-in quote cost 80,000 units (about 20 bp of a 39.98 USDT order, inside the 100,000-unit reserve) > GOOGLB (measured 30 bp) 0 units; the one planned intent is a NVDAB BUY; policy entries are the four lowest measured costs, SKHYB `NO_PORTFOLIO_CAPACITY`. |
+| WR38-3 | PASS. Session 80 policy proposes all four entries at once; sessions 80–83 each plan one non-mandatory BUY for a new name (fixture tie on measured cost, so GOOGLB, MSFTB, NVDAB, TSLAB); a same-session replan gives no intent and `DISCRETIONARY_CADENCE`; session 84 plans nothing with four names held. |
+| WR38-4 | PASS. M1 (one-child `break` → `pass`): WR38-2 and WR38-3 fail. M2 (cadence check → `if False:`): WR38-3 fails in all four session subtests. M3 (measured cost removed from the equal-weight action sort): WR38-2 fails. M4 (`update_risk` fed `E * 9 // 10`): WR38-1 fails (WR38-2/3 also fail on `NEW_RISK_HALTED`). Each mutation was restored from the committed `larp/risk/planner.py`; tree clean afterwards. |
+| WR38-5 | PASS. Full suite (Linux container, Python 3.12.3, PostgreSQL 16 on loopback, database `larp_d`): base `7a8a246` **1546 passed, 7 skipped, 2147 subtests, 0 failed** (298 s); head `5368b27` **1549 passed, 7 skipped, 2151 subtests, 0 failed** (321 s). The difference is exactly the three new tests and four subtests. |
+
+Findings (recorded, not acted on; no policy changed):
+- WR38-1 confirms the issue: at the token mark a 90%-gross book reads 100% of
+  peak while the same book's quoted liquidation value would already trip the 92%
+  run halt. Whether risk should use executable liquidation marks is B-DEC-02.
+- WR38-2 confirms entry ranking ignores the exact-size quote's spread and gas.
+  Whether ranking should use actual-size all-in cost is B-DEC-02/B-DEC-06 and
+  needs C's measurements.
+- WR38-3 confirms the planner staggers a fresh build over at least four distinct
+  sessions, unlike the simultaneous initial build in `tools/idea018/mc_run.py`.
+  Re-running that evaluation with production cadence is B-DEC-03 / Keith work.
+- No test contradicted a documented convention.
+
+Still open for #38 (owners per the B-DEC table): freeze marked vs liquidation
+equity and covariance/common-factor risk acceptance (team+B, B-DEC-02/03);
+measure and rank all-in cost with gas at actual order sizes (C measurements,
+B-DEC-02/06); four-session staggered evaluation and stressed correlated-loss
+results (Keith+B, B-DEC-03). WR-38 does not change the PARTIAL REVIEW /
+DEPLOYMENT BLOCKED status.
+
+## D-DN-09: HALT split by reason (decision and pre-registered criteria, 2026-10-16)
+
+**Decision (Keegan, section B, 2026-10-16):** a HALT is split by reason. This settles item 006 above, IDEA-049-D D-DN-09, #34 criterion 1 and #52 criterion 1.
+
+- **Block every signature, as today:** `CLOCK`, and any HALT reason that is not listed as pausing (fail closed). The integrity quarantine also stays a separate, total fence.
+- **Pausing (new spending and discretionary trading only):** `DELIVERY_DEADLINE` and `REPEATED_FAILURES`. Under a HALT whose reasons are **all** pausing, agreed mandatory reductions still execute: a planned `mandatory` bStock SELL, which covers Class 1 and falsifier exits, the deep cut, hard-cap trims and the terminal flatten. Every existing check still applies, including fresh executable quotes, fencing and epoch, reservations, the pre-execution audit record, the registered version and expiry. BUYs, gas top-ups and every non-mandatory intent stay blocked.
+
+Branch `claude/d-dn-09-halt-split` from `codex/system-testing-20261012` at `1388f80`. It uses synthetic tests only: no keys, chain, ai-seeds or AWS.
+
+**Pass criteria (registered before any test is written):**
+- **HS1, classification:** one shared helper decides, from the projection, whether a planned intent may proceed under the current HALT. It allows nothing under `CLOCK`, under a mix that includes `CLOCK`, or under an unknown reason. Under pausing-only reasons it allows exactly the planned intents with `mandatory: true`, `side: SELL` and kind `BSTOCK_TRADE`.
+- **HS2, planning:** under a pausing-only HALT, with the version registered, the coordinator runs the risk planner with **no policy proposal**. It keeps only the mandatory bStock SELL intents and their reservation deltas, and records any dropped intent IDs.
+  - The round is still logged, with `HALTED:<reasons>` in its errors, and the policy state does not advance.
+  - Under `CLOCK`, the plan stays empty as today.
+  - The `REPEATED_FAILURES` probe still discards everything else: a halted BUY round places no command.
+- **HS3, claim gate:** under a pausing-only HALT, `PostgresStore.command` returns a command only if the open round's record plans that intent as a mandatory bStock SELL and the command payload agrees; otherwise `Conflict`. The driver's `waiting` and `reauthorize` offer only those intents. Under `CLOCK` or quarantine they offer nothing.
+- **HS4, signing gates:** `RunAuthorization.facts` gives `risk_valid` true under a pausing-only HALT only for a planned mandatory sell. `ExecutionStore.check_signing_run`, which the signer service also calls, refuses everything else under any HALT.
+- **HS5, end to end on PostgreSQL:**
+  - A `DELIVERY_DEADLINE` HALT raised after the approval of a mandatory evidence-falsifier SELL no longer stops it: the swap is signed, broadcast and settled, and the position goes to 0.
+  - The same HALT raised as `CLOCK` still stops the swap: only the approval is signed. This is `test_e5_a`'s proof, moved to `CLOCK` on purpose.
+  - Reconciliation under a HALT continues as before.
+- **HS6:** a mutation of each gate is caught. The full suite shows no new failures against the base `1388f80` (1581 passed, 7 skipped locally). Existing tests change only where they encoded the old "every HALT blocks every signature" rule, and each such change is listed here.
+
+### D-DN-09 results (2026-10-16)
+
+- **Order of commits:** criteria in `7ac2771`, red tests in `ea8e5ee`, implementation in `89282bc`.
+  - **The red run:** 8 failing (HS1–HS5). The 6 passing were the CLOCK, pending-BUY and e5 cases, which behave correctly before and after.
+  - **Two test corrections after red, listed here as HS6 requires:**
+    - `4d708bb`: HS3 reauthorizes before claiming, because the HALT event is a commit that moves the run version, as for any command planned before a later commit (PR #66 R3). It also collects each HS test once: importing or subclassing another test case had re-run its tests.
+    - `b743b64`: HS3 asserts the HALT gate's own `halted` refusal, so a disabled gate cannot hide behind the version check.
+- **Existing test changed on purpose:** `tests/runtime/test_round_driver_service.py::Halt::test_e5_a_halt_after_the_approval_stops_the_swap_signature` now raises `CLOCK`, not `DELIVERY_DEADLINE`. Under the decision, a pausing HALT lets that mandatory falsifier SELL finish (HS5). No other existing test changed: the signer, supervision and reauthorization HALT tests already used `CLOCK` or a BUY.
+- **HS1–HS5: PASS.** `tests/runtime/test_halt_split.py` has 12 tests and 7 subtests.
+  - Under `DELIVERY_DEADLINE` or `REPEATED_FAILURES`, the mandatory evidence-falsifier SELL is planned, claimed, signed, broadcast and settled, and the position goes to 0.
+  - A non-mandatory copy and its reservation are dropped, and its ID is recorded in `halt_dropped`.
+  - A pending BUY is refused.
+  - Under `CLOCK`, a mix including `CLOCK`, or an unknown reason, nothing is planned, reauthorized, offered, claimed or signed.
+- **HS6 mutations:** 12 run, 10 caught on the first pass, and M8 caught after `b743b64`.
+  - **Caught:** CLOCK treated as pausing; mandatory flag ignored; kind ignored; pausing check removed; coordinator never pauses; coordinator keeps every intent; dropped reservations kept; command-store gate off; driver reauthorize gate off; execution guard off; signer run check off.
+  - **Two survive, both redundant guards behind the version check:**
+    - The driver's `waiting` filter: a command cannot be current under a HALT that does not permit it, because the HALT commit makes it stale and `reauthorize` refreshes only permitted ones.
+    - The command store's payload-agreement check: the payload and the round plan are written from the same intent.
+- **Full suite** (PostgreSQL 16.15, Python 3.12.3): base `1388f80` 1581 passed, 7 skipped. This branch at `b743b64`: **1593 passed, 7 skipped, 2201 subtests, 0 failed** (+12).
+- **Closes:** #34 criterion 1 (decision recorded, and mandatory requirements now execute under pausing HALTs) and #52 criterion 1. #52's criteria 2 and 3 were already met by PR #66.
+- **Not changed:** mirror CI has not run on this branch yet. D-DN-10 (automatic `CLOCK` clear) is decided (PR #113) but not built.
+
+## PF-01 — delegated policy dispositions (2026-10-21 SGT)
+
+[IDEA084](IDEA-084.md) records Isaac's explicit delegated decisions: B-DEC01
+selects preferred qualified S1 and measured numeric-cap construction; B-DEC02
+uses marked NAV with separate liquidation reporting and actual-size cost ranking;
+B-DEC03 accepts concentrated/correlated and unproven-economic-edge risk with
+bounded S1 opening; B-DEC04 omits an additional unbuilt regime governor; B-DEC05
+retains decided DEV20 omission; B-DEC06 keeps measured finite exit slippage/cost
+gates; B-DEC07 confirms existing mandatory minimum/profit/cadence bypasses with
+all integrity/execution controls; B-DEC08 selects full bounded-action gas rather
+than optimistic quote-only reservation. #55 suppresses healthy-name cap sales
+caused solely by another missing mark. Exact numeric inputs/approval, affected
+implementation/tests, cost/coverage reports and actual host qualification remain.
+This accepts named policy risks, not a positive economic experiment verdict.
+Historical proposals, frozen criteria and results above are unchanged.
+
+## LD05-Q01 — abnormal finalized outcomes, sustained quarantine (2026-10-21; prospective)
+
+Keegan requests steps 2–4 using recommended decisions. PF-09 selects sustained
+quarantine: no automatic continuation from uncertain ownership. Implement explicit
+ABNORMAL observations for finalized bStock transfers violating the exact input/minimum
+output contract. Persist raw signed token deltas and actual gas separately from normal
+fills, immutable incidents and accounting uncertainty; no invented received assets or
+normal realized P&L. Receipt identity/finality/malformed evidence still fail closed.
+
+Pass criteria before execution: Q1 zero/short output, wrong input and unrelated supported
+token movement become abnormal facts with exact deltas/gas; Q2 reducer charges actual
+gas once and records raw outcomes without fabricating normal fill accounting; Q3 all
+signing remains withheld from durable abnormal outbox publication through replay/restart,
+including mandatory sells; Q4 incident/quarantine never automatically clears, normal
+approval/revert/fill behavior remains; Q5 targeted and mirror full suite pass.
+
+### LD05-Q01 implementation / local verification (2026-10-21)
+
+Explicit ABNORMAL I4 facts retain canonical identity, raw signed token deltas and gas;
+normal exact-input/minimum-output constraints remain. Accounting charges actual gas
+once and stores unreconciled asset movements without a fabricated normal fill, basis
+or P&L. A durable outbox fence independently blocks signer persistence and broadcast
+before projection ingestion; the journaled incident blocks runtime planning/signing
+and survives replay. No automatic clear or continuation. Reconciliation/publication
+remains possible; unsupported native/malformed proofs keep existing refusal behavior.
+Local component checks: 245 passed / 9 environment skips / 142 subtests (risk, Gate A,
+models, signer assembly/mode and receipt paths). PostgreSQL service/replay acceptance
+runs on mirror CI. The first mirror run 39610340438 was cancelled after identifying a
+nested locked read in the new regression test; 122d04b moves that read outside the
+transaction. This is a test repair, not a claimed full-suite PASS.
+
+### LD05-Q01 full-run findings / correction (2026-10-21)
+
+Run39611819368 at122d04b completed with 11 failures,2408 passes,7 skips,3786 subtests.
+The signer-role cases expose missing SELECT privileges on execution_observations for
+its new independent fence. a208c10 grants only(run_id,observation) SELECT; full-table
+SELECT and all writes remain refused. Real-role/registry/policy tests now53 passed,
+241 subtests on disposable PostgreSQL14.24. The two new abnormal fence/service replay
+cases and the original service/replay test pass locally (3/3). The broader local DB
+run before the grant had536 passes/10 related failures/1178 subtests, consistent with
+that permission defect. No production role or host was changed.
+
+Correction to the earlier suspected nested-lock explanation: local reproduction of
+both new tests completes normally. The longer full run disclosed the role permission
+defect above; it was not evidence of a production deadlock. The nested test read was
+still simplified in122d04b. Do not describe either failed/cancelled run as PASS.
+
+### LD05-Q01 canonical acceptance — PASS (2026-10-21)
+
+PR231 merged at b22207e under Keegan's explicit repository-merge exception for the
+pending branch CI conclusion. The new canonical mirror39617977531 finalized all
+four jobs SUCCESS:2416 tests/3808 subtests, separate real-systemd5/5, Docker/demo and
+both-role bundle qualification. This includes real signer-role privileges, independent
+outbox fencing, service/restart/replay and exact abnormal gas/accounting cases. The
+verified original artifact is12352993133; [full receipt](../build/evidence/ab-rel-rc2-20261021.json).
+LD05 repository implementation/qualification is complete. Production role grant,
+actual host/drill acceptance and human recovery after quarantine remain separate;
+no production SQL or host was changed and no automatic resume is introduced.

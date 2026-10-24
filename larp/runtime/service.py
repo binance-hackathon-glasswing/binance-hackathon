@@ -32,7 +32,7 @@ EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED = 2, 3, 4
 
 
 class NotIntegrated(ContractError):
-    """A configuration asks for a path that is not built yet: a hosted model assessor (DR-11)."""
+    """A configuration asks for an assessor that is not integrated (DR-11)."""
 
 
 class StartRefused(ContractError):
@@ -104,6 +104,10 @@ def validate_config(value):
     for key in ('max_failures', 'clear_after'):
         if type(value[key]) is not int or value[key] < 1:
             raise ContractError('Invalid positive integer setting: ' + key)
+    # D-DN-04 (IDEA-049-D LD13): optional, no default; Isaac decides the value from measured dispatch/ACK delays.
+    age = value.get('delivery_age_halt_seconds')
+    if age is not None and (type(age) is not int or age < 1):
+        raise ContractError('Invalid positive integer setting: delivery_age_halt_seconds')
     interval = value['interval_seconds']
     if type(interval) not in (int, float) or not math.isfinite(interval) or interval <= 0:
         raise ContractError('Invalid runtime interval')
@@ -136,7 +140,55 @@ def open_store(config):
 DRIVER_KEYS = ('execution', 'assessor', 'intelligence_mode', 'evidence_root', 'market_artifact_root', 'cadence_ms',
                'strategy_profile_file', 'strategy_profile_sha256', 'session_calendar_file', 'session_calendar_sha256',
                'issuers')
-OPTIONAL_DRIVER_INTEGERS = ('expiry_grace_ms', 'day_roll_window_ms', 'max_quote_rounds', 'max_quote_requests')
+OPTIONAL_DRIVER_INTEGERS = ('expiry_grace_ms', 'day_roll_window_ms', 'max_quote_rounds', 'max_quote_requests',
+                            'balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps')
+# IDEA-055 (#36): chain-balance reconciliation. Required in dev and live; account-specific, never committed.
+# `price_jump_check_bps` is the price-jump guard's threshold (IDEA-055 PR 4); its hold lasts the maximum age.
+# The RPC is `balance_rpc_providers`, an ordered list of {url, source_id} tried in turn (PR 5), or the legacy single
+# provider `balance_rpc_url` + `balance_rpc_source_id`.
+BALANCE_KEYS = ('balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps')
+LEGACY_RPC_KEYS = ('balance_rpc_url', 'balance_rpc_source_id')
+MAX_BALANCE_PROVIDERS = 4
+
+
+def balance_providers(d):
+    """[{url, source_id}] in order from either form, or None when neither form is named."""
+    listed = d.get('balance_rpc_providers')
+    legacy = [k for k in LEGACY_RPC_KEYS if d.get(k) not in (None, '')]
+    if listed is not None and legacy:
+        raise ContractError('Name balance_rpc_providers or the legacy balance_rpc_url pair, not both')
+    if listed is None:
+        if not legacy:
+            return None
+        listed = [dict(url=d.get('balance_rpc_url'), source_id=d.get('balance_rpc_source_id'))]
+    if type(listed) is not list or not 0 < len(listed) <= MAX_BALANCE_PROVIDERS:
+        raise ContractError(f'balance_rpc_providers must list 1 to {MAX_BALANCE_PROVIDERS} providers')
+    for p in listed:
+        if (type(p) is not dict or set(p) != {'url', 'source_id'} or type(p['url']) is not str
+                or not p['url'].startswith('https://') or type(p['source_id']) is not str or not p['source_id']):
+            raise ContractError('Each balance RPC provider needs an HTTPS url and a source_id')
+    if len({p['source_id'] for p in listed}) != len(listed):
+        raise ContractError('Balance RPC source IDs must be unique')
+    return [dict(url=p['url'], source_id=p['source_id']) for p in listed]
+
+
+def balance_settings(d, mode):
+    """The balance-check settings of a driver block, or None for an offline/paper run that names none of them."""
+    present = [k for k in BALANCE_KEYS if d.get(k) not in (None, '')]
+    named = d.get('balance_rpc_providers') is not None or any(d.get(k) not in (None, '') for k in LEGACY_RPC_KEYS)
+    if not present and not named and mode not in ('dev', 'live'):
+        return None
+    missing = [k for k in BALANCE_KEYS if k not in present] + ([] if named else ['balance_rpc_providers'])
+    if missing:
+        raise ContractError('Missing balance-check settings: ' + ','.join(missing))
+    providers = balance_providers(d)
+    interval, max_age = d['balance_check_interval_ms'], d['balance_check_max_age_ms']
+    if type(interval) is not int or type(max_age) is not int or not 0 < interval <= max_age:
+        raise ContractError('Invalid balance-check interval or maximum age')
+    jump = d['price_jump_check_bps']
+    if type(jump) is not int or not 0 < jump <= 10_000:
+        raise ContractError('Invalid price-jump threshold')
+    return dict(providers=providers, interval_ms=interval, max_age_ms=max_age, price_jump_bps=jump)
 
 
 def _pinned_json(path, sha256, what):
@@ -146,12 +198,31 @@ def _pinned_json(path, sha256, what):
     return json.loads(raw)
 
 
+def quote_verifier(d, profile, *, wallet, rpcs, projection):
+    """The market port's quote verifier (IDEA-088, SJ-11-QV01), or None when the driver block names no
+    `untrusted_router_policy_file` / `_sha256` pair; without one every quote stays CAPABILITY_PROOF_REQUIRED.
+
+    The policy is the signer's own UntrustedRouterPolicy.v1 (IDEA-070 B02-U, DEV-23), loaded by its pinned hash and
+    bound to the balance RPC providers for the live router preflight. A missing input refuses the start."""
+    from larp.execution_live.config import untrusted_router_settings
+    settings = untrusted_router_settings(d)
+    if settings is None:
+        return None
+    if not rpcs:
+        raise ContractError('The untrusted-router quote verifier needs balance_rpc_providers for its preflight')
+    from larp.execution_live.untrusted_router import load_policy
+    from larp.marketdata.quote_verifier import ProviderRpc, UntrustedQuoteVerifier
+    scale = (projection.get('portfolio') or {}).get('bnb_decimals')
+    return UntrustedQuoteVerifier(load_policy(*settings).bind(ProviderRpc(rpcs)), profile, wallet=wallet,
+                                  bnb_decimals=scale)
+
+
 def build_driver(config, store, secrets, *, clock_ms=None):
     """The round driver (IDEA-048, IDEA-050) from the `driver` block of the manifest-bound runtime configuration.
 
     `execution: "shadow"` ends every intent unsigned; `execution: "service"` hands committed commands to the execution
-    service (larp/execution_live/loop.py) and journals its observations. Hosted model assessors (DR-11) are not
-    integrated: asking for one raises NotIntegrated. Any other missing or inconsistent input is a ContractError, which
+    service (larp/execution_live/loop.py) and journals its observations. AIand/OpenAI routing is integrated for
+    shadow use or explicitly reviewed service/live use through a bounded background lane. Missing or inconsistent input is a ContractError, which
     `main` turns into a start refusal (exit 4)."""
     from larp.integration.runtime import ContextBuilder, RuntimePlanner, StrategyPolicy, initial_policy_state
     from larp.integration.settlement import ExecutionBridge
@@ -163,8 +234,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     from larp.marketdata.port import MarketPort, NativeGasQuotePort
     from larp.marketdata.web3 import Artifacts, Web3Client
     from larp.runtime.coordinator import Coordinator
-    from larp.runtime.driver import (DayRoll, EvidenceWork, MarketFeed, RoundDriver, RuntimeHealth, ServiceExecution,
-                                     SessionCalendar, ShadowExecution)
+    from larp.runtime.driver import (BalanceCheck, DayRoll, EvidenceWork, MarketFeed, RoundDriver, RuntimeHealth,
+                                     ServiceExecution, SessionCalendar, ShadowExecution)
     from larp.sources.store import FileArtifacts, SQLiteEvidenceStore
     clock_ms = clock_ms or (lambda: time.time_ns() // 1_000_000)
     d = config.get('driver')
@@ -183,18 +254,32 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     if d['execution'] == 'service' and 'expiry_grace_ms' not in d:
         raise ContractError('Service execution needs expiry_grace_ms')
     if d['assessor'] not in ('deterministic', 'aiand_routed'):
-        raise NotIntegrated('Only the deterministic assessor is integrated (DR-11)')
-    if d['assessor'] == 'aiand_routed' and (d.get('execution') != 'shadow' or config.get('mode') == 'live'):
-        raise ContractError('Experimental AIand routing requires shadow execution; live adoption is not approved')
+        raise NotIntegrated('Supported assessors are deterministic and aiand_routed (DR-11)')
+    signed_model = d['assessor'] == 'aiand_routed' and (d['execution'] == 'service' or config.get('mode') == 'live')
+    if signed_model and (d['execution'] != 'service' or type(d.get('model_adoption_ref')) is not str
+                         or not d['model_adoption_ref'].strip()):
+        raise ContractError('Signed routed assessments need service execution and a reviewed model_adoption_ref')
     if d['assessor'] == 'aiand_routed' and any(type(d.get(k)) is not str or not d[k].strip() for k in (
             'model_routing_file', 'model_routing_sha256', 'model_budget_root')):
         raise ContractError('AIand routing needs a pinned file and shared model budget root')
     mode = config.get('mode', 'offline')
+    if d['intelligence_mode'] == 'shadow' and (mode != 'dev' or d['execution'] != 'shadow'):
+        raise ContractError('Shadow evidence settings require an unsigned dev run')
+    if mode in ('dev', 'live') and d['intelligence_mode'] != 'live' and not (
+            mode == 'dev' and d['execution'] == 'shadow' and d['intelligence_mode'] == 'shadow'):
+        raise ContractError('Hosted runs require live settings or explicit dev-shadow settings')
     profile = _pinned_json(d['strategy_profile_file'], d['strategy_profile_sha256'], 'Strategy profile')
     if type(profile) is not dict or profile.get('schema') != 'StrategyProfile.v1':
         raise ContractError('Expected a StrategyProfile.v1 file')
     if mode in ('dev', 'live') and profile.get('mode') != 'LIVE':
         raise ContractError('A dev or live run needs a LIVE strategy profile')
+    from larp.strategy.execution_bounds import require_open_state_scope
+    require_open_state_scope(profile, mode)  # IDEA-089 S2-1: weekend hours only in a dev SHADOW REHEARSAL
+    if signed_model and mode in ('dev', 'live'):
+        from larp.strategy.profiles import validate_live
+        validate_live(profile)
+        if profile.get('environment') != ('FINAL' if mode == 'live' else 'REHEARSAL'):
+            raise ContractError('Signed model profile environment differs from the run')
     calendar = SessionCalendar(_pinned_json(d['session_calendar_file'], d['session_calendar_sha256'],
                                             'Session calendar'))
     profile_hash = Document.from_dict(profile).digest('StrategyProfile.v1')
@@ -220,9 +305,19 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     if not key or not secret or type(wallet) is not str or not ADDRESS.fullmatch(wallet):
         raise ContractError('Market data needs the Web3 key pair and the public wallet address')
     client = Web3Client(key, secret, artifacts=Artifacts(d['market_artifact_root']))
-    # Quotes request the profile's own slippage limit and pass its consumer check (PR #41, #40).
-    market = MarketPort(client, wallet, quote_limits=profile)
+    # Quotes request the profile's own slippage limit and pass its consumer check (PR #41, #40). The basis check uses
+    # the token -> underlying tickers this run pinned and the check above bound to the issuer registry (IDEA-086).
+    from larp.marketdata.basis import BasisVerifier
     run = store.load(config['run_id']).read()
+    balance = balance_settings(d, mode)  # refuses a dev/live start without them, before any port makes a request
+    rpcs = None
+    if balance is not None:
+        from larp.execution_live.chain import Rpc
+        chain = Artifacts(str(Path(d['market_artifact_root']) / 'chain'))
+        rpcs = [Rpc(p['url'], artifacts=chain, source_id=p['source_id']) for p in balance['providers']]
+    market = MarketPort(client, wallet, quote_limits=profile, basis_verifier=BasisVerifier(
+        {meta['token']: meta['underlying_id'] for meta in issuers.values()}),
+        quote_verifier=quote_verifier(d, profile, wallet=wallet, rpcs=rpcs, projection=run['projection']))
     gas = None
     if 'gas_floor_bnb_units' in profile:
         gas = NativeGasQuotePort(client, wallet, quote_limits=profile, pay_units=profile['gas_top_up_cash_units'],
@@ -231,16 +326,24 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     lifecycle = lifecycle_policy_from(intelligence)
     # One registry-validated issuer map for evidence contexts and review jobs (#25).
     issuer_map = {i: dict(token=m['token'], underlying_id=m['underlying_id']) for i, m in issuers.items()}
+    health = RuntimeHealth(store, config['run_id'], run['epoch'])
     builder = ContextBuilder(profile=profile, profile_hash=profile_hash, run_id=config['run_id'], issuers=issuer_map,
-                             market=feed, health=RuntimeHealth(store, config['run_id'], run['epoch']),
+                             market=feed, health=health,
                              calendar=calendar, lifecycle_policy=lifecycle,
                              gas_quotes=feed.gas_quotes if gas is not None else None)
-    reader = PortEvidenceReader(evidence, artifacts)
+    from larp.sources.store import OverlayArtifacts
+    # The runtime has no writable evidence mount on the host (IDEA-047 R15): artifacts it produces itself (tool
+    # results; for the routed path also model request/reply bytes and stage results) go to a private store in the
+    # unit's state directory; evidence is read as before (IDEA-057 SG-1, SG-7).
+    model_artifacts = FileArtifacts(str(Path(d['market_artifact_root']) / 'model'))
+    reader = PortEvidenceReader(evidence, OverlayArtifacts(artifacts, model_artifacts))
     if d['assessor'] == 'aiand_routed':
         from larp.intelligence.routing import build_routed_assessor
         spec = _pinned_json(d['model_routing_file'], d['model_routing_sha256'], 'Model routing')
+        if spec.get('openai_trial') is not None and (d['execution'] != 'shadow' or config['mode'] != 'dev'):
+            raise ContractError('Unsigned trial routing requires dev/shadow runtime')
         assessor = build_routed_assessor(spec, registry=registry, reader=reader, config=intelligence,
-            clock_ms=clock_ms, artifacts=artifacts, secrets=secrets, budget_root=d['model_budget_root'])
+            clock_ms=clock_ms, artifacts=model_artifacts, secrets=secrets, budget_root=d['model_budget_root'])
     else:
         assessor = EvidenceAssessor(registry=registry, reader=reader,
                                     model=RuleBaselineModel(clock_ms), config=intelligence, clock_ms=clock_ms)
@@ -257,8 +360,27 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     execution = (ServiceExecution(coordinator, wallet=wallet, grace_ms=d['expiry_grace_ms'])
                  if d['execution'] == 'service' else ShadowExecution(coordinator))
     day_roll = DayRoll(coordinator, window_ms=d['day_roll_window_ms']) if d.get('day_roll_window_ms') else None
+    balance_check = None
+    if balance is not None:
+        from larp.execution_live.balances import BalanceProviders, DecimalsCache
+        # Primary first, then backups; a check fails only when every provider fails (IDEA-055 PR 5).
+        read = BalanceProviders(rpcs, wallet=wallet, decimals=DecimalsCache(),
+                                min_block=lambda: store.load(config['run_id']).read()['projection'].get('settled_block'))
+        balance_check = BalanceCheck(coordinator, read, interval_ms=balance['interval_ms'],
+                                     max_age_ms=balance['max_age_ms'])
+        health.balances = balance_check
+        builder.price_jump = dict(bps=balance['price_jump_bps'], hold_ms=balance['max_age_ms'])  # IDEA-055 PR 4
+    deferred = None
+    if signed_model:
+        from larp.runtime.deferred_models import DeferredAssessments
+        deferred = DeferredAssessments(assessor, root=Path(d['market_artifact_root']) / 'model' / 'assessments',
+                                       run_id=config['run_id'], build_id=config['build_id'], profile_hash=profile_hash)
+    from larp.strategy.schema import initial_gas_only
+    from larp.runtime.gas import InitialGasCheck, RetiredGasCheck
+    gas_check = (InitialGasCheck if initial_gas_only(profile) else RetiredGasCheck)(coordinator, profile)
     return RoundDriver(coordinator, work, ports=dict(market=market, assessor=assessor, evidence=evidence),
-                       execution=execution, market=feed, day_roll=day_roll,
+                       execution=execution, market=feed, day_roll=day_roll, balance_check=balance_check,
+                       assessments=deferred, gas_check=gas_check,
                        max_quote_rounds=d.get('max_quote_rounds', 0), max_quote_requests=d.get('max_quote_requests', 2))
 
 
@@ -355,6 +477,15 @@ def activate_run(config, store, manifest, *, reviewer, review_ref, now_ms):
     return dict(activated=True, run_id=run_id, epoch=epoch, signing_enabled=False)
 
 
+def runtime_guard(store, c):
+    """The supervised runtime's HALT guard, with the kernel clock signal for the D-DN-10 automatic CLOCK clear."""
+    from larp.runtime.supervision import CLOCK_CLEAR_AFTER_MS, kernel_clock_synchronized
+    age = c.get('delivery_age_halt_seconds')
+    return Guard(store, c['run_id'], max_failures=c['max_failures'], clear_after=c['clear_after'],
+                 clock_sync=kernel_clock_synchronized, clock_clear_after_ms=CLOCK_CLEAR_AFTER_MS,
+                 delivery_age_ms=None if age is None else age * 1000)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('check', 'run', 'init', 'activate'))
@@ -403,7 +534,7 @@ def main(argv=None):
                              wallet_address=c.get('wallet_address'), run_wallet=store.load(c['run_id']).read()['wallet_id'],
                              ai_seeds_dir=c.get('ai_seeds_dir'), nonce_dir=c.get('nonce_dir'))
         service = Service(store, c['run_id'], c['build_id'], driver=driver,
-                          guard=Guard(store, c['run_id'], max_failures=c['max_failures'], clear_after=c['clear_after']),
+                          guard=runtime_guard(store, c),
                           clock_ms=lambda: time.time_ns() // 1_000_000, interval_s=c['interval_seconds'],
                           start_check=start_check, cycle_timeout_s=c.get('cycle_timeout_seconds'))
         signal.signal(signal.SIGTERM, service.stop)

@@ -1,0 +1,60 @@
+{
+  "bnb_decimals": 18,
+  "bnb_price_units": 722150988,
+  "capture_hash": "407a08e744aaaaf95e30f006deb56a59b220a2bb2fe1f8b9b21b4fc118986ecd",
+  "observed_at": "2026-10-19T23:57:06.600Z",
+  "origin": "RECORDED_WEB3",
+  "schema": "QuoteCostSummary.v1",
+  "symbols": {
+    "GOOGLB": {
+      "approve_gas_bnb_units": 4535116110000,
+      "fee_bps": 0,
+      "median_impact_bps": 1,
+      "quote_ttl_seconds": 30,
+      "samples": 385,
+      "slippage_bps": 4,
+      "spread_bps": 3,
+      "swap_gas_bnb_units": 71587336644000
+    },
+    "MSFTB": {
+      "approve_gas_bnb_units": 4555355630000,
+      "fee_bps": 0,
+      "median_impact_bps": 1,
+      "quote_ttl_seconds": 30,
+      "samples": 384,
+      "slippage_bps": 8,
+      "spread_bps": 17,
+      "swap_gas_bnb_units": 70903201860000
+    },
+    "NVDAB": {
+      "approve_gas_bnb_units": 4517158240000,
+      "fee_bps": 0,
+      "median_impact_bps": 1,
+      "quote_ttl_seconds": 30,
+      "samples": 385,
+      "slippage_bps": 6,
+      "spread_bps": 4,
+      "swap_gas_bnb_units": 71660475936000
+    },
+    "SKHYB": {
+      "approve_gas_bnb_units": 4522237790000,
+      "fee_bps": 0,
+      "median_impact_bps": 1,
+      "quote_ttl_seconds": 30,
+      "samples": 385,
+      "slippage_bps": 8,
+      "spread_bps": 2,
+      "swap_gas_bnb_units": 70647624468000
+    },
+    "TSLAB": {
+      "approve_gas_bnb_units": 4527007240000,
+      "fee_bps": 0,
+      "median_impact_bps": 1,
+      "quote_ttl_seconds": 30,
+      "samples": 385,
+      "slippage_bps": 6,
+      "spread_bps": 5,
+      "swap_gas_bnb_units": 70718241600000
+    }
+  }
+}

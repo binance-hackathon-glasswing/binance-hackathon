@@ -81,6 +81,11 @@ class Refused(SystemExit):
 
 def release_state(manifest: str | None, root: str | None) -> dict:
     """The build a verified release manifest names, in git_state's shape; refuses an unverified release."""
+    return _verified_release(manifest, root)[0]
+
+
+def _verified_release(manifest, root):
+    """(release_state, the verified manifest dict), so a caller needing the manifest does not verify it twice."""
     from larp.contracts import ContractError
     from larp.runtime.preflight import verify_release
     if not manifest or not root:
@@ -89,7 +94,7 @@ def release_state(manifest: str | None, root: str | None) -> dict:
         verified = verify_release(Document(Path(manifest).read_bytes()), root)
     except (ContractError, ValueError, OSError):
         raise Refused("Refusing live execution: the release does not verify against its manifest") from None
-    return {"commit": verified["build_id"], "dirty": False, "pushed": verified.get("remote_verified") is True}
+    return {"commit": verified["build_id"], "dirty": False, "pushed": verified.get("remote_verified") is True}, verified
 
 
 def require_committed(state: dict, allow_dirty: bool) -> None:
@@ -268,6 +273,8 @@ class LiveRunner:
                            "rejected": len(outcome.get("rejected", [])) - len(outcome.get("policy_rejected", [])),
                            "policy_rejected": len(outcome.get("policy_rejected", [])),
                            "truncated": outcome.get("truncated"), "error": outcome.get("error")}
+                if 'head_coverage' in outcome:
+                    summary['head_coverage'] = outcome['head_coverage']
             else:
                 outcome = self.edgar.poll(ident).read()
                 summary = {"status": outcome["status"], "new": len(outcome.get("new_records", [])),
@@ -302,7 +309,7 @@ class LiveRunner:
 
 
 def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incidents: list = (),
-               required_ms: int = 86_400_000, tolerance: int = 2) -> dict:
+               required_ms: int = 86_400_000, tolerance: int = 2, coverage_scope: str = 'historical') -> dict:
     """DR-12 evidence from the poll log. A gap is the time between consecutive successful polls of one target (and
     from `start_ms` to the first, and from the last to `end_ms`); it is unexplained when it exceeds `tolerance` x
     cadence and no incident {target, from_ms, to_ms, reason} covers it. The cadence is the stricter of the declared
@@ -311,7 +318,17 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
     to it, and a run that logged a slower cadence than declared cannot pass (IDEA-041 R13). The report lists the
     logged cadences per target. PASS needs a window of at least
     `required_ms`, no unexplained gap and no corrupt log line; a shorter window is INCONCLUSIVE."""
+    if coverage_scope not in ('historical', 'current'):
+        raise ValueError('Unknown ingestion coverage scope')
+    historical = gap_report(lines, cadences=cadences, start_ms=start_ms, end_ms=end_ms,
+                            incidents=incidents, required_ms=required_ms, tolerance=tolerance) \
+        if coverage_scope == 'current' else None
     corrupt = sum(1 for line in lines if line.get("corrupt"))
+    if coverage_scope == 'current':
+        # A structurally corrupt proof is not an ordinary missed poll that cadence tolerance can hide.
+        corrupt += sum(1 for line in lines if line.get('target') in cadences
+                       and line['target'].startswith('source:') and 'head_coverage' in line
+                       and type(line['head_coverage']) is not dict)
     targets = {}
     for key, declared in sorted(cadences.items()):
         mine = [l for l in lines if l.get("target") == key and type(l.get("started_ms")) is int]
@@ -319,6 +336,15 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
                   if type(l.get("cadence_ms")) is int and l["cadence_ms"] > 0}
         def complete(line):
             finished = line.get("finished_ms", line["started_ms"])  # legacy log without a completion clock
+            if coverage_scope == 'current' and key.startswith('source:'):
+                proof = line.get('head_coverage') or {}
+                return (type(proof) is dict and proof.get('schema') == 'SourceHeadCoverage.v1'
+                        and proof.get('complete') is True
+                        and proof.get('basis') in ('DURABLE_OVERLAP', 'END_OF_LISTING')
+                        and (proof.get('basis') != 'DURABLE_OVERLAP' or
+                             type(proof.get('anchor_item_id')) is str and bool(proof['anchor_item_id']))
+                        and type(proof.get('checked_ms')) is int
+                        and type(finished) is int and line['started_ms'] <= proof['checked_ms'] <= finished <= end_ms)
             return (line.get("status") in OK_STATUSES and line.get("coverage_complete") is not False
                     and not any(line.get(k) for k in ("truncated", "rejected", "dead_letter", "retry_pending",
                                                        "malformed_rows", "unexpected_forms", "rejected_future"))
@@ -348,15 +374,20 @@ def gap_report(lines: list, *, cadences: dict, start_ms: int, end_ms: int, incid
     unexplained = sum(t["unexplained_gaps"] for t in targets.values())
     verdict = ("INCONCLUSIVE" if end_ms - start_ms < required_ms else
                "PASS" if not unexplained and not corrupt and targets else "FAIL")
-    return {"schema": "LiveIngestionReport.v1", "window": {"from_utc": iso(start_ms), "to_utc": iso(end_ms),
+    result = {"schema": "LiveIngestionReport.v1", "window": {"from_utc": iso(start_ms), "to_utc": iso(end_ms),
                                                            "hours": round((end_ms - start_ms) / 3_600_000, 2)},
             "tolerance_x_cadence": tolerance, "verdict": verdict, "corrupt_log_lines": corrupt,
             "commits": sorted({l.get("commit") for l in lines if l.get("commit")}), "targets": targets}
+    if historical is not None:
+        result.update(coverage_scope='CURRENT_LISTING', historical_report=historical)
+        for key, target in targets.items():
+            target['history_incomplete_polls'] = historical['targets'][key]['failed_polls']
+    return result
 
 
 # ------------------------------------------------------------------------------------------------ wiring
 def preflight(env, config_mode: str = "live") -> list:
-    """Source preflight plus the evidence path's own live parameters (null until the team sets them)."""
+    """Source preflight plus the evidence path's own live parameters (any unset one refuses)."""
     from larp.intelligence.config import load_config
     from larp.sources.register import load_register, live_preflight
     reasons = live_preflight(load_register()[0], env)
@@ -365,6 +396,37 @@ def preflight(env, config_mode: str = "live") -> list:
     except IntelligenceError as exc:
         reasons.append(f"INTELLIGENCE_CONFIG_REFUSED:{config_mode}:{exc}")
     return reasons
+
+
+def check_shadow_scope(runtime_path, *, release_manifest=None, release_root=None, verified_manifest=None):
+    """Shadow settings never authorize signed/final operation (IDEA-058). Read-only; no secrets or DB calls.
+
+    `verified_manifest` is a manifest dict `release_state` already verified; the release is then not hashed again."""
+    from larp.contracts import ContractError
+    from larp.runtime.preflight import verify_release, verify_runtime_config
+    try:
+        raw = Path(runtime_path).read_bytes()
+    except OSError as error:
+        # Both the runtime and evidence users read this file (GA13b): name the cause, not just the scope refusal.
+        raise Refused(f'Cannot read the shadow runtime configuration ({type(error).__name__}); the evidence user '
+                      'needs read access, e.g. mode 0644') from None
+    except TypeError:
+        raise Refused('Shadow ingestion needs the matching unsigned dev runtime configuration') from None
+    try:
+        config = json.loads(raw)
+        if (config.get('mode') != 'dev' or config.get('driver', {}).get('execution') != 'shadow'
+                or config['driver'].get('intelligence_mode') != 'shadow'):
+            raise ValueError('Only unsigned dev-shadow operation is allowed')
+        if verified_manifest is not None:
+            verify_runtime_config(verified_manifest, raw)
+        elif release_manifest or release_root:
+            if not release_manifest or not release_root:
+                raise ValueError('Both release arguments required')
+            manifest = Document(Path(release_manifest).read_bytes())
+            verify_release(manifest, release_root)
+            verify_runtime_config(manifest.read(), raw)
+    except (ContractError, ValueError, OSError, TypeError, AttributeError, KeyError):
+        raise Refused('Shadow ingestion needs the matching unsigned dev runtime configuration') from None
 
 
 def _env_root(env, config_mode: str = "live") -> Path:
@@ -485,12 +547,15 @@ def main(argv=None, env=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
     pre = sub.add_parser("preflight")
-    pre.add_argument("--config-mode", default="live", choices=("live", "development"))
+    pre.add_argument("--config-mode", default="live", choices=("live", "development", "shadow"))
     terms = sub.add_parser("terms")
     terms.add_argument("--write-register", action="store_true", help="record captured hashes in the register file")
     run = sub.add_parser("run")
     run.add_argument("--hours", type=float, default=24.0)
-    run.add_argument("--config-mode", default="live", choices=("live", "development"))
+    # No default here: argparse never checks a default against `choices`, so the environment value is checked below.
+    run.add_argument("--config-mode", choices=("live", "development", "shadow"))
+    run.add_argument("--shadow-runtime-config", type=Path,
+                     help="Manifest-bound dev/shadow runtime configuration; required for shadow settings")
     run.add_argument("--edgar-interval-ms", type=int, default=DEFAULT_EDGAR_INTERVAL_MS)
     run.add_argument("--allow-dirty", action="store_true", help=argparse.SUPPRESS)  # retained syntax; no bypass
     # Hosts run a verified release bundle, not a git checkout (IDEA-047 V01): the manifest replaces the git check.
@@ -500,6 +565,8 @@ def main(argv=None, env=None) -> int:
     rep.add_argument("--from", dest="start", required=True)
     rep.add_argument("--to", dest="end", required=True)
     rep.add_argument("--incidents", help="JSON list of {target, from_ms, to_ms, reason}")
+    rep.add_argument('--coverage-scope', choices=('historical', 'current'), default='historical',
+                     help='Explicit current-listing proof, with the unchanged historical report retained')
     rep.add_argument("--edgar-interval-ms", type=int, default=DEFAULT_EDGAR_INTERVAL_MS,
                      help="cadence for EDGAR log lines that logged none (each line's own cadence_ms is used)")
     bake = sub.add_parser("bakeoff")
@@ -546,21 +613,36 @@ def main(argv=None, env=None) -> int:
         root = Path(env["LARP_ARTIFACT_ROOT"]).resolve()
         start = int(datetime.fromisoformat(args.start.replace("Z", "+00:00")).timestamp() * 1000)
         end = int(datetime.fromisoformat(args.end.replace("Z", "+00:00")).timestamp() * 1000)
+        if end > epoch_ms() or start >= end:
+            raise SystemExit('Report window must be ordered and must already have ended')
         cadences = {f"source:{s.source_id}": s.limits["min_interval_ms"]
                     for s in load_register()[0].values() if s.enabled}
         from larp.intelligence.config import load_registry
         cadences.update({f"edgar:{e.issuer_id}": args.edgar_interval_ms for e in load_registry().entries})
         incidents = json.loads(Path(args.incidents).read_text("utf-8")) if args.incidents else []
         report = gap_report(PollLog(root / "live" / LOG_NAME).lines(), cadences=cadences, start_ms=start, end_ms=end,
-                            incidents=incidents)
+                            incidents=incidents, coverage_scope=args.coverage_scope)
         print(json.dumps(report, indent=1, sort_keys=True))
         return 0 if report["verdict"] == "PASS" else 1
     if args.command == "run":
         try:
-            state = (release_state(args.release_manifest, args.release_root)
-                     if args.release_manifest or args.release_root else git_state())
+            config_mode = args.config_mode
+            if config_mode is None:
+                # The environment file is not manifest-bound, so it may select only live or shadow (GA13a, GA03).
+                config_mode = env.get("LARP_EVIDENCE_CONFIG_MODE", "live")
+                if config_mode not in ("live", "shadow"):
+                    raise Refused("LARP_EVIDENCE_CONFIG_MODE must be live or shadow")
+            if config_mode == "development" and (args.release_manifest or args.release_root):
+                raise Refused("Development evidence settings are not allowed on a release host")
+            manifest = None
+            if args.release_manifest or args.release_root:
+                state, manifest = _verified_release(args.release_manifest, args.release_root)
+            else:
+                state = git_state()
             require_committed(state, args.allow_dirty)
-            runner = build_runner(env, config_mode=args.config_mode, edgar_interval_ms=args.edgar_interval_ms,
+            if config_mode == 'shadow':
+                check_shadow_scope(args.shadow_runtime_config, verified_manifest=manifest)
+            runner = build_runner(env, config_mode=config_mode, edgar_interval_ms=args.edgar_interval_ms,
                                   commit=state["commit"] + ("+dirty" if state["dirty"] else ""))
         except Refused as refusal:
             print(refusal, file=sys.stderr)

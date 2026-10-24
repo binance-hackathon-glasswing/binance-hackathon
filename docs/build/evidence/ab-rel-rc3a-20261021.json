@@ -1,0 +1,113 @@
+{
+ "bundle_identity": {
+  "arch": "x86_64",
+  "build_id": "fa1b6c966f186103c8dfaee5438e0d00e4edec9a",
+  "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
+  "python_version": "3.12.15",
+  "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b"
+ },
+ "canonical_base": "5bee00600ae38fa8f593508ef93aad5d84dbdc71",
+ "ci_completed_at": "2026-10-21T17:12:42Z",
+ "ci_conclusion": "success",
+ "coverage_binding_note": "LD10-P04 numeric review bound build 5bee006; the LD16 fresh pre-install recheck must bind build fa1b6c9 (or whichever qualified build is installed).",
+ "decision_id": "IDEA-083 AB-REL-RC3a (result-only follow-up to RC3)",
+ "funding": {
+  "additional_bnb_wei": 6137501130637114,
+  "captured_balance_bnb_wei": 2694498869362886,
+  "conservative_target_bnb_wei": 8832000000000000,
+  "owner": "Funding owner; separate eligible funding action and fresh reconciliation.",
+  "performed": false
+ },
+ "installation_bindings": {
+  "operations_config_sha256": null,
+  "registration_evidence": null,
+  "remaining": "Actual release/run/DB/RPC/CA/config and registration binding at LD16/LD17; do not install or sign from this unbound candidate record.",
+  "runtime_config_sha256": null,
+  "status": "UNBOUND_CANDIDATE"
+ },
+ "jobs": {
+  "host-bundle": "success",
+  "infrastructure (deploy/aws)": "success",
+  "infrastructure (deploy/bootstrap)": "success",
+  "runtime": "success"
+ },
+ "merge": {
+  "head_sha": "d871c0cc66a252d0d8cc1b97c622c0f1ba11fca0",
+  "merge_commit": "fa1b6c966f186103c8dfaee5438e0d00e4edec9a",
+  "method": "merge",
+  "pr": "https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/236",
+  "pr_number": 236,
+  "scope": "Documentation/evidence only; no runtime manifest file changed."
+ },
+ "mirror_push": "fast-forward 5bee006..fa1b6c9 on codex/system-testing-20261012; no force",
+ "mirror_run_id": 39640064251,
+ "mirror_run_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39640064251",
+ "original_artifact": {
+  "bundle_file": "larp-fa1b6c966f18-x86_64.tar.gz",
+  "bundle_sha256": "2200737a5d5f745061e7a6ffdcf260eca7e9f9921c1bde09a7c329dbb81e0938",
+  "bundle_sha256_file_matches": true,
+  "checksummed_files": 244,
+  "id": 12365166625,
+  "inner_manifest_matches_published": true,
+  "locally_rebuilt": false,
+  "manifest_differs_from_5bee006_only_in": [
+   "build_id"
+  ],
+  "manifest_files": 205,
+  "manifest_files_identical_to_5bee006": true,
+  "manifest_files_match_source_commit": true,
+  "manifest_sha256": "9d309d7189d163fdb3da5c6a92ab46ecf9bbe5aa8884c0faf70988cadc0b3a36",
+  "name": "larp-bundle-x86_64",
+  "original_files_path": "session scratchpad ld15-fa1b6c9/original (private session copy; not committed)",
+  "registered_repository": "https://github.com/binance-hackathon-glasswing/binance-hackathon",
+  "verified": true,
+  "zip_matches_github_digest": true,
+  "zip_sha256": "55e088622d32fcf432654d8164a4b4e398f750cdaf6686c01c1de816c0284c54"
+ },
+ "production_role_change": {
+  "applied": false,
+  "file": "deploy/postgres/roles.sql",
+  "grant": "SELECT (run_id,observation) ON execution_observations TO larp_signer",
+  "next_step": "Apply and verify during separately approved LD17 database/host installation."
+ },
+ "profile_document_sha256": "ddb8281374239cd5626f0b8432e7913ab44ea30ea2f2165fbbf176e47a7d8b17",
+ "qualification_scope": "CI-qualified canonical development rehearsal candidate; the installable LD10-P03 release. Runtime files are identical to RC3 5bee006.",
+ "ready_to_install": false,
+ "remaining": [
+  "Isaac LD10 acceptance and LD16 final run/release/DB/RPC/CA configuration binding.",
+  "Funding to at least the 3,072,000,000,000,000 wei exit reserve (target 0.008832 BNB) and fresh reconciliation.",
+  "LD17 separately approved per-host installation/session, LD18 key placement and the first bounded round.",
+  "Actual fee netting at LD19/20; final S1/model/deviations/final-wallet adoption remain separate."
+ ],
+ "result_only_followup": "The commit recording this receipt is documentation only and is not itself pushed to the mirror or installed.",
+ "reviewer": "Claude under Keegan explicit task delegation; no forged personal owner attestation",
+ "router_policy_sha256": "05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5",
+ "runtime_command_results": {
+  "all_required_steps": "completed/success",
+  "demo": "success",
+  "docker_build": "success",
+  "docker_run": "success",
+  "pytest": {
+   "duration_seconds": 580.21,
+   "failed": 0,
+   "passed": 2452,
+   "postgresql": "14.24",
+   "skipped": 7,
+   "subtests": 3859
+  },
+  "real_systemd": {
+   "duration_seconds": 18.26,
+   "passed": 5,
+   "subtests": 5
+  },
+  "skip_explanation": "Five opt-in real-systemd tests run separately and pass; two external/private-fixture tests remain opt-in."
+ },
+ "schema": "RehearsalReleaseCandidateRecord.v1",
+ "selected_inputs": {
+  "rehearsal-deterministic.json": "e95d5842d15c07e0e2bb5dab761e6a1730f69aed4af4cfce2596eec68e070250"
+ },
+ "signing_enabled": false,
+ "signing_policy_sha256": "3241abd36dfeb216ffe3bb06a3ce800f42e8206ccc261240da6f059b0dd5ea61",
+ "source_commit": "fa1b6c966f186103c8dfaee5438e0d00e4edec9a",
+ "status": "PASS_CANONICAL_CI_AND_ORIGINAL_ARTIFACT_CANDIDATE_ONLY"
+}

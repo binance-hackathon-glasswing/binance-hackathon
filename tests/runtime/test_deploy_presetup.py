@@ -143,7 +143,7 @@ class PutServiceSecrets(unittest.TestCase):
 
     def test_writes_exactly_each_hosts_names_with_values_on_stdin_only(self):
         done, stored, argv = self.run_script(
-            [WALLET, self.API, self.API_SECRET, 'y', self.AUDIT, 'y'], '--name', 'larp-dev')
+            [WALLET, self.API, self.API_SECRET, '', '', 'y', self.AUDIT, 'y'], '--name', 'larp-dev')
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertEqual(stored, [
             {'AI_SEEDS_ADDRESS': WALLET, 'BINANCE_API_KEY': self.API, 'BINANCE_SECRET_KEY': self.API_SECRET},
@@ -155,8 +155,33 @@ class PutServiceSecrets(unittest.TestCase):
             self.assertNotIn(value, argv)
             self.assertNotIn(value, done.stdout + done.stderr)
 
+    def test_sg4_optional_model_keys_join_the_runtime_secret_on_stdin_only(self):
+        aiand, openai = 'synthetic-aiand-key', 'synthetic-openai-key'
+        done, stored, argv = self.run_script([WALLET, self.API, self.API_SECRET, aiand, openai, 'y'],
+                                             '--name', 'larp-dev', '--only', 'runtime')
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(stored, [{'AI_SEEDS_ADDRESS': WALLET, 'BINANCE_API_KEY': self.API,
+                                   'BINANCE_SECRET_KEY': self.API_SECRET, 'LARP_AIAND_API_KEY': aiand,
+                                   'LARP_MODEL_API_KEY': openai}])
+        for value in (aiand, openai):
+            self.assertNotIn(value, argv)
+            self.assertNotIn(value, done.stdout + done.stderr)
+        self.assertIn('LARP_AIAND_API_KEY', done.stderr)  # prompted by name (hidden input)
+        done, stored, _ = self.run_script([WALLET, self.API, self.API_SECRET, aiand, '', 'y'],
+                                          '--name', 'larp-dev', '--only', 'runtime')
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(stored, [{'AI_SEEDS_ADDRESS': WALLET, 'BINANCE_API_KEY': self.API,
+                                   'BINANCE_SECRET_KEY': self.API_SECRET, 'LARP_AIAND_API_KEY': aiand}])
+
+    def test_sg4_the_script_writes_the_names_the_runtime_loads(self):
+        from larp.runtime.credentials import OPTIONAL_MODEL_SECRETS
+        from larp.runtime.live import RUNTIME_SECRETS
+        text = self.SCRIPT.read_text()
+        for name in RUNTIME_SECRETS + OPTIONAL_MODEL_SECRETS:
+            self.assertIn(name, text)
+
     def test_declining_writes_nothing(self):
-        done, stored, _ = self.run_script([WALLET, self.API, self.API_SECRET, 'n'], '--name', 'larp-dev',
+        done, stored, _ = self.run_script([WALLET, self.API, self.API_SECRET, '', '', 'n'], '--name', 'larp-dev',
                                           '--only', 'runtime')
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertEqual(stored, [])

@@ -1,0 +1,33 @@
+{
+ "_receipt": {
+  "host": "primary",
+  "packet_sha256": "d0c077ca8949ea6e076b83d8f979586553cde0a3f876a5e86d56578306bc95e6",
+  "script_commit": "14d6ece",
+  "ssm_command_id": "0ba2a472-b754-4e07-9ff0-2c0ed4722213"
+ },
+ "buy_without_allowance": {
+  "outcome": "REFUSED",
+  "pinned": true,
+  "reason": "api_or_http_error"
+ },
+ "claims": "Exact-payload gas-limit answers only; no transaction or signature.",
+ "control_approve": {
+  "gas_limit": 46588,
+  "outcome": "ESTIMATE",
+  "spender_pinned": true
+ },
+ "generated_utc": "2026-10-21T10:41:52Z",
+ "preconditions": {
+  "bstock_balance": 0,
+  "usdt_allowance_to_router": 0
+ },
+ "schema": "PresignCheck.v1",
+ "sell_without_balance": {
+  "outcome": "REFUSED",
+  "pinned": true,
+  "reason": "api_or_http_error"
+ },
+ "signing_enabled": false,
+ "status": "PASS",
+ "symbol": "MSFTB"
+}

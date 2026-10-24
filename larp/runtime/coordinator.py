@@ -11,6 +11,7 @@ import time
 from larp.audit.protocol import build_event,check_orders,event_id_for
 from larp.contracts import ContractError,DecisionSnapshot,Document,PolicyState,validate_proposal
 from larp.storage.postgres import Conflict,IntegrityError,doc
+from larp.runtime.halts import mandatory_reduction,pausing_only
 from larp.runtime.schema import assessment_request,assessment_result
 
 
@@ -124,7 +125,8 @@ class Coordinator:
             datetime.fromtimestamp(now_ms/1000,timezone.utc),('NVDAB','GOOGLB','SKHYB','TSLAB','MSFTB'),
             PolicyState(state['run_id'],state['policy_id'],state['schema'],state['version'],doc(state['data'])),doc(context))
 
-    def start(self,round_id,request,now_ms,*,defer_close=False):
+    def start(self,round_id,request,now_ms,*,defer_close=False,assessment_override=Ellipsis,
+              assessment_audit=None,use_accepted_evidence=False,execution_parent_round=None):
         if type(round_id) is not str or not round_id:
             raise ContractError('Round ID must be a non-empty string')
         current=self.store.load(self.run_id)
@@ -145,7 +147,7 @@ class Coordinator:
         started_ms=now_ms
         try:
             assessment_request(request,self.run_id,self.profile_hash,now_ms)
-            assessment=self.assessor.assess(request)
+            assessment=(self.assessor.assess(request) if assessment_override is Ellipsis else assessment_override)
         except Exception:
             errors.append('ASSESSMENT_UNAVAILABLE'); assessment=None
         now_ms=self.clock()
@@ -177,6 +179,18 @@ class Coordinator:
                 # cannot drop an adverse finding (IDEA-033 R16). No policy runs without its context.
                 updates=getattr(exc,'updates',None) or {}
                 context_ok=False
+        if execution_parent_round is not None and context_ok and \
+                context.get('profile', {}).get('baseline') == 'TREND_GUARDED_VOL':
+            from larp.strategy.execution_bounds import parent_authority
+            parent = self.store.event(self.run_id, 'plan:' + execution_parent_round)
+            if parent is not None and execution_parent_round != round_id:
+                context['execution_parent'] = parent_authority(parent['record'])
+        if use_accepted_evidence and context_ok:
+            # A cached/failed/invalid model result cannot count as a healthy S1 session.
+            # Only this round's verified, accepted fresh assessment may advance its expiry clock.
+            context['assessment_available']=(assessment is not None
+                and assessment.read().get('status')=='ASSESSED'
+                and any(d.get('decision')=='ACCEPT' for d in updates.get('evidence_decisions',[])))
         snapshot=self.snapshot(current,now_ms,context)
         halted=halt_reasons(current.read()['projection'])
         if halted:
@@ -187,10 +201,13 @@ class Coordinator:
         if unregistered:
             errors.append('VERSION_NOT_REGISTERED')
         blocked=bool(halted) or unregistered
+        # D-DN-09: a HALT made only of pausing reasons (larp/runtime/halts.py) still plans mandatory risk, with no
+        # policy proposal, and keeps only mandatory bStock sells. CLOCK or any other reason plans nothing.
+        paused=bool(halted) and not unregistered and pausing_only(current.read()['projection'])
         # A HALT for repeated failures alone probes policy and planner, so only a round that really works can clear
         # it (IDEA-042 V1). The probe's plan is discarded below: nothing is placed, reserved or advanced.
         probe=halted==['REPEATED_FAILURES'] and not unregistered
-        if assessment is not None and context_ok and (not blocked or probe):
+        if (assessment is not None or use_accepted_evidence) and context_ok and (not blocked or probe):
             try:
                 proposal=self.policy.decide(snapshot,snapshot.policy_state)
                 validate_proposal(snapshot,proposal,now=datetime.fromtimestamp(now_ms/1000,timezone.utc))
@@ -198,9 +215,9 @@ class Coordinator:
                 errors.append('POLICY_REJECTED'); proposal=None
         # Mandatory risk is called even when there is no policy output (unless blocked: nothing may be signed).
         try:
-            if blocked and not probe:
+            if blocked and not probe and not paused:
                 raise _Halted()
-            plan=self.planner.plan(snapshot,proposal).read()
+            plan=self.planner.plan(snapshot,None if paused else proposal).read()
             if plan['schema']!='PlanResult.v1' or plan['snapshot_id']!=snapshot.snapshot_id:
                 raise ContractError('Mismatched planner result')
         except _Halted:
@@ -221,12 +238,14 @@ class Coordinator:
                 errors.append('PLAN_INVALID')
                 plan=self.empty_plan(snapshot,'PLAN_INVALID')
             else:
-                if probe:
-                    plan=self.empty_plan(snapshot,'HALTED')
+                if paused:
+                    plan=self.mandatory_only(plan)
         projection=current.read()['projection']
         projection.update(updates)
         if plan.get('risk_state') is not None:
             projection['risk_state']=plan['risk_state']  # persisted independent risk state (IDEA-031 AC-I03)
+        if plan.get('execution_attempt_budget') is not None:
+            projection['execution_attempt_budget'] = plan['execution_attempt_budget']
         # The policy saw `context`; its request and assessment are stored once, at the top level.
         policy_input=(dict(projection=context['projection'],reservations=context['reservations'],
                            includes=['request','assessment']) if self.context_builder is None else
@@ -238,6 +257,10 @@ class Coordinator:
                         next_policy_state=proposal.next_policy_state.record(),valid_until=proposal.valid_until.isoformat()),
                     started_ms=started_ms,orders=[dict(symbol=i['symbol'],side=i['side'],amount=i['amount'])
                         for i in plan['intents']],swap_mappings=[])
+        if assessment_audit is not None:
+            record['assessment_audit']=assessment_audit
+        if execution_parent_round is not None:
+            record['execution_parent_round'] = execution_parent_round
         if now_ms!=started_ms:
             record['decision_ms']=now_ms  # absent in historical zero-duration fixture records
         if updates.get('evidence_decisions'):
@@ -276,6 +299,19 @@ class Coordinator:
         if not commands and not defer_close:
             return self.close(round_id,now_ms,'COMPLETE')
         return receipt
+
+    @staticmethod
+    def mandatory_only(plan):
+        """The plan under a pausing HALT: its mandatory bStock sells and their reservations. Everything else, such as a
+        BUY or a gas top-up, is dropped and its intent ID recorded in `halt_dropped`."""
+        kept=[i for i in plan['intents'] if mandatory_reduction(i)]
+        ids={i['intent_id'] for i in kept}
+        dropped=[i.get('intent_id') for i in plan['intents'] if not mandatory_reduction(i)]
+        plan=dict(plan,intents=kept,reasons=list(plan.get('reasons') or [])+['HALT_MANDATORY_ONLY'],
+                  reservation_deltas=[d for d in plan['reservation_deltas'] if d.get('intent_id') in ids])
+        if dropped:
+            plan['halt_dropped']=dropped
+        return plan
 
     @staticmethod
     def empty_plan(snapshot,reason):
@@ -361,6 +397,17 @@ class Coordinator:
                          {i['decision_id'] for i in record['plan'].get('intents',[])})
         inputs=dict(version_id=self.version_id,round_id=round_id,decision_ids=decisions,request=record['request'],
                     assessment=assessment,policy_input=record.get('policy_input'),policy_state=record.get('policy_state'))
+        if record.get('assessment_audit') is not None:
+            trace=record['assessment_audit']
+            inputs['assessment_audit']=trace
+            if assessment is None:
+                summaries=[e.get('response',{}).get('reasoning_summary') for e in trace.get('events',[])
+                           if e.get('kind')=='MODEL_RESPONSE']
+                summaries=[s for s in summaries if type(s) is str and s.strip()]
+                if summaries:
+                    rationale=summaries
+                elif any(e.get('kind')=='MODEL_REQUEST' for e in trace.get('events',[])):
+                    rationale='Model request started; no accepted assessment. Original I/O and interruption status are in assessment_audit.'
         output=dict(status=status,errors=record['errors'],plan=record['plan'],proposal_id=record['proposal_id'],
                     policy_output=record.get('policy_output'))
         if record.get('aborted'):
@@ -435,11 +482,13 @@ class Coordinator:
         return self.store.commit(batch_for(current,'close:'+round_id,close_event,
                                            projection=projection,audit=[audit]))
 
-    def recover(self,now_ms):
+    def recover(self,now_ms,*,skip_rounds=()):
         # No attempts are released or re-signed here. Isaac reconciles commands.
         # One round that cannot close must not stop later rounds from closing.
         receipts=[]; failures=[]
         for round_id,_ in self.store.open_rounds(self.run_id):
+            if round_id in skip_rounds:
+                continue
             try:
                 record=self.store.load(self.run_id).read()['projection'].get('round_records',{}).get(round_id)
                 if record and record.get('execution_pending',bool(record['plan'].get('intents'))):

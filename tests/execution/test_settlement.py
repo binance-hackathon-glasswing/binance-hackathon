@@ -64,8 +64,7 @@ class SettlementTests(unittest.TestCase):
             self.observed()
         self.proof['finality_verified'] = True
         self.proof['receipt']['logs'][1] = log(TOKEN, ROUTER, WALLET, 1)
-        with self.assertRaises(Blocked):
-            self.observed()
+        self.assertEqual(self.observed().read()['kind'], 'ABNORMAL')
 
     def test_approval_and_revert_only_charge_actual_gas(self):
         self.attempt = replace(self.attempt, step='APPROVE')
@@ -134,3 +133,49 @@ class SettlementTests(unittest.TestCase):
             def put_observation(self,*_):raise AssertionError('must not write')
         facts=ReceiptFacts(None,wallet_id='fake-wallet',valuation=None,registry=Registry(),epoch=1,authority_version=1)
         with self.assertRaises(Blocked):facts(self.state,replace(self.attempt,finalized_at=1791734400))
+
+
+    def test_zero_short_extra_debit_and_unrelated_token_preserve_raw_truth_and_gas(self):
+        from copy import deepcopy
+        from larp.marketdata.port import TOKENS
+        from larp.ports import validate_execution_observation
+        from larp.risk.accounting import economic_views
+        from larp.runtime.halts import permits
+        normal = deepcopy(self.proof['receipt']['logs'])
+        unrelated = TOKENS['MSFTB']
+        cases = [
+            [normal[0]],
+            [normal[0], log(TOKEN, ROUTER, WALLET, 1)],
+            [log(USDT, WALLET, ROUTER, 41 * 10**18), normal[1]],
+            normal + [log(unrelated, WALLET, ROUTER, 99)],
+        ]
+        for logs in cases:
+            with self.subTest(logs=logs):
+                self.proof['receipt']['logs'] = logs
+                event = self.observed()
+                e = event.read()
+                validate_execution_observation(e)
+                self.assertEqual(e['kind'], 'ABNORMAL')
+                self.assertNotIn('token_units', e)
+                self.assertEqual(e['raw_token_deltas'][USDT], -sum(
+                    int(row['data'], 16) for row in logs if row['address'] == USDT))
+                before = self.portfolio.read()
+                after = advance_accounting(self.portfolio, event)
+                a = after.read()
+                self.assertEqual(a['bnb_units'], before['bnb_units'] - 500000)
+                self.assertEqual(a['positions'], before['positions'])
+                self.assertEqual(a['cash_units'], before['cash_units'])
+                self.assertEqual(a['unreconciled_outcomes'][e['event_id']], e)
+                self.assertEqual(a['accounting_status'], 'QUARANTINED_UNRECONCILED')
+                self.assertEqual(advance_accounting(after, event), after)
+                self.assertFalse(permits({'abnormal_outcomes': {e['event_id']: e}}, 'r', 'i'))
+                with self.assertRaises(ContractError):
+                    economic_views(after, equity_units=100000000)
+
+    def test_malformed_transfer_and_wrong_receipt_identity_still_refuse(self):
+        self.proof['receipt']['logs'][0]['topics'][1] = '0x' + '1' * 64
+        with self.assertRaises(Blocked):
+            self.observed()
+        self.proof['tx']['nonce'] = '0x4'
+        with self.assertRaises(Blocked):
+            self.observed()

@@ -1,5 +1,5 @@
 {
- "producer_commit": "94359bf22efddc17f9b79a1f8cbbfcccb6b3629d",
+ "producer_commit": "c7ab76418375f3f994b67834a55b53245ba0f475",
  "request": {
   "allowed_tools": [
    "fetch_document",
@@ -70,7 +70,11 @@
   }
  },
  "result": {
-  "assessment_key": "ece0bbf1ddb56611b7855af9e8c067b26b1403292b9b43bdf84aca4f76f1ea88",
+  "assessment_key": "7530553c54b995b2835c78f8a12690d05053d2e6a309fc95f8700c1518e3ec25",
+  "budget_allowed": {
+   "deadline_ms": 60000,
+   "tool_calls": 6
+  },
   "budget_used": {
    "elapsed_ms": 0,
    "model_steps": 5,
@@ -399,7 +403,7 @@
    "calibrated": false,
    "level": "LOW"
   },
-  "config_sha256": "b5d51b6e4c8671e18a35ef6b064b76450263cbe0da31daa90a98937b5f5fe84c",
+  "config_sha256": "876452d577f22359045c25124d3f9feb6be2dc823e9357c33867d8019bd6eea3",
   "conflicts": [],
   "context_hash": "965e2b9456a019e007609b841911013fe5d444d4fbb9e0f3ddebe10025627046",
   "cost": {
@@ -577,13 +581,13 @@
    "PRIOR_MISSING:gross_margin:REPORTED:FY2027-Q3"
   ],
   "model": {
-   "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+   "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
    "kind": "RULE",
    "model_id": "rule-baseline",
    "provider": "larp",
    "revision": "v1"
   },
-  "model_hash": "13122a97fc376d36a354a8a234adfc4333641926b8554332c9067ef23a610958",
+  "model_hash": "86970e0633c94dc57ec8e15083201ade72ec720a2c073b4db8720863b90c1e4d",
   "model_io": {
    "cot": [
     "Rule baseline: close gap fetch_document.",
@@ -735,107 +739,10 @@
        },
        "prior_facts": [],
        "remaining_tool_calls": 6,
-       "tool_results": [
-        {
-         "accession": "0009900001-26-000187",
-         "chars": 460,
-         "excerpt": "Synthetic fixture for LARP tests; fictitious company and figures.\n\nExample Semiconductor Corp reports third quarter fiscal 2027 results.\n\nRevenue for the third quarter of fiscal 2027 was $35.1 billion.\n\nFor the fourth quarter of fiscal 2027, the company now expects revenue to be $33.0 billion, plus or minus 2%, reflecting weaker data-center demand.\n\n(in millions, except percentages)\nQ3 FY27 | Q2 FY27\nRevenue | $35,082 | $30,040\nGross margin | 74.6% | 75.1%",
-         "name": "exsm-ex991-q3.htm",
-         "new_fact_ids": [
-          "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
-          "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
-          "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
-          "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
-          "fact:8d29fe90ab2f57e3c284717d35385aef0212ece38272117c19b23fdad8a238b8",
-          "fact:7663bdad54a14a43fa7dd257d80571a5a81c77f5194ae062c85af410dc71451e"
-         ],
-         "status": "OK",
-         "text_sha256": "35ab7b07f9c16718a1288385d8441b3ce7e0a62d3a486b6f566fec4670a471e0",
-         "tool": "fetch_document",
-         "truncated": false
-        },
-        {
-         "excerpt": null,
-         "fact_ids": [
-          "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
-          "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-          "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f"
-         ],
-         "metric": "revenue",
-         "periods": [
-          "FY2027-Q2",
-          "FY2027-Q3",
-          "FY2027-Q4"
-         ],
-         "status": "OK",
-         "tool": "prior_context"
-        },
-        {
-         "excerpt": null,
-         "fact_ids": [],
-         "metric": "gross_margin",
-         "periods": [],
-         "status": "NO_PRIOR",
-         "tool": "prior_context"
-        },
-        {
-         "comparisons": [
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            2600000000,
-            1
-           ],
-           "new_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_REPORTED",
-           "delta": [
-            0,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
-           "prior_fact_id": "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
-           "relation": "EQUAL"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            2582000000,
-            1
-           ],
-           "new_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
-           "basis": "GUIDANCE_VS_PRIOR_GUIDANCE",
-           "delta": [
-            -3000000000,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
-           "prior_fact_id": "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f",
-           "relation": "LOWER"
-          }
-         ],
-         "excerpt": null,
-         "metric": "revenue",
-         "status": "OK",
-         "tool": "compare_facts"
-        }
-       ]
+       "tool_results": []
       },
       "model": {
-       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+       "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -1531,89 +1438,11 @@
          "text_sha256": "35ab7b07f9c16718a1288385d8441b3ce7e0a62d3a486b6f566fec4670a471e0",
          "tool": "fetch_document",
          "truncated": false
-        },
-        {
-         "excerpt": null,
-         "fact_ids": [
-          "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
-          "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-          "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f"
-         ],
-         "metric": "revenue",
-         "periods": [
-          "FY2027-Q2",
-          "FY2027-Q3",
-          "FY2027-Q4"
-         ],
-         "status": "OK",
-         "tool": "prior_context"
-        },
-        {
-         "excerpt": null,
-         "fact_ids": [],
-         "metric": "gross_margin",
-         "periods": [],
-         "status": "NO_PRIOR",
-         "tool": "prior_context"
-        },
-        {
-         "comparisons": [
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            2600000000,
-            1
-           ],
-           "new_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_REPORTED",
-           "delta": [
-            0,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
-           "prior_fact_id": "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
-           "relation": "EQUAL"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            2582000000,
-            1
-           ],
-           "new_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
-           "basis": "GUIDANCE_VS_PRIOR_GUIDANCE",
-           "delta": [
-            -3000000000,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
-           "prior_fact_id": "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f",
-           "relation": "LOWER"
-          }
-         ],
-         "excerpt": null,
-         "metric": "revenue",
-         "status": "OK",
-         "tool": "compare_facts"
         }
        ]
       },
       "model": {
-       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+       "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -2455,73 +2284,11 @@
          ],
          "status": "OK",
          "tool": "prior_context"
-        },
-        {
-         "excerpt": null,
-         "fact_ids": [],
-         "metric": "gross_margin",
-         "periods": [],
-         "status": "NO_PRIOR",
-         "tool": "prior_context"
-        },
-        {
-         "comparisons": [
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            2600000000,
-            1
-           ],
-           "new_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_REPORTED",
-           "delta": [
-            0,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
-           "prior_fact_id": "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
-           "relation": "EQUAL"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            2582000000,
-            1
-           ],
-           "new_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
-           "basis": "GUIDANCE_VS_PRIOR_GUIDANCE",
-           "delta": [
-            -3000000000,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
-           "prior_fact_id": "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f",
-           "relation": "LOWER"
-          }
-         ],
-         "excerpt": null,
-         "metric": "revenue",
-         "status": "OK",
-         "tool": "compare_facts"
         }
        ]
       },
       "model": {
-       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+       "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -3364,65 +3131,11 @@
          "periods": [],
          "status": "NO_PRIOR",
          "tool": "prior_context"
-        },
-        {
-         "comparisons": [
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            2600000000,
-            1
-           ],
-           "new_fact_id": "fact:13e2d80725f374262fd0aa97b5f83992d9d1a205bf6ef84c298ccee0127abf8e",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_REPORTED",
-           "delta": [
-            0,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:41baf2f310966cf8a096bba9937c4def19c4982b9b1c173d1b67a9b97fbd5523",
-           "prior_fact_id": "fact:2d65ef2f2a5995730d1b4a86a238ee3afa4cefcfedd93169b34f46c4cc1a77ae",
-           "relation": "EQUAL"
-          },
-          {
-           "applicable": true,
-           "basis": "REPORTED_VS_PRIOR_GUIDANCE",
-           "delta": [
-            2582000000,
-            1
-           ],
-           "new_fact_id": "fact:5a6e16be2799956a82ab71020896db1bc7511ae54780e14d9b28ec93e2a761e9",
-           "prior_fact_id": "fact:65c93418ee5003ee37cbfd2afaee9374d5d98a88d363076114ea271bfe895e76",
-           "relation": "ABOVE"
-          },
-          {
-           "applicable": true,
-           "basis": "GUIDANCE_VS_PRIOR_GUIDANCE",
-           "delta": [
-            -3000000000,
-            1
-           ],
-           "midpoint_derived": false,
-           "new_fact_id": "fact:9f94595d35bcf96782feb6108e25a8532a6e225a30d4a7e15b2c8887c17fb45b",
-           "prior_fact_id": "fact:e58f1da94471a8573ab79ae8c81083d8a9fad6c9cf28ffbe91b7dc076b41041f",
-           "relation": "LOWER"
-          }
-         ],
-         "excerpt": null,
-         "metric": "revenue",
-         "status": "OK",
-         "tool": "compare_facts"
         }
        ]
       },
       "model": {
-       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+       "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -4315,7 +4028,7 @@
        ]
       },
       "model": {
-       "checkpoint_sha256": "99f5c4843fc0c19142bdd94914ed03d9867e49218ce52cfb319af1166a5c7353",
+       "checkpoint_sha256": "2bd0cef64f4125cf6e994717d104c325cbb8ebd19b7e3273b42102c8c3ddfe93",
        "kind": "RULE",
        "model_id": "rule-baseline",
        "provider": "larp",
@@ -4774,7 +4487,8 @@
   "red_flag_checks": [],
   "red_flag_set_sha256": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
   "rejected_claims": [],
-  "result_id": "res:d1b98e2bbe60d5c18f590f778069b30549841b75f6d4627f55dafeec5ec38bb9",
+  "request_sha256": "9810af494272a8508cac374484ef84ca1feefcea10137cc26279703ea28b3a56",
+  "result_id": "res:04d5222326588e9f7b0c606a9caf4fa2f5e539d54f014268204805d213850dcf",
   "retained_facts": [],
   "review_requests": [
    {
@@ -4782,12 +4496,12 @@
     "job": {
      "calendar_id": "UTC",
      "due_ms": 1791612000000,
-     "job_id": "evidence:6d74885a7a0f6d23c61ad3814e90eca9b2ff66eb827ef7d29ac4b78f2d8aa18f",
+     "job_id": "evidence:05b895ad0ad15cfc99df116abfa53292b6db32cc70f287909fba037f54f5fe11",
      "lane": "evidence",
      "max_attempts": 3,
      "missed": "catch_up",
      "payload": {
-      "after_assessment_key": "ece0bbf1ddb56611b7855af9e8c067b26b1403292b9b43bdf84aca4f76f1ea88",
+      "after_assessment_key": "7530553c54b995b2835c78f8a12690d05053d2e6a309fc95f8700c1518e3ec25",
       "issuer_id": "FIXTURE-CIK-9900001",
       "kind": "REASSESS_ISSUER",
       "reason": "AWAIT_COMPARISON_BASIS"
@@ -4798,7 +4512,7 @@
     },
     "kind": "REASSESS",
     "reason": "AWAIT_COMPARISON_BASIS",
-    "request_id": "evidence:6d74885a7a0f6d23c61ad3814e90eca9b2ff66eb827ef7d29ac4b78f2d8aa18f"
+    "request_id": "evidence:05b895ad0ad15cfc99df116abfa53292b6db32cc70f287909fba037f54f5fe11"
    }
   ],
   "review_scope": null,
