@@ -188,6 +188,23 @@ re-request the post-approve quote with a slippage that makes its minimum equal t
 wider than the profile's limit), so the swap goes through whenever the fresh output is still above the authorized
 minimum; it needs its own pass criteria and Isaac/Keegan review (execution and signer path).
 
+### S2-F6 fix: pass criteria (written 2026-10-24 before any S2-F6 test was run)
+
+Fix (`larp/execution_live/venue.py LiveVenue.quote`): when the fresh quote's minimum is below the intent's authorized
+minimum but its output is still above it, request the quote once more with the largest whole-bps slippage `s'` with
+`output × (10000 − s') / 10000 ≥ intent.minimum_output`, only when `1 ≤ s' < intent.max_slippage_bps`. Every existing
+check applies to the second quote unchanged, and `validate_payload` still requires `minimum_output ≥
+intent.minimum_output`. Nothing is ever requested wider than the intent's slippage limit.
+
+| # | Pass when | How |
+|---|---|---|
+| F11 | A post-approve requote whose output moved against the plan by less than the slippage limit prepares the SWAP (minimum ≥ the authorized minimum), where the current code blocks it | executor test: approve → final → swap prepare with a fake Web3 client applying the requested slippage; red on base |
+| F12 | The second request's slippage is a whole number of bps with `1 ≤ s' <` the intent's limit; no request is ever wider than the limit | venue test recording every request's `slippagePercent` |
+| F13 | No second request when the first quote already meets the minimum (one request, unchanged bytes), when the output is below the authorized minimum, or when `s'` would be 0; those cases behave as before | venue tests |
+| F14 | The second quote goes through every existing check (vendor, mode, minimum ≤ output, slippage bound, cash cap, decode); one that still misses the minimum blocks the probe as before | venue and executor tests |
+| F15 | Full suite: no new failures against the F6 runs above | as F6 |
+| F16 | Operator: confirm from run 4's 07:15Z execution record that S2-F6 is this cause (`blocked_reason`, `NOT_SUBMITTED` reason) | `checks/trading-status.sh` |
+
 ## Not covered
 
 - Run 4 (`larp-dev-rehearsal-20261024-s2`, RC7 `2d160073`) keeps running as it is; a run cannot change build.
