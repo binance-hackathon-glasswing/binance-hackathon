@@ -427,6 +427,8 @@ def test_fs1_4_runtime_starts_live_with_the_routed_assessor():
         from tests.marketdata.test_session_history import SEMANTICS
         history_raw = json.dumps(SEMANTICS).encode()
         (fixture.root / 'token-history.json').write_bytes(history_raw)
+        from tests.runtime.test_gate_a import captured
+        cfg['driver']['issuers'] = gate_a.issuer_map(captured())
         cfg['driver'].update(token_history_file=str(fixture.root / 'token-history.json'),
                              token_history_sha256=hashlib.sha256(history_raw).hexdigest())
         cfg['mode'] = 'live'

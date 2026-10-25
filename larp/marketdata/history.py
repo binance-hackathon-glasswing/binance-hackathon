@@ -145,10 +145,13 @@ class SessionHistory:
             series = {s: self._fetch(s, window, now_ms) for s in sorted(TOKENS)}
             value.update(series=series, complete=all(v['quality'] == 'VALID' for v in series.values()),
                          available_ms=max(_ms(v['available_at']) for v in series.values()))
-            self._save(value)
         except (Unavailable, ContractError, OSError, ValueError, KeyError, TypeError, OverflowError):
             # Never retain exception text: transport/provider messages can contain reflected secrets.
             value.update(series=self._missing('HISTORY_UNAVAILABLE'), complete=False, available_ms=now_ms)
+        try:
+            self._save(value)  # failed attempts also retain restart-safe request backoff
+        except OSError:
+            value.update(series=self._missing('HISTORY_CACHE_UNAVAILABLE'), complete=False, available_ms=now_ms)
         self.cache = value
         if value['available_ms'] > now_ms:
             return self._missing('AWAITING_CAPTURE_CUTOFF')

@@ -334,6 +334,7 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     if routing is not None and routing.get('openai_trial') is not None and (signed or runtime_mode != 'dev'):
         raise ContractError('Unsigned trial routing requires dev/shadow preparation')
     profile, capture = json.loads(profile_raw), json.loads(capture_raw)
+    require_open_state_scope(profile, runtime_mode)
     from larp.marketdata.history import CONFIG_FILE, MAX_CONFIG_BYTES, configuration as history_configuration, requires_history
     history = None
     if token_history_raw is not None:
@@ -371,8 +372,6 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     policy = (untrusted_router_policy_file, untrusted_router_policy_sha256)
     if type(allowance_recovery) is not bool or allowance_recovery and policy == (None, None):
         raise ContractError('Allowance recovery needs explicit boolean scope and pinned router policy')
-    if history is not None:
-        runtime['driver'].update(token_history_file=CONFIG_FILE, token_history_sha256=digest(token_history_raw))
     if policy != (None, None):
         if (type(policy[0]) is not str or not policy[0].startswith('/') or any(c in policy[0] for c in '\r\n\x00')
                 or type(policy[1]) is not str or not re.fullmatch('[0-9a-f]{64}', policy[1])):
