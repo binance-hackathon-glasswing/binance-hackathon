@@ -419,3 +419,37 @@ new option is S1-only and exact-valued, generated profiles/provenance/hashes reb
 commit/restart/exact replay preserves recovery and all-five construction using synthetic ports. GAS-5: affected
 tests and full merged suite pass (concurrent PL work is independently owned and must be complete for a green head).
 Economic/live acceptance stays open: no funding, signing, upload or host activation is authorized by these tests.
+
+### Base sync (2026-10-25 SGT, "pull from latest")
+
+Merged canonical `codex/system-testing-20261012` at `5b5f0c89` (PR279 F-125 Final Activation facts, PR280 14-day archive
+and anchor fixes) into this branch as `6bb2f648`; one LEDGER row conflict (IDEA-093 vs IDEA-094/095 appended at the same
+place) resolved by keeping all three rows. Local replica on a clean clone of `6bb2f648`: **2746 passed, 9 skipped, 4016
+subtests, 0 failed**, `pip check`, offline demo, Docker build/run and x86_64 host bundle (`0eefb9d9…`, primary and
+signer) PASS. F-125 (30 USDT final-wallet gas) and its GAP-73/74 consequences for FS1 sizing and the pre-Oct 29
+self-check were then addressed on this branch by the PR278 reviewer (commits `a4706dc1`..`37f674c3`).
+
+### PL results (2026-10-25 SGT)
+
+Commits: `0ea5a0ca` (criteria), `6938d2bc` (tests, 20 red on base), `cf528047` (implementation), `d7741f91` (PL-9
+FS1 runtime test); merged with the reviewer's F-125 commits as `b0d9cd6c` and `e7a0b3cf`. The test file's own
+fixture defects found while running it (thread names instead of identities; a shared audit hook; jobs released after
+their temporary directory closed) were fixed in the test only.
+
+| # | Result |
+|---|---|
+| PL-1 | **PASS.** One assessor keeps the single slot (`test_pl1_*`); every existing driver, signed-model, cadence and replay test passes unchanged in the full run below. With one assessor the signed cycle still makes one work lookup per tick |
+| PL-2 | **PASS.** Five slots: three companies submitted in one call each and in flight together on three distinct assessor instances and threads; a second job for a company with a pending job is refused until acknowledged. In the driver, one signed-cycle tick submits `filing:A/B/C` with the `busy` set growing A → A,B |
+| PL-3 | **PASS.** Finished results come back in submission order; the driver commits one per tick (A, B, C on three ticks). Replay of committed rounds is unchanged code (one commit per tick on the main thread with its audit); PL-8 replays the continuation journal |
+| PL-4 | **PASS.** A hung job keeps only its slot; another company's job finishes, is acknowledged, and a third company is assessed in the freed slot while the first still hangs; acknowledging a running job is refused |
+| PL-5 | **PASS.** After a restart, a finished and an interrupted journal are both returned once (COMPLETE, INTERRUPTED) and acknowledged once; a further restart has none pending |
+| PL-6 | **PASS.** `assessment_workers` 1 and 5 build that many distinct routed assessors with their own budget objects on one ledger file; 0, 6, a boolean and a string are refused. Ten threads admitting 0.3 against a 1.0 allowance admit exactly three |
+| PL-7 | **PASS, with one correction to the criterion's wording.** The cadence-path test demonstrates the chain with a held name whose mandatory SELL stays due (shadow execution never fills): `cadence:{slot}#1` then `:next1..4` on consecutive ticks, then nothing until the next slot; 0 continuations keeps today's single round; a round that plans nothing ends the chain; no continuation while the trade is unsettled, then `:next1` once it settles. A five-name BUY book was not used: the synthetic driver profile is equal weight (one discretionary swap per session) and shadow execution never fills |
+| PL-8 | **PASS.** A restarted driver continues with `:next2` (no duplicate), and the journal with continuation rounds replays to the same head with every live port disabled |
+| PL-9 | **PASS.** Both examples carry `assessment_workers` 5 and `continuation_rounds` 4; FS1's signed live preparation writes them; FS1's live runtime built from them has five routed assessors and four continuations |
+| PL-10 | **PASS (local replica).** Clean clone of `d7741f91`: **2766 passed, 9 skipped, 4027 subtests, 0 failed**; `pip check`, offline demo, Docker build and run PASS; x86_64 bundle `b9b2cb66…`, `test_host_bundle.sh` PASS for primary and signer. Terraform not rerun (no `deploy/` change). Systemd conditions not run |
+
+**Not measured:** AIand/OpenAI rate limits and latency under five concurrent assessments; budget-ledger lock waits
+under load (each admission is one short transaction with a 1 s SQLite timeout; a timeout surfaces as budget
+unavailable and that stage falls back to the AIand reviewers). Signed-path trading was already per tick before this
+change; continuation rounds affect only the cadence path (FS1-R and other unrouted runs).
