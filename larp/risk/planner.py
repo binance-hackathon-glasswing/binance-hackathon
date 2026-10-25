@@ -9,12 +9,12 @@ from fractions import Fraction
 
 from larp.contracts import ContractError, Document, TargetKind, validate_proposal
 from larp.strategy.schema import (ceil, equity, floor, fraction, instant, integer,
-                                  markets, profile, ratio, value)
+                                  markets, profile, ratio, value, stock_capital_scale)
 from .accounting import update_risk
 from .gas import plan_top_up
 from larp.strategy import s1 as s1_plan
 from larp.strategy import execution_bounds
-from larp.strategy import scheduled_flatten
+from larp.strategy import scheduled_flatten, self_check
 
 
 def _request(symbol, side, pay_units, m, mandatory):
@@ -141,10 +141,16 @@ def plan(snapshot, proposal_or_none):
                              if v["side"] == "BUY" and v.get("kind") != "GAS_TOP_UP"
                              and v.get("symbol") != "BNB" and market.get(v["symbol"]) is None})
         E = equity(ledger, market, allow_missing=True)
+        recover = (p.get('run_halt_recovery_bps') == 500
+                   and all(c.get('health', {}).get(k) is True for k in (
+                       'integrity_ok', 'journal_ok', 'ownership_ok', 'clock_ok', 'new_spending_ok', 'balances_ok'))
+                   and not ledger['reservations'] and not ledger.get('unreconciled_outcomes')
+                   and not ledger.get('accounting_status'))
         # Incomplete valuation is not a loss observation. Preserve latches/peak;
         # block buys and use only the disclosed lower bound for healthy-name trims.
         risk_ledger = (ledger if unvalued or jumped else
-                       update_risk(Document.from_dict(ledger), now=now, equity_units=E).read())
+                       update_risk(Document.from_dict(ledger), now=now, equity_units=E,
+                                   recover_run_halt=recover).read())
         r = risk_ledger["risk"]
         result["risk_state"] = r
         if jumped:
@@ -182,6 +188,7 @@ def plan(snapshot, proposal_or_none):
     # IDEA-076 (S1): its top level, five names, its hard name line and no gross trim line except the 12% deep cut
     # replace the proposal's 80% / four-name / 20% limits, which bind every other baseline unchanged.
     s1 = s1_plan.config(p) if p["baseline"] == s1_plan.BASELINE else None
+    capital_scale = stock_capital_scale(p, ledger, E) if s1 else Fraction(1)
     s1_level = None
     if s1:
         # A hard-line HOLD-round trim still goes to the accepted reduced level, not always the high level.
@@ -190,8 +197,9 @@ def plan(snapshot, proposal_or_none):
         s1_level = min(s1["high"], fraction(applied)) if applied is not None else s1["high"]
         if s1_level <= 0:
             raise ContractError("S1 applied target must be positive")
+        s1_level *= capital_scale
     max_positions = len(snapshot.universe) if s1 else 4
-    gross_limit = s1["high"] if s1 else min(Fraction(4, 5), fraction(p["regime_gross_weight"]))
+    gross_limit = s1["high"] * capital_scale if s1 else min(Fraction(4, 5), fraction(p["regime_gross_weight"]))
     if r["deep_cut"]:
         gross_limit = min(gross_limit, Fraction(2, 5))
     # IDEA-037: optional hard lines; drift between the cap and the line is held, not trimmed. The deep
@@ -209,6 +217,11 @@ def plan(snapshot, proposal_or_none):
     if scheduled == "DONE":
         r["scheduled_flatten"] = "DONE"
     interim = scheduled == "PENDING"
+    # IDEA-093 SC (GAP-74): the activation self-check; BOUGHT/DONE/EXPIRED are committed with the risk state.
+    check = self_check.config(p)
+    check_phase = self_check.phase(p, r, ledger, now)
+    if self_check.recorded(check_phase) is not None:
+        r[self_check.KEY] = self_check.recorded(check_phase)
     pending_buy = {}
     reserved_cash = reserved_bnb = 0
     for reservation in ledger["reservations"].values():
@@ -291,6 +304,9 @@ def plan(snapshot, proposal_or_none):
         elif interim:
             cap = 0
             reason.append("SCHEDULED_FLATTEN")
+        elif check_phase == "SELL" and symbol == check["symbol"]:
+            cap = 0
+            reason.append(self_check.REASON)
         for requirement in c.get("reduction_constraints", []):
             if requirement["symbol"] == symbol:
                 bound = integer(requirement["max_units"])
@@ -358,9 +374,14 @@ def plan(snapshot, proposal_or_none):
                 result["rejections"].append({"symbol": symbol, "reason": "MISSING_MARKET"})
                 continue
             current = held.get(symbol, 0)
-            name_cap = s1["high"] * s1["weights"][symbol] if s1 else fraction(p["operating_name_weight"])
+            name_cap = s1["high"] * s1["weights"][symbol] * capital_scale if s1 else fraction(p["operating_name_weight"])
             desired = 0 if t.kind is TargetKind.EXIT else floor(
                 min(t.weight, name_cap) * safe_equity * 10**m["decimals"] / m["price_units"])
+            if (check_phase == "BUY" and symbol == check["symbol"]
+                    and not instant(p["trade_after"]) <= now < instant(p["new_risk_end"])):
+                # SC: before trade_after the planner itself bounds the self-check BUY to pay_units.
+                desired = min(desired, current + floor(Fraction(check["pay_units"]) * 10**m["decimals"]
+                                                       / m["price_units"]))
             if desired == current:
                 continue
             side, q = ("BUY", desired - current) if desired > current else ("SELL", current - desired)
@@ -372,7 +393,8 @@ def plan(snapshot, proposal_or_none):
                 if (gas_short or unvalued or E <= 0 or r["daily_halt"] or r["run_halt"] or terminal
                         or c.get("health", {}).get("new_spending_ok", p.get("mode") != "LIVE") is not True
                         or now.date().isoformat() != r["day"]
-                        or not instant(p["trade_after"]) <= now < instant(p["new_risk_end"])):
+                        or not (instant(p["trade_after"]) <= now < instant(p["new_risk_end"])
+                                or (check_phase == "BUY" and symbol == check["symbol"]))):
                     result["rejections"].append({"symbol": symbol, "reason": "NEW_RISK_HALTED"})
                     continue
                 if not current and count >= max_positions:
@@ -422,6 +444,8 @@ def plan(snapshot, proposal_or_none):
         m = market.get(symbol)
         if m is None:
             continue
+        costed_reduction = (s1 is not None and side == 'SELL' and not mandatory
+                            and why == ['S1_LEVEL_CHANGE'] and p.get('s1_reduction_cost_cap_bps') == 50)
         notional_cap = max(0, p["per_trade_cap_units"] - (cost_reserve if side == "BUY" else 0))
         if side == "SELL" and mandatory:
             # LD10-P03: balanced children; every child of a split exit stays economically executable.
@@ -434,7 +458,7 @@ def plan(snapshot, proposal_or_none):
                 req["status"] = "DUST_OR_UNEXECUTABLE"
             result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_UNEXECUTABLE"})
             continue
-        if not mandatory and value(q, m) < p["minimum_trade_units"]:
+        if not mandatory and not costed_reduction and value(q, m) < p["minimum_trade_units"]:
             result["rejections"].append({"symbol": symbol, "reason": "MINIMUM_TRADE"})
             continue
         if m.get("token_open") is not True or m.get("underlying_open") is not True:
@@ -469,7 +493,8 @@ def plan(snapshot, proposal_or_none):
                     break
             continue
         cash, fee, gas, q = [quote[k] for k in ("cash_units", "fee_units", "gas_bnb_units", "token_units")]
-        if q <= p["dust_units"] or (not mandatory and value(q, m) < p["minimum_trade_units"]):
+        if q <= p["dust_units"] or (not mandatory and not costed_reduction
+                                    and value(q, m) < p["minimum_trade_units"]):
             if req is not None:
                 req["status"] = "DUST_OR_UNEXECUTABLE"
             result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_MINIMUM_TRADE"})
@@ -477,8 +502,15 @@ def plan(snapshot, proposal_or_none):
         # IDEA-088: the cost uses the expected fee when the quote gives one; reservation and gas checks keep `gas`.
         gas_value = ceil(Fraction(quote.get("expected_gas_bnb_units", gas) * ledger["bnb_price_units"],
                                   10**ledger["bnb_decimals"]))
-        mark = value(q, m)
-        cost = max(Fraction(0), cash - mark if side == "BUY" else mark - cash) + fee + gas_value
+        # RV01-2: the authorized minimum, not the displayed quote, is the executable cost bound.
+        # Gas here is the declared expected allowance; the full action budget remains reserved below.
+        minimum_buy = side == 'BUY' and p.get('entry_cost_basis') == 'AUTHORIZED_MINIMUM'
+        mark = value(quote['min_receive_units'] if minimum_buy else q, m)
+        proceeds = quote['min_receive_units'] if costed_reduction else cash
+        cost = max(Fraction(0), cash - mark if side == "BUY" else mark - proceeds) + fee + gas_value
+        if costed_reduction and cost * 10000 > mark * p['s1_reduction_cost_cap_bps']:
+            result['rejections'].append({'symbol': symbol, 'reason': 'S1_REDUCTION_COST_CAP'})
+            continue
         if cost > cost_reserve and not mandatory:
             result["rejections"].append({"symbol": symbol, "reason": "COST_RESERVE_INSUFFICIENT"})
             continue

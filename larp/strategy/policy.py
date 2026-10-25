@@ -12,9 +12,9 @@ from fractions import Fraction
 from larp.contracts import ContractError, Document, Proposal, Target, TargetKind
 from larp.integration.contract import accept_for_strategy, authority, red_flag_directives
 from .features import declared_weight, features
-from .schema import fraction, instant, integer, markets, profile, ratio, value, equity
+from .schema import fraction, instant, integer, markets, profile, ratio, value, equity, stock_capital_scale
 from . import s1 as s1_plan
-from . import scheduled_flatten
+from . import scheduled_flatten, self_check
 from .predicates import predicate_records, update_blocks, update_directive_blocks
 
 
@@ -55,6 +55,9 @@ def decide(snapshot, state):
     terminal = now >= instant(p["flatten_start"])
     # IDEA-092 (S3): after the scheduled sell-all is DONE, S2 rebuilds its book; names held before may be bought again.
     fresh_book = scheduled_flatten.state(p, ledger.get("risk"), ledger, now) == "DONE"
+    # IDEA-093 SC (GAP-74): the activation self-check's one BUY before trade_after, then FS1 as usual.
+    check = self_check.config(p)
+    check_phase = self_check.phase(p, ledger.get("risk"), ledger, now)
     window_open = (instant(p["trade_after"]) <= now < instant(p["new_risk_end"])
                    and c["remaining_sessions"] >= p["minimum_remaining_sessions"])
     held = [s for s, pos in ledger["positions"].items() if pos["units"]]
@@ -88,7 +91,7 @@ def decide(snapshot, state):
         rebalance = (set(snapshot.universe) if applied is None or fraction(applied) != level or still is True
                      else set(still) & set(snapshot.universe) if type(still) is list else set())
         s1 = dict(cfg=cfg, level=level, trend=trend, limiter=limiter, limiter_record=limiter_record,
-                  rebalance=rebalance, pending=set(), seen=set())
+                  rebalance=rebalance, pending=set(), seen=set(), capital_scale=stock_capital_scale(p, ledger, E))
     for symbol in snapshot.universe:
         units = ledger["positions"].get(symbol, {}).get("units", 0)
         m = market.get(symbol)
@@ -193,18 +196,30 @@ def decide(snapshot, state):
                 (published and symbol not in blocked and a.get("review_complete_excluding_timed_blocks") is True)))
             if due and fresh_review:
                 last_review = session
-            want = s1["level"] * s1["cfg"]["weights"][symbol]
+            want = s1["level"] * s1["cfg"]["weights"][symbol] * s1['capital_scale']
             gap = want * (E - p["cost_reserve_units"]) - value(units, m)
             gates = (symbol not in blocked and window_open and (p.get("mode") != "LIVE" or type(m.get("measured_roundtrip_bps")) is int)
                      and (not p["assessment_required"] or fresh_review)
                      and not (rights["statement"] == "ENTRY_BLOCK" and pending)
-                     and (units or not old.get("ever_held", False) or fresh_review or fresh_book))
+                     and (units or not old.get("ever_held", False) or fresh_review or fresh_book
+                          or (check is not None and symbol == check["symbol"] and check_phase == "DONE"
+                              and not old.get("self_check_cleared"))))
             step = p["minimum_trade_units"]
+            check_buy = (check is not None and symbol == check["symbol"] and check_phase == "BUY" and not units
+                         and symbol not in blocked
+                         and (p.get("mode") != "LIVE" or type(m.get("measured_roundtrip_bps")) is int))
             s1["seen"].add(symbol)
-            if symbol in s1["rebalance"] and (gap <= -step or (gap >= step and gates)):
+            # RV01-3: reductions have an exact-quote cost gate; an entry-size floor must not silently
+            # complete a pending cut. Keep the obligation until fills reach target or the level changes.
+            costed_cut = p.get('s1_reduction_cost_cap_bps') == 50 and gap < 0
+            if check_buy:
+                targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "ACTIVATION_SELF_CHECK_BUY",
+                                      Fraction(check["pay_units"], max(1, E - p["cost_reserve_units"]))))
+            elif symbol in s1["rebalance"] and (costed_cut or gap <= -step or (gap >= step and gates)):
                 targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "S1_LEVEL_CHANGE", want))
                 s1["pending"].add(symbol)
-            elif (symbol not in s1["rebalance"] and gates and gross < s1["level"] - s1["cfg"]["band"]
+            elif (symbol not in s1["rebalance"] and gates
+                  and gross < (s1["level"] - s1["cfg"]["band"]) * s1['capital_scale']
                   and gap >= step):
                 targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "S1_TOP_UP", want))
             else:
@@ -260,6 +275,12 @@ def decide(snapshot, state):
         lifecycle[symbol] = {"status": status, "last_review_session": last_review,
                              "ever_held": bool(units or old.get("ever_held")),
                              "observed_session": session}
+        if check is not None and symbol == check["symbol"]:
+            # SC: holding only the self-check does not block the scored run's entry; cleared once, then normal.
+            if old.get("self_check_cleared"):
+                lifecycle[symbol]["self_check_cleared"] = True
+            elif check_phase == "DONE" and not units:
+                lifecycle[symbol].update(ever_held=False, self_check_cleared=True)
     gross_budget = (min(fraction(p["operating_gross_weight"]), fraction(p["regime_gross_weight"]))
                     if candidates else Fraction(0))
     slots = max(0, 4 - len(held))
@@ -282,6 +303,9 @@ def decide(snapshot, state):
         **({"s1": {"trend_state": s1["trend"]["state"], "trend_evaluated_session": s1["trend"]["evaluated_session"],
                    "limiter": s1["limiter"], "applied_target": ratio(s1["level"]), "rebalance": s1["pending"]},
             "s1_round": {"target_gross": ratio(s1["level"]), "trend": s1["trend"], "limiter": s1["limiter_record"],
+                         **({'stock_capital_scale': ratio(s1['capital_scale']),
+                             'fundable_target_gross': ratio(s1['level'] * s1['capital_scale'])}
+                            if p.get('s1_capital_basis') == 'EXCLUDE_GAS' else {}),
                          "rebalance": s1["pending"]}} if s1 is not None else {})}))
     return Proposal(snapshot.snapshot_id, state.policy_id, now + timedelta(seconds=p["proposal_seconds"]),
                     tuple(targets), following)

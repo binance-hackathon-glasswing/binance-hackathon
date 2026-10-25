@@ -1,0 +1,136 @@
+{
+  "schema": "ReviewReceipt.v1",
+  "id": "IDEA-093 PR278-RV01",
+  "date_sgt": "2026-10-25",
+  "pull_request": 278,
+  "state": "OPEN_REVIEW_ONLY",
+  "original_head": "da5af85404f8290cb74ab83fc087e18a9a9f128e",
+  "tested_head": "d7741f916681c1f1d48b7e11c1d26d41d795baa6",
+  "integration_base": "5b5f0c89247f2a63156d7f03a24fe583c3a9c3c4",
+  "environment": {
+    "python": "3.12.15",
+    "postgresql": "14.24",
+    "test_image": "larp-test:archive",
+    "test_image_id": "sha256:2a4c880f95180f1bd86eaa1daaf72b9e5d7b69f42eb0f050996671cf66094ddc",
+    "dependencies": "deploy/requirements-test.lock; pip check clean",
+    "network": "isolated internal Docker network; synthetic ports; no credentials",
+    "systemd": "disposable larp-wrt-systemd runner; pinned dependencies copied offline from test image; pip check clean"
+  },
+  "checks": {
+    "full_suite": {
+      "command": "python -m pytest -q -rs -p no:cacheprovider --tb=short",
+      "passed": 2766,
+      "skipped": 9,
+      "subtests_passed": 4027,
+      "failed": 0,
+      "seconds": 255.92,
+      "deselected": 0
+    },
+    "systemd": {
+      "command": "LARP_TEST_SYSTEMD=1 python -m pytest -q -p no:cacheprovider tests/runtime/test_systemd_conditions.py --tb=short",
+      "passed": 5,
+      "subtests_passed": 5,
+      "failed": 0,
+      "seconds": 10.0
+    },
+    "remaining_environment_skips": {
+      "passed": 2,
+      "failed": 0,
+      "seconds": 0.09,
+      "cases": [
+        "non-root read-only startup directory refusal",
+        "registered GitHub-origin dashboard publication refusal"
+      ],
+      "network": "none"
+    },
+    "focused_gas": {
+      "tested_commit": "92df8662",
+      "passed": 63,
+      "subtests_passed": 9,
+      "failed": 0,
+      "seconds": 2.53,
+      "includes": "real PostgreSQL five settled synthetic buys, coordinator restart between legs, stop recovery and exact journal replay with dead external ports"
+    },
+    "bounded_checks": {
+      "recovery_paths": 1296,
+      "steps_per_path": 4,
+      "buy_cost_grid": 273,
+      "method": "independent finite-state oracle, integer/Fraction algebra and serialization; not a whole-system proof or economic experiment"
+    },
+    "profiles": "FINAL and REHEARSAL byte-for-byte regeneration passes in full suite",
+    "offline_demo": {
+      "status": "PASS",
+      "simulated": true,
+      "bytes": 67652
+    },
+    "final_unique_test_coverage": {
+      "passed_across_runs": 2773,
+      "external_fixture_cases_not_run": 2
+    }
+  },
+  "remaining_skips": [
+    "tests/intelligence/test_source_link_trust.py: optional private public-source fixture",
+    "tests/marketdata/test_recorded.py: external real response artifacts"
+  ],
+  "diagnostics": [
+    "Original new tests at 342b9f53: 12 failed/20 passed, confirming recovery/cost/reduction counterexamples. Four suspected rehearsal-validation defects disproved.",
+    "First full run at c4d10c91: 6 environment-only failures, 2711 passed, 9 skipped, 4002 subtests; clean writable clone, reachable Git metadata and nested-sandbox privilege resolved all six: 2717 passed/9 skipped/4004 subtests.",
+    "A run at 37f674c3 excluding concurrent unfinished PL tests was superseded/interrupted after PL implementation landed; no full-pass claim for it.",
+    "Systemd base image initially lacked pytest; reused pinned test dependencies offline before its successful run. Demo in systemd-only image lacked bubblewrap; succeeded in the sandbox-capable test image."
+  ],
+  "profiles": [
+    {
+      "name": "fs1-final",
+      "profile_sha256": "0401e96631ed72a6232c1ac62530636c5f6b65b30e282144d9b4df725f380908",
+      "digest": "ac5de5720e480af5f72c2faaa9dc153100b46aa9e83354cf6b1f21b35ae8af22",
+      "probe_sha256": "518b1e7677082dd28b0ee9bf01758b4e473901eb36ac3b7a1eee4de904a2148d"
+    },
+    {
+      "name": "fs1-rehearsal",
+      "profile_sha256": "54802665f3fd28cfcdf4fcb3dd9653db2ce5fab00b4ecfd8a183774d436c4115",
+      "digest": "22a9ad90916730bf3c13299aedc4fce54c028abc0f62eb9bc51e6733ac89deb9",
+      "probe_sha256": "7d5a5602a2f01f1a789f1bb69a400a4114c2507207d00c695e7220561c2e8693"
+    }
+  ],
+  "logs": {
+    "full-tests.log": {
+      "sha256": "5057b46cca3045e70fb7fe29518249375556b6662041fd75fa83d6fd8b684906",
+      "bytes": 6830
+    },
+    "full-clean-tests.log": {
+      "sha256": "29a78c48f48f5dbc36042788a2df375ed59d7a5cc0ac7d178fad5b6f3401ead6",
+      "bytes": 3174
+    },
+    "combined-tests.log": {
+      "sha256": "0d7c817a990da9638db34deb3c1f5999730b21228b535d239125a485afc5d9f6",
+      "bytes": 4202
+    },
+    "systemd-tests.log": {
+      "sha256": "f20a9cd1842f4fd8a6f17f68bbaffc4b0941bf1e5e134f6101508cb88f170e1e",
+      "bytes": 113
+    },
+    "remaining-env-tests.log": {
+      "sha256": "75bcba05d247b606934f5117f58af523320e7c8eac2bbe8450aa2839aac784de",
+      "bytes": 126
+    },
+    "offline-demo.json": {
+      "sha256": "04e0eaa0e548171082281238abcfe64cbd1298e92c0d02174475a614d1421d91",
+      "bytes": 67652
+    }
+  },
+  "research_report": "docs/research/fs1-review-20261025.md",
+  "not_claimed": [
+    "positive predictive edge or maximum profit",
+    "real market backtest or prospective signal validation",
+    "GitHub Actions pass",
+    "exact current release bundle/host/signing/gas approval",
+    "live funding, paid model calls, trade or upload",
+    "PR merge or deployment"
+  ],
+  "remaining_owners": {
+    "Keith_Keegan": "trend source versus explicit baseline; profile adoption; actual-size cost ranking and predictive evidence",
+    "Isaac_Keith_Keegan": "GAP-73 material fixed-price BNB risk valuation, exact current gas/cap/reserve acceptance",
+    "Keith_Keegan_Yao": "GAP-74 registered final-wallet self-check/handover; FS1 install scripts; new release qualification",
+    "Yao_team": "GAP-75 funding check; model adoption/held-out evidence; provider budget and secrets"
+  }
+}
