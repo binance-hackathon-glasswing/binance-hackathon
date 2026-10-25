@@ -84,6 +84,8 @@ class FlattenRecovery(ScheduledFlattenPersistence):
                     name = 'flatten-' + str(n)
                     plan = self.start(c, name)
                     if not plan['intents']:
+                        remaining = self.store.load(RUN).read()['projection']['portfolio']['positions']
+                        self.assertTrue(all(p['units'] <= self.profile['dust_units'] for p in remaining.values()), plan)
                         break
                     for planned in plan['intents']:
                         self.assertEqual(planned['side'], 'SELL')

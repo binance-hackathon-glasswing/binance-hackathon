@@ -67,6 +67,20 @@ class AbortCleanup(AllowanceRecovery):
         state = h.finish_step(i)  # revoke works even though the quote endpoint still refuses
         self.assertEqual(state.attempts[-1].step, step(USDT))
 
+    def test_exhausted_swap_quote_probes_leave_one_bounded_cleanup_stage(self):
+        h = self.harness(); i = h.intent()
+        h.executor.create(i, h.now); h.finish_step(i)
+        def unavailable(*args):
+            raise TimeoutError()
+        h.venue.quote = unavailable
+        for _ in range(i.max_prepare_probes):
+            h.now += 1; h.executor.prepare(i.key, h.now)
+        h.now += 1; state = h.executor.abort_unsigned(i.key, h.now)
+        self.assertTrue(state.abort_pending)
+        self.assertEqual(state.prepare_probes, 0)
+        h.finish_step(i)
+        self.assertFalse(h.rpc.allowances[USDT])
+
     def test_all_five_exits_clear_dirty_skhyb_or_usdt_before_any_swap(self):
         from tests.execution import test_untrusted_router as u
         for dirty in (TOKENS['SKHYB'], USDT):

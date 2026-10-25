@@ -636,6 +636,7 @@ class Executor:
                 cleanup = self._cleanup_due(rejected, now)
                 return self._update_attempt(state, replace(attempt, state="NOT_SUBMITTED"), "NOT_SUBMITTED", gates,
                                             status='ACTIVE' if cleanup else 'ABORTED', abort_pending=cleanup,
+                                            prepare_probes=0 if cleanup else state.prepare_probes,
                                             blocked_reason="broadcast rejected; not submitted")
             return self._update_attempt(state, attempt, "REJECTED_UNRESOLVED", gates, blocked_reason=(
                 "rejected broadcast nonce unresolved; wallet barrier retained" if timed_out
@@ -709,9 +710,10 @@ class Executor:
         gates = self.guards.snapshot(state.intent, now)
         if now < state.last_observed_at:
             raise Blocked('clock regression')
+        cleanup = self._cleanup_due(state, now)
         return self._update_attempt(state, replace(attempt, state='ABORTED'), 'ABORTED_UNBROADCAST', gates,
-                                    status='ACTIVE' if self._cleanup_due(state, now) else 'ABORTED',
-                                    abort_pending=self._cleanup_due(state, now), last_observed_at=now)
+                                    status='ACTIVE' if cleanup else 'ABORTED', abort_pending=cleanup,
+                                    prepare_probes=0 if cleanup else state.prepare_probes, last_observed_at=now)
 
     def recover_signature(self, key, now):
         state = self._load(key)
@@ -743,6 +745,7 @@ class Executor:
         cleanup = self._cleanup_due(state, now)
         return self._save(state, replace(state, status='ACTIVE' if cleanup else 'ABORTED',
                                         abort_pending=cleanup, attempts=attempts,
+                                        prepare_probes=0 if cleanup else state.prepare_probes,
                                         last_observed_at=now), "ABORTED_UNSIGNED", gates)
 
     def _cleanup_due(self, state, now):
