@@ -122,3 +122,16 @@ the environment prevents a run (stated).
   published, backup segment ACK), and run the calibration query in the results section to replace the run-4
   estimate (`a`, `b`, raw/on-disk ratio).
 - The per-event payload growth (ARCH-01) stays open.
+
+- 2026-10-25 clarification (Claude Code, before any fix was written): AR7 is measured as peak RSS growth of a
+  fresh process (`tests/runtime/memory_probe.py`, `/proc/self/clear_refs` reset, then `VmHWM`), not with
+  tracemalloc, because tracemalloc cannot see libpq's result buffer, which is where the base holds the journal. AR3
+  and AR4 stay tracemalloc as written. The AR tests live in `tests/runtime/test_archive_budget.py`.
+
+## Red on base (`18d10036`, code identical to `4b164649`; pinned Docker Python 3.12.15 / PostgreSQL 14.24)
+
+9 failed, 2 passed. AR1: anchor not delivered (0 objects) and `Killed` escapes before any metric. AR2: the export
+runs on every one of 5 runs (5 calls, not 1). AR3: traced peak 351.7 MB against an 18 MiB bound (1 MiB backup
+bound). AR7: RSS growth 90.1 MB verifying a 42.5 MB journal whose largest row is 0.6 MB (bound 18.0 MB). AR4, AR5
+chain/tamper/foreign and AR6: `export_segment` / `restore_chain` / `segment_header` do not exist. Passing on base,
+as expected: the AR5 v1 round trip (compatibility check) and nothing else.
