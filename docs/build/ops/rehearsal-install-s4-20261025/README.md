@@ -1,7 +1,7 @@
 # Run 5 run sheet: S4 carry-over flatten test (IDEA-097)
 
 Retire run 4 (`larp-dev-rehearsal-20261024-s2`, RC7 `2d16007`, `larp_rehearsal4`) and install run 5
-(`larp-dev-rehearsal-20261025-s4`, database `larp_rehearsal5`) on the S4 profile `e79a92fc…`. Run 5:
+(`larp-dev-rehearsal-20261025-s4`, database `larp_rehearsal5`) on the S4 profile `58b31806…`. Run 5:
 - starts from run 4's exact on-chain book, carried at run 4's cost;
 - is already inside the terminal flatten, so it never buys;
 - sells every held name with IDEA-096 allowance recovery on, clearing run 4's leftover SKHYB router allowance itself.
@@ -11,7 +11,7 @@ Retire run 4 (`larp-dev-rehearsal-20261024-s2`, RC7 `2d16007`, `larp_rehearsal4`
 ## What changed against the RC7 sheet
 
 - **New:** `host/x1-export-holdings.sh` and `mac/x1-save-export.py` (X1) export run 4's book after R1p.
-- **M3:** probe `9397c0cf…`, S4 profile, run-4 bindings, `--allowance-recovery` (the leftover allowance is accepted;
+- **M3:** probe `379c476b…`, S4 profile, run-4 bindings, `--allowance-recovery` (the leftover allowance is accepted;
   execution and the signer policy opt in).
 - **M4:** S4 profile, X1 export into `prepare` (`--carry-over`), `--allowance-recovery`, and recovery required in
   runtime, execution and signer. The signer diff against run 4's `56e029af…` is exactly `build_id`, `database_name`,
@@ -41,12 +41,12 @@ cp -R docs/build/ops/rehearsal-install-s4-20261025 deploy/activation/ && cd depl
 | (M1) | Mac | `[BUILD=<sha>] bash mac/m1-fetch-bundle.sh <run id>`, if a mirror run is made | digest match, `build.env`, `M1_DONE` |
 | Q1 | Yao, Mac | `LARP_PY=<venv>/bin/python bash mac/q1-quote-check.sh` | ten lines `VERIFIED_EXECUTABLE`; `Q1_DONE`. The SELL side is the one S4 uses |
 | M2 | Yao, Mac | `bash mac/m2-upload-bundle.sh` | `M2_DONE` |
-| M3 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_BINDINGS=$OLD/private/bindings-2d16007.json bash mac/m3-recapture-assemble.sh` (run 4 idle, after B0) | probe `9397c0cf…`; `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`; note the stamp |
-| A1 | Isaac (relayed); Keegan | Isaac approves profile `e79a92fc…`, probe `9397c0cf…` and the new `signer.json` hash M3 printed (recovery on). Keegan reviews the carry-over accounting and the recovery gas | recorded in IDEA-097 |
+| M3 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_BINDINGS=$OLD/private/bindings-2d16007.json bash mac/m3-recapture-assemble.sh` (run 4 idle, after B0) | probe `379c476b…`; `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`; note the stamp |
+| A1 | Isaac (relayed); Keegan | Isaac approves profile `58b31806…`, probe `379c476b…` and the new `signer.json` hash M3 printed (recovery on). Keegan reviews the carry-over accounting and the recovery gas | recorded in IDEA-097 |
 | R1p | primary | `python3.12 -I ssm_run.py host/r1-retire-primary.sh` (after M3 and A1) | every run-4 unit inactive and disabled, configs in `/etc/larp-history/2d16007-larp-dev-rehearsal-20261024-s2/`, `R1P_DONE` |
 | X1 | primary, then Mac | `python3.12 -I ssm_run.py host/x1-export-holdings.sh`, then `/opt/homebrew/bin/python3.12 -I mac/x1-save-export.py` (before P2) | `X1_DONE`. The saved export shows GOOGLB, NVDAB, SKHYB and TSLAB units equal to the chain, positive cost, no reservations |
 | P2 | primary | `python3.12 -I ssm_run.py host/p2-provision.sh primary @artifact_bucket $BUNDLE $BUNDLE_SHA256 $PROVISION_SHA256` | `P2_DONE` |
-| M4 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_SIGNER=$OLD/private/signer-20261024T052155Z/signer.json SCOPE_CONFIRMATION="IDEA-097 Decision (Yao, 2026-10-25)" /opt/homebrew/bin/python3.12 -I mac/m4-prepare.py <M3 stamp>` | signer diff is exactly identity and `signing_policy` recovery; runtime and execution pin `e79a92fc…`, with recovery on; the package pins the X1 export; the starting book equals it; checks pass; prints P3 and S1 |
+| M4 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_SIGNER=$OLD/private/signer-20261024T052155Z/signer.json SCOPE_CONFIRMATION="IDEA-097 Decision (Yao, 2026-10-25)" /opt/homebrew/bin/python3.12 -I mac/m4-prepare.py <M3 stamp>` | signer diff is exactly identity and `signing_policy` recovery; runtime and execution pin `58b31806…`, with recovery on; the package pins the X1 export; the starting book equals it; checks pass; prints P3 and S1 |
 | P3 | primary | the P3 command M4 printed | preflight, checks, router policy readable, routes PASS, `P3_DONE` |
 | P4 | primary | `python3.12 -I ssm_run.py host/p4-init-activate-start.sh "<reviewer>" "<run-5 approval record>"` | run 5 initialized and activated; units active with 0 restarts; `P4_DONE` |
 | T1 | Yao, Mac | Terraform `enable_signer_provisioning = true` | plan adds only the 8 IDEA-080 resources; SA9 |

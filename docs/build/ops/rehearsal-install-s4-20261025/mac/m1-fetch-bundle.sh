@@ -18,8 +18,8 @@ git -C /Users/songyaozhu/binance-hackathon grep -q KIT_OPEN_STATE "$BUILD" -- la
 # Run 5 also needs the IDEA-097 carry-over and the IDEA-096 allowance recovery (PR282).
 git -C /Users/songyaozhu/binance-hackathon grep -q holdings_carry_over "$BUILD" -- larp/strategy/carry_over.py || { echo "BUILD lacks the S4 carry-over (IDEA-097)"; exit 3; }
 git -C /Users/songyaozhu/binance-hackathon grep -q allowance_recovery "$BUILD" -- larp/marketdata/quote_verifier.py || { echo "BUILD lacks allowance recovery (IDEA-096)"; exit 3; }
-[[ $(git -C /Users/songyaozhu/binance-hackathon show "$BUILD:docs/build/evidence/s4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json" | shasum -a 256 | cut -c1-64) == e79a92fc* ]] \
-  || { echo "BUILD lacks the run-5 S4 profile e79a92fc (IDEA-097)"; exit 3; }
+[[ $(git -C /Users/songyaozhu/binance-hackathon show "$BUILD:docs/build/evidence/s4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json" | shasum -a 256 | cut -c1-64) == 58b31806* ]] \
+  || { echo "BUILD lacks the run-5 S4 profile 58b31806 (IDEA-097)"; exit 3; }
 [[ $(gh run view "$RUN" -R "$REPO" --json headSha -q .headSha) == "$BUILD" ]] || { echo "run is for another commit"; exit 3; }
 [[ $(gh run view "$RUN" -R "$REPO" --json conclusion -q .conclusion) == success ]] || { echo "run did not succeed"; exit 3; }
 gh run view "$RUN" -R "$REPO" --json jobs -q '.jobs[] | .name + " " + .conclusion'

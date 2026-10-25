@@ -1,6 +1,6 @@
 #!/bin/bash
 # M3 (Mac, Yao): pre-install recapture and signer.json assembly for run 5 on S4 (IDEA-097).
-# Read-only on primary: the LD10 probe for the S4 profile e79a92fc... (sha256 9397c0cf..., regenerated here from the
+# Read-only on primary: the LD10 probe for the S4 profile 58b31806... (sha256 379c476b..., regenerated here from the
 # release checkout) reads run 4's /etc/larp/runtime.json and /opt/larp/current, so run this BEFORE r1/p2 change
 # primary, and only after the BNB top-up (the S4 exit reserve is 0.01536 BNB with allowance recovery).
 # Capture -> review -> assemble back to back (quotes older than 300 s are refused). Prints no private value.
@@ -10,7 +10,7 @@ MAIN=/Users/songyaozhu/binance-hackathon
 WT=$MAIN/.claude/worktrees/release-${BUILD:0:7}
 PY=${LARP_PY:?set LARP_PY to a Python 3.12 venv built from requirements.lock}
 OLD_BINDINGS=${OLD_BINDINGS:?set OLD_BINDINGS to run 4 RC7 bindings (rehearsal-install-rc7-20261024/private/bindings-2d16007.json)}
-PROBE_SHA=9397c0cfdcce2982eaaecab6359eb53464fad64127fa7112f4ed99ae2eecb63f
+PROBE_SHA=379c476b90c24e6ba60e1e1839e53e892b16cb2b852187263a65b471505ab8fa
 PROFILE=docs/build/evidence/s4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json
 [[ -d $WT ]] || git -C "$MAIN" worktree add --detach "$WT" "$BUILD" >/dev/null
 [[ $(git -C "$WT" rev-parse HEAD) == "$BUILD" && -z $(git -C "$WT" status --porcelain) ]] || { echo "release checkout not clean $BUILD"; exit 3; }

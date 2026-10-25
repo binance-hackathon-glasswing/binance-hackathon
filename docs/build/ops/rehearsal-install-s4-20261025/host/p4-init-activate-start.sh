@@ -1,13 +1,13 @@
 # P4 (primary, host mutation; S4 run sheet): create and activate run 5 (S4) in larp_rehearsal5, then start the
 # runtime-side services. larp-execution stays disabled until the signer has started (S2, then P5). Until then a
 # committed intent waits, unsigned. The S4 profile has no buy window: its flatten began 2026-10-25 10:30 UTC, so every
-# round sells; signing ends 2026-10-27 12:00 UTC (IDEA-097).
+# round sells; signing ends 2026-10-26 20:00 UTC (IDEA-097, PR284-RV01-3).
 #   ssm_run.py host/p4-init-activate-start.sh "<reviewer>" "<IDEA-097 record of the run-5 approval>"
 # The reviewer and approval reference are arguments: this sheet was drafted before the approval existed.
 set -euo pipefail
 RUN=larp-dev-rehearsal-20261025-s4
 REVIEWER=${1:?reviewer name}; APPROVAL=${2:?IDEA-097 record of the run-5 approval}
-REF="IDEA-097 S4: $APPROVAL; dev signed rehearsal $RUN, larp_rehearsal5, S4 e79a92fc carry-over from larp-dev-rehearsal-20261024-s2"
+REF="IDEA-097 S4: $APPROVAL; dev signed rehearsal $RUN, larp_rehearsal5, S4 58b31806 carry-over from larp-dev-rehearsal-20261024-s2"
 [[ ${#REF} -le 200 ]] || { echo "review reference too long"; exit 3; }
 grep -q "\"run_id\": *\"$RUN\"" /etc/larp/runtime.json || { echo "unexpected runtime.json run"; exit 3; }
 grep -q '"database_name": *"larp_rehearsal5"' /etc/larp/runtime.json || { echo "unexpected database"; exit 3; }

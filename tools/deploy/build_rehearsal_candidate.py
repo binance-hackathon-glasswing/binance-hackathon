@@ -21,7 +21,7 @@ S3_FLATTEN_AT = '2026-10-25T04:00:00Z'
 S3_POLICY_ID = 'larp-s3-rehearsal-v1'
 # IDEA-097 S4: S2 from run 4's carried-over book, already inside the terminal flatten when run 5 starts; no BUY window.
 S4_WINDOW = dict(trade_after='2026-10-25T10:00:00Z', new_risk_end='2026-10-25T10:30:00Z',
-                 flatten_start='2026-10-25T10:30:00Z', signing_end='2026-10-27T12:00:00Z')
+                 flatten_start='2026-10-25T10:30:00Z', signing_end='2026-10-26T20:00:00Z')
 S4_POLICY_ID = 'larp-s4-rehearsal-v1'
 # IDEA-096 AL-IMPL01 (tools/deploy/enable_allowance_recovery.py): eight signed children per intent at the configured
 # execution envelope (max_gas 1200000 x max_gas_price 160000000), so S4 runs with allowance recovery on.
@@ -131,7 +131,8 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
         for key in S4_WINDOW:
             p['provenance'][key] = dict(decision_id='IDEA-097 S4 (Yao, 2026-10-25)',
                 formula='Flatten test: no buys, terminal flatten from 18:30 SGT Sun Oct 25 (before run 5 starts), '
-                        'signing to 20:00 SGT Tue Oct 27, before FS1 (Oct 29)')
+                        'signing to 04:00 SGT Tue Oct 27 (Mon Oct 26 20:00 UTC): inside the development phase, which '
+                        'ends Oct 26 (F-125), and before final activation needs the hosts (PR284-RV01-3)')
         p['provenance']['policy_id'] = dict(decision_id='IDEA-097 S4 (Yao, 2026-10-25)',
             formula='S2 from the previous run\'s carried-over book, flatten only; REHEARSAL-only on the dev wallet; '
                     'never installed for the final run')

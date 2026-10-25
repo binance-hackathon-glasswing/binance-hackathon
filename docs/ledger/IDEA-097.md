@@ -167,3 +167,18 @@ Checked:
 - PR284-RV01 validation (Claude Code, PostgreSQL 16.15 / Python 3.12.3, not the pinned 14.24 image): full suite at
   `ef88ba11` **2724 passed, 11 skipped, 4018 subtests, 0 failed**; base `51b846f8` **2707 passed, 11 skipped, 4018
   subtests, 0 failed** (+17 = this PR's tests and the RV01-1 regression). Not merged: RV01-2 and RV01-3 are open.
+- 2026-10-25 correction (Claude Code, PR284-RV01-3 fixed on the user's instruction "fix and merge it"):
+  - **Window moved.** `signing_end` is now **2026-10-26T20:00Z** (Tue 04:00 SGT), inside the development phase, which
+    ends Oct 26 (F-125), and before final activation needs the hosts.
+  - **New pins.** These supersede the `e79a92fc…`, `6164039c…` and `9397c0cf…` recorded in the results above:
+    - S4 profile `58b3180678a01d46b114dad6fadd296cc8a68677f7ab4260892aee5bd33c3b55`;
+    - digest `28aa420a89916a06fe234f990fdeb0d89835dd49e0ded621425f7e7beb94aa0c`;
+    - M3 probe `379c476b90c24e6ba60e1e1839e53e892b16cb2b852187263a65b471505ab8fa`.
+
+    The new profile differs from `e79a92fc…` only in `signing_end` and the window provenance text. The sheet, scripts
+    (M1, M3, M4, P4), README, status and backlog are updated. The probe method reproduces the old pins from the old bytes.
+  - **RV01-2 is not changed by this merge.** B0 stays blocked in the run sheet. Before B0, either:
+    - the team records an amendment to SKILL.md §0.3 #1 / F-120 for a dev-wallet top-up after its first agent trade; or
+    - Isaac and Keegan review a smaller S4 gas envelope that the wallet's current BNB covers.
+
+    Merging is not activation; nothing here is approved, installed or run.

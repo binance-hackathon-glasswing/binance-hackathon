@@ -11,9 +11,9 @@ for the final run.
 | File | SHA-256 |
 |---|---|
 | `../s2-rehearsal-profile-20261024/s2-block.json` (the profile's `s1` block, S2's unchanged) | `35e20c38e23657da6723e31b18f323e5f5ede778de938d73c72ff1a2c1408d03` |
-| `rehearsal-s4-deterministic.json` (file bytes; the `PROFILE_SHA` to pin) | `e79a92fc7905107130f368fc95735f6e0dbafa1f41e47e81d8279b0014d3aa25` |
-| `StrategyProfile.v1` digest of the same profile | `6164039cf44fb820eda77ea6268ff936495fccc1ef0a07a2db2dbdcb317b92de` |
-| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile rehearsal-s4-deterministic.json`; the `PROBE_SHA` to pin) | `9397c0cfdcce2982eaaecab6359eb53464fad64127fa7112f4ed99ae2eecb63f` |
+| `rehearsal-s4-deterministic.json` (file bytes; the `PROFILE_SHA` to pin) | `58b3180678a01d46b114dad6fadd296cc8a68677f7ab4260892aee5bd33c3b55` |
+| `StrategyProfile.v1` digest of the same profile | `28aa420a89916a06fe234f990fdeb0d89835dd49e0ded621425f7e7beb94aa0c` |
+| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile rehearsal-s4-deterministic.json`; the `PROBE_SHA` to pin) | `379c476b90c24e6ba60e1e1839e53e892b16cb2b852187263a65b471505ab8fa` |
 
 ## Against S2's profile `eb55d76a…`
 
@@ -24,7 +24,7 @@ S4 differs from S2's profile only in these keys and their provenance:
 | `trade_after` | 2026-10-24T01:00:00Z | 2026-10-25T10:00:00Z |
 | `new_risk_end` | 2026-10-25T08:00:00Z | 2026-10-25T10:30:00Z |
 | `flatten_start` | 2026-10-25T09:00:00Z | 2026-10-25T10:30:00Z (before run 5 can start) |
-| `signing_end` | 2026-10-25T15:00:00Z | 2026-10-27T12:00:00Z (Tue 20:00 SGT, before FS1 on Oct 29) |
+| `signing_end` | 2026-10-25T15:00:00Z | 2026-10-26T20:00:00Z (Tue 04:00 SGT; inside the development phase, PR284-RV01-3) |
 | `policy_id` | `larp-s2-rehearsal-v1` | `larp-s4-rehearsal-v1` |
 | `holdings_carry_over` | — | `RUN_EXPORT` |
 | `gas_action_budget_units` | 384000000000000 (2 children) | 1536000000000000 (8 children, IDEA-096 recovery) |
@@ -43,7 +43,7 @@ Everything else is S2's:
 - **Allowance recovery** (IDEA-096 F2/F3, PR282): before a SELL's approve, a non-zero allowance on another token is
   cleared with a zero-only approve. A swap aborted after its approve clears its own allowance. The strict swap-time
   preflight is unchanged.
-- **Signing ends** Tue 2026-10-27 12:00Z.
+- **Signing ends** Mon 2026-10-26 20:00Z (Tue 04:00 SGT), inside the development phase (F-125) and before final activation needs the hosts (PR284-RV01-3). Retire run 5 as soon as it is flat.
 
 ## Before install (not done)
 

@@ -26,7 +26,7 @@ RUN, DB = 'larp-dev-rehearsal-20261025-s4', 'larp_rehearsal5'
 SOURCE_RUN = 'larp-dev-rehearsal-20261024-s2'
 # IDEA-097: the S4 REHEARSAL profile (S2's block, flatten already begun, carry-over, recovery gas).
 PROFILE = wt / 'docs/build/evidence/s4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json'
-PROFILE_SHA = 'e79a92fc7905107130f368fc95735f6e0dbafa1f41e47e81d8279b0014d3aa25'
+PROFILE_SHA = '58b3180678a01d46b114dad6fadd296cc8a68677f7ab4260892aee5bd33c3b55'
 CARRY_OVER = here / 'private/holdings-carry-over.json'
 POLICY = wt / 'docs/build/evidence/untrusted-router-policy-ld03-20261020.json'
 POLICY_SHA = '05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5'

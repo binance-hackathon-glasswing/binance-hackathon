@@ -22,8 +22,8 @@ git -C "$MAIN" grep -q KIT_OPEN_STATE "$BUILD" -- larp/strategy/execution_bounds
 # Run 5 also needs the IDEA-097 carry-over and the IDEA-096 allowance recovery (PR282).
 git -C "$MAIN" grep -q holdings_carry_over "$BUILD" -- larp/strategy/carry_over.py || { echo "BUILD lacks the S4 carry-over (IDEA-097)"; exit 3; }
 git -C "$MAIN" grep -q allowance_recovery "$BUILD" -- larp/marketdata/quote_verifier.py || { echo "BUILD lacks allowance recovery (IDEA-096)"; exit 3; }
-[[ $(git -C "$MAIN" show "$BUILD:docs/build/evidence/s4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json" | shasum -a 256 | cut -c1-64) == e79a92fc* ]] \
-  || { echo "BUILD lacks the run-5 S4 profile e79a92fc (IDEA-097)"; exit 3; }
+[[ $(git -C "$MAIN" show "$BUILD:docs/build/evidence/s4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json" | shasum -a 256 | cut -c1-64) == 58b31806* ]] \
+  || { echo "BUILD lacks the run-5 S4 profile 58b31806 (IDEA-097)"; exit 3; }
 WT=$MAIN/.claude/worktrees/release-${BUILD:0:7}
 # The builder refuses a commit that is not the pushed head of its own branch name, so the release checkout is on the
 # local branch codex/system-testing-20261012 at BUILD (detach any other worktree that holds that branch first).
