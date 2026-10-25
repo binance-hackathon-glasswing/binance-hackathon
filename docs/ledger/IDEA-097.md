@@ -317,3 +317,33 @@ Linux aarch64, Python3.12.15, PostgreSQL14.24 pinned suite: **2847 passed /4055 
 271.59s. Disposable PostgreSQL and writable test copy with registered Git origin; no live credentials, external
 provider calls or deployment. The 11 platform/optional-fixture skips retain prior scope. Refund producer/claimed
 exclusion, contradictory approval-broadcast refusal, latest-ordinal/session behavior and exact replay pass.
+
+## Run 6 (S4 rerun) and S4-L1 result (2026-10-25/26)
+
+- **Why a rerun.** Run 5 sold all but the second half of GOOGLB (0.029482). That leg hit `LEG_ATTEMPT_LIMIT` at
+  16:30Z (S4-F1; IDEA-102), and session 204 opens only at Mon 13:30Z.
+- **Sheet:** `build/ops/rehearsal-install-s4b-20261026/`. Same S4 profile `58b31806…`, same build `7fc9f601`; run
+  `larp-dev-rehearsal-20261026-s4b`, database `larp_rehearsal6`.
+- **Steps (UTC):**
+  - D1, then Q1 (GOOGLB SELL `VERIFIED_EXECUTABLE`, 17:02).
+  - M3 (17:02): `COVERED`, signer `1e052e26…`, which differs from run 5's `378e7b35…` only in `run_id` and
+    `database_name`.
+  - A1: Isaac approved `1e052e26…` (relayed by Yao).
+  - R1p (17:07): run 5 retired. X1: export `22a1ee89…` from run 5 version 96, GOOGLB 0.029482, cost 9.465624 USDT.
+  - M4: the first attempt was refused, "HEAD is verified at its configured remote branch". The release checkout's
+    branch `codex/system-testing-20261012` had moved on since `7fc9f601`. Fixed without rewriting anything: a new
+    branch `release/run6-7fc9f601` was pushed at the same commit and the checkout tracks it. Then every package check
+    PASS; opening equity 99.405436.
+  - P3. T1 (17:11), signer rebooted proactively (17:12), then R1s, S1 and S1b.
+  - **P4 (17:15:39) → S2 → P5 (17:17:07) back to back**, so no command expired unclaimed.
+  - T2 (8 destroyed) and M9.
+- **S4-L1: PASS (run 5 and run 6 together).**
+  - The last GOOGLB sold in run 6's first round after P5: 2 signatures, 0 refusals. Cash went 71.882083 →
+    81.373046 USDT.
+  - On-chain at 17:21:53Z: GOOGLB, NVDAB, SKHYB, TSLAB and MSFTB all 0; every router allowance 0; USDT
+    81.373047; BNB 0.024973.
+  - Run 6 balance check MATCH; no HALT, no quarantine.
+  - Across runs 5 and 6: 7 sells, 11 + 2 signatures, 0 refusals. Run 4's leftover allowances never blocked a sell
+    (used up, or cleared under recovery). The S4 flatten test is complete.
+- **Remaining:** retire run 6 before final activation (Oct 27), with the same R1p/R1s pattern for run
+  `larp-dev-rehearsal-20261026-s4b`; and PR290 (S4-F1) and IDEA-102 (CAP-01) before the final build.
