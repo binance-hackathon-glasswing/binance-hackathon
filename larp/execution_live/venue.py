@@ -67,10 +67,10 @@ class LiveVenue:
     @boundary
     def revoke(self, intent, token, nonce):
         """Zero-only supporting approval via the same Web3 API; validated independently before signing."""
-        if token not in REVOKE_TOKENS.values() or intent.key not in self.vendors:
-            raise Blocked('eligible token and fresh quote required before cleanup')
+        if token not in REVOKE_TOKENS.values():
+            raise Blocked('eligible token required before cleanup')
         r = self.client.request('GET', 'aggregator/approve-transaction', dict(binanceChainId='56',
-            tokenContractAddress=token, approveAmount='0', vendor=self.vendors[intent.key]))
+            tokenContractAddress=token, approveAmount='0', vendor='LiquidMesh'))
         d = single(r)
         if str(d['dexContractAddress']).lower() != intent.router:
             raise Blocked('cleanup spender mismatch')

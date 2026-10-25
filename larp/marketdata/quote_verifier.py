@@ -51,7 +51,7 @@ class ProviderRpc:
 
 
 class UntrustedQuoteVerifier:
-    def __init__(self, decoder, profile, *, wallet, bnb_decimals):
+    def __init__(self, decoder, profile, *, wallet, bnb_decimals, allowance_recovery=False):
         from larp.strategy.schema import initial_gas_only
         if getattr(decoder, 'mode', None) != 'untrusted' or getattr(decoder, 'rpc', None) is None:
             raise ContractError('The quote verifier needs an untrusted-router decoder bound to a read RPC')
@@ -71,6 +71,9 @@ class UntrustedQuoteVerifier:
         self.decoder, self.wallet = decoder, wallet.lower()
         self.action, self.sizing = action, sizing
         self.slippage_bps, self.slippage = slippage, slippage_percent(slippage)
+        if type(allowance_recovery) is not bool:
+            raise ContractError('allowance_recovery must be an explicit boolean')
+        self.allowance_recovery = allowance_recovery
 
     def __call__(self, raw, request, observation):
         try:
@@ -104,9 +107,29 @@ class UntrustedQuoteVerifier:
             raise Blocked('quote expired at retrieval completion')
         # The execution service's own swap check, before the approve (approved=False): live router pins, no
         # other-token allowance. The decoder comes from the signer's pinned policy, never from the response.
-        self.decoder.preflight(SimpleNamespace(router=self.decoder.router, wallet=self.wallet,
-                                               pay_token=economics.pay_token, amount=economics.amount),
-                               payload, approved=False)
+        intent = SimpleNamespace(router=self.decoder.router, wallet=self.wallet,
+                                 pay_token=economics.pay_token, amount=economics.amount)
+        dirty = {}
+        if self.allowance_recovery:
+            # Numeric-block code/facet pins and all six allowances are still verified. Only execution
+            # may clean them; its independent strict preflight remains mandatory before every swap.
+            if payload.to != self.decoder.router or payload.value != 0:
+                raise Blocked('swap router or native value differs from the pinned router')
+            from .port import TOKENS
+            symbols = {v: k for k, v in TOKENS.items()} | {
+                '0x55d398326f99059ff775485246999027b3197955': 'USDT'}
+            dirty = {symbols[t]: a for t, a in self.decoder.allowances(intent).items() if a}
+        else:
+            try:
+                self.decoder.preflight(intent, payload, approved=False)
+            except Blocked as error:
+                if str(error) == 'router allowance exceeds what this swap may take':
+                    from .port import TOKENS
+                    symbols = {v: k for k, v in TOKENS.items()}
+                    dirty = {symbols.get(t, 'USDT'): a for t, a in self.decoder.allowances(intent).items()
+                             if a and t != economics.pay_token}
+                    raise Blocked('DIRTY_ROUTER_ALLOWANCE:' + ','.join(sorted(dirty))) from None
+                raise
         return dict(source_hash=raw['artifact_sha256'], economics=economics, payload=payload, route_valid=True,
                     gas_basis=GAS_BASIS, gas_bnb_units=self.action, expected_gas_bnb_units=self.sizing,
-                    fee_units=0, fee_basis=FEE_BASIS, slippage_bps=self.slippage_bps)
+                    fee_units=0, fee_basis=FEE_BASIS, slippage_bps=self.slippage_bps, dirty_allowances=dirty)

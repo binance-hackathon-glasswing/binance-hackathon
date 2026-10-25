@@ -275,7 +275,8 @@ def scoped_rehearsal(profile, mode):
 def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id, now, sec_contact=None,
             balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=None,
             model_routing_raw=None, model_routing_sha256=None, execution='shadow', runtime_mode='dev',
-            adoption_ref=None, untrusted_router_policy_file=None, untrusted_router_policy_sha256=None):
+            adoption_ref=None, untrusted_router_policy_file=None, untrusted_router_policy_sha256=None,
+            allowance_recovery=False):
     """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage.
 
     The balance RPC is either one `balance_rpc_url` + `balance_rpc_source_id` or an ordered `balance_rpc_providers`
@@ -316,6 +317,8 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     issuers = issuer_map(capture)
     providers = rpc_provider_list(balance_rpc_url, balance_rpc_source_id, balance_rpc_providers)
     policy = (untrusted_router_policy_file, untrusted_router_policy_sha256)
+    if type(allowance_recovery) is not bool or allowance_recovery and policy == (None, None):
+        raise ContractError('Allowance recovery needs explicit boolean scope and pinned router policy')
     if policy != (None, None):
         if (type(policy[0]) is not str or not policy[0].startswith('/') or any(c in policy[0] for c in '\r\n\x00')
                 or type(policy[1]) is not str or not re.fullmatch('[0-9a-f]{64}', policy[1])):
@@ -357,6 +360,9 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
         runtime['driver'].pop(key, None)
     if policy != (None, None):
         runtime['driver'].update(untrusted_router_policy_file=policy[0], untrusted_router_policy_sha256=policy[1])
+    runtime['driver'].pop('allowance_recovery', None)
+    if allowance_recovery:
+        runtime['driver']['allowance_recovery'] = True
     if routing is not None:
         runtime['driver'].update(assessor='aiand_routed', model_routing_file=MODEL_ROUTING_FILE,
                                  model_routing_sha256=model_routing_sha256, model_budget_root=MODEL_BUDGET_ROOT)
@@ -403,6 +409,9 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                   notes=['No share ratio or basis verification granted',
                          'Rehearsal window unchanged; pre-Oct21 rounds may HOLD',
                          'Copy retained terms artifacts to the evidence store before startup'])
+    if allowance_recovery:
+        report['allowance_recovery'] = True
+        report['missing_inputs'].append('ALLOWANCE_RECOVERY_SIGNER_GAS_AND_HOST_ACCEPTANCE')
     if routing is not None:
         report['model_routing'] = model_routing_report(routing, model_routing_sha256)
         report['notes'].append('OpenAI runtime secret is optional; absent or exhausted OpenAI uses external review')

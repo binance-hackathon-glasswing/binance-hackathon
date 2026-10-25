@@ -149,7 +149,7 @@ class ExecutionStore:
         if row is None:
             return None
         value = _decode(row[0])
-        if (digest(asdict(value)) != row[1] or value.revision != row[2]
+        if (digest(json.loads(bytes(row[0]))) != row[1] or value.revision != row[2]
                 or value.intent.key != key or row[3] != self.run_id or row[4] != self.wallet):
             raise Conflict('execution state integrity or namespace mismatch')
         rows = db.execute('SELECT revision,event,state_hash,previous_hash,head FROM execution_journal '
@@ -193,7 +193,8 @@ class ExecutionStore:
                 if event.get('type') == 'ABORTED_UNBROADCAST':
                     if (stored is None or stored.status != 'ACTIVE' or not stored.attempts
                             or stored.attempts[-1].broadcast_at is not None
-                            or current.status != 'ABORTED' or current.attempts[-1].state != 'ABORTED'):
+                            or current.status != ('ACTIVE' if current.abort_pending else 'ABORTED')
+                            or current.attempts[-1].state != 'ABORTED'):
                         raise Conflict('no-positive-unbroadcast evidence for revocation')
                 # This table is archive-readable. Only the restricted signature
                 # registry may retain capability to submit an unbroadcast transaction.

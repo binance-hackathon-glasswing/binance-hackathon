@@ -214,7 +214,7 @@ def quote_verifier(d, profile, *, wallet, rpcs, projection):
     from larp.marketdata.quote_verifier import ProviderRpc, UntrustedQuoteVerifier
     scale = (projection.get('portfolio') or {}).get('bnb_decimals')
     return UntrustedQuoteVerifier(load_policy(*settings).bind(ProviderRpc(rpcs)), profile, wallet=wallet,
-                                  bnb_decimals=scale)
+                                  bnb_decimals=scale, allowance_recovery=d.get('allowance_recovery', False))
 
 
 def build_driver(config, store, secrets, *, clock_ms=None):
@@ -378,9 +378,12 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     from larp.strategy.schema import initial_gas_only
     from larp.runtime.gas import InitialGasCheck, RetiredGasCheck
     gas_check = (InitialGasCheck if initial_gas_only(profile) else RetiredGasCheck)(coordinator, profile)
+    from larp.runtime.allowances import RouterAllowanceCheck
+    allowance_check = (RouterAllowanceCheck(coordinator, market.quote_verifier.decoder, wallet)
+                       if getattr(market.quote_verifier, 'decoder', None) is not None else None)
     return RoundDriver(coordinator, work, ports=dict(market=market, assessor=assessor, evidence=evidence),
                        execution=execution, market=feed, day_roll=day_roll, balance_check=balance_check,
-                       assessments=deferred, gas_check=gas_check,
+                       assessments=deferred, gas_check=gas_check, allowance_check=allowance_check,
                        max_quote_rounds=d.get('max_quote_rounds', 0), max_quote_requests=d.get('max_quote_requests', 2))
 
 

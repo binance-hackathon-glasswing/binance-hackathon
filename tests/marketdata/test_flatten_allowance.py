@@ -2,6 +2,7 @@
 from larp.marketdata.quote_verifier import UntrustedQuoteVerifier
 from larp.marketdata.port import TOKENS
 from tests.marketdata.test_untrusted_quote_verifier import Harness, profile
+from larp.marketdata.web3 import Unavailable
 
 
 class FlattenAllowance(Harness):
@@ -9,6 +10,8 @@ class FlattenAllowance(Harness):
         record = next(r for r in self.records if r['params']['fromTokenAddress'] == TOKENS['NVDAB'])
         original = self.verifier(record)
         self.rpc.allowances[TOKENS['SKHYB']] = 68939879194155372
+        with self.assertRaisesRegex(Unavailable, 'DIRTY_ROUTER_ALLOWANCE:SKHYB'):
+            self.observe(record, verifier=original)
         verifier = UntrustedQuoteVerifier(original.decoder, profile(), wallet=original.wallet,
                                           bnb_decimals=18, allowance_recovery=True)
         row = self.observe(record, verifier=verifier)
