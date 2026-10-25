@@ -65,6 +65,7 @@ or delete.
 
 1. Pre-create an **empty, migrated, isolated** drill database. Check that it isn't the active database.
 2. `python -m larp.runtime.operations restore --config /etc/larp/operations.json --receipt "$LARP_DRILL_BACKUP_RECEIPT" --target-dsn-file "$LARP_DRILL_TARGET_DSN_FILE"`
+   (Backup.v2, IDEA-094: one `--receipt` per segment of the chain, each a pinned receipt.)
 3. Run `drill_verify_anchors.py` against the restored target (a config pointing at it) with the same anchors.
 4. Exercise one approved alarm, for example the `runtime-low-gas` or `uploader-overdue` test path, and obtain the
    recipient's acknowledgement.

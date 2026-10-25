@@ -15,7 +15,13 @@ Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONUNBUFFERED=1
 ExecStartPre=/opt/larp/current/.venv/bin/python -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --config /etc/larp/operations.json
 ExecStart=/opt/larp/current/.venv/bin/python -m larp.runtime.operations once --config /etc/larp/operations.json
-TimeoutStartSec=240
+# IDEA-094/095: the daily full check re-verifies the whole journal; projected 14-day journals take minutes to read
+# from the database. Kept below larp.runtime.maintenance.PREPARING_STALE_MS (30 min), so an unfinished backup is never
+# closed while its process still runs.
+TimeoutStartSec=1200
+# IDEA-095: the verification checkpoint between runs ($STATE_DIRECTORY), outside the database's trust domain.
+StateDirectory=larp-archive
+StateDirectoryMode=0700
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
@@ -29,6 +35,7 @@ LockPersonality=true
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 CapabilityBoundingSet=
 UMask=0077
+# IDEA-094: a 62.8 MB segment (bound 64 MiB, max_archive_bytes) peaks at 234 MB measured (prepare and delivery).
 MemoryMax=512M
 TasksMax=32
 StandardOutput=journal

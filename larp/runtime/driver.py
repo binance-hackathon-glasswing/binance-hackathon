@@ -613,8 +613,10 @@ class BalanceCheck:
         reservations. A bounded journal suffix preserves that evidence without exporting the whole run."""
         allowed = {'ROUND_PLANNED', 'PLAN_REJECTED', 'ROUND_LOGGED', 'ROUND_CLOSED',
                    'BALANCE_CHECKED', 'INCIDENT', 'HALT', 'HALT_CLEARED', 'DAY_ROLLED', 'DAY_ROLL_DEFERRED'}
+        # A suffix read from this process's checkpoint: a full verification here runs inside the cycle watchdog and
+        # grows with the run (IDEA-095).
         batches = self.coordinator.store.journal(self.coordinator.run_id, after_version=first['version'],
-                                                  through_version=current['version'])
+                                                  through_version=current['version'], full=False)
         if len(batches) != current['version'] - first['version']:
             return False
         for batch in batches:
