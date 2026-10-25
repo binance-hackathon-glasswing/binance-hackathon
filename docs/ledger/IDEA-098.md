@@ -104,3 +104,10 @@ session. A name whose market stays adverse stops at its limit and resumes in the
 trading. Without the opt-in, the final has run 4's failure mode. Open: Isaac's approval of `b8ba06e2…` and the signer
 policy, Keegan's gas acceptance against the final wallet's actual BNB (GAP-73) and M3 at FS1 sizes, and AL9 in a dev
 run on `17ab891d…`.
+- 2026-10-25 update (Claude Code): the branch now includes canonical `9fe5fb07` (`30a993e9`). That brings in PR282 as
+  merged, with its PR282-RV01 monitor and verifier fixes, and PR284's S4 carry-over.
+  - `build_rehearsal_candidate.py` keeps FS1-R/`allowance_recovery` and S4 `carry_over` as separate options, refused
+    together.
+  - FS1 FINAL/FS1-R recovery profiles `b8ba06e2…`/`17ab891d…` and S4 `58b31806…` still rebuild byte-for-byte.
+  - Full suite at `30a993e9` (PostgreSQL 16.15 / Python 3.12.3): **2817 passed, 11 skipped, 4029 subtests, 0 failed**.
+    FS1, S4 and recovery suites: 137 passed.
