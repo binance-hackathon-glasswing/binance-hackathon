@@ -111,3 +111,31 @@ run on `17ab891d…`.
   - FS1 FINAL/FS1-R recovery profiles `b8ba06e2…`/`17ab891d…` and S4 `58b31806…` still rebuild byte-for-byte.
   - Full suite at `30a993e9` (PostgreSQL 16.15 / Python 3.12.3): **2817 passed, 11 skipped, 4029 subtests, 0 failed**.
     FS1, S4 and recovery suites: 137 passed.
+
+## PR283-RV01 — independent review (2026-10-25; criteria before execution)
+
+Review head `308e91b340ae8aeae7e7b7549768190553ab5fec` against PR278 base `19580fe1` and canonical
+`9fe5fb07`. Preserve the stacked target `claude/final-strategy-20261025`; merging PR283 updates PR278's branch,
+not canonical. No deployment or wallet action is part of this review.
+
+Findings to resolve in this PR: the FS1 sheet's F0p/M3 still name cleanup-off `fs1-final.json` and probe `5b642bd3…`
+after Pins/A1 moved to the recovery profile; the FS1-R README still labels its cleanup-off probe the install pin.
+M3's current `review_rehearsal_caps` helper is dev/REHEARSAL-only and cannot be presented as a completed FINAL
+assembly path. M4's opt-in emits a standalone signing-policy source, not a replacement `signer.json`; final assembly
+and prepared/release hash checks must bind the final outputs before approval/install. Existing F0p explicitly leaves
+FS1-specific scripts to the owners; retain that activation blocker.
+
+Prospective checks:
+- RV1: replace stale install pins with recovery-profile/fresh-probe requirements, spell out final signer assembly
+  and package/release re-pinning; preserve original expiry, signed ceilings, stock-flat and owner/host gates.
+- RV2: extend RC4 with synthetic FINAL-sized signer input caps and CAP-02-compatible quote fees so the whole
+  `numeric_status` is COVERED, retaining OWNER_REVIEW_REQUIRED/POLICY_APPROVAL_REQUIRED. One wei less gas/BNB,
+  an insufficient USDT signer input cap or over-ceiling quote fee must still block. This supplies offline coverage,
+  not fresh real-wallet M3 evidence or approval.
+- RV3: both FS1 recovery profiles and canonical S4 still rebuild byte for byte; idempotent candidate output and
+  explicit runtime/execution/signer scope pass; coordinated abort/cleanup/flatten and existing guard suites pass.
+- RV4: full suite on pinned Linux Python 3.12.15/PostgreSQL 14.24 with dependency pins verified; exact exclusions
+  recorded. Confirm the intended head/base immediately before a history-preserving merge to PR278's branch.
+
+Commit/push all changed executable code/tests before running it. GitHub CI/account status, real caps/gas/timing,
+exact signer/profile approval, FS1-specific scripts and AL9 remain separately recorded if unavailable.
