@@ -16,7 +16,7 @@ from larp.runtime import gate_a
 REQUIRED = frozenset(('runtime.json', 'uploader.json', 'operations.json', 'strategy-profile.json',
                       'session-calendar.json', 'initial-state.json', 'input-capture.json',
                       'preparation-report.json'))
-OPTIONAL = frozenset(('evidence.env', 'model-routing.json'))
+OPTIONAL = frozenset(('evidence.env', 'model-routing.json', gate_a.CARRY_OVER_FILE))
 MAX_FILE_BYTES = 16 * 1024 * 1024
 
 # IDEA-066 PC-DEC01 / PC-MIRROR01: approval belongs to this registered repository,
@@ -61,6 +61,11 @@ def check_scope(values, report):
     runtime, uploader, operations, state = (values[n] for n in
                                             ('runtime.json', 'uploader.json', 'operations.json', 'initial-state.json'))
     driver = runtime['driver']
+    recovery = driver.get('allowance_recovery', False)
+    if type(recovery) is not bool or recovery != report.get('allowance_recovery', False):
+        raise ContractError('Allowance recovery preparation scope differs')
+    if recovery and not driver.get('untrusted_router_policy_sha256'):
+        raise ContractError('Allowance recovery requires pinned router policy')
     signed = report.get('execution') == 'service'
     mode = report.get('runtime_mode')
     from larp.strategy.execution_bounds import require_open_state_scope
@@ -110,7 +115,7 @@ def check_scope(values, report):
         raise ContractError('Service database identities differ')
 
 
-def check_inputs(files, values):
+def check_inputs(files, values, report=None):
     runtime, profile, capture = (values[n] for n in ('runtime.json', 'strategy-profile.json', 'input-capture.json'))
     driver = runtime['driver']
     model_keys = ('model_routing_file', 'model_routing_sha256', 'model_budget_root')
@@ -139,7 +144,14 @@ def check_inputs(files, values):
     providers = balance_providers(driver)
     if not providers or capture['chain'].get('source_id') != providers[0]['source_id']:
         raise ContractError('Chain capture and configured RPC differ')
-    if values['initial-state.json'] != gate_a.initial_state(capture, profile, runtime['run_id'], mode=runtime['mode']):
+    # IDEA-097 S4: a carried-over book is rebuilt from the packaged export, whose hash the report pins.
+    carried = values.get(gate_a.CARRY_OVER_FILE)
+    pinned = (report or {}).get('holdings_carry_over')
+    if (carried is None) != (pinned is None) or (
+            carried is not None and pinned.get('sha256') != gate_a.digest(files[gate_a.CARRY_OVER_FILE])):
+        raise ContractError('Holdings carry-over export and its report pin differ')
+    if values['initial-state.json'] != gate_a.initial_state(capture, profile, runtime['run_id'], mode=runtime['mode'],
+                                                            carry_over=carried):
         raise ContractError('Starting state differs from captured balances')
     calendar = gate_a.SessionCalendar(values['session-calendar.json'])
     for at in (capture['observed_at'], profile['signing_end']):
@@ -226,7 +238,7 @@ def qualify(directory, *, rds_ca=None, ci_manifest=None, release_root=None, arti
         return result
     run('SIGNED_IDENTITIES' if report.get('execution') == 'service' else 'UNSIGNED_IDENTITIES',
         lambda: check_scope(values, report))
-    run('PINNED_INPUTS', lambda: check_inputs(files, values))
+    run('PINNED_INPUTS', lambda: check_inputs(files, values, report))
     run('SERVICE_CONFIGS', lambda: check_configs(values, rds_ca), missing=rds_ca is None)
     run('CI_RELEASE_BYTES', lambda: check_release(ci_manifest, release_root, report),
         missing=ci_manifest is None or release_root is None)

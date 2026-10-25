@@ -17,7 +17,7 @@ ROUND = re.compile(r'^[A-Za-z0-9_.:#-]{1,160}(?:/quote[1-9][0-9]*(?:#[1-9][0-9]*
 AMOUNT = re.compile(r'^[0-9]{1,30}(\.[0-9]{1,30})?$')
 HEX = re.compile(r'0x[0-9a-fA-F]{8,}')
 SCHEMA = 'LarpDecisionExport.v1'
-MAX_EXPORT_BYTES = 22000  # leave room below SSM's 24,000-character stdout limit
+MAX_EXPORT_BYTES = 21000  # leave room below SSM's 24,000-character stdout limit
 
 
 def code(v):
@@ -55,6 +55,21 @@ def reason(r):
     if isinstance(r.get('gates'), list):
         out['gates'] = codes(r['gates'], 10)
     return out
+
+
+def allowance_incident(event):
+    if not isinstance(event, dict) or event.get('kind') != 'INCIDENT':
+        return None
+    inc = event.get('incident') or {}
+    if inc.get('type') == 'DIRTY_ROUTER_ALLOWANCE':
+        return dict(reason='DIRTY_ROUTER_ALLOWANCE', symbols=[s for s in inc.get('symbols', [])
+                    if s in ('USDT', 'NVDAB', 'GOOGLB', 'SKHYB', 'TSLAB', 'MSFTB')])
+    for request in rows(inc.get('requests')):
+        value = request.get('reason')
+        if isinstance(value, str) and value.startswith('DIRTY_ROUTER_ALLOWANCE:'):
+            return dict(reason='DIRTY_ROUTER_ALLOWANCE', symbols=[s for s in value.split(':', 1)[1].split(',')
+                        if s in ('USDT', 'NVDAB', 'GOOGLB', 'SKHYB', 'TSLAB', 'MSFTB')])
+    return None
 
 
 def shape(seq, event):
@@ -98,12 +113,15 @@ def closing(event):
 
 def emit(events, limit, run_id):
     """The export's lines for (sequence, event) pairs in order: the latest `limit` rounds, then a summary."""
-    decisions, closed = {}, {}
+    decisions, closed, allowances = {}, {}, deque(maxlen=3)
     for seq, e in events:
         row = shape(seq, e)
         if row:
             decisions[row['round_id']] = row
         done = closing(e)
+        dirty = allowance_incident(e)
+        if dirty:
+            allowances.append(dirty)
         if done:
             closed[done[0]] = done[1]
     latest = sorted(decisions.values(), key=lambda d: d['seq'] or 0)[-limit:] if limit > 0 else []
@@ -111,6 +129,8 @@ def emit(events, limit, run_id):
                   for d in latest)
     summary = dict(section='decisions_summary', schema=SCHEMA, run_id=run_id, rounds=len(decisions),
                    exported=len(latest), closed=len(closed))
+    if allowances:
+        summary['allowance_incidents'] = list(allowances)
     size = lambda line: len(line.encode('utf-8')) + 1  # print adds one newline per line
     total = sum(map(size, lines))
     while True:
@@ -141,6 +161,8 @@ s = RO(c, rds_client(c['region']))
 with s.transaction() as db:
     events = [(seq, (load(b) or {}).get('event'))
               for seq, b in db.execute('SELECT sequence,batch FROM events WHERE run_id=%s ORDER BY sequence', (r,)).fetchall()]
+from larp.marketdata.allowances import from_config
+print(json.dumps(from_config(c), sort_keys=True))
 for line in emit(events, int(os.environ['LIMIT']), r):
     print(line)
 PY

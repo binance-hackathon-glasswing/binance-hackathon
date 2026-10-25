@@ -118,6 +118,7 @@ class AllowanceRecovery(unittest.TestCase):
                     self.assertEqual(h.finish_step(i, status='REVERT').status, 'FAILED')
                 else:
                     h.now = i.valid_until if cause == 'expired' else h.now + 1
+                    h.restart(enabled=False)  # legacy abort leaves allowance for a fresh parent's F2
                     h.executor.abort_unsigned(i.key, h.now)
                 self.assertEqual(h.rpc.allowances[USDT], i.amount)
                 exit_i = h.intent('fresh-final-exit', sell=True, valid_until=2000)
@@ -150,18 +151,18 @@ class AllowanceRecovery(unittest.TestCase):
         i = h.intent()
         h.rpc.allowances = {token: 10 for token in u.u.TOKENS}
         h.executor.create(i, h.now)
-        for token in sorted(u.u.TOKENS):
+        for token in sorted(u.u.TOKENS - {i.pay_token}):
             state = h.finish_step(i)
             self.assertEqual(state.attempts[-1].step, step(token))
         h.finish_step(i)
         state = h.finish_step(i)
         self.assertEqual(state.status, 'COMPLETED')
-        self.assertEqual(len(state.attempts), 8)
-        self.assertEqual(len(h.venue.broadcasts), 8)
-        self.assertEqual(len(set(h.venue.broadcasts)), 8)
+        self.assertEqual(len(state.attempts), 7)
+        self.assertEqual(len(h.venue.broadcasts), 7)
+        self.assertEqual(len(set(h.venue.broadcasts)), 7)
 
     def test_confirmed_revoke_that_leaves_allowance_nonzero_never_retries(self):
-        h = self.harness(); i = h.intent()
+        h = self.harness(); i = h.intent(sell=True)
         h.rpc.allowances[USDT] = 1
         h.executor.create(i, h.now)
         h.finish_step(i, clear=False)
@@ -175,7 +176,7 @@ class AllowanceRecovery(unittest.TestCase):
         self.assertEqual(len(h.venue.broadcasts), 1)
 
     def test_unknown_cleanup_retains_wallet_barrier_after_expiry_restart_and_timeout(self):
-        h = self.harness(); i = h.intent()
+        h = self.harness(); i = h.intent(sell=True)
         h.rpc.allowances[USDT] = 1
         h.executor.create(i, h.now)
         h.executor.prepare(i.key, 11)
@@ -196,7 +197,7 @@ class AllowanceRecovery(unittest.TestCase):
         self.assertEqual(sent.attempts[-1].step, step(USDT))
 
     def test_cleanup_uses_parent_gas_budget_and_expiry_never_renews_it(self):
-        h = self.harness(); i = h.intent(gas_budget=270000)
+        h = self.harness(); i = h.intent(sell=True, gas_budget=270000)
         h.venue.estimate = 200000
         h.rpc.allowances[USDT] = 1
         h.executor.create(i, h.now)
@@ -212,7 +213,7 @@ class AllowanceRecovery(unittest.TestCase):
     def test_route_change_or_rpc_failure_refuses_cleanup_before_sign_or_send(self):
         for failure in ('code', 'rpc'):
             with self.subTest(failure=failure):
-                h = self.harness(); i = h.intent()
+                h = self.harness(); i = h.intent(sell=True)
                 h.rpc.allowances[USDT] = 1
                 h.executor.create(i, h.now)
                 h.executor.prepare(i.key, 11)
@@ -364,7 +365,7 @@ class PostgresRecovery(unittest.TestCase):
         i = h.intent('final-exit', sell=True)
         h.rpc.allowances = {token: 5 for token in u.u.TOKENS}
         h.executor.create(i, 10)
-        for token in sorted(u.u.TOKENS):
+        for token in sorted(u.u.TOKENS - {i.pay_token}):
             state = h.finish_step(i)
             self.assertEqual(state.attempts[-1].step, step(token))
             self.restart()
@@ -376,11 +377,11 @@ class PostgresRecovery(unittest.TestCase):
         self.assertEqual(state.status, 'COMPLETED')
         self.assertTrue(all(a.raw_hex is None for a in state.attempts))
         with self.case.store.transaction() as db:
-            self.assertEqual(db.execute('SELECT count(*) FROM execution_signatures').fetchone()[0], 8)
+            self.assertEqual(db.execute('SELECT count(*) FROM execution_signatures').fetchone()[0], 7)
         self.assertEqual(len(possible_swap_hashes(state)), 1)
 
     def test_sql_cleanup_unknown_and_reverted_outcome_retains_then_releases_barrier(self):
-        h = self.h; i = h.intent()
+        h = self.h; i = h.intent(sell=True)
         h.rpc.allowances[USDT] = 1
         h.executor.create(i, 10)
         h.executor.prepare(i.key, 11)

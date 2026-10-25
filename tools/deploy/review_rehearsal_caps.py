@@ -83,7 +83,8 @@ def chain_start(holdings, portfolio, usdt_deficit):
     return dict(portfolio, cash_units=usdt['chain'], bnb_units=bnb['chain'])
 
 
-def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0, profile=DEFAULT_PROFILE):
+def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0, profile=DEFAULT_PROFILE,
+            allowance_recovery=False):
     if bindings is not None:
         outside_checkout(output)
     # The profile must be the one the probe carried (selected_profile_sha256), checked before any output exists.
@@ -97,7 +98,9 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
     require(type(usdt_deficit) is int and usdt_deficit >= 0 and (bindings is not None or usdt_deficit == 0))
     require(packet['holdings']['latest_nonce'] == packet['holdings']['pending_nonce'])
     require(not packet['in_flight']['reservations'] and not packet['in_flight']['execution_pending'])
-    require(not any(packet['router']['allowances_to_router'].values()))
+    # IDEA-097 S4: with IDEA-096 allowance recovery opted in, the new run clears a leftover allowance itself.
+    require(type(allowance_recovery) is bool)
+    require(allowance_recovery or not any(packet['router']['allowances_to_router'].values()))
     decision = json.loads((ROOT / 'docs/build/evidence/signer-numeric-ceilings-20261021.json').read_bytes())
     policy = decision['policies']['development']['signing_policy']
     portfolio = private['portfolio']
@@ -115,7 +118,7 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
         router=policy['allowed_spenders'][0], token_decimals=private['token_decimals'],
         max_gas=decision['execution_ceiling']['max_gas'],
         max_gas_price=decision['execution_ceiling']['max_gas_price_wei'],
-        gas_budget=selected['gas_action_budget_units'], allowance_recovery=False,
+        gas_budget=selected['gas_action_budget_units'], allowance_recovery=allowance_recovery,
         strategy_profile_file='/etc/larp/strategy-profile.json',
         strategy_profile_sha256=packet['selected_profile_sha256'])
     if bindings is not None:
@@ -129,8 +132,10 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
             stream.write(raw)
         (output / name).chmod(0o600)
         return dict(path=name, sha256=hashlib.sha256(raw).hexdigest())
-    policy_ref = pin('signing-policy.json', policy)
-    require(policy_ref['sha256'] == decision['policies']['development']['sha256_canonical_json_lf'])
+    base = json.dumps(policy, sort_keys=True, separators=(',', ':')).encode() + b'\n'
+    require(hashlib.sha256(base).hexdigest() == decision['policies']['development']['sha256_canonical_json_lf'])
+    # The reviewed development policy, with only the zero-only recovery scope switched on when opted in (IDEA-096).
+    policy_ref = pin('signing-policy.json', dict(policy, allowance_recovery=True) if allowance_recovery else policy)
     # The exact selected bytes: an S1 profile's provenance is UTF-8 (e.g. "IDEA-075 §4"), which the ASCII encoder
     # above would escape, so re-encoding would no longer match selected_profile_sha256 (SJ-11-RH01).
     profile_ref = pin('profile.json', selected, profile_raw)
@@ -154,12 +159,13 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
     return inputs, result, now
 
 
-def assemble_hosted(packet, output, bindings, signer_out, *, now=None, usdt_deficit=0, profile=DEFAULT_PROFILE):
+def assemble_hosted(packet, output, bindings, signer_out, *, now=None, usdt_deficit=0, profile=DEFAULT_PROFILE,
+                    allowance_recovery=False):
     """SJ-04: review and assemble on one clock; a refusal writes no candidate and echoes nothing private."""
     from larp.signer.assembly import assemble, write_new
     outside_checkout(signer_out)
     inputs, result, now = collect(packet, output, bindings['build_id'], bindings=bindings, now=now,
-                                  usdt_deficit=usdt_deficit, profile=profile)
+                                  usdt_deficit=usdt_deficit, profile=profile, allowance_recovery=allowance_recovery)
     if result['numeric_status'] != 'COVERED':
         return result, now, None
     files = assemble(inputs, now=now, base_dir=output)
@@ -180,12 +186,15 @@ def main(argv=None):
     parser.add_argument('--profile', type=Path, default=DEFAULT_PROFILE,
                         help='the selected profile the probe carried; its SHA-256 must equal selected_profile_sha256 '
                              '(default: the reviewed equal-weight profile)')
+    parser.add_argument('--allowance-recovery', action='store_true',
+                        help='IDEA-096/097: opt execution and signer policy into zero-only allowance recovery; '
+                             'a leftover router allowance is then accepted for the new run to clear')
     args = parser.parse_args(argv)
     if args.bindings is None:
         if args.build_id is None or args.signer_out is not None or args.accept_usdt_deficit_units:
             parser.error('--build-id is required; --signer-out and a USDT deficit need --bindings')
         _, result, now = collect(read_packet(args.packet.read_bytes()), args.output_dir, args.build_id,
-                                 profile=args.profile)
+                                 profile=args.profile, allowance_recovery=args.allowance_recovery)
         print(json.dumps(dict(numeric_status=result['numeric_status'], blockers=result['blockers'],
                              reviewed_at=now, missing=result['missing_quote_coverage'])))
         return 0
@@ -195,7 +204,8 @@ def main(argv=None):
         packet = read_packet(args.packet.read_bytes())
         result, now, signer_sha256 = assemble_hosted(packet, args.output_dir, json.loads(args.bindings.read_bytes()),
                                                      args.signer_out, usdt_deficit=args.accept_usdt_deficit_units,
-                                                     profile=args.profile)
+                                                     profile=args.profile,
+                                                     allowance_recovery=args.allowance_recovery)
     except (*ERRORS, AssertionError, zlib.error):
         # Never echo hostnames, paths, DSNs, raw input or exception messages.
         print(json.dumps(dict(status='SIGNER_ASSEMBLY_REFUSED', ready_to_install=False,

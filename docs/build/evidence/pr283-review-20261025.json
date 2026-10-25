@@ -1,0 +1,95 @@
+{
+  "code_and_test_sha256": {
+    "larp/execution.py": "018458932a37e09200cccfae7061e4fa0b5e7917fa4bde2c584123be7f3662e1",
+    "larp/execution_live/service.py": "af188540806fdf5df3bff9d7cc1d4f7bccfd7ee136a06506e4ce3f1775b3c5fa",
+    "larp/execution_live/store.py": "bb2ed540fb677ffce4644230f4213fd5cec7781c1d62d028af656372c565c78b",
+    "larp/execution_live/venue.py": "c972ce2566c440a39fbce92997df8cdc063c4c90c2958b359009152d8c956aba",
+    "larp/marketdata/allowances.py": "94c8d1365ced50b5e29ac424189715226e149721e054f975bd87007a37176303",
+    "larp/marketdata/port.py": "da39e95fc862d4552a9df646e91c6ad44af85fd8a117dde547f3fc021f2133fa",
+    "larp/marketdata/quote_verifier.py": "0bf5911699773c4929d14b048c565c44e5fc2bbe3f9eeebc2b14d96dc8bc4f33",
+    "larp/runtime/allowances.py": "e1e1d0910f2d1678c5ef51c0176f986404a286be97d2be3f7a083ca86793278d",
+    "larp/runtime/driver.py": "789012ddeab9451381bf9794bb5fa974846487d0c8ad95f2c032214b624ce03a",
+    "larp/runtime/gate_a.py": "955caa3d40ecab421d4d13ba4824eee7651797f0d25a918518ae2165e597fa4c",
+    "larp/runtime/gate_a_check.py": "fd60defb7c19604f2cded7bd9c54b2813e554c991013ab2e7eea21e49bb75b47",
+    "larp/runtime/service.py": "33e382c780ad5c046d3ca7427a2bd01056e7f95642115e3fa06daf198e36ffec",
+    "larp/strategy/carry_over.py": "5a370a672f85a76a4e89e8a6d57fc806cfb0eab58b0be70355a46e337e24b2db",
+    "larp/strategy/profiles.py": "b5ba3f97b35ab136ef6441a8e35629fc7acc1cdc29145443463c2f400b7a8f77",
+    "tests/execution/test_allowance_candidate.py": "de9044bf38a7a49d84d4960ddea5edd8cb278ca8936d3b9eba4a3ca446653e52",
+    "tests/execution/test_allowance_recovery.py": "93457acb1d16aeb6917f7b90e17eba23d78b27e26d6c864a2eb15c70a0c1986c",
+    "tests/execution/test_flatten_allowance.py": "9ddd183a85bb55644485d3065bb38089db30ce7955fe026b444b01d0c32cfcc7",
+    "tests/marketdata/test_flatten_allowance.py": "1b18449d95810d0d13e30a4cd7cc4ded1888d08b0b36e603ba2fd340b42d183c",
+    "tests/runtime/test_allowance_recovery.py": "2d00b8bb0c6ef95d5d8758b1942c4bd9976e495c97a38dcb9c9c1a084b9a35c7",
+    "tests/runtime/test_flatten_allowance.py": "d0db6e400718d267e12b5bae3788c5042c1ce1bb6052ffadabc87adaacbd1167",
+    "tests/runtime/test_fs1_recovery.py": "a63065f40ce6fde76e9db6209c081cec3168fba7d28e706b6baa78f3848f269d",
+    "tests/runtime/test_run4_sheet.py": "532ed5c13f344cddb6043792e3bf9b6d1ab9ac390f9fb9172e3f550ba47f0712",
+    "tests/runtime/test_run5_sheet.py": "e1e06fd6ee92b6d4cdd0c2e86d456ba3fb86143449e0c823a8f1bfe17ca7607f",
+    "tests/signer/test_hosted_rehearsal_assembly.py": "fd8a449f3b6749a50fc8fea32a14b986b718c23a283b6cfe37bb1abcb6525e44",
+    "tests/strategy/test_s4_carry_over.py": "d745c2540854e64f72c420b154d93d134ede44823c502b64c65bad114c964d92",
+    "tests/test_allowance_monitoring.py": "539cc1e0ab588f10c4021a9a7e908033248cde8f1090a2c35751485ed38cf13d",
+    "tools/dashboard/decisions-export.sh": "3bb66eb9f0237569ddce9cbbc108ebbae893519ba614597bc2e4e78e65805e25",
+    "tools/deploy/build_final_candidate.py": "5ef2f7e7ff9d79f1829dfda9213248d67b34321b5a3997896243d3734739792a",
+    "tools/deploy/build_rehearsal_candidate.py": "74b9d2a36db6b16aa81ee27e4e8d7bda913c099d27051f4b1e01297b5c72f70e",
+    "tools/deploy/enable_allowance_recovery.py": "b642eee82b24ae0b9cdd480d70dc247124fa24749c13569d09a686b528ba26e0",
+    "tools/deploy/prepare_shadow.py": "8436de6446cff02a8f71bdc962cf111c605331e82f5bf48ac7c4a5e98c4f3e78",
+    "tools/deploy/review_rehearsal_caps.py": "2130dd9cbf3761d201cdd3fff195efb209fd85cf1f1004ce852d7557e52f5b1b"
+  },
+  "command": "python -m pytest -q -rs -p no:cacheprovider --deselect=tests/runtime/test_worker_release.py::Sandbox --junitxml=/tmp/pr283-full.xml",
+  "date": "2026-10-25",
+  "environment": {
+    "network": "internal disposable network; source mounted read-only",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "postgres": "14.24",
+    "postgres_image": "sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2",
+    "python": "3.12.15",
+    "test_image": "sha256:750132bb93c250e52f14f9ea69ce517f993414f2f5060b7af58e78dcaabbb004",
+    "verified_dependency_pins": 45
+  },
+  "evidence_sha256": {
+    "focused_junit": "f2dc9c698ff3740bc90b0b6653012e99389bfc709084ad263ca946ef867f22ff",
+    "junit": "a6c3a9a5139a71eceaeb5edf9b489409fce5891f7524b7d5cb3e3db92454b010",
+    "stdout": "de3a31be46ad25c77515d9a97efde6c9cb309624aebb1654a2b102ac17e69104"
+  },
+  "findings": {
+    "RV1": "Corrected cleanup-off profile/probe install references and clarified standalone policy versus final signer/preparation/release assembly.",
+    "RV2": "Whole synthetic FINAL numeric review COVERED; gas/BNB shortages, insufficient signer USDT cap and quote fee overflow still block; owner approval flags stay false.",
+    "RV3": "FS1 FINAL/FS1-R/S4 profiles unchanged and rebuild exactly; recovery and compatibility suites pass.",
+    "RV4": "Pinned full suite passes; merge remains limited to PR283 into PR278 branch under user authorization."
+  },
+  "focused": {
+    "failed": 0,
+    "passed": 49
+  },
+  "full": {
+    "deselected": 3,
+    "failed": 0,
+    "passed": 2818,
+    "seconds": 265.5,
+    "skipped": 8,
+    "subtests_passed": 4029
+  },
+  "github_ci": {
+    "annotation": "The job was not started because recent account payments have failed or your spending limit needs to be increased.",
+    "runtime_check": "https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/40197344800/job/121180942791",
+    "status": "NOT_STARTED_ACCOUNT_BILLING"
+  },
+  "limitations": [
+    "Eight skips: private public-source fixture, external recorded artifacts, root directory-mode behavior and five systemd cases.",
+    "Three unchanged nested-bubblewrap Sandbox cases explicitly deselected: host cannot supply their required namespaces/proc mounts.",
+    "No live wallet, deployment, signer/profile adoption, actual BNB/timing acceptance or AL9; FINAL-specific Q1/M3/install scripts still require owner implementation/review."
+  ],
+  "merge_target": {
+    "base_commit": "19580fe1c789f08bf02e49e7a0d8ac9282a17a52",
+    "branch": "claude/final-strategy-20261025",
+    "canonical_commit_included": "9fe5fb07",
+    "parent_pr": 278
+  },
+  "profile_sha256": {
+    "docs/build/evidence/fs1-final-20261025/fs1-final-recovery.json": "b8ba06e248b48b6406d77c1bda4110001324382e91bb63c71a27ce514731892f",
+    "docs/build/evidence/fs1-rehearsal-20261025/fs1-rehearsal-recovery.json": "17ab891dec35f8db5388623042e826c65aa7ee7c1ca5861b18913e146d976e36",
+    "docs/build/evidence/s4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json": "58b3180678a01d46b114dad6fadd296cc8a68677f7ab4260892aee5bd33c3b55"
+  },
+  "review_id": "IDEA-098 PR283-RV01",
+  "reviewed_original_head": "308e91b340ae8aeae7e7b7549768190553ab5fec",
+  "schema": "Pr283ReviewValidation.v1",
+  "source_commit": "b3a333de6f8a82c3b06b7bcd49dc1e7a1440c2f1"
+}

@@ -21,6 +21,8 @@ class RO(IamPostgresStore):
             db.execute('SET TRANSACTION READ ONLY'); yield db
 c = json.loads(Path('/etc/larp/execution.json').read_text()); r = c['run_id']
 s = RO(c, rds_client(c['region']))
+from larp.marketdata.allowances import from_config
+print(json.dumps(from_config(c), sort_keys=True))
 KEEP = re.compile(r'kind|status|reason|symbol|side|action|units|amount|price|qty|quantity|notional|tx_hash|nonce|gas|'
                   r'fee|round_id|economic_key|rejection|blocked|halt|incident|low_gas|mandatory|cap|slippage|min_out|'
                   r'expires|_ms$|_s$|outcome|terminal|stage|code|detail', re.I)
