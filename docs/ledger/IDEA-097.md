@@ -202,3 +202,7 @@ Checked:
     written;
   - the new test fails on canonical `9fe5fb07` and passes after the fix;
   - the hosted-assembly suite passes.
+- **M3-R1 result: PASS.**
+  - The new test fails on canonical `9fe5fb07` (the old check refuses run 4's released rows).
+  - After the fix it passes, as do the hosted-assembly, S1 caps, S4 and run-5 sheet suites (39 passed).
+  - Full suite without PostgreSQL: 2178 passed, 0 failed. The change touches no database code.
