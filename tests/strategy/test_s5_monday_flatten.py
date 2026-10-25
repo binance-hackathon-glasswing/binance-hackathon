@@ -47,7 +47,11 @@ def test_s5_1_differs_from_fs1_r_recovery_only_in_the_window_and_policy():
     assert changed == sorted(WINDOW + ('policy_id', 'provenance'))
     prov = sorted(k for k in set(s5['provenance']) | set(fs1r['provenance'])
                   if s5['provenance'].get(k) != fs1r['provenance'].get(k))
-    assert prov == sorted(WINDOW + ('policy_id', 's1'))  # s1: the decision text behind the same block bytes
+    # s1 and baseline carry the decision text behind the same block bytes; nothing else in them differs.
+    assert prov == sorted(WINDOW + ('baseline', 'policy_id', 's1'))
+    for key in ('s1', 'baseline'):
+        a, b = s5['provenance'][key], fs1r['provenance'][key]
+        assert [k for k in set(a) | set(b) if a.get(k) != b.get(k)] == ['decision_id'], key
     assert s5['provenance']['s1']['data_hash'] == fs1r['provenance']['s1']['data_hash']
     assert s5['s1'] == fs1r['s1'] and s5['slippage_bps'] == 20 and s5['environment'] == 'REHEARSAL'
     assert s5['policy_id'] == 'larp-s5-rehearsal-v1'
@@ -95,3 +99,14 @@ def test_s5_5_buys_until_20_sgt_and_sells_everything_from_21_sgt():
     assert {r['symbol']: r['reasons'] for r in flatten['requirements']} == {
         'NVDAB': ['TERMINAL_FLATTEN'], 'SKHYB': ['TERMINAL_FLATTEN']}
     assert flatten['intents'] and all((i['side'], i['mandatory']) == ('SELL', True) for i in flatten['intents'])
+
+
+def test_s5_1_signed_dev_preparation_gate_check_and_runtime_build():
+    from larp.runtime import gate_a_check
+    from tests.strategy import test_s1_rehearsal as rh
+    raw = S5.read_bytes()
+    files = rh.prepared(json.loads(raw), **s2.POLICY)
+    values = {n: json.loads(item) for n, item in files.items() if n.endswith('.json')}
+    gate_a_check.check_scope(values, values['preparation-report.json'])
+    gate_a_check.check_inputs(files, values)
+    s2.build_runtime(raw)
