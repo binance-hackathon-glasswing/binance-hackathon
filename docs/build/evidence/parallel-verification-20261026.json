@@ -1,0 +1,74 @@
+{
+  "id": "IDEA-101 CL-01",
+  "date_sgt": "2026-10-26",
+  "application_base": "1ed5a248cbab03b47484b9602a0a42438304b5b4",
+  "implementation_pr": 278,
+  "outcome": "PASS_OFFLINE_NO_APPLICATION_CHANGE",
+  "environment": {
+    "os": "Linux aarch64",
+    "python": "3.12.15",
+    "postgresql": "14.24",
+    "pytest": "9.1.1",
+    "psycopg": "3.3.6",
+    "image": "larp-test:pr282",
+    "network": "internal Docker network, synthetic providers only"
+  },
+  "focused": {
+    "modules": [
+      "tests/runtime/test_parallel_assessments.py",
+      "tests/runtime/test_signed_models.py",
+      "tests/runtime/test_driver.py",
+      "tests/runtime/test_round_driver_service.py"
+    ],
+    "passed": 85,
+    "subtests_passed": 54,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 29.79
+  },
+  "full_first_run": {
+    "command": "python -m pytest -q -p no:cacheprovider",
+    "passed": 2835,
+    "failed": 4,
+    "skipped": 12,
+    "subtests_passed": 4053,
+    "seconds": 289.56
+  },
+  "corrected_environment_rerun": {
+    "command": "python -m pytest -q -rs -p no:cacheprovider tests/runtime/test_deploy_presetup.py tests/runtime/test_final_review_d.py::CredentialScan tests/runtime/test_gate_a.py::ProviderFile",
+    "passed": 20,
+    "subtests_passed": 23,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 0.93,
+    "correction": "Writable disposable copy with Git index and registered origin; original source unchanged"
+  },
+  "origin_skip_rerun": {
+    "test": "tests/test_dashboard.py::PublishTest::test_d6_refuses_the_main_repository",
+    "passed": 1,
+    "seconds": 0.06
+  },
+  "combined_unique_passing_tests": 2840,
+  "unresolved_failures": 0,
+  "unrun_cases": {
+    "systemd_opt_in": 5,
+    "bubblewrap_not_installed": 3,
+    "root_directory_permission_behavior": 1,
+    "private_source_fixture": 1,
+    "external_recorded_artifacts": 1
+  },
+  "source_review": [
+    "Independent routed assessor instances, bounded one-per-company jobs, shared atomic budget admissions",
+    "Main-thread eligible-result commits; hung jobs skipped; no global order guarantee across restart",
+    "Safety planning stays active; wallet barrier and one-intent planner stay serial",
+    "Cadence continuation blocks on reservations, open rounds and execution-pending facts; bounded chain/restart/replay identities",
+    "FS1 prepared runtime selects five assessment workers and four continuations"
+  ],
+  "limits": [
+    "No real provider rate-limit/latency measurement",
+    "No live wallet, host, model-call or deployment operation",
+    "Not a single all-green full-suite run: coverage combines first run and targeted corrected-environment reruns",
+    "No systemd/bubblewrap/optional-fixture qualification in this check"
+  ],
+  "application_config_tests_unchanged": true
+}
