@@ -1,0 +1,44 @@
+{
+  "schema": "ReviewVerification.v1",
+  "id": "PR282-RV01",
+  "date": "2026-10-25",
+  "review_base": "f56bcf6c",
+  "original_pr_head": "5cac4ca4",
+  "tested_source_head": "482240988c82a9926004d6e21c051be9d8c60310",
+  "acceptance": "PASS for reviewed source merge with explicit environment exclusions; not release/install/profile/signer acceptance",
+  "findings": {
+    "RV01-1": "RouterAllowanceCheck caught only Blocked; an OSError/web3 Unavailable from the read (artifact write, full disk) would propagate out of RoundDriver.once and stop rounds and exits. Now RuntimeError/OSError -> ALLOWANCE_READ_UNAVAILABLE.",
+    "RV01-2": "RouterAllowanceCheck loaded the run and queried open rounds on every driver cycle before its 60 s NOT_DUE check. NOT_DUE now returns first.",
+    "RV01-3": "UntrustedQuoteVerifier read quote_cost_summary.symbols[*].approve_gas_bnb_units outside its profile check, so a profile without it raised a raw KeyError even with recovery disabled. Now a ContractError.",
+    "design_note_not_changed": "With recovery on, any Blocked swap requote after a successful approve aborts at once and cleans up (test_failed_requote_durably_requests_abort_cleanup_without_another_quote) instead of using the remaining prepare probes. Deliberate; trades swap retries for cleanup inside original authority. For Keegan's FLAT-01 timing review."
+  },
+  "environment": {
+    "platform": "Linux aarch64 (Docker Desktop)",
+    "python": "3.12.15",
+    "test_image": "sha256:81bef1c942036709753a126766e55555fa84826b1f11ecf9f0671a927aeb4dc0 (python:3.12.15-bookworm + deploy/requirements-test.lock)",
+    "postgres": "14.24",
+    "postgres_image": "sha256:8ab94f61668dc73bbab4dc13273ff2fc37e635536af62aef5306a49a9682a446",
+    "network": "internal disposable Docker network; no live services or wallet",
+    "source": "standalone git clone of the tested head"
+  },
+  "command": "python -m pytest -q -rs -p no:cacheprovider --deselect=tests/runtime/test_worker_release.py::Sandbox",
+  "results": {"passed": 2707, "failed": 0, "skipped": 8, "deselected": 3, "subtests_passed": 4018, "seconds": 349.94},
+  "first_run_note": "A first full run mounted a git worktree read-only: 4 failures, all from the unresolvable .git pointer or read-only deploy/activation (credential scan, deploy presetup, two gate_a provider-file tests). All 4 pass in a standalone clone; the full clone run above is the result.",
+  "evidence": {
+    "junit_sha256": "2dd25d0c423726255c496493861c0ecc1a7f421bd1d5635f134ace5b4301b793",
+    "stdout_sha256": "03556b56707582cb20a879c341d54d4c19b5ed4ea166e9734db241074762d581"
+  },
+  "code_and_test_sha256": {
+    "larp/runtime/allowances.py": "e1e1d0910f2d1678c5ef51c0176f986404a286be97d2be3f7a083ca86793278d",
+    "larp/marketdata/quote_verifier.py": "0bf5911699773c4929d14b048c565c44e5fc2bbe3f9eeebc2b14d96dc8bc4f33",
+    "tests/runtime/test_allowance_recovery.py": "2d00b8bb0c6ef95d5d8758b1942c4bd9976e495c97a38dcb9c9c1a084b9a35c7",
+    "tests/marketdata/test_flatten_allowance.py": "1b18449d95810d0d13e30a4cd7cc4ded1888d08b0b36e603ba2fd340b42d183c"
+  },
+  "strict_preflight": {"file": "larp/execution_live/untrusted_router.py", "changed": false,
+                       "sha256": "9934f5372f406ad9b9b62e85da93421128d68fdf2722af234f358d6140b0923a"},
+  "github_ci": "NOT_RUN (account billing blocks GitHub Actions)",
+  "limitations": [
+    "No live AL9, signer-policy approval, gas/timing qualification, installation, deployment or wallet action.",
+    "Nested bubblewrap Sandbox cases deselected; systemd/host cases skipped."
+  ]
+}
