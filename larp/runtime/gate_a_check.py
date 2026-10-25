@@ -117,12 +117,12 @@ def check_scope(values, report):
 
 def check_inputs(files, values, report=None):
     runtime, profile, capture = (values[n] for n in ('runtime.json', 'strategy-profile.json', 'input-capture.json'))
-    from larp.marketdata.history import configuration as history_configuration, settings as history_settings
+    from larp.marketdata.history import CONFIG_FILE, configuration as history_configuration, settings as history_settings
     pair = history_settings(runtime['driver'], profile)
     if (pair is None) != ('token-history.json' not in files):
         raise ContractError('Token history package/configuration differs')
     if pair is not None:
-        if gate_a.digest(files['token-history.json']) != pair[1]:
+        if pair[0] != CONFIG_FILE or gate_a.digest(files['token-history.json']) != pair[1]:
             raise ContractError('Pinned token history configuration differs')
         history_configuration(values['token-history.json'])
     driver = runtime['driver']

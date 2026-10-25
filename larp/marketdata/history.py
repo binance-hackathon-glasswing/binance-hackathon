@@ -101,7 +101,14 @@ class SessionHistory:
                 return None
             wrapper = json.loads(raw)
             value = wrapper['value']
-            if (value.get('binding') != self.binding or wrapper['sha256'] !=
+            if (type(value) is not dict or value.get('schema') != 'SessionHistoryCache.v1'
+                    or type(value.get('series')) is not dict or set(value['series']) != set(TOKENS)
+                    or type(value.get('complete')) is not bool
+                    or any(type(value.get(k)) is not int or value[k] < 0
+                           for k in ('target', 'attempted_ms', 'available_ms'))
+                    or any(type(v) is not dict or v.get('token_id') != TOKENS[s]
+                           or v.get('entity_id') != self.identities[s] for s,v in value['series'].items())
+                    or value.get('binding') != self.binding or wrapper['sha256'] !=
                     Document.from_dict(value).digest('larp.session-history-cache.v1')):
                 return None
             return value
@@ -120,6 +127,11 @@ class SessionHistory:
                 stream.flush()
                 os.fsync(stream.fileno())
             os.replace(temporary, self.path)
+            directory = os.open(self.path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
         finally:
             temporary.unlink(missing_ok=True)
 
@@ -139,7 +151,7 @@ class SessionHistory:
             if cached['available_ms'] > now_ms:
                 return self._missing('AWAITING_CAPTURE_CUTOFF')
             return deepcopy(cached['series'])
-        value = dict(binding=self.binding, target=target, attempted_ms=now_ms,
+        value = dict(schema='SessionHistoryCache.v1', binding=self.binding, target=target, attempted_ms=now_ms,
                      available_ms=now_ms, complete=False, series=self._missing('HISTORY_UNAVAILABLE'))
         try:
             series = {s: self._fetch(s, window, now_ms) for s in sorted(TOKENS)}

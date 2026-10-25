@@ -118,6 +118,11 @@ def main(argv=None):
         if args.model_routing is not None:
             with args.model_routing.open('rb') as stream:
                 routing_raw = stream.read(MAX_ROUTING_BYTES + 1)
+        history_raw = None
+        if args.token_history_config is not None:
+            from larp.marketdata.history import MAX_CONFIG_BYTES
+            with args.token_history_config.open('rb') as stream:
+                history_raw = stream.read(MAX_CONFIG_BYTES + 1)
         capture_raw = args.capture.read_bytes()
         wallet = json.loads(capture_raw)['wallet']
         configs = renderer.render(renderer.outputs(json.loads(args.terraform_output.read_bytes())),
@@ -132,7 +137,7 @@ def main(argv=None):
                         untrusted_router_policy_file=args.untrusted_router_policy_file,
                         untrusted_router_policy_sha256=args.untrusted_router_policy_sha256,
                         allowance_recovery=args.allowance_recovery,
-                        token_history_raw=None if args.token_history_config is None else args.token_history_config.read_bytes(),
+                        token_history_raw=history_raw,
                         carry_over_raw=None if args.carry_over is None else args.carry_over.read_bytes())
         write_new(args.out, files)
         report = json.loads(files['preparation-report.json'])

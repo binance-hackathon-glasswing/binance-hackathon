@@ -181,3 +181,49 @@ def test_semantics_are_explicit_and_not_inferred_from_candle_labels():
     for bad in (dict(SEMANTICS,timestamp_kind='CLOSE'), dict(SEMANTICS,timestamp_evidence_sha256=''),
                 dict(SEMANTICS,token_adjustment_version=''), dict(SEMANTICS,extra=True)):
         with pytest.raises(ContractError): configuration(bad)
+
+
+def test_pagination_overlap_must_match_exact_normalized_rows(tmp_path):
+    class Overlap(Port):
+        corrupt = False
+        def candles(self, symbol, *, bar, limit, after=None):
+            result = super().candles(symbol,bar=bar,limit=limit,after=after)
+            if after is not None:
+                overlapping = next(deepcopy(r) for r in self.source if r[5] == after + 1)
+                if self.corrupt: overlapping[3] = '101'
+                result['rows'].append(overlapping)
+            return result
+    port=Overlap(); port.page_size=25
+    assert all(s['quality']=='VALID' for s in reader(tmp_path,port)(NOW).values())
+    assert len(port.calls)==10
+    port=Overlap(); port.page_size=25; port.corrupt=True
+    assert all(s['quality']=='UNAVAILABLE' for s in reader(tmp_path/'bad',port)(NOW).values())
+    assert len(port.calls)==2
+
+
+def test_market_port_preserves_inclusive_after_parameter_and_refuses_boolean_cursor():
+    from larp.marketdata.port import MarketPort
+    class Client:
+        def request(self, method, endpoint, params):
+            self.params=params
+            return dict(response=dict(code=0,data=rows()),available_at='2026-10-23T20:19:59Z',artifact_sha256='a'*64)
+    client=Client(); port=MarketPort(client,'0x'+'1'*40)
+    result=port.candles('NVDAB',bar='1h',limit=300,after=NOW)
+    assert client.params['after']==NOW and result['token_id']==TOKENS['NVDAB']
+    with pytest.raises(Unavailable): port.candles('NVDAB',after=True)
+
+
+def test_fs1_preparation_pins_history_and_transfer_refuses_tampering():
+    from tests.strategy.test_fs1_final import profile,live_prepared
+    from larp.runtime import gate_a_check
+    with pytest.raises(ContractError): live_prepared(profile(),token_history_raw=None)
+    files=live_prepared(profile())
+    values={n:json.loads(raw) for n,raw in files.items() if n.endswith('.json')}
+    gate_a_check.check_inputs(files,values)
+    for defect in ('bytes','pin','path','missing'):
+        f,v=deepcopy(files),deepcopy(values)
+        if defect=='bytes': f['token-history.json']+=b' '
+        elif defect=='pin': v['runtime.json']['driver']['token_history_sha256']='0'*64
+        elif defect=='path': v['runtime.json']['driver']['token_history_file']='/elsewhere/token-history.json'
+        else: del f['token-history.json']
+        with pytest.raises((ContractError,KeyError)): gate_a_check.check_inputs(f,v)

@@ -17,7 +17,7 @@ def snapshot(*, low=False, terminal=False):
         risk=dict(day='2026-10-23'), session_index=79,
         execution_session=dict(index=79,open_ms=1792762200000,close_ms=1792785600000,next_open_ms=1793021400000),
         profile_changes=dict(s1=block(execution=dict(open_delay_seconds=1800,close_buffer_seconds=900,
-            max_attempts_per_leg_session=3,hours='KIT_OPEN_STATE')), new_risk_end='2026-11-01T00:00:00Z',
+            max_attempts_per_leg_session=3,hours='KIT_OPEN_STATE')), new_risk_end='2026-10-23T19:00:00Z' if terminal else '2026-11-01T00:00:00Z',
             flatten_start='2026-10-23T20:00:00Z' if terminal else '2026-11-02T00:00:00Z',
             signing_end='2026-11-03T00:00:00Z'))
     return changed(s, markets=[dict(m, token_id=TOKENS[m['symbol']]) for m in s.context.read()['markets']])
