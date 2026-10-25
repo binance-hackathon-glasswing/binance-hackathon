@@ -1,5 +1,21 @@
 # Current shared build and remaining work
 
+PR290 / S4-F1-RV01 (2026-10-26 SGT): unclaimed command expiry refunds only the latest leg attempt in the same
+session. Refund-tagged facts after any recorded broadcast are refused; claimed commands and ordinary aborts do
+not refund. Source313c5758: pinned Linux/Python3.12.15/PostgreSQL14.24 **2847 tests /4055 subtests PASS,11 skips**;
+focused71/45/zero skips. Exact replay passes. No deployment; record: IDEA-097 S4-F1-RV01.
+
+CL-01 (2026-10-26 SGT): repository maintenance removed 137 merged origin branches and 23 unused local
+branches, preserving exact pre-deletion heads in [the audit record](evidence/repo-cleanup-20261026.json).
+Main, canonical, open PR heads/PR133, the original checkout branch, unique histories and checked-out local
+branches are retained. All eight open issues retain unmet acceptance; [issue dispositions and parallel
+verification](../ledger/IDEA-101.md) distinguish completed implementation from remaining owner/host evidence.
+PR278 PL is present: five parallel company-assessment slots, serial wallet trades and settlement-gated
+cadence continuations; focused current-canonical verification passed 85 tests/54 subtests with PostgreSQL14.24.
+Full-suite plus corrected-environment reruns cover2840 unique passing tests, zero unresolved failures;11
+environment/fixture cases remain unrun. [Receipt](evidence/parallel-verification-20261026.json).
+No deployment, real model call, wallet action or live-concurrency qualification is part of this maintenance.
+
 PR287-RV01 / IDEA-099 (2026-10-26 SGT): reviewed concise round/order reason summaries. Corrected BUY USDT
 units, planned-versus-submitted wording, latched risk/discretionary reasons, pending quote/reduction holds and
 fallback consistency. Orders unchanged. Pinned Python3.12.15/PG14.24: **2840 tests / 4055 subtests PASS**,

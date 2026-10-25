@@ -84,6 +84,28 @@ def balances_of(ledger: dict) -> dict:
             **{s: p["units"] for s, p in ledger["positions"].items()}}
 
 
+def refund_attempt(projection, intent):
+    """IDEA-097 S4-F1: give back the S1 attempt of an expired command the execution service never claimed.
+
+    Only the latest attempt of that leg in the budget's own session, so an older or out-of-order fact never reopens a
+    slot; a round without S1 bounds or budget is unchanged. The cap still bounds every attempt that reached the wallet."""
+    bounds, budget = intent.get("execution_bounds"), projection.get("execution_attempt_budget")
+    if type(bounds) is not dict or type(budget) is not dict:
+        return
+    leg, ordinal = bounds.get("leg"), bounds.get("ordinal")
+    counts, closed = dict(budget.get("counts", {})), dict(budget.get("closed", {}))
+    if budget.get("session") != bounds.get("session_index") or type(ordinal) is not int or counts.get(leg) != ordinal:
+        return
+    if ordinal > 1:
+        counts[leg] = ordinal - 1
+        if leg in closed:
+            closed[leg] = min(closed[leg], ordinal - 1)
+    else:
+        counts.pop(leg)
+        closed.pop(leg, None)
+    projection["execution_attempt_budget"] = dict(budget, counts=counts, closed=closed)
+
+
 def settle(current, observation):
     """Coordinator reducer for ExecutionObservation.v1. Returns {projection, reservation_deltas}."""
     c, o = current.read(), _observation(observation)
@@ -166,6 +188,10 @@ def settle(current, observation):
     else:
         # Logged without a tx hash, with the reason in the round's output (kit convention; IDEA-042 L2).
         order = record["orders"][index]
+        if o.get("attempt_refund") is True:
+            if any(key.startswith(o["intent_id"] + ":") for key in record.get("execution_broadcasts", {})):
+                raise ContractError("A broadcast intent cannot refund an unclaimed attempt")
+            refund_attempt(projection, intent)
         record.setdefault("aborted", []).append({"intent_id": o["intent_id"], "symbol": order["symbol"],
                                                  "side": order["side"], "amount": order["amount"],
                                                  "reason": o.get("reason", "NOT_SUBMITTED")})
