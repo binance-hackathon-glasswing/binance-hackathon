@@ -181,32 +181,76 @@ def raw_balances(capture):
     return result
 
 
-def initial_state(capture, profile, run_id, *, mode='dev'):
+CARRY_OVER_SCHEMA = 'HoldingsCarryOver.v1'
+CARRY_OVER_FILE = 'holdings-carry-over.json'
+CARRY_OVER_KEYS = frozenset(('schema', 'source_run_id', 'wallet_id', 'source_version', 'projection_sha256',
+                             'reservations', 'positions', 'exported_at'))
+
+
+def carried_positions(carry_over, capture, run_id, balances, decimals):
+    """IDEA-097 S4: the previous run's exported book, accepted only when it is exactly the captured chain book."""
+    c = carry_over
+    if (type(c) is not dict or set(c) != CARRY_OVER_KEYS or c['schema'] != CARRY_OVER_SCHEMA
+            or type(c['source_run_id']) is not str or not c['source_run_id'] or c['source_run_id'] == run_id
+            or type(c['source_version']) is not int or c['source_version'] <= 0
+            or type(c['projection_sha256']) is not str or not re.fullmatch('[0-9a-f]{64}', c['projection_sha256'])
+            or type(c['exported_at']) is not str or type(c['positions']) is not dict
+            or set(c['positions']) != set(TOKENS)):
+        raise ContractError('A complete HoldingsCarryOver.v1 export from another run is required')
+    if str(c['wallet_id']).lower() != wallet_address(capture['wallet']):
+        raise ContractError('The carried-over book belongs to another wallet')
+    if c['reservations'] != {}:
+        raise ContractError('The carried-over book has reservations in flight')
+    instant(c['exported_at'])
+    positions = {}
+    for symbol, token in sorted(TOKENS.items()):
+        row = c['positions'][symbol]
+        if type(row) is not dict or set(row) != {'units', 'decimals', 'cost_basis_units'} or any(
+                type(row[k]) is not int or row[k] < 0 for k in row):
+            raise ContractError('Carried-over positions need non-negative integer units, decimals and cost')
+        if row['units'] != balances[token] or row['decimals'] != decimals[symbol]:
+            raise ContractError('Carried-over units differ from the captured chain balance: ' + symbol)
+        if (row['units'] > 0) != (row['cost_basis_units'] > 0):
+            raise ContractError('A carried-over holding needs a positive cost basis, and only a holding has one')
+        positions[symbol] = dict(row)
+    return positions
+
+
+def initial_state(capture, profile, run_id, *, mode='dev', carry_over=None):
     """Only a fresh, stock-flat wallet can be initialized without cost-basis history.
 
     USDT is floored from chain 18 decimals into ledger micro-USDT. Exact raw
     balances and the discarded sub-micro remainder stay in the pinned capture.
-    Native BNB stays in wei. Existing holdings need reviewed accounting history.
+    Native BNB stays in wei. Existing holdings need reviewed accounting history:
+    an S4 profile (IDEA-097) takes it from the previous run's export, carried at
+    that run's cost, so opening equity is cash + BNB value + the carried cost.
     """
+    from larp.strategy import carry_over as scope
     balances = raw_balances(capture)
-    if any(balances[token] for token in TOKENS.values()):
+    carried = scope.declared(profile)
+    if carried != (carry_over is not None):
+        raise ContractError('A holdings carry-over export is required exactly when the profile declares one')
+    if not carried and any(balances[token] for token in TOKENS.values()):
         raise ContractError('Existing stock holdings require reviewed cost-basis history')
     costs = profile['quote_cost_summary']
     if costs['bnb_decimals'] != 18:
         raise ContractError('Native BNB must be accounted in wei')
-    cash, bnb = balances[USDT] // 10**12, balances[NATIVE]
-    opening = cash + bnb * costs['bnb_price_units'] // 10**18
-    if type(run_id) is not str or not re.fullmatch('[A-Za-z0-9][A-Za-z0-9._-]{0,99}', run_id) or opening <= 0:
-        raise ContractError('A funded run identity is required')
     rows = observation(capture, 'metadata', 'market/rwa/tokens', 'GET')
     decimals = {s: integer(next(r['decimals'] for r in rows
                                if r.get('tokenContractAddress', '').lower() == token))
                 for s, token in TOKENS.items()}
+    positions = (carried_positions(carry_over, capture, run_id, balances, decimals) if carried else
+                 {s: dict(units=0, decimals=decimals[s], cost_basis_units=0) for s in sorted(TOKENS)})
+    cash, bnb = balances[USDT] // 10**12, balances[NATIVE]
+    opening = (cash + bnb * costs['bnb_price_units'] // 10**18
+               + sum(p['cost_basis_units'] for p in positions.values()))
+    if type(run_id) is not str or not re.fullmatch('[A-Za-z0-9][A-Za-z0-9._-]{0,99}', run_id) or opening <= 0:
+        raise ContractError('A funded run identity is required')
     day = instant(capture['observed_at']).date().isoformat()
     state = dict(schema='PortfolioState.v1', mode=mode, run_id=run_id, wallet_id=wallet_address(capture['wallet']),
                 cash_units=cash, bnb_units=bnb, bnb_decimals=18, bnb_price_units=costs['bnb_price_units'],
                 opening_equity_units=opening,
-                positions={s: dict(units=0, decimals=decimals[s], cost_basis_units=0) for s in sorted(TOKENS)},
+                positions=positions,
                 reservations={}, applied_events={},
                 accounting=dict(realized_units=0, fees_units=0, gas_value_units=0, service_units=0, turnover_units=0),
                 risk=dict(day=day, day_anchor_units=opening, peak_units=opening,
@@ -276,7 +320,7 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
             balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=None,
             model_routing_raw=None, model_routing_sha256=None, execution='shadow', runtime_mode='dev',
             adoption_ref=None, untrusted_router_policy_file=None, untrusted_router_policy_sha256=None,
-            allowance_recovery=False):
+            allowance_recovery=False, carry_over_raw=None):
     """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage.
 
     The balance RPC is either one `balance_rpc_url` + `balance_rpc_source_id` or an ordered `balance_rpc_providers`
@@ -332,7 +376,16 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
         check_chain(capture, now)
         if providers is not None and capture['chain'].get('source_id') not in {p['source_id'] for p in providers}:
             raise ContractError('The chain balance capture came from another RPC source')
-    state = initial_state(capture, profile, run_id, mode=runtime_mode)
+    carry_over = None
+    if carry_over_raw is not None:
+        # IDEA-097 S4: the previous run's exported book, packaged and hash-pinned with the other inputs.
+        if type(carry_over_raw) is not bytes:
+            raise ContractError('The holdings carry-over must be the exact export bytes')
+        try:
+            carry_over = json.loads(carry_over_raw)
+        except ValueError:
+            raise ContractError('The holdings carry-over must be JSON') from None
+    state = initial_state(capture, profile, run_id, mode=runtime_mode, carry_over=carry_over)
     state_raw = encoded(state) + b'\n'
     configs = json.loads(json.dumps(configs))
     runtime, uploader, operations = (configs[n] for n in ('runtime.json', 'uploader.json', 'operations.json'))
@@ -379,6 +432,8 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                   'initial-state.json': state_raw, 'input-capture.json': capture_raw})
     if routing is not None:
         files['model-routing.json'] = model_routing_raw
+    if carry_over_raw is not None:
+        files[CARRY_OVER_FILE] = carry_over_raw
     env = 'LARP_ARTIFACT_ROOT=/var/lib/larp-evidence\nLARP_EVIDENCE_CONFIG_MODE=' + ('live' if signed else 'shadow') + '\n'
     if sec_contact:
         from larp.intelligence.config import sec_user_agent
@@ -409,6 +464,10 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                   notes=['No share ratio or basis verification granted',
                          'Rehearsal window unchanged; pre-Oct21 rounds may HOLD',
                          'Copy retained terms artifacts to the evidence store before startup'])
+    if carry_over is not None:
+        report['holdings_carry_over'] = dict(sha256=digest(carry_over_raw), source_run_id=carry_over['source_run_id'],
+                                             source_version=carry_over['source_version'])
+        report['notes'].append('Holdings carried over at the previous run\'s cost; Keegan reviews the accounting')
     if allowance_recovery:
         report['allowance_recovery'] = True
         report['missing_inputs'].append('ALLOWANCE_RECOVERY_SIGNER_GAS_AND_HOST_ACCEPTANCE')
