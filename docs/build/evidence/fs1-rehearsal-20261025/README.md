@@ -4,12 +4,17 @@ A **candidate for review**, not approved, installed or bound to a `signer.json`.
 live on the dev wallet before the freeze. It is REHEARSAL-only (dev SHADOW scope, S2-1) and is never installed for the
 final run.
 
+The fourth PR278-RV01 field, `s1_capital_basis=EXCLUDE_GAS`, applies nominal exposure levels to cash plus marked
+stocks minus the cost reserve, excluding BNB from stock allocation. It matches FINAL's F-125 sizing logic using
+the dev wallet's actual balances; it does not require a 30 USDT dev-wallet seed. See the
+[FINAL candidate](../fs1-final-20261025/README.md) and [review](../../../research/fs1-review-20261025.md).
+
 | File | SHA-256 |
 |---|---|
 | `../fs1-final-20261025/fs1-block.json` (the `s1` block; same bytes as S2's) | `35e20c38e23657da6723e31b18f323e5f5ede778de938d73c72ff1a2c1408d03` |
-| `fs1-rehearsal.json` (file bytes; the `PROFILE_SHA` to pin) | `ce0dcde4b5c1b305f3d31351787e3da375531c8fdcaa745ee58bd183be39550a` |
-| `StrategyProfile.v1` digest | `3885387efa3a7aa3c2d58b90137827f3d83268f660d5e260929b28256ec94dd6` |
-| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-rehearsal.json`; the `PROBE_SHA` to pin) | `5ac57ee7beab957e79430ae41946ada3a56f14ebaa8d10802568aca1aee38c99` |
+| `fs1-rehearsal.json` (file bytes; the `PROFILE_SHA` to pin) | `54802665f3fd28cfcdf4fcb3dd9653db2ce5fab00b4ecfd8a183774d436c4115` |
+| `StrategyProfile.v1` digest | `22a9ad90916730bf3c13299aedc4fce54c028abc0f62eb9bc51e6733ac89deb9` |
+| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-rehearsal.json`; the `PROBE_SHA` to pin) | `7d5a5602a2f01f1a789f1bb69a400a4114c2507207d00c695e7220561c2e8693` |
 
 ## Against S2's profile `eb55d76a…`
 

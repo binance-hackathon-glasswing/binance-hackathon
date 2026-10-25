@@ -4,14 +4,14 @@ The candidate `StrategyProfile.v1` for the scored run (final wallet, `live` mode
 **candidate for review**: not approved, installed or bound to a `signer.json`. Isaac's approval of this hash and of the
 final `signer.json`, Keegan's code/release review, the model-adoption reference and budget reconciliation, and the
 final install (Yao) are still required. Install steps: [`docs/build/ops/final-fs1/README.md`](../../ops/final-fs1/README.md).
-PR278-RV01 adds three explicit behavior fields below. Earlier receipts/pins in IDEA-093 are historical.
+PR278-RV01 adds four explicit behavior fields below. Earlier receipts/pins in IDEA-093 are historical.
 
 | File | SHA-256 |
 |---|---|
 | `fs1-block.json` (the profile's `s1` block; byte-identical to S2's `s2-block.json`) | `35e20c38e23657da6723e31b18f323e5f5ede778de938d73c72ff1a2c1408d03` |
-| `fs1-final.json` (file bytes; the `PROFILE_SHA` to pin) | `f5ac59decd5baeb66d8344a90452a89530435afc4e098d8333804123019ae942` |
-| `StrategyProfile.v1` digest of the same profile | `b6dbed22ab90e3c3e3ea4e7a528535ee559db52e9be7b627561781a17feda6ae` |
-| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-final.json`) | `690b8d1c770c91e633b993ecb1e8e0f4620b7f5f63efb646fbaf112fd65a8a87` |
+| `fs1-final.json` (file bytes; the `PROFILE_SHA` to pin) | `0401e96631ed72a6232c1ac62530636c5f6b65b30e282144d9b4df725f380908` |
+| `StrategyProfile.v1` digest of the same profile | `ac5de5720e480af5f72c2faaa9dc153100b46aa9e83354cf6b1f21b35ae8af22` |
+| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-final.json`) | `518b1e7677082dd28b0ee9bf01758b4e473901eb36ac3b7a1eee4de904a2148d` |
 | Model routing `config/intelligence/aiand-routing.fs1.json` | `9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4` |
 
 ## What it is
@@ -19,7 +19,7 @@ PR278-RV01 adds three explicit behavior fields below. Earlier receipts/pins in I
 S1 (`TREND_GUARDED_VOL`) with the decided v1 FINAL scope (BOUNDED_FALSIFIER evidence, DISCRETIONARY_EXIT red-flag
 exits, SHADOW statements), from the same pinned inputs as S2 (quote summary `quotes-complete-20261020`, red-flag
 registry, L = 660 s / m = 30 s, initial-only gas budgets, two exit children per position), with:
-- `s1.execution.hours` KIT_OPEN_STATE and 5 attempts per leg: entries, top-ups and exits at any hour on any day while
+- `s1.execution.hours` KIT_OPEN_STATE and 5 attempts per leg: stock entries, stock top-ups and exits at any hour on any day while
   `openState` is true (F-119, F-95), for both the planner and execution admission;
 - the PF-04 calendar (IDEA-084): first buy 2026-10-29T14:00Z, new risk ends 2026-11-09T21:00Z, flatten from
   2026-11-10T19:00Z, signing ends 2026-11-11T14:45Z;
@@ -30,6 +30,11 @@ registry, L = 660 s / m = 30 s, initial-only gas budgets, two exit children per 
 - `run_halt_recovery_bps=500`: PF02 clears only the 8% buy stop below5% drawdown with healthy reconciled valuation.
 - `s1_reduction_cost_cap_bps=50`: pending level reductions may sell below the entry minimum only when the exact
   quote's authorized minimum clears both50bp and the cash cost reserve. Blocked reductions remain pending.
+- `s1_capital_basis=EXCLUDE_GAS`: apply the nominal levels to cash plus marked stocks minus the cost reserve.
+  F-125 requires a 30 USDT gas swap: at 170 USDT cash the high book targets 161.31 USDT, or 32.262 USDT per name,
+  before fills/costs, instead of starving the fifth name. Actual funding fees and self-check costs change these
+  numbers. Initial-only gas remains enabled; there are no agent BNB top-ups. Fixed-price BNB risk valuation and
+  the final-wallet self-check/handover remain GAP-73/74 acceptance items.
 
 The runtime still supplies no trend series: the prior/start trend state is retained. These repairs do not prove
 alpha or activate a predictive signal. See [PR278-RV01 research/review](../../../research/fs1-review-20261025.md).
@@ -47,7 +52,7 @@ at install, and the scored run must remain one run (automatic restarts resume it
 
 It differs only in `s1.execution.hours`, `trade_after`, `new_risk_end`, `flatten_start` (PF-04; `signing_end` is
 already 14:45), `slippage_bps`, `policy_id`, `exit_gas_reserve_units` (two exit children, as S2) and the provenance of
-those keys and of the two gas-budget formulas, plus the three PR278-RV01 fields/provenance above
+those keys and of the two gas-budget formulas, plus the four PR278-RV01 fields/provenance above
 (`tests/strategy/test_fs1_final.py`, S4-6). Fresh profile/cap/gas/signer/release review is required.
 
 ## Reproduce
