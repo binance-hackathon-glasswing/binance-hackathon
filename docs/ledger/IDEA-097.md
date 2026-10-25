@@ -186,6 +186,26 @@ Checked:
   11 skipped, 4018 subtests, 0 failed**; S4/run-5/Gate A/S2/S3/hosted-assembly suites 103 passed. Merged on the user's
   instruction; B0 (RV01-2) remains a blocked run-sheet step.
 
+## RV01-2 resolution and run-5 progress (2026-10-25)
+
+- **Decision (Yao Zhu for the team, in chat, 2026-10-25):** "no violation this is development". During the
+  development phase, a manual USDT → BNB swap on the dev wallet after its first agent trade is allowed, for rehearsal
+  gas only. This is recorded as a dev-phase note on SKILL.md §0.3 #1. The final wallet's rule is unchanged.
+- **B0 on chain:**
+  - BNB went from 0.005146 (12:18Z) to 0.025178 (13:17Z).
+  - The wallet nonce went from 16 to 23. That range covers the swap and run 4's own approves and sells.
+  - Run 4's balance check adopted the change (seq 233 SURPLUS and 234 DEFICIT incidents, then 235 MATCH).
+  - Funding note: **[PENDING — Yao: tx hash, USDT paid, BNB received]**.
+- **Run 4 sold part of its book in its own flatten window.** By 13:20Z, SKHYB and NVDAB were each down to half, and
+  their leftover router allowances were used up. The other names were unchanged.
+- **Sheet steps done:**
+  - M1-local: build `9fe5fb07`, bundle `larp-9fe5fb07d385-x86_64`, sha `49b81ffc…`, manifest `5609e56f…`;
+  - M2: uploaded;
+  - D1: `larp_rehearsal5` created (`S4-D1`);
+  - Q1: 13:20Z, all ten quotes `VERIFIED_EXECUTABLE`.
+- **M3 first attempt (13:21Z) refused.** Run 4 had a reservation in flight at capture. All other checks passed: every
+  asset MATCH, nonce settled, no allowance open. M3 is retried at the next idle moment.
+
 ## M3-R1 — M3 treats released reservations as in flight (2026-10-25 ~13:55Z; pre-registered before the fix was tested)
 
 - **Finding.** All three M3 attempts (13:21Z, and 13:45–13:49Z with run 4 idle) refused with
@@ -206,3 +226,36 @@ Checked:
   - The new test fails on canonical `9fe5fb07` (the old check refuses run 4's released rows).
   - After the fix it passes, as do the hosted-assembly, S1 caps, S4 and run-5 sheet suites (39 passed).
   - Full suite without PostgreSQL: 2178 passed, 0 failed. The change touches no database code.
+
+## Run 5 install and first sells (2026-10-25)
+
+- **Build** `7fc9f601` (canonical after PR286/M3-R1), bundle `larp-7fc9f6019b54-x86_64`, sha `74165195…`,
+  manifest `acdebfb9…`.
+- **M3 (13:55Z):** `ASSEMBLED_REQUIRES_APPROVAL`, `COVERED`; `signer.json` `378e7b35…`. It differs from run 4's
+  `56e029af…` only in `build_id`/`run_id`/`database_name` and `signing_policy.allowance_recovery: true`.
+- **A1:** Isaac approved profile `58b31806…`, probe `379c476b…` and signer `378e7b35…` (relayed by Yao, about 13:57Z).
+- **R1p (13:57Z):** run 4 retired. **X1:** export `3b9acfd7…` from run 4 version 259, no reservations. GOOGLB
+  0.058964, NVDAB 0.044719, SKHYB 0.068940 and TSLAB 0.050964, with costs 18.93 / 9.46 / 9.48 / 18.92 USDT.
+- **P2, M4, P3, P4 (14:00Z):**
+  - every Gate A check PASS;
+  - the package pins the export, and the starting book equals it;
+  - opening equity 99.266384 USDT;
+  - run 5 `larp-dev-rehearsal-20261025-s4` activated.
+- **Signer:**
+  - T1 applied (8 added).
+  - The signer's SSM agent stayed `Pending/Delayed` for about 40 minutes until a reboot of the signer instance
+    (14:47Z).
+  - Then R1s, P2s, S1, S1b (`key_loader: PASS`) and S2 (`started: true`, UNTRUSTED). P5 at about 14:50Z.
+  - T2 applied (8 destroyed) at 14:55:59Z.
+- **Three commands expired unclaimed** before P5 (execution not yet running), and one attempt failed its price check
+  before its approve (no gas).
+- **Sells:**
+  - First, 15:00Z round: GOOGLB approve `0x509435da…` (nonce 25) and swap `0x15fa2109…` (nonce 26), both status 1;
+    0.029482 GOOGLB sold for +9.47 USDT.
+  - By 16:08Z: half of GOOGLB, half of TSLAB, all of SKHYB and all of NVDAB. 9 signatures, 0 refusals; balance check
+    MATCH; no router allowance open.
+  - Remaining: GOOGLB 0.029482 and TSLAB 0.025482.
+- **Operational notes:**
+  - The RDS instance stalled at 13:33Z and restarted at 13:43Z, before the install (IDEA-100).
+  - An expired AWS login made several status reads stale, about 15:08–15:30Z. Read-only checks need a fresh
+    `aws login`.
