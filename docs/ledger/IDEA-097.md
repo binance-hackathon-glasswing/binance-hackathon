@@ -185,3 +185,23 @@ Checked:
 - PR284-RV01-3 validation (Claude Code, PostgreSQL 16.15 / Python 3.12.3): full suite at `477ac4f1` **2724 passed,
   11 skipped, 4018 subtests, 0 failed**; S4/run-5/Gate A/S2/S3/hosted-assembly suites 103 passed. Merged on the user's
   instruction; B0 (RV01-2) remains a blocked run-sheet step.
+
+## RV01-2 resolution and run-5 progress (2026-10-25)
+
+- **Decision (Yao Zhu for the team, in chat, 2026-10-25):** "no violation this is development". During the
+  development phase, a manual USDT → BNB swap on the dev wallet after its first agent trade is allowed, for rehearsal
+  gas only. This is recorded as a dev-phase note on SKILL.md §0.3 #1. The final wallet's rule is unchanged.
+- **B0 on chain:**
+  - BNB went from 0.005146 (12:18Z) to 0.025178 (13:17Z).
+  - The wallet nonce went from 16 to 23. That range covers the swap and run 4's own approves and sells.
+  - Run 4's balance check adopted the change (seq 233 SURPLUS and 234 DEFICIT incidents, then 235 MATCH).
+  - Funding note: **[PENDING — Yao: tx hash, USDT paid, BNB received]**.
+- **Run 4 sold part of its book in its own flatten window.** By 13:20Z, SKHYB and NVDAB were each down to half, and
+  their leftover router allowances were used up. The other names were unchanged.
+- **Sheet steps done:**
+  - M1-local: build `9fe5fb07`, bundle `larp-9fe5fb07d385-x86_64`, sha `49b81ffc…`, manifest `5609e56f…`;
+  - M2: uploaded;
+  - D1: `larp_rehearsal5` created (`S4-D1`);
+  - Q1: 13:20Z, all ten quotes `VERIFIED_EXECUTABLE`.
+- **M3 first attempt (13:21Z) refused.** Run 4 had a reservation in flight at capture. All other checks passed: every
+  asset MATCH, nonce settled, no allowance open. M3 is retried at the next idle moment.
