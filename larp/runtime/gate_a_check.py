@@ -16,7 +16,7 @@ from larp.runtime import gate_a
 REQUIRED = frozenset(('runtime.json', 'uploader.json', 'operations.json', 'strategy-profile.json',
                       'session-calendar.json', 'initial-state.json', 'input-capture.json',
                       'preparation-report.json'))
-OPTIONAL = frozenset(('evidence.env', 'model-routing.json', gate_a.CARRY_OVER_FILE))
+OPTIONAL = frozenset(('evidence.env', 'model-routing.json', 'token-history.json', gate_a.CARRY_OVER_FILE))
 MAX_FILE_BYTES = 16 * 1024 * 1024
 
 # IDEA-066 PC-DEC01 / PC-MIRROR01: approval belongs to this registered repository,
@@ -117,6 +117,14 @@ def check_scope(values, report):
 
 def check_inputs(files, values, report=None):
     runtime, profile, capture = (values[n] for n in ('runtime.json', 'strategy-profile.json', 'input-capture.json'))
+    from larp.marketdata.history import configuration as history_configuration, settings as history_settings
+    pair = history_settings(runtime['driver'], profile)
+    if (pair is None) != ('token-history.json' not in files):
+        raise ContractError('Token history package/configuration differs')
+    if pair is not None:
+        if gate_a.digest(files['token-history.json']) != pair[1]:
+            raise ContractError('Pinned token history configuration differs')
+        history_configuration(values['token-history.json'])
     driver = runtime['driver']
     model_keys = ('model_routing_file', 'model_routing_sha256', 'model_budget_root')
     if driver.get('assessor') == 'aiand_routed':

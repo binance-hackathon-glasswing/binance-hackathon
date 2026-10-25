@@ -19,7 +19,8 @@ def _hash(value):
     return type(value) is str and len(value) == 64 and all(c in "0123456789abcdef" for c in value)
 
 
-def token_sessions(capture: Document, calendar: Document, *, cutoff, price_scale=1_000_000):
+def token_sessions(capture: Document, calendar: Document, *, cutoff, price_scale=1_000_000,
+                   allow_calendar_close=False):
     """TokenCandles.v1 + USRegularSessions.v1 -> PriceSeries.v1.
 
     Raw rows: [open, high, low, close, volume, timestamp_ms, tradeCount]. Missing
@@ -81,7 +82,8 @@ def token_sessions(capture: Document, calendar: Document, *, cutoff, price_scale
             continue
         spans = [(a, b, price) for a, b, price in rows if a < closed and b > opened and b <= cutoff]
         complete = (local_open.hour == 9 and local_open.minute == 30
-                    and local_close.hour == 16 and local_close.minute == 0
+                    and ((local_close.hour == 16 and local_close.minute == 0)
+                         or (allow_calendar_close and local_close.hour == 13 and local_close.minute == 0))
                     and local_open.second == local_close.second == 0
                     and bool(spans) and spans[0][0] <= opened
                     and spans[-1][1] == closed

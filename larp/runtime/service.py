@@ -291,8 +291,12 @@ def build_driver(config, store, secrets, *, clock_ms=None):
         validate_live(profile)
         if profile.get('environment') != ('FINAL' if mode == 'live' else 'REHEARSAL'):
             raise ContractError('Signed model profile environment differs from the run')
-    calendar = SessionCalendar(_pinned_json(d['session_calendar_file'], d['session_calendar_sha256'],
-                                            'Session calendar'))
+    calendar_document = _pinned_json(d['session_calendar_file'], d['session_calendar_sha256'], 'Session calendar')
+    calendar = SessionCalendar(calendar_document)
+    from larp.marketdata.history import SessionHistory, configuration as history_configuration, settings as history_settings
+    history_pair = history_settings(d, profile)
+    history_config = None if history_pair is None else history_configuration(_pinned_json(
+        *history_pair, 'Token history configuration'))
     profile_hash = Document.from_dict(profile).digest('StrategyProfile.v1')
     intelligence = load_config(d['intelligence_mode'])
     registry = load_registry()
@@ -338,9 +342,16 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     # One registry-validated issuer map for evidence contexts and review jobs (#25).
     issuer_map = {i: dict(token=m['token'], underlying_id=m['underlying_id']) for i, m in issuers.items()}
     health = RuntimeHealth(store, config['run_id'], run['epoch'])
+    history = None
+    if history_config is not None:
+        history_root = Path(d['market_artifact_root']) / 'history'
+        history_client = Web3Client(key, secret, artifacts=Artifacts(history_root / 'raw'), timeout=5)
+        history = SessionHistory(MarketPort(history_client, wallet), profile=profile,
+            calendar=calendar_document, calendar_sha256=d['session_calendar_sha256'], issuers=issuer_map,
+            semantics=history_config, root=history_root)
     builder = ContextBuilder(profile=profile, profile_hash=profile_hash, run_id=config['run_id'], issuers=issuer_map,
                              market=feed, health=health,
-                             calendar=calendar, lifecycle_policy=lifecycle,
+                             calendar=calendar, lifecycle_policy=lifecycle, series=history,
                              gas_quotes=feed.gas_quotes if gas is not None else None)
     from larp.sources.store import OverlayArtifacts
     # The runtime has no writable evidence mount on the host (IDEA-047 R15): artifacts it produces itself (tool

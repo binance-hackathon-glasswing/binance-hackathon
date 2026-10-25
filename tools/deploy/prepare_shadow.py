@@ -84,6 +84,8 @@ def main(argv=None):
     assembly.add_argument('--untrusted-router-policy-sha256', help='Reviewed SHA-256 of that policy file (LD03)')
     assembly.add_argument('--allowance-recovery', action='store_true',
                           help='Candidate opt-in; execution/signer policy and gas acceptance remain required')
+    assembly.add_argument('--token-history-config', type=Path,
+                          help='Pinned TokenHistoryConfig.v1 with qualified hourly timestamp/adjustment semantics; required for FS1')
     assembly.add_argument('--carry-over', type=Path,
                           help="IDEA-097 S4: the previous run's HoldingsCarryOver.v1 export (an S4 profile requires it)")
     args = parser.parse_args(argv)
@@ -130,6 +132,7 @@ def main(argv=None):
                         untrusted_router_policy_file=args.untrusted_router_policy_file,
                         untrusted_router_policy_sha256=args.untrusted_router_policy_sha256,
                         allowance_recovery=args.allowance_recovery,
+                        token_history_raw=None if args.token_history_config is None else args.token_history_config.read_bytes(),
                         carry_over_raw=None if args.carry_over is None else args.carry_over.read_bytes())
         write_new(args.out, files)
         report = json.loads(files['preparation-report.json'])
