@@ -105,3 +105,29 @@ while requesting its first quote, or while a mandatory reduction waits for a val
 must name the pending quote/reduction and affected symbol rather than assert `no target change`.
 Test with real planner output as well as structured blocked requirements; preserve error precedence,
 three-reason limit and the genuine no-change fallback. The second partial full run is also superseded.
+
+### PR287-RV01 results and merge decision (2026-10-26 SGT)
+
+**RV1–RV6 PASS offline**, source `62b5d47f`. BUY summaries now say `BUY NVDAB for 32.262 USDT`
+(I3/A10 cash amount), while SELL summaries retain token quantities. Non-submission is joined by `intent_id`,
+so an expired sibling cannot mark another order aborted. Wording describes planned sells, a latched deep
+drawdown and a discretionary falsifier proposal accurately. Empty-order rounds name pending quotes or
+mandatory reductions, including `BLOCKED_MARK`/`BLOCKED_INPUT`; a genuine unchanged target retains the
+original fallback. Audit fallback includes `decision_summaries=[]`. Order schema and amounts are unchanged.
+
+Focused audit/settlement/replay: **102 tests / 97 subtests PASS**. Full suite: **2840 passed, 4055 subtests
+passed, 8 skipped, 3 deselected, 0 failed**, 266.69 s, Linux Python **3.12.15**, **PostgreSQL 14.24**.
+All 53 applicable recursive requirement lines (44 unique distributions) match; `pip check` passes.
+Skips: optional private source fixture, external market artifacts, root directory-mode behavior, five systemd
+tests. The three unchanged nested-bubblewrap tests are explicitly deselected because this Docker host
+cannot supply their namespaces/proc mounts; this is not sandbox/systemd or host acceptance.
+GitHub runtime check `121219067932` never started because account billing/spending limits blocked it.
+
+Integration advanced during validation to `75989642` (PR285, documentation only). Normal merge `980ffbfa`
+preserves both IDEA-099 and IDEA-100 ledger entries; code/tests/tools/deployment/migrations remain identical
+to the full-tested source. Post-integration release packaging, run-5 sheet and summary checks: **41 tests /
+34 subtests PASS**. [Machine-readable receipt](../build/evidence/pr287-review-20261026.json).
+
+Merge PR287 into canonical under the user's review/fix/merge authorization. No live execution or installation.
+Keep the IDEA-099 backlog item: Keegan/Isaac accept wording/placement; release owner builds FS1 from a
+commit containing this code; Yao confirms the actual FINAL activation BUY/SELL logs contain these summaries.

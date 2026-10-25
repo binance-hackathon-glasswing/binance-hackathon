@@ -1,5 +1,14 @@
 # Current shared build and remaining work
 
+PR287-RV01 / IDEA-099 (2026-10-26 SGT): reviewed concise round/order reason summaries. Corrected BUY USDT
+units, planned-versus-submitted wording, latched risk/discretionary reasons, pending quote/reduction holds and
+fallback consistency. Orders unchanged. Pinned Python3.12.15/PG14.24: **2840 tests / 4055 subtests PASS**,
+8 skips/3 nested-sandbox exclusions; CI startup billing-blocked. PR285 documentation integrated, preserving
+both ledger entries; 41 post-integration checks pass with application/test bytes unchanged. Keegan/Isaac wording
+acceptance, FS1 release build and Yao's actual FINAL activation-log check remain open; no installation.
+[Review](../ledger/IDEA-099.md#pr287-rv01-results-and-merge-decision-2026-10-26-sgt) /
+[receipt](evidence/pr287-review-20261026.json).
+
 PR278-RV03 (2026-10-25): **PR278 (FS1, IDEA-093/098) merged into canonical at the user's request.** Before the merge
 canonical `7fc9f601` (PR286) was merged in; all four FS1 profiles rebuild byte for byte (FINAL recovery `b8ba06e2…`
 to install, cleanup-off `19176e6c…` for comparison, FS1-R `17ab891d…` / `54802665…`); full suite 2819 passed,
