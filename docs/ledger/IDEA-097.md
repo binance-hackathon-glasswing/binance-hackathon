@@ -182,3 +182,6 @@ Checked:
     - Isaac and Keegan review a smaller S4 gas envelope that the wallet's current BNB covers.
 
     Merging is not activation; nothing here is approved, installed or run.
+- PR284-RV01-3 validation (Claude Code, PostgreSQL 16.15 / Python 3.12.3): full suite at `477ac4f1` **2724 passed,
+  11 skipped, 4018 subtests, 0 failed**; S4/run-5/Gate A/S2/S3/hosted-assembly suites 103 passed. Merged on the user's
+  instruction; B0 (RV01-2) remains a blocked run-sheet step.
