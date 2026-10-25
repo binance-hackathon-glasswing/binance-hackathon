@@ -99,11 +99,11 @@ def test_rh5_specific_refusals_are_not_rewrapped():
 
 def prepared(p, **changes):
     from tests.runtime.test_gate_a import assembled
-    with patch('socket.create_connection', side_effect=AssertionError('no model/network')):
-        if p.get('policy_id') == 'larp-fs1-rehearsal-v1' and 'token_history_raw' not in changes:
+    if p.get('policy_id') == 'larp-fs1-rehearsal-v1' and 'token_history_raw' not in changes:
         from tests.marketdata.test_session_history import SEMANTICS
         changes['token_history_raw'] = json.dumps(SEMANTICS).encode()
-    return assembled(profile_raw=json.dumps(p).encode(), execution='service',
+    with patch('socket.create_connection', side_effect=AssertionError('no model/network')):
+        return assembled(profile_raw=json.dumps(p).encode(), execution='service',
                          adoption_ref='SYNTHETIC SJ-11-RH01', **changes)
 
 

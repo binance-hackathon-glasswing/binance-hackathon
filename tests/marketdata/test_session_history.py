@@ -78,6 +78,7 @@ def test_cached_session_survives_restart_and_refreshes_after_next_close_delay(tm
     monday = int(instant('2026-10-26T20:14:59Z').timestamp()*1000)
     assert reader(tmp_path, port)(monday) == first
     assert len(port.calls) == 5
+    port.available = monday + 999
     output = reader(tmp_path, port)(monday+1000)
     assert len(port.calls) == 10
     assert all(s['bars'][-1]['session_index'] == 80 for s in output.values())

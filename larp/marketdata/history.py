@@ -167,7 +167,7 @@ class SessionHistory:
             if raw.get('symbol') != symbol or raw.get('token_id') != TOKENS[symbol] or raw.get('bar') != '1h':
                 raise ContractError('Historical candle identity differs')
             acquired = _ms(raw['available_at'])
-            if acquired > now_ms + MAX_CAPTURE_LAG_MS:
+            if acquired < latest or acquired > now_ms + MAX_CAPTURE_LAG_MS:
                 raise ContractError('Historical capture is future-dated')
             available.append(acquired)
             sha = raw['content_hash']
