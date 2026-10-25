@@ -92,3 +92,10 @@ Pass criteria, registered before new tests or execution:
   identical results. Existing round logging, settlement and replay checks pass without changing order schema.
 - RV4: full suite passes on pinned Python 3.12.15, recursive dependency locks and PostgreSQL 14.24;
   record exact skips/exclusions and CI availability. Code and tests must be pushed before execution.
+
+Additional inspection finding and prospective criterion (2026-10-26 SGT, before unit-correction tests):
+the I3/A10 BUY `amount` is **USDT spent**, while SELL `amount` is the **token quantity**
+(`larp/ports.py::validate_execution_request`, `larp/integration/runtime.py`). Thus `BUY 32 NVDAB` is
+misleading. RV5: both stock and gas BUY summaries explicitly say `BUY <symbol> for <amount> USDT`;
+SELL continues to say `SELL <amount> <symbol>`. Metadata and kit `orders` remain identical. The initial
+full run was interrupted to fix this issue; only the subsequent completed run counts as full validation.
