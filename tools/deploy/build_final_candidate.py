@@ -16,7 +16,7 @@ from larp.contracts import ContractError, Document
 from larp.risk.planner import exit_parts
 from larp.strategy.profiles import validate_live
 from larp.strategy.schema import ceil, fraction
-from tools.deploy.build_rehearsal_candidate import gas_formulas, pinned_profiles
+from tools.deploy.build_rehearsal_candidate import fs1_review_options, gas_formulas, pinned_profiles
 
 DECISION = 'IDEA-093 FS1 (2026-10-25)'
 # IDEA-084 PF-04 (adopted): first buy Oct 29 14:00, new risk ends Nov 9 21:00, flatten Nov 10 19:00, signing ends
@@ -69,6 +69,7 @@ def build(*, s1_raw, s1_decision):
         decision_id='IDEA-049-C LD10-P03 (Keegan delegation, 2026-10-21); IDEA-093 FS1',
         formula='5 positions*2 balanced exit children*gas_action_budget_units; cleanup disabled')
     p['s1'] = block
+    fs1_review_options(p)
     p.update(PF04_WINDOW, slippage_bps=SLIPPAGE_BPS, policy_id=POLICY_ID)
     for key in PF04_WINDOW:
         p['provenance'][key] = dict(decision_id='IDEA-084 PF-04 (adopted); ' + DECISION,

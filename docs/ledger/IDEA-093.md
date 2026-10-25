@@ -298,3 +298,11 @@ purge overlapping forward labels, all ablations/trials recorded, block confidenc
 return and improvement, and prospective shadow evidence before any new predictive/crowd overlay is eligible. No
 market experiment is run here because the necessary cleared point-in-time inputs and untouched evaluation block
 have not been supplied; classify economic acceptance as NOT_ESTABLISHED.
+
+### Initial counterexamples (pushed test commit `342b9f53`)
+
+Network-disabled, read-only checkout in the existing Python3.12.15 test image: **12 failed,20 passed**. Failures
+confirm RV01-1/2/3 and the absent new profile options/validation. RV01-4's hypothesized defect is **withdrawn**:
+all four refusal tests pass on the original implementation because `s1_block` and the existing reserve check
+already enforce these conditions. Retain those regression tests; no validator rewrite is needed. This correction
+supersedes the provisional finding above. Candidate generation will add only RV01-1/3's explicit profile opt-ins.

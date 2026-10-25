@@ -201,7 +201,10 @@ def decide(snapshot, state):
                      and (units or not old.get("ever_held", False) or fresh_review or fresh_book))
             step = p["minimum_trade_units"]
             s1["seen"].add(symbol)
-            if symbol in s1["rebalance"] and (gap <= -step or (gap >= step and gates)):
+            # RV01-3: reductions have an exact-quote cost gate; an entry-size floor must not silently
+            # complete a pending cut. Keep the obligation until fills reach target or the level changes.
+            costed_cut = p.get('s1_reduction_cost_cap_bps') == 50 and gap < 0
+            if symbol in s1["rebalance"] and (costed_cut or gap <= -step or (gap >= step and gates)):
                 targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "S1_LEVEL_CHANGE", want))
                 s1["pending"].add(symbol)
             elif (symbol not in s1["rebalance"] and gates and gross < s1["level"] - s1["cfg"]["band"]

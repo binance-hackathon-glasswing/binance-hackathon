@@ -141,10 +141,16 @@ def plan(snapshot, proposal_or_none):
                              if v["side"] == "BUY" and v.get("kind") != "GAS_TOP_UP"
                              and v.get("symbol") != "BNB" and market.get(v["symbol"]) is None})
         E = equity(ledger, market, allow_missing=True)
+        recover = (p.get('run_halt_recovery_bps') == 500
+                   and all(c.get('health', {}).get(k) is True for k in (
+                       'integrity_ok', 'journal_ok', 'ownership_ok', 'clock_ok', 'new_spending_ok', 'balances_ok'))
+                   and not ledger['reservations'] and not ledger.get('unreconciled_outcomes')
+                   and not ledger.get('accounting_status'))
         # Incomplete valuation is not a loss observation. Preserve latches/peak;
         # block buys and use only the disclosed lower bound for healthy-name trims.
         risk_ledger = (ledger if unvalued or jumped else
-                       update_risk(Document.from_dict(ledger), now=now, equity_units=E).read())
+                       update_risk(Document.from_dict(ledger), now=now, equity_units=E,
+                                   recover_run_halt=recover).read())
         r = risk_ledger["risk"]
         result["risk_state"] = r
         if jumped:
@@ -422,6 +428,8 @@ def plan(snapshot, proposal_or_none):
         m = market.get(symbol)
         if m is None:
             continue
+        costed_reduction = (s1 is not None and side == 'SELL' and not mandatory
+                            and why == ['S1_LEVEL_CHANGE'] and p.get('s1_reduction_cost_cap_bps') == 50)
         notional_cap = max(0, p["per_trade_cap_units"] - (cost_reserve if side == "BUY" else 0))
         if side == "SELL" and mandatory:
             # LD10-P03: balanced children; every child of a split exit stays economically executable.
@@ -434,7 +442,7 @@ def plan(snapshot, proposal_or_none):
                 req["status"] = "DUST_OR_UNEXECUTABLE"
             result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_UNEXECUTABLE"})
             continue
-        if not mandatory and value(q, m) < p["minimum_trade_units"]:
+        if not mandatory and not costed_reduction and value(q, m) < p["minimum_trade_units"]:
             result["rejections"].append({"symbol": symbol, "reason": "MINIMUM_TRADE"})
             continue
         if m.get("token_open") is not True or m.get("underlying_open") is not True:
@@ -469,7 +477,8 @@ def plan(snapshot, proposal_or_none):
                     break
             continue
         cash, fee, gas, q = [quote[k] for k in ("cash_units", "fee_units", "gas_bnb_units", "token_units")]
-        if q <= p["dust_units"] or (not mandatory and value(q, m) < p["minimum_trade_units"]):
+        if q <= p["dust_units"] or (not mandatory and not costed_reduction
+                                    and value(q, m) < p["minimum_trade_units"]):
             if req is not None:
                 req["status"] = "DUST_OR_UNEXECUTABLE"
             result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_MINIMUM_TRADE"})
@@ -477,8 +486,14 @@ def plan(snapshot, proposal_or_none):
         # IDEA-088: the cost uses the expected fee when the quote gives one; reservation and gas checks keep `gas`.
         gas_value = ceil(Fraction(quote.get("expected_gas_bnb_units", gas) * ledger["bnb_price_units"],
                                   10**ledger["bnb_decimals"]))
-        mark = value(q, m)
-        cost = max(Fraction(0), cash - mark if side == "BUY" else mark - cash) + fee + gas_value
+        # RV01-2: the authorized minimum, not the displayed quote, is the executable cost bound.
+        # Gas here is the declared expected allowance; the full action budget remains reserved below.
+        mark = value(quote['min_receive_units'] if side == 'BUY' else q, m)
+        proceeds = quote['min_receive_units'] if costed_reduction else cash
+        cost = max(Fraction(0), cash - mark if side == "BUY" else mark - proceeds) + fee + gas_value
+        if costed_reduction and cost * 10000 > mark * p['s1_reduction_cost_cap_bps']:
+            result['rejections'].append({'symbol': symbol, 'reason': 'S1_REDUCTION_COST_CAP'})
+            continue
         if cost > cost_reserve and not mandatory:
             result["rejections"].append({"symbol": symbol, "reason": "COST_RESERVE_INSUFFICIENT"})
             continue

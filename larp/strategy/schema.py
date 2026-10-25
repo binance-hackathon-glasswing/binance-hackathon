@@ -47,6 +47,14 @@ def ratio(value):
     return [value.numerator, value.denominator]
 
 
+def review_options(p):
+    """IDEA-093 PR278-RV01: explicit S1 opt-ins; absence preserves historical policy behavior."""
+    for key, decided in (("run_halt_recovery_bps", 500), ("s1_reduction_cost_cap_bps", 50)):
+        if key in p and (p.get("baseline") != "TREND_GUARDED_VOL"
+                         or type(p[key]) is not int or p[key] != decided):
+            raise ContractError(key + " requires S1 and the exact PR278-RV01 value " + str(decided))
+
+
 def floor(value):
     return value.numerator // value.denominator
 
@@ -89,6 +97,7 @@ def profile(snapshot):
         raise ContractError("Per-trade cap required")
     initial_gas_only(p)
     execution_authority(p)
+    review_options(p)
     if p["baseline"] == "TREND_GUARDED_VOL":
         # S1 (IDEA-076): its own levels, weights and hard line replace the proposal's 80%/20% caps, which are a
         # recorded deviation (IDEA-075 §14, GAP-62). The other baselines keep every declared cap below.

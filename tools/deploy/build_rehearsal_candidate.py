@@ -27,6 +27,15 @@ FS1R_POLICY_ID = 'larp-fs1-rehearsal-v1'
 FS1_SLIPPAGE_BPS = 20
 
 
+def fs1_review_options(p):
+    """Explicit, hashed review refinements shared by FINAL and its rehearsal (IDEA-093 PR278-RV01)."""
+    p.update(run_halt_recovery_bps=500, s1_reduction_cost_cap_bps=50)
+    p['provenance']['run_halt_recovery_bps'] = dict(decision_id='IDEA-084 PF-02; IDEA-093 PR278-RV01',
+        formula='Clear only the 8% buy stop strictly below 5% drawdown with fresh complete reconciled valuation')
+    p['provenance']['s1_reduction_cost_cap_bps'] = dict(decision_id='IDEA-093 PR278-RV01 (review candidate)',
+        formula='Pending S1 level SELL may be below entry minimum only at authorized-minimum cost <=50bp and cost reserve')
+
+
 def s1_block(raw):
     """The S1 block from its exact bytes: weights 1/5 each at about 100 USDT (SJ-09-PC01 C5), deterministic limiter."""
     if type(raw) is not bytes:
@@ -134,6 +143,7 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
         p['provenance']['policy_id'] = dict(decision_id='IDEA-092 S3 (team request, 2026-10-24)',
             formula='S2 with a scheduled sell-all; REHEARSAL-only on the dev wallet; never installed for the final run')
     if fs1_rehearsal:
+        fs1_review_options(p)
         p.update(FS1R_WINDOW, slippage_bps=FS1_SLIPPAGE_BPS, policy_id=FS1R_POLICY_ID)
         for key in FS1R_WINDOW:
             p['provenance'][key] = dict(decision_id='IDEA-093 FS1-R (2026-10-25, proposed window)',
