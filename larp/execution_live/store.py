@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS execution_observations (
 def _decode(raw):
     try:
         value = json.loads(bytes(raw))
+        if type(value.get('abort_pending', False)) is not bool:
+            raise Conflict('invalid execution cleanup state')
         value['intent'] = Intent(**value['intent'])
         value['attempts'] = tuple(Attempt(**{**a, 'payload': Payload(**a['payload'])}) for a in value['attempts'])
         return Execution(**value)
@@ -149,7 +151,7 @@ class ExecutionStore:
         if row is None:
             return None
         value = _decode(row[0])
-        if (digest(asdict(value)) != row[1] or value.revision != row[2]
+        if (digest(json.loads(bytes(row[0]))) != row[1] or value.revision != row[2]
                 or value.intent.key != key or row[3] != self.run_id or row[4] != self.wallet):
             raise Conflict('execution state integrity or namespace mismatch')
         rows = db.execute('SELECT revision,event,state_hash,previous_hash,head FROM execution_journal '
@@ -188,12 +190,14 @@ class ExecutionStore:
                     last = stored.attempts[-1] if stored is not None and stored.attempts else None
                     if (len(ended) != 1 or last is None or last.state != 'REJECTED' or last.broadcast_at is None
                             or current.attempts[-1] != replace(last, state='NOT_SUBMITTED')
-                            or current.status != 'ABORTED' or stored.status != 'ACTIVE'):
+                            or current.status != ('ACTIVE' if current.abort_pending else 'ABORTED')
+                            or stored.status != 'ACTIVE'):
                         raise Conflict('not-submitted needs a rejected possible send')
                 if event.get('type') == 'ABORTED_UNBROADCAST':
                     if (stored is None or stored.status != 'ACTIVE' or not stored.attempts
                             or stored.attempts[-1].broadcast_at is not None
-                            or current.status != 'ABORTED' or current.attempts[-1].state != 'ABORTED'):
+                            or current.status != ('ACTIVE' if current.abort_pending else 'ABORTED')
+                            or current.attempts[-1].state != 'ABORTED'):
                         raise Conflict('no-positive-unbroadcast evidence for revocation')
                 # This table is archive-readable. Only the restricted signature
                 # registry may retain capability to submit an unbroadcast transaction.
@@ -231,7 +235,7 @@ class ExecutionStore:
             if signed is None:
                 return None
             state, attempt = self._attempt(db, attempt_id)
-            if state.status == 'ABORTED' or attempt.state == 'ABORTED':
+            if state.status == 'ABORTED' or attempt.state in {'ABORTED', 'NOT_SUBMITTED'}:
                 raise Conflict('attempt signing authority revoked')
             return signed
 

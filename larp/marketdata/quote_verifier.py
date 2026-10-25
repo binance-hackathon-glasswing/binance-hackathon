@@ -9,8 +9,8 @@ proof. The checks:
 - the transaction decodes with the signer's own `UntrustedRouterDecoder` (byte-exact layout; the recipient is not in
   the calldata, so it stays unverified, as the signer and execution accept only in this mode);
 - the minimum output is inside the slippage limit and the inner deadline is after the response arrived;
-- the decoder's live preflight passes on the read RPC: at one numeric block the router dispatches the swap selector to
-  the pinned facet, both code hashes are pinned, and no other pinned token has an allowance to the router.
+- at one numeric block the router dispatches the swap selector to the pinned facet and both code hashes match.
+  Other-token allowances refuse by default; an explicit recovery opt-in records them for executor cleanup.
 
 Gas: a swap cannot be estimated before its approve (IDEA-070 KG-DEC-01-H P3), so no exact estimate exists when the
 plan is made. The proof reserves the profile's `gas_action_budget_units`, which bounds every fee execution can
@@ -51,7 +51,7 @@ class ProviderRpc:
 
 
 class UntrustedQuoteVerifier:
-    def __init__(self, decoder, profile, *, wallet, bnb_decimals):
+    def __init__(self, decoder, profile, *, wallet, bnb_decimals, allowance_recovery=False):
         from larp.strategy.schema import initial_gas_only
         if getattr(decoder, 'mode', None) != 'untrusted' or getattr(decoder, 'rpc', None) is None:
             raise ContractError('The quote verifier needs an untrusted-router decoder bound to a read RPC')
@@ -62,7 +62,9 @@ class UntrustedQuoteVerifier:
             action, sizing = profile['gas_action_budget_units'], profile['gas_sizing_budget_units']
             scale = profile['quote_cost_summary']['bnb_decimals']
             slippage = profile['slippage_bps']
-        except (KeyError, TypeError, AttributeError, ContractError):
+            cleanup_sizing = max((r['approve_gas_bnb_units'] * 5 + 3) // 4
+                                 for r in profile['quote_cost_summary']['symbols'].values())
+        except (KeyError, TypeError, AttributeError, ValueError, ContractError):
             raise ContractError('The quote verifier needs an initial-gas-only profile with both gas budgets') from None
         if initial is not True or any(type(v) is not int or v <= 0 for v in (action, sizing)) or sizing > action:
             raise ContractError('The quote verifier needs an initial-gas-only profile with both gas budgets')
@@ -71,6 +73,10 @@ class UntrustedQuoteVerifier:
         self.decoder, self.wallet = decoder, wallet.lower()
         self.action, self.sizing = action, sizing
         self.slippage_bps, self.slippage = slippage, slippage_percent(slippage)
+        self.cleanup_sizing = cleanup_sizing
+        if type(allowance_recovery) is not bool:
+            raise ContractError('allowance_recovery must be an explicit boolean')
+        self.allowance_recovery = allowance_recovery
 
     def __call__(self, raw, request, observation):
         try:
@@ -102,11 +108,35 @@ class UntrustedQuoteVerifier:
         available = datetime.fromisoformat(raw['available_at'].replace('Z', '+00:00'))
         if available.tzinfo is None or economics.deadline <= available.timestamp():
             raise Blocked('quote expired at retrieval completion')
-        # The execution service's own swap check, before the approve (approved=False): live router pins, no
-        # other-token allowance. The decoder comes from the signer's pinned policy, never from the response.
-        self.decoder.preflight(SimpleNamespace(router=self.decoder.router, wallet=self.wallet,
-                                               pay_token=economics.pay_token, amount=economics.amount),
-                               payload, approved=False)
+        # Live pins always apply. Without recovery, the execution service's own before-approve preflight also
+        # requires clean other-token allowances. The decoder comes from the pinned policy, never the response.
+        intent = SimpleNamespace(router=self.decoder.router, wallet=self.wallet,
+                                 pay_token=economics.pay_token, amount=economics.amount)
+        dirty = {}
+        if self.allowance_recovery:
+            # Numeric-block code/facet pins and all six allowances are still verified. Only execution
+            # may clean them; its independent strict preflight remains mandatory before every swap.
+            if payload.to != self.decoder.router or payload.value != 0:
+                raise Blocked('swap router or native value differs from the pinned router')
+            from .port import TOKENS
+            symbols = {v: k for k, v in TOKENS.items()} | {
+                '0x55d398326f99059ff775485246999027b3197955': 'USDT'}
+            dirty = {symbols[t]: a for t, a in self.decoder.allowances(intent).items() if a}
+        else:
+            try:
+                self.decoder.preflight(intent, payload, approved=False)
+            except Blocked as error:
+                if str(error) == 'router allowance exceeds what this swap may take':
+                    from .port import TOKENS
+                    symbols = {v: k for k, v in TOKENS.items()}
+                    dirty = {symbols.get(t, 'USDT'): a for t, a in self.decoder.allowances(intent).items()
+                             if a and t != economics.pay_token}
+                    raise Blocked('DIRTY_ROUTER_ALLOWANCE:' + ','.join(sorted(dirty))) from None
+                raise
+        expected = self.sizing + (sum(s != symbols.get(economics.pay_token, 'USDT') for s in dirty)
+                                  * self.cleanup_sizing if self.allowance_recovery else 0)
+        if expected > self.action:
+            raise Blocked('observed allowance cleanup exceeds action gas budget')
         return dict(source_hash=raw['artifact_sha256'], economics=economics, payload=payload, route_valid=True,
-                    gas_basis=GAS_BASIS, gas_bnb_units=self.action, expected_gas_bnb_units=self.sizing,
-                    fee_units=0, fee_basis=FEE_BASIS, slippage_bps=self.slippage_bps)
+                    gas_basis=GAS_BASIS, gas_bnb_units=self.action, expected_gas_bnb_units=expected,
+                    fee_units=0, fee_basis=FEE_BASIS, slippage_bps=self.slippage_bps, dirty_allowances=dirty)

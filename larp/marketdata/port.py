@@ -252,6 +252,7 @@ class MarketPort:
             proof = self.quote_verifier(raw, request, observation)
             if proof is not None:
                 self._executable_quote(observation, request, raw, proof)
+                observation['dirty_allowances'] = proof.get('dirty_allowances', {})
         return observation
 
     def _executable_quote(self, observation, request, raw, proof):

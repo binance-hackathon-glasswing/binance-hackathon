@@ -209,7 +209,7 @@ def poll(s):
             alerts.append(dict(kind='HOLDING_DIFFERS_FROM_FILLS', symbol=sym, chain=held[sym], fills=s['units'][sym]))
     lingering = {k: v for k, v in allowance.items() if v}
     if lingering:
-        alerts.append(dict(kind='ROUTER_ALLOWANCE_OPEN', allowances=lingering))
+        alerts.append(dict(kind='DIRTY_ROUTER_ALLOWANCE', severity='LOW', allowances=lingering))
     if held['BNB'] < EXIT_RESERVE_WEI:
         alerts.append(dict(kind='BNB_BELOW_EXIT_RESERVE', bnb_wei=held['BNB'], reserve_wei=EXIT_RESERVE_WEI))
     value = {k: (Fraction(held[k], E18) * px[k]) if px.get(k) is not None else None for k in STOCKS}
@@ -224,7 +224,7 @@ def poll(s):
                 pnl_vs_start_ex_bnb_usdt=float(equity - 96) if equity is not None else None,
                 realized_usdt=float(s['realized']), unrealized_usdt=float(unreal) if unreal is not None else None,
                 gas_spent_bnb=float(Fraction(s['gas'], E18)), trades=s['trades'], failed_txs=s['failed'],
-                price_error=px.get('_error'), alerts=len(alerts))
+                price_error=px.get('_error'), alerts=len(alerts), router_allowances={k: str(v) for k, v in allowance.items()})
     append('snapshots.jsonl', snap)
     for a in alerts:
         append('alerts.jsonl', dict(a, utc=snap['utc'], block=block))
