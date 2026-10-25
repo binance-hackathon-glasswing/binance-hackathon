@@ -1,0 +1,1361 @@
+{
+  "id": "CL-01",
+  "date_sgt": "2026-10-26",
+  "canonical_sha": "1ed5a248cbab03b47484b9602a0a42438304b5b4",
+  "remote": [
+    {
+      "name": "capture",
+      "sha": "e26c96f7fecc807492e0919598d78943c6866716",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "claude/alarm-descriptions-20261017",
+      "sha": "51f6d52876337f82bb82f681db4642b9b0d76caf",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/arch01-trigger-20261025",
+      "sha": "d433c82a6577a552ede6e26884c46f115ffe1a18",
+      "action": "KEEP",
+      "reason": "protected"
+    },
+    {
+      "name": "claude/archive-oom-20261025",
+      "sha": "51ae1426f637f0a57ac7c987aa4bf6334fbdeb3b",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/archive-retain-seconds-20261017",
+      "sha": "19339bdc7e72b8cf79f8d5c54d069072c49bd585",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/assessment-budget-idea083",
+      "sha": "8231c49263a00907d8af0e2d7901a24a5de7891a",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/b02-untrusted-router-20261019",
+      "sha": "f32d59563b53f2abc7f9983f5c3b03d262cd12d5",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/backlog-prune-20261021",
+      "sha": "e4b32c3f62a095005ab81c5f7458b7bcb4b950cb",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "claude/basis-verifier-20261023",
+      "sha": "29a86dbc122d4211a820a68bf993fbeac6d71ed9",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/basis-verifier-proposal-20261023",
+      "sha": "788da0833485ab9a5bfe09e7c02c43a98467f9f0",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/cool-lamport-eqk7kj",
+      "sha": "fbc5ddd317a0da18e95550ead2a4f2c5aabba8a0",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/d-dn-10-clock-clear",
+      "sha": "d42c3ff12fdae09e70c71e143792ede33743bbd9",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/db-connection-reuse-20261023",
+      "sha": "ccabfcf4a698e568f2b7e3a1bc2556f58bc325d1",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "claude/db-load-spec-20261026",
+      "sha": "a93d0afa21fa1cffcd8ee0d04a4204a1703038fa",
+      "action": "KEEP",
+      "reason": "protected"
+    },
+    {
+      "name": "claude/dc01-repro-20261021",
+      "sha": "bd3d611855e791e39f397de0ac120de29300bf19",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ecstatic-archimedes-sb1drf",
+      "sha": "f56bcf6caef0f8dac2d8a4953e302577e2882ab3",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/elegant-darwin-x1z95b",
+      "sha": "aa9268e47f78ccd0ef990d7edd626a27951e5141",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "claude/exp008-s1-vs-equal-weight-20261023",
+      "sha": "bba5a21dbcfdc5e2c4368beefc811af222ee17db",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/f125-final-activation-20261025",
+      "sha": "f13ab0857022ff2291fe464c938bff953dbc15ac",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/final-strategy-20261025",
+      "sha": "fabc9c744530d296fad44af85f63fba27287adf5",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/flatten-allowance-deadlock-20261025",
+      "sha": "455c5d090efa8bdbe9b5fca080e9403c5aa8843c",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/fs1-sell-path-20261025",
+      "sha": "c0d8cc3cb2cb7bdcfba3d6f110e035f38c9690f2",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/funny-shannon-jwaru9",
+      "sha": "2c78c833c7800404cd15f1fa11a7c62f7f5a8463",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/gap62-deviations-20261021",
+      "sha": "81224b463cfb82b923a160651dde28952a5d926f",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/gate-a-inputs",
+      "sha": "a3f284f139fd6d668b0bcde78014394e1f9db7ac",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "claude/gate-b-router-decoder",
+      "sha": "d110ac6d287a2ae13a7281edf6793a8a6be08af1",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/idea085-rv01-followup-20261023",
+      "sha": "ce6b6c504c1c253e6cc8b089aec60370987c5e0d",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/idea087-pages-dashboard-20261023",
+      "sha": "1bafb6e78f67f66b1c3838ae211066425e003073",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/idea-080-signer-access-20261017",
+      "sha": "4a7ff99507ce73705cfefa65e855e42b4c7e91d7",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/issue31-day-roll-tests",
+      "sha": "09c3ed631310cc363cd5580380c111ccefe5bdeb",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "claude/issue39-skhyb-deviation-20261023",
+      "sha": "689146a89bc05ea52b0202c16b50ecf71087a420",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/issue59-systemd-runtime-dirs",
+      "sha": "96a474de20a535c5e6d9100b9fe8b1e108a5c62f",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "claude/issue120-review-20261021",
+      "sha": "3bd8a388a66ab74d5ff8f1a003ee859c0c98dcc6",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/jolly-darwin-b3y522",
+      "sha": "6db0100a9bb4e208b72e7c2157c9f9aaa067e2f6",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/keegan-decisions-20261017",
+      "sha": "520742341081e1ee13d6f6f9ac416e4f2a15eee7",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/keegan-decisions-20261021",
+      "sha": "5c1149784519929dcb74f9088429cc1cce48b261",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/kgdec01-host-check-20261021",
+      "sha": "1239e5a43eee8dc6515701bf2c03f08791a5dc56",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld02-execution-packet-20261020",
+      "sha": "989135556d8ef87c10d2a666dcdee9a71e65d71c",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld02b-calldata-gas-20261020",
+      "sha": "73262238a9bcf7191dd87d98274e2244af685cce",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld02c-rfq-rpc-20261021",
+      "sha": "36d4c1a467d36ec7aa45a83529f2d66dab6f3ee0",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld04-finite-authority-20261020",
+      "sha": "e323996b6288a7920dcdb2e6591796c1c117ae78",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld04-profile-authority-20261020",
+      "sha": "63471a04c92dc5655bf85916ffdcf7502f6acfd7",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld07-gas-scope-20261020",
+      "sha": "4c6059c66c28e824b5f84bd1ca854b0f360b7d0d",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld09-gas-budget-b-20261021",
+      "sha": "6367a152823a57da6563db79b378ed9cab5c2745",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld12-ops-measure-20261021",
+      "sha": "cc238944774b6c1006cd08dcc9c9c6c64d68dbb9",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld13-operations-20261020",
+      "sha": "14bad6f360bf90d1ea69a0dc4225f7083c0173b4",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld14-interim-20261021",
+      "sha": "8df14b026373b0b5af5b158d7acb98f7a889fddf",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld15-rc1-20261021",
+      "sha": "74a6a87697d00cc33d30890213dc372d5d4c2abf",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/ld15-release-checklist-20261020",
+      "sha": "73f69b4aa281ca9cf0c91d332c3e7236b644c422",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "claude/ld21-drill-harness-20261020",
+      "sha": "5d037eb9c11c51e6b3c93e23eed42b45ec4c2f04",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/llm-stage-prompts-20261017",
+      "sha": "7a0ea1433b3a029e9e2dc97817bac98a7e09c0ce",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/local-ci-20261015",
+      "sha": "4cf941230354aab5f275ccd1be8b8249c2c1b6e2",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "claude/m3-released-reservations-20261025",
+      "sha": "8d26fe4358300829bcba5ea3b5987b2aeb71111d",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/openai-json-input-fix-20261018",
+      "sha": "5317b183435d43b0a85e851c367f47f1c51d3ddf",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/pf05-stale-mark-trims-20261022",
+      "sha": "b0fcd26f473e7c4c2dd4312c16c787020ba0d9f8",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/pr264-merge-record-20261023",
+      "sha": "7d21ed3f0dadfe00547f94bda454f39349c74a5b",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/pre-trading-checklist-20261017",
+      "sha": "addb5c604d316d08f31c5fb1a2bcdf236dd8f104",
+      "action": "KEEP",
+      "reason": "protected"
+    },
+    {
+      "name": "claude/prepare-rpc-providers-20261017",
+      "sha": "b8e8f0b9638a3300a5f89f6b8f3a43d2d9ab885e",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/rc7-mirror-ci-20261024",
+      "sha": "18620d4c38cbdb2f77409a846de2cbab0288722f",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/reason-summary-20261025",
+      "sha": "5f79dc0f71c95cf7751f2d7873b2df7c29a2dd83",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/record-91",
+      "sha": "f22c5b86561143ceb6b9a8a4a38495dac8ccb161",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/rehearsal-install-20261022",
+      "sha": "d6197c7bc4e102564803e3bdab0b153ccf2dec24",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/rehearsal-install-ops-20261022",
+      "sha": "26c94b17a25fc7239b8b405d206b4909d6d08253",
+      "action": "KEEP",
+      "reason": "protected"
+    },
+    {
+      "name": "claude/rehearsal-rc5-run-sheet-20261023",
+      "sha": "fef5f455a1a5f5b3e65e6a4a5d39e75b5fb5a2ec",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/revert-main-capture-upload-20261021",
+      "sha": "ea166c0f94aa00641693ea25c313219d7f021b3a",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/review-124-140-20261017",
+      "sha": "a707b0770db616745a438382105535e926382732",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/rg2-fault-hook-20261021",
+      "sha": "83d9651b7e6b182a5383a8ec4b13f3abe395a93d",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/rpc-config-reader-reuse-20261017",
+      "sha": "58e850fa511f10f87ff5ca09a16a3e85fba3dc68",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/run4-install-records-20261024",
+      "sha": "041195ef571ed2d4aec29e226f8164b8b658b0c9",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/s1-rehearsal-run3-20261023",
+      "sha": "a5e6d1e85c333ac5cbd37a1769c3a42f4746de70",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/s1-trading-plan",
+      "sha": "4d673dfaecfc701f9811508cbc236d25f114aa3a",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/s2-weekend-impl-20261024",
+      "sha": "d3059a5314d79169026cca207dccbcdb8d99ae12",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/s2-weekend-trade-test-decision-20261024",
+      "sha": "f28947e9a4cebf6d90a2c78b3d593430501dafbc",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/s2f2-cadence-handoff-20261024",
+      "sha": "3a60a650a475c6d79aefc7771316f82bee2b5b27",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/s4-b0-decision-20261025",
+      "sha": "d259e81c6c82d7a9e9f0bfcaeab06c18a9d93a1d",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/s4-carryover-flatten-20261025",
+      "sha": "e15f06d783c0e551cd2f1486c6ca48609bf0ad31",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/signer-check-rc3a-20261022",
+      "sha": "96674c3ec17de233abbde323c2d2ae28ee7e192e",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/signer-hosted-assembly-20261022",
+      "sha": "612dfc2f7fadfaf8a03c9ce3ff04267e5d6d7a50",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/sj06-p4-timer-check-20261022",
+      "sha": "0b4b44371c68f77381d595d617d584f29ad10820",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/sj09-s1-precheck-20261022",
+      "sha": "9fe0e76a02282aa1907ed9a56a1a21d8c93a8909",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/sj11-a2-local-rc6-20261024",
+      "sha": "05a250bed61805535e7dc9c6d28c8420035e472a",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/sj11-qv01-quote-verifier",
+      "sha": "96a542e5cfdc474d04524392c94e228f2593bda1",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/strategy-research-20261024",
+      "sha": "4316a93faa66d1fc60e4fae2ba3c358dee84d5ad",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/sweet-tesla-dx49h0",
+      "sha": "f7260a730d6dd694a203d99774fc25bc016b2ab7",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/systems-check-20261022",
+      "sha": "f7ddd741e5b53b955de6197fec4182006ef8a69b",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/vigilant-carson-krj1sw",
+      "sha": "db733a84b6138ad5f59fc48b7ddddc2643f6433c",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/zen-meitner-luu8xj",
+      "sha": "16ed0838262010ada229cb261f9755b8a6cbe7c9",
+      "action": "KEEP",
+      "reason": "protected"
+    },
+    {
+      "name": "codex/all-pr-review-validation-20261017",
+      "sha": "8df6b421addbba9172639657bcf73e724bb8f0ba",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/consolidate-open-prs-20261019",
+      "sha": "d268bfff3796a9449740410f482bd9c8521a2a4a",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/docs-consolidation-20261021",
+      "sha": "e65f8270935b9094dcd7d60ce902d06fbb92fd98",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/doj-trial-cap-fixes-20261018",
+      "sha": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/gate-a-approved-mirror-20261018",
+      "sha": "aa293f8aff55adf8807a020ac2df5a012fcec2c3",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/gate-b-remaining-20261017",
+      "sha": "f3d81990460409976aa98ae6823edae8de3196b8",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-01-balance-rpc-20261017",
+      "sha": "97c413d1b5ee752812701a1badfe4c9426fd6876",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-02-network-review-20261017",
+      "sha": "bced620108a88659aea71040f78651a2579e6e79",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-03-router-evidence-20261017",
+      "sha": "757e4f89653510486c9010644a41d617894f6bdc",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-05-signing-lifetime-20261017",
+      "sha": "272816621c11699556dc1eeae350ccdb1580aa76",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-06-signer-caps-20261017",
+      "sha": "902a5a69a60689e7c018ada29d89c342297e68c2",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-08-dev-gas-record-20261017",
+      "sha": "c0e3f13332f321f897066075da2b500f97adf66d",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-09-quote-fees-20261017",
+      "sha": "6bcd11fb3f362ae07354a89476806e4042beee2c",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-10-signer-handoff-20261017",
+      "sha": "fa5c40fd8031187a4c9e9c72c1332e9876d2fcb4",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-11-signed-llm-20261017",
+      "sha": "585f573ee58ea9823d65ea1386f11d062f3dcb9f",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-12-execution-bounds-20261018",
+      "sha": "d635ce99fc6c5e09ccfb1b86428dddfd7d1bfbe7",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-c05-signer-prereqs-20261019",
+      "sha": "75e5d7f707f8f87c17364b1dcfd2cadbba02a8a1",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-dev-funding-20261018",
+      "sha": "d1682ea0c2d7cbfc64231ed87713fc6f5be1d932",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-idea083-implementation-20261019",
+      "sha": "dfe9f9558664c6f5ae47da383024eb7df534b8b2",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-iq01-activation-matrix-20261019",
+      "sha": "df44110047ed0ac9d7840d76641b78130acdc5e6",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-iq02-declaration-audit-20261019",
+      "sha": "73c45f92120eb7dfeaff53ce57295b7beee61e13",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-ld01-mode-readiness-20261020",
+      "sha": "3961c7816fa0658dd4cb507e210d75c6772a95e6",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-ld06-allowance-recovery-20261020",
+      "sha": "04b326fc0610be4bd6b8a43234bdfb9f9246938e",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-ld08-initial-gas-20261020",
+      "sha": "fbc5ddd317a0da18e95550ead2a4f2c5aabba8a0",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-native-qualification-20261018",
+      "sha": "849b66d165d729967d6a06d5eaeb1290e05fefb9",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-network-signed-scope-20261018",
+      "sha": "62f7d15b54c914bb4e2ce29a7cf3c2c347d66b65",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-pr179-runtime-review-20261019",
+      "sha": "bc22df82e5ec221c0033bda433e304838282de40",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-profit-decisions-20261021",
+      "sha": "01e18c694d3e2a4eca0054747bca85c14a9106ee",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/isaac-router-trust-decision-20261019",
+      "sha": "6ce2fa0bce37630468747bff6bb039116c4f1395",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/isaac-signer-assembly-20261019",
+      "sha": "817675f63f06ca53374ca5ae4c66852fbbf840dd",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-signer-input-handoff-20261019",
+      "sha": "89ba2896ba2272071ce983a8058d33da744fa6ac",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-signer-readiness-20261018",
+      "sha": "33e1cee2e47f8afdbae31aa0660525667de79dbf",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/keith-desktop-capture-20261020",
+      "sha": "8e928d18b954ab34995f4721913b98a3f998ce26",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/keith-model-prerequisites-20261018",
+      "sha": "fa43160a6930e0e967e25837a95a08d8f96fc30b",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/kgdec01-isaac-review-20261021",
+      "sha": "27b4324163941519a30e01c4c1b57c5c3cdfa060",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/ld08-gas-router-coverage-20261021",
+      "sha": "bb0fae75448c9488a7cedf590786d140450bfa97",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/ld08-ld10-gas-envelope-20261021",
+      "sha": "6d06b74d6c205ee24f7ff25b627a1e1ae118753d",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/ld10-profile-coverage-20261021",
+      "sha": "9c574c45487c33bd078de9898b5ac59861a32c34",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/llm-routing-preparation-20261017",
+      "sha": "d8cd32ac0210859a32f5547a7867e66e5b712db7",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/llm-trial-pr174-20261018",
+      "sha": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/llm-trial-stop-20261020",
+      "sha": "a3a7e54f5915fb3d7671f6870d36bb7ae007dd23",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/llm-v3-release-results-20261018",
+      "sha": "996ef0f5cc7b6bb95946f50c2122677be981a9d6",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/llm-v3-trial-release-20261018",
+      "sha": "d8aa7d53e5e27543135f8729ff7a7afd4450278a",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/merge-reviewed-prs-20261018",
+      "sha": "b06c15cb06987183aacb9d7f9868bdac7e00559c",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/openai-preferred-pacing-20261018",
+      "sha": "f20e941801230c183bd5b849434bffd095a8ceaa",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/post-review-gates-20261020",
+      "sha": "a959fe2360ccff23b675c19c21734bbcb5d81eb4",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/pr133-remaining-20261019",
+      "sha": "fc044e84fdf65610b9c770cc14e49d634ad2f76b",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/pr174-release-evidence-20261018",
+      "sha": "d970a49dd4f84ddf1e92df980ee39315f2324033",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/pr177-review-fix-20261019",
+      "sha": "aa293f8aff55adf8807a020ac2df5a012fcec2c3",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/pr204-repairs",
+      "sha": "e942db26c9848b5c2b6a879e6c142ceb1780156f",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/pr-review-171-173-20261019",
+      "sha": "d966c829b04de9ea5c05a48daf1dbf4d84e3662a",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/pr-review-177-176-20261019",
+      "sha": "f6ebda0e46d056799dc7b7242b7a4051ca5ac92d",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/pr-review-system-20261012",
+      "sha": "3c837f712b00cd48f20366257f70ba0e8d6610d8",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/pre-sign-simulation-20261021",
+      "sha": "0c3c179af05338e50a81d784885adb8e13dd7efb",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/publish-idea083-20261019",
+      "sha": "2b8c9dfa938b4705c173c8579f7975390bbcc507",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/publish-pr174-llm-20261018",
+      "sha": "00603288f41e17f7f016425ed3bfa868e7b8ff89",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/publish-unsigned-v3-20261018",
+      "sha": "4e7159b689095d2cec4f776c1609c77d84064a4e",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/quote-capture-linux-20261017",
+      "sha": "3d114afb2de9cfd1a41738a21de2f5fd61d2fcc7",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/rehearsal-gates-20261019",
+      "sha": "3846867e40ae1c8fa137c1e63286b34fa4783959",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/rehearsal-qualification-20261021",
+      "sha": "0374cb477b46cafea24c1b4fb05b704d7fe307b4",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/rehearsal-rc2-receipt-20261021",
+      "sha": "d7e8837fe38bed6f4608a0de7f9d630e2ca39e56",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/rehearsal-window-profiles-20261021",
+      "sha": "246adb44ce768874993aca5c20743417fecc4290",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/release-handoff-7a0ea14",
+      "sha": "570dcfe214252882ea117f747bd3d6fbde687a81",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/review-pr210-20261021",
+      "sha": "5943e1c2845291e19aceee01b918dc7d0c424e9b",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/review-pr211-20261021",
+      "sha": "ffe6210c2528705dbeab4566f1edbd8bed83518d",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/review-pr215-20261021",
+      "sha": "2cd1551b9cc64f3fb5254decd9c893d21f268292",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/review-pr216-20261021",
+      "sha": "9c1cb842928b12af9dd38ae7bdb57216c9382a32",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/review-pr217-20261021",
+      "sha": "5fffdbc976bbcbf41429173ad3f90507f07a1c85",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/rpc92-approved-settings-20261019",
+      "sha": "5f356b1b382811304b8a18b04662572e4ce4acea",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/rv120-inline-review-20261021",
+      "sha": "1470771b63b32440c9bc0be705ceab41d03c3021",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/shadow-trial-bars-fixes-20261018",
+      "sha": "6f377dde8eeb0e1e58b4b61fc4446abe72504657",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/signer-config-only-20261022",
+      "sha": "d5e0eedc3d212b721ce0f13ce174594be7c4ad3c",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/system-testing-20261012",
+      "sha": "1ed5a248cbab03b47484b9602a0a42438304b5b4",
+      "action": "KEEP",
+      "reason": "protected"
+    },
+    {
+      "name": "codex/thin-path",
+      "sha": "c4a16ec1ce9a7e59609095058f713feac54103f7",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "codex/yao-unblocked-pr133-20261019",
+      "sha": "90ef371c54f892bfb5c626bb1640067cc53e68b7",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/147-handle-provider-check-timeouts",
+      "sha": "e0974cec2541d730f8c42d39aa7287365be5df67",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "docs/idea-052-timesfm-20261015",
+      "sha": "6a3a3363c954c0e66e2256490044eaacd2f0c566",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "main",
+      "sha": "cf67c5d722e46c19c2e4f772ab5e306da0d10524",
+      "action": "KEEP",
+      "reason": "protected"
+    },
+    {
+      "name": "review/final-idea083-release-20261019",
+      "sha": "cc9e34d538037f7374ba8abc9a77e896039cdcfa",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "review/final-pr133-20261019",
+      "sha": "cc4e71500f97bd2f793bd00de4eb91e517771d26",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "review/final-pr184-20261019",
+      "sha": "817675f63f06ca53374ca5ae4c66852fbbf840dd",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    }
+  ],
+  "local": [
+    {
+      "name": "claude/arch01-trigger-20261025",
+      "sha": "d433c82a6577a552ede6e26884c46f115ffe1a18",
+      "action": "KEEP",
+      "reason": "protected"
+    },
+    {
+      "name": "claude/archive-oom-20261025",
+      "sha": "67d2abfbc370dcfec443cd3e3e1a5dab1e5ba7c7",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/archive-retain-seconds-20261017",
+      "sha": "d703ae3ac7506e3ad53344a6842f1e6e240936c6",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/assessment-budget-idea083",
+      "sha": "5557824cd6b19302216e96c5396ebc6b4500d21f",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/awesome-easley-d7d11f",
+      "sha": "cf67c5d722e46c19c2e4f772ab5e306da0d10524",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/basis-verifier-20261023",
+      "sha": "9b09410e6a2ac24e966d619b84ccad208774101f",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/basis-verifier-proposal-20261023",
+      "sha": "ed322142abacc251f757d2b77103d98eb773aa66",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/db-connection-reuse-20261023",
+      "sha": "2ba46cb8dd9b4affe675c5f075f80aedf82792ae",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/db-load-spec-20261026",
+      "sha": "a93d0afa21fa1cffcd8ee0d04a4204a1703038fa",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/f125-final-activation-20261025",
+      "sha": "5684dc1851e1fd74945e7562a890fdcc81839c3d",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/flatten-allowance-deadlock-20261025",
+      "sha": "d3fa9bbf5f2baea336380315ad932a8a2594ef15",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/hopeful-kare-134a61",
+      "sha": "cf67c5d722e46c19c2e4f772ab5e306da0d10524",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/idea-080-signer-access-20261017",
+      "sha": "d491553e96a1e82a74029ef990e1e3fb8535b3cb",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/llm-stage-prompts-20261017",
+      "sha": "09130b06e30ab17576ad8d03314faaffb666be4a",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/local-ci-20261015",
+      "sha": "4cf941230354aab5f275ccd1be8b8249c2c1b6e2",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "claude/m3-released-reservations-20261025",
+      "sha": "8d26fe4358300829bcba5ea3b5987b2aeb71111d",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/openai-json-input-fix-20261018",
+      "sha": "5317b183435d43b0a85e851c367f47f1c51d3ddf",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/pre-trading-checklist-20261017",
+      "sha": "36d6f489bd4c590013e4b9e69e8567c11031057f",
+      "action": "KEEP",
+      "reason": "protected"
+    },
+    {
+      "name": "claude/prepare-rpc-providers-20261017",
+      "sha": "b8e8f0b9638a3300a5f89f6b8f3a43d2d9ab885e",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/quote-cost-summary",
+      "sha": "f6bb8bfb0ce7fa69d0bd686d8aae04d692a62edd",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/rehearsal-install-20261022",
+      "sha": "c7ab76418375f3f994b67834a55b53245ba0f475",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/rehearsal-install-ops-20261022",
+      "sha": "26c94b17a25fc7239b8b405d206b4909d6d08253",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/rehearsal-rc5-run-sheet-20261023",
+      "sha": "39afd6c7582f27b3c8e8ff8b08b78e9fcb5f3350",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/review-124-140-20261017",
+      "sha": "ab10b2c67e5037abeaf7ad099468edbf81b94b1c",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/rpc-config-reader-reuse-20261017",
+      "sha": "58e850fa511f10f87ff5ca09a16a3e85fba3dc68",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/run4-install-records-20261024",
+      "sha": "041195ef571ed2d4aec29e226f8164b8b658b0c9",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/s2-weekend-trade-test-decision-20261024",
+      "sha": "b00d69243a27458573bcf980081586ac8b926714",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/s2f2-cadence-handoff-20261024",
+      "sha": "3a60a650a475c6d79aefc7771316f82bee2b5b27",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/s4-b0-decision-20261025",
+      "sha": "d259e81c6c82d7a9e9f0bfcaeab06c18a9d93a1d",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/s4-carryover-flatten-20261025",
+      "sha": "a77ad32aafd871100e1464d1fd245e7a7649c2e0",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/signer-check-rc3a-20261022",
+      "sha": "96674c3ec17de233abbde323c2d2ae28ee7e192e",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "claude/signer-hosted-assembly-20261022",
+      "sha": "6c2ba1d035302ed09148338fe57e579d4b740b1f",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/sj06-p4-timer-check-20261022",
+      "sha": "3e176760121b90e8369e86e03e33cd9b67c21011",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/sj11-a2-local-rc6-20261024",
+      "sha": "05a250bed61805535e7dc9c6d28c8420035e472a",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/sj11-qv01-quote-verifier",
+      "sha": "5fda10e071c44e6025af0387e6a93999e7d832c0",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/wr-b-risk-fixes-0f380b",
+      "sha": "1820e63d34a6497192014ead1a02491e4b10d92b",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/wr-c-execution-fixes-5c3ee3",
+      "sha": "9d87d8aba8903f096e5572580e76e3878590178f",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/wr-d-runtime-fixes-58d34b",
+      "sha": "ffaf86758231fd688cad32edd7074a9e2e72bc3a",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "claude/wr-tests-31-59",
+      "sha": "97c8e8ffc7e82e3801bd73d10217455e6c6a866b",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "codex/doj-trial-cap-fixes-20261018",
+      "sha": "1dee43d09861d06a3f5d9b7981d21071d0307a3c",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/fs1-pr278-review",
+      "sha": "67f91ba2eacf29ff66b8cbfd7cc73fc33b99c9c5",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "codex/gate-a-approved-mirror-20261018",
+      "sha": "7787d2047dac3360c8474b9f9fea2ba17a7a6934",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "codex/gate-b-remaining-20261017",
+      "sha": "f3d81990460409976aa98ae6823edae8de3196b8",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/isaac-09-quote-fees-20261017",
+      "sha": "6bcd11fb3f362ae07354a89476806e4042beee2c",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/keith-model-prerequisites-20261018",
+      "sha": "fa43160a6930e0e967e25837a95a08d8f96fc30b",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/llm-trial-stop-20261020",
+      "sha": "bd5176e2b0d34817b68f15cabafc0e1870f46cfe",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/openai-preferred-pacing-20261018",
+      "sha": "f20e941801230c183bd5b849434bffd095a8ceaa",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/pr133-remaining-20261019",
+      "sha": "3cdc023401c30cf924bbcd69183f62099016b464",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/rehearsal-gates-20261019",
+      "sha": "3846867e40ae1c8fa137c1e63286b34fa4783959",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/release-86b1476-prep",
+      "sha": "86b14761324faeb8f57df5c0d86ff00320b4361c",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "codex/repo-cleanup-parallel-20261026",
+      "sha": "0f942a82ddd4cb5e4456f785f36f29d5b6c8881d",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "codex/review-pr187",
+      "sha": "fc044e84fdf65610b9c770cc14e49d634ad2f76b",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/rpc92-approved-settings-20261019",
+      "sha": "5f356b1b382811304b8a18b04662572e4ce4acea",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "codex/system-testing-20261012",
+      "sha": "7fc9f6019b54dccaf13b886c2e1123e703abf67a",
+      "action": "KEEP",
+      "reason": "checked_out"
+    },
+    {
+      "name": "codex/yao-unblocked-pr133-20261019",
+      "sha": "90ef371c54f892bfb5c626bb1640067cc53e68b7",
+      "action": "DELETE",
+      "reason": "ancestor_of_canonical"
+    },
+    {
+      "name": "docs/idea-052-timesfm-20261015",
+      "sha": "6a3a3363c954c0e66e2256490044eaacd2f0c566",
+      "action": "KEEP",
+      "reason": "unique_history"
+    },
+    {
+      "name": "main",
+      "sha": "cf67c5d722e46c19c2e4f772ab5e306da0d10524",
+      "action": "KEEP",
+      "reason": "protected"
+    }
+  ],
+  "mutation_state": "PLANNED",
+  "policy": "Only ancestor-proven refs; preserve main, canonical, open PR heads, original current branch, unique histories, and checked-out local branches. Ordinary atomic push deletion uses Git old-ref comparison; no force option or history rewrite."
+}
