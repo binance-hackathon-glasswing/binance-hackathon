@@ -109,7 +109,8 @@ class FlattenRecovery(ScheduledFlattenPersistence):
                             c.observe(identity + ':final', Document.from_dict(observation(planned, name,
                                 identity + ':final', 'FILL' if a.step == 'SWAP' else 'APPROVAL', **common,
                                 **maintenance, **fill, gas_bnb_units=a.gas_used, gas_value_units=1,
-                                intent_terminal=a.step == 'SWAP', round_terminal=False)), settle)
+                                intent_terminal=a.step == 'SWAP',
+                                round_terminal=a.step == 'SWAP' and planned == plan['intents'][-1])), settle)
                         sold.add(planned['symbol'])
                     c.close(name, h.now * 1000, 'COMPLETE')
                     h.now += 1

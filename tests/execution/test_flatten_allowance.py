@@ -24,7 +24,10 @@ class AbortCleanup(AllowanceRecovery):
         for method in ('prepare', 'authorize', 'sign'):
             h.now += 1; getattr(h.executor, method)(i.key, h.now)
         h.venue.broadcast_fault = Rejected('INSUFFICIENT_FUNDS')
-        h.now += 1; h.executor.broadcast(i.key, h.now)
+        h.now += 1; state = h.executor.broadcast(i.key, h.now)
+        from larp.execution import Outcome
+        a = state.attempts[-1]
+        h.venue.outcomes[a.tx_hash] = Outcome(a.tx_hash, None, None, 'UNKNOWN')
         h.now += i.timeout
         state = h.executor.reconcile(i.key, h.now)
         self.assertTrue(state.abort_pending)
