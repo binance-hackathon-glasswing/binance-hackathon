@@ -68,4 +68,44 @@ since they are low risk with tests. R5 only behind its own review (ARCH-01's tri
 credits and archive duration daily (R1 alarms) during the scored run.
 - If the instance stays in unlimited mode, sustained load above the baseline is charged as surplus credits, not
   throttled. At ≈ 5 % above baseline for 14 days that is on the order of a few dollars [ESTIMATE]. That is cheaper
-  than a stall, but it still needs to be allowed under the trial (Yao to confirm).
+  than a stall. The billing check below shows how it is paid.
+
+## Billing check (2026-10-26, read-only Cost Explorer and CloudWatch; Yao asked "are those credits from the free trial or did aws just try and bill me")
+
+- **Two different "credits".**
+  - *CPU credits* are a burstable-instance performance allowance, not money.
+  - *Account credits* are the trial/promotional dollars.
+- **No surplus CPU credit has been charged.**
+  - `CPUSurplusCreditsCharged` sums to 0 from 2026-10-24 to 2026-10-25T16:30Z.
+  - Cost Explorer's `APS2-CPUCredits:db.t4g` usage type is $0.00.
+- **October to 2026-10-26:** $18.44 usage and −$18.44 account credits (record type `Credit`), so **$0 net**. Any
+  surplus CPU charge would draw on the same account credits first.
+- **Remaining account credit: about US$141** (Yao, 2026-10-26). Expiry not recorded.
+- **Decision (Yao, 2026-10-26): "we dont need to be that stringent with our use".**
+  - With about $141 left, surplus CPU charges of a few dollars over 14 days are acceptable.
+  - In unlimited mode the instance borrows rather than throttles, so CPU cost alone is not a stall risk.
+  - The remaining risks are a pathological loop like run 4's archive bug, and missing visibility. DB1, DB2 and DB5
+    are therefore required before final activation. DB3, DB4 and DB6 become optional efficiency work.
+  - DB7's CPU target is relaxed to "credits or surplus stable, no alarm".
+
+## Implementation spec for R1–R6 (2026-10-26; pass criteria pre-registered before any implementation)
+
+For teammates to implement, one PR per row or grouped, each based on canonical. Defaults and the strict
+safety checks (swap preflight, signer policy, Gate A/B) do not change. Each PR records its results here.
+
+| # | Where | Change | Pass when (pre-registered) |
+|---|---|---|---|
+| DB1 (R1) | `deploy/aws/monitoring.tf` (next to `database_storage`) | Alarms on `AWS/RDS` for the instance, all with `local.alarm_actions` and the footer. `CPUCreditBalance` < 20 for 15 min (missing data breaching). `CPUSurplusCreditBalance` > 10 for 15 min. `FreeableMemory` < 60 MB for 10 min. `SwapUsage` > 600 MB for 15 min. `DatabaseConnections` > 15 for 5 min. | `terraform plan` adds exactly 5 alarms and changes nothing else. A `tftest` asserts the metric names, thresholds and actions. Each alarm reaches the existing email topic (SNS test publish). |
+| DB2 (R2) | `deploy/aws/storage.tf` `aws_db_parameter_group.larp` | Add `shared_preload_libraries = pg_stat_statements` (`apply_method = pending-reboot`), `pg_stat_statements.track = top`, `log_min_duration_statement = 1000` and `log_lock_waits = 1`. Then a read-only `checks/db-top-queries.sh` that prints the top 15 statements by total time (query text truncated, no parameters). | Plan changes only the parameter group. After one planned reboot, outside a run, `CREATE EXTENSION pg_stat_statements` succeeds as admin. The check prints rows. Slow (≥ 1 s) statements and lock waits appear in `postgresql.log`. |
+| DB3 (R3) | `larp/runtime/driver.py` `RoundDriver.once`; `larp/execution_live/loop.py` `facts` | Load the `runs` row once per tick and pass that snapshot to `recover`, `balance_check.due`, `allowance_check`, `day_roll.due` and the round. Reload only after a commit in the same tick, or when a cheap `SELECT version` differs. Writers keep their own `FOR UPDATE` re-check. | A counting store wrapper shows ≤ 2 full `runs` loads per idle tick (today 5–6). The full runtime, coordinator and replay suites pass unchanged. A concurrent-writer test proves a stale snapshot never commits (the version conflict is still raised). |
+| DB4 (R4) | `larp/execution_live/main.py` loop; `larp/signer/service.py` loop; configs | Idle backoff: when a tick claims, advances and signs nothing, sleep `idle_interval_seconds` (new, default 3, bounded 1–5). Use `interval_seconds` (1) while any intent or signing request is active. | Tests show 1 s spacing while work is open and 3 s when idle. No claim, sign or broadcast is delayed past its authority margin (`submission_margin_seconds`). Config validators refuse values out of range. |
+| DB5 (R6) | `deploy/systemd/larp-archive.timer`; `larp/runtime/operations.py` | After a failed run, the next archive attempt waits 60 s, 120 s, 240 s … up to 1 h. At most 3 full exports per UTC day, recorded durably, so a restart cannot reset the count. A healthy hourly anchor run is unaffected. | Tests: N consecutive failures produce the backoff schedule; a 4th full export in a day is refused with a fixed status line; anchors and health still run hourly; ARCH-02 checks still pass. |
+| DB6 (R5) | `larp/storage/postgres.py` commit and `events`; replay and verification | Store each `CommitBatch` as a delta: the changed keys of projection, policy and execution state, plus round context by content hash in a separate table. Checkpoint the full state every K events. Verification and replay rebuild from the checkpoint plus deltas. | Event rows average ≤ 20 KB on the run-5 fixture (today 202 KB raw). Replay of every recorded fixture run is byte-identical to before. Hash-chain verification covers the deltas and the content table. A migration test loads existing journals unchanged. Keegan reviews (ARCH-01; PR281 trigger). |
+| DB7 (live) | next dev run | Run for ≥ 24 h with DB1–DB5 installed. | Average RDS CPU ≤ 8 %, and `CPUCreditBalance` not falling over the 24 h. No alarm except planned tests. `db-top-queries` lists no single statement above 30 % of total time. |
+
+**Priority (after Yao's 2026-10-26 decision):**
+- **Required before final activation:** DB1 (alarms, with the `CPUSurplusCreditBalance` alarm kept as cost
+  visibility), DB2 (query visibility) and DB5 (archive backoff and daily cap).
+- **Optional:** DB3 and DB4 (fewer reads, idle backoff), if they fit the final build. DB6 only after its own review.
+- **DB7:** 24 h with no alarm, credit or surplus balance stable (not steadily climbing), and no single statement
+  above 30 % of total time. The 8 % CPU target is dropped.
