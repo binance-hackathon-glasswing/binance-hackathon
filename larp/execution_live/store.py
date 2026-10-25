@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS execution_observations (
 def _decode(raw):
     try:
         value = json.loads(bytes(raw))
+        if type(value.get('abort_pending', False)) is not bool:
+            raise Conflict('invalid execution cleanup state')
         value['intent'] = Intent(**value['intent'])
         value['attempts'] = tuple(Attempt(**{**a, 'payload': Payload(**a['payload'])}) for a in value['attempts'])
         return Execution(**value)

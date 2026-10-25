@@ -14,13 +14,14 @@ independently valid stock intent's normal approve/requote/swap.
 ## Scope and configuration
 
 This is an opt-in capability. Existing configuration files are unchanged and
-remain disabled. Enabling requires both:
+remain disabled. Enabling requires matching scope in all three:
 
+- runtime.json driver: `"allowance_recovery": true` (IDEA-096 quote verifier);
 - execution.json: `"allowance_recovery": true`;
 - signer.json's root-owned, release-pinned `signing_policy` object:
   `"allowance_recovery": true`.
 
-Only literal JSON booleans are accepted. Both default false. Execution requires
+Only literal JSON booleans are accepted. All default false. Execution requires
 its pinned untrusted-router policy; signer loading refuses recovery in verified
 mode. Numeric review refuses unequal execution/policy settings. Assembly retains
 false installation/signing/Gate B flags and adds
@@ -46,18 +47,18 @@ rule or a proof of router enforcement. The source check is recorded in LD06.
 | State / observation | Action and durable boundary |
 |---|---|
 | Fresh valid parent | Keep the original decision/version/reservation, expiry, action window and gas budget. Get a fresh quote and validate its economic fields. |
-| Before trade approval | Read all six allowances with the router dispatch/facet/code pins at one numeric block. Select the first nonzero token in address order. |
+| Before trade approval | Read all six allowances with the router dispatch/facet/code pins at one numeric block. Select the first nonzero other token in address order; the positive pay-token approve overwrites its own allowance. |
 | Dirty token, never revoked by this parent | Build an API approval of exactly zero. Name the step `REVOKE:<lowercase token address>`; its immutable attempt ID is derived from parent economic key plus step. |
 | PREPARED → AUTHORIZED → SIGNED_DURABLE | Recheck current gates, original expiry/window, nonce and aggregate gas. Primary rechecks code/facet pins. The offline signer independently checks zero-only scope, own opt-in and fee cap, prior step finality/order, nonce and aggregate gas. |
 | BROADCAST_ATTEMPTED / PENDING / UNKNOWN | Retain the wallet barrier and original signed bytes. Reconcile; never advance another step, change nonce, re-sign or release uncertainty on timeout/expiry. |
 | Canonical FINAL_SUCCESS | Publish the maintenance broadcast and final approval fact, charge actual gas once and retain the remaining parent reservation. Read allowances again; a success receipt alone does not assert zero allowance. |
 | Same token still nonzero after confirmed cleanup | Refuse. Each token gets at most one cleanup attempt per parent; the persisted prepare budget prevents endless retry. |
 | Canonical FINAL_REVERT | Publish a gas-only REVERT for that cleanup step and fail the parent. No swap hash or fill is invented. |
-| All six allowances zero | Normal exact trade approve → confirm → fresh re-quote → strict swap preflight → swap. Cleanup never relaxes the other-token allowance check. |
+| All other-token allowances zero | Normal exact trade approve → confirm → fresh re-quote → strict swap preflight → swap. Cleanup never relaxes the other-token allowance check. |
 | Parent expires or another prerequisite fails | Stop. Abort only positively unbroadcast work through existing revocation/expiry paths. Preserve gas facts from already finalized cleanup. A later fresh, independently valid parent can try the remaining cleanup. |
 
-There are at most six cleanup transactions plus one trade approval and one swap
-per parent. Prior finalized gas and the next signed gas allowance must fit the
+There are at most five pre-trade cleanup transactions plus one trade approval and one swap
+per parent. The pay token has one unique revoke identity reserved for abort cleanup (IDEA-096). Prior finalized gas and the next signed gas allowance must fit the
 same aggregate parent budget. Existing `RunAuthorization.resources_reserved`
 also requires the remaining gas cap to be covered by the current BNB reservation;
 cleanup does not borrow another intent's or the exit reserve's funds.
@@ -111,3 +112,54 @@ check, sandbox checks, offline demo and declaration/documentation checks pass.
 [Exact-source receipt](evidence/ld06-allowance-recovery-20261020.json) /
 [criteria and results](../ledger/IDEA-070.md#ld06-results--source-913b400-2026-10-20).
 No full CI, release bundle, real systemd or host qualification is claimed.
+
+
+## IDEA-096 implementation (AL-IMPL01, PR282)
+
+F2's opt-in verifier records `dirty_allowances` while still checking all router/facet/code pins. It reserves the
+full action budget and adds the observed other-token revoke count times `ceil(max measured approve gas*5/4)`
+to the clean-pair expected sizing fee. Strict swap-time preflight is unchanged. A disabled verifier exports
+`DIRTY_ROUTER_ALLOWANCE:<symbols>` rather than an undifferentiated quote failure.
+
+F3 persists `abort_pending` while retaining ACTIVE wallet ownership and the parent reservation. An unsigned
+or positively unbroadcast swap is atomically revoked before any pay-token zero-approve can be prepared.
+No positive approve or swap can pass sequence checks in that state. A node-rejected swap follows this path
+only after timeout plus positive absence and unchanged nonce prove NOT_SUBMITTED. Cleanup uses the Web3
+zero-approval endpoint with fixed LiquidMesh vendor, without depending on a fresh executable swap quote.
+Each authorize/sign/broadcast still needs the original guards, nonce, window, expiry/margin and aggregate gas.
+Unbroadcast aborted payloads spend no gas; their signatures remain revoked. Success is followed by a fresh
+allowance read before ABORTED and the immutable NOT_SUBMITTED disposition release the parent.
+
+Expiry, HALT/market closure, exhausted gas, pin/dependency refusal or a reverted cleanup do **not** create late
+maintenance authority. Any remaining allowance is visible to F4 and can be recovered by the next independently
+valid intent. This is the explicit bounded interpretation of AL5/AL6; unconditional cleanup after authority ends
+would contradict LD06. A reverted **swap** remains FAILED and F2 recovers its allowance on the next intent.
+
+Candidate generation (never installation):
+
+```sh
+python -m tools.deploy.enable_allowance_recovery \
+  --profile /private/reviewed-profile.json --execution-config /private/execution.json \
+  --signing-policy /private/signing-policy.json --runtime /private/runtime.json \
+  --decision-id 'IDEA-096 owner review reference' --output-dir /private/new-recovery-candidate
+```
+
+It validates the source profile, binds runtime/execution identities and router pins, sets all three opt-ins,
+recomputes `gas_budget`/`gas_action_budget_units = 8*max_gas*max_gas_price`, and reserves every position's
+balanced exit children at that action budget. The expected clean-pair sizing stays measured; observed cleanup
+costs are added by the verifier. Every changed numeric value has source-hash/formula provenance. Rebuild the
+caps review with fresh quote/holding inputs, regenerate the signer assembly (the source policy is not signer.json),
+and prepare/check the Gate A package using `prepare_shadow ... --allowance-recovery` and its exact new profile.
+Re-pin all service configs in the release manifest; old prepared package reports/hashes cannot be reused.
+The report deliberately keeps `ready_to_install=false` and `signing_enabled=false`.
+
+For the public LD10 ceiling of 1,200,000 gas at 160,000,000 wei, action authority is 1,536,000,000,000,000 wei;
+a five-position book with two balanced exit children needs 15,360,000,000,000,000 wei of exit reserve. That can
+exceed the development wallet's seed; a mathematically covered envelope is not proof of available BNB or
+sufficient time. Keegan owns gas/timing acceptance, Isaac signer acceptance; actual AL9 host observation remains.
+
+F4 adds one LOW severity `DIRTY_ROUTER_ALLOWANCE` incident per quiet decision boundary (no in-flight
+reservation/round), public six-token raw amounts in `trading-status.sh` and `decisions-export.sh`, bounded
+allowance incident summaries in the latter, and per-poll amounts/LOW alerts in the current RC7 chain monitor.
+Read failure exports ALLOWANCE_READ_UNAVAILABLE rather than falsely reporting zero or leaking provider text.
+No historical RC4–RC6 operational script copies are changed. F1 planner reordering is deferred.

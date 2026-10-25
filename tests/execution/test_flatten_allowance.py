@@ -113,6 +113,26 @@ class AbortCleanup(AllowanceRecovery):
 
 
 class AbortPostgres(PostgresRecovery):
+    def test_preexisting_execution_without_abort_field_keeps_its_original_hash_chain(self):
+        import json
+        from dataclasses import asdict
+        from larp.execution import canonical, digest
+        h = self.h; i = h.intent()
+        state = h.executor.create(i, h.now)
+        legacy = asdict(state)
+        legacy.pop('abort_pending')
+        checksum = digest(legacy)
+        with self.case.store.transaction() as db:
+            event, previous = db.execute('SELECT event,previous_hash FROM execution_journal '
+                                        'WHERE economic_key=%s', (i.key,)).fetchone()
+            db.execute('UPDATE execution_records SET state=%s,state_hash=%s WHERE economic_key=%s',
+                       (canonical(legacy).encode(), checksum, i.key))
+            db.execute('UPDATE execution_journal SET state_hash=%s,head=%s WHERE economic_key=%s',
+                       (checksum, digest([previous, json.loads(bytes(event)), checksum]), i.key))
+        self.restart()
+        self.assertEqual(h.executor._load(i.key), state)
+        self.assertEqual(h.executor.abort_unsigned(i.key, h.now + 1).status, 'ABORTED')
+
     def test_restart_every_abort_cleanup_stage_preserves_unique_signature_and_barrier(self):
         h = self.h; i = h.intent()
         h.executor.create(i, h.now); h.finish_step(i)

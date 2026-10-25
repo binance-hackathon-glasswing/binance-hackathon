@@ -3,7 +3,7 @@
 - Date / author: 2026-10-25 (~09:40Z) / Claude Code, from read-only host and chain checks requested by Yao
   ("check if our agent is selling the stocks now for the flatten process"). Owners for the fix: Keegan
   (execution/gas caps, LD06/LD10), Isaac (signer policy), Keith (planner order, if F1 is taken). Host checks: Yao.
-- Status: **open — incident recorded; fix drafted and pass criteria AL1–AL9 pre-registered below. No code changed.**
+- Status: **implemented for review in PR282 — F2/F3/F4 source and offline regressions; owner/profile/host acceptance and AL9 remain open.**
 - Related: IDEA-088 (quote verifier, PR268), IDEA-089 (S2, run 4), IDEA-090 S2-F6 (post-approve requote aborts),
   IDEA-092 (S3 scheduled flatten), IDEA-093 (FS1 final candidate, PR278), IDEA-049-C LD06 (allowance cleanup),
   LD10 (gas budgets), SKILL.md §0.3 #1 (no manual trading).
@@ -132,3 +132,19 @@ AL6 durable PostgreSQL restart at each abort/cleanup stage, revoked signature an
 AL7 explicit opt-in config/caps/profile candidate coverage and disabled compatibility; AL8 sanitized exports.
 Run focused suites, then the pinned Linux Python 3.12.15 / PostgreSQL 14.24 suite. Nested bubblewrap and
 host/systemd acceptance require their supported environments. Commit/push all changed executable code before tests.
+
+
+AL1 evidence: regression commit `60b0d3a8` was pushed before its initial failing run (the new opt-in was absent).
+A separate synthetic probe loaded the unchanged quote-verifier source at canonical `5b5f0c89` and confirmed the
+exact original refusal `quote proof refused: router allowance exceeds what this swap may take` for SKHYB dirty /
+NVDAB SELL. The fixed regression checks explicit disabled refusal plus enabled executable proof and amounts.
+
+Implementation: F2/F3/F4, candidate generator and operational monitoring; no planner reorder (F1). The strict
+`untrusted_router.py` preflight file is unchanged. Stored execution bytes are hash-verified before defaulting the
+new `abort_pending` field, so pre-existing records remain loadable without rewriting historical journals.
+Abort cleanup gets its own bounded prepare-probe budget once; restart cannot reset it. Original time/gas and
+health/market guards still govern; no post-expiry authority or automatic install is implied.
+
+Focused validation and full-suite receipt will be recorded below after completion. Initial red integration fixture
+runs were corrected to model explicit tx absence, terminal-round attestation, and fresh per-token quote bindings;
+no live RPC/host/wallet action was taken. All executable revisions were committed and pushed before execution.
