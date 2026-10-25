@@ -90,7 +90,7 @@ last transition remains visible until the next quiet check. See
 
 ## 4. Restore — **host** drill at Gate B
 
-1. `python -m larp.runtime.operations restore --config /etc/larp/operations.json --receipt <pinned backup receipt> --target-dsn-file <empty database DSN>` restores into an empty, migrated database. It verifies the backup checksum and every run's journal, and leaves every run **quarantined** with a new epoch.
+1. `python -m larp.runtime.operations restore --config /etc/larp/operations.json --receipt <pinned backup receipt> --target-dsn-file <empty database DSN>` restores into an empty, migrated database. A Backup.v2 backup (`.json.gz`, IDEA-094) is a chain: repeat `--receipt` for every segment receipt from the first daily backup up to the one restored (any order). It verifies the backup checksum and every run's journal, and leaves every run **quarantined** with a new epoch.
 2. Verify against the hourly anchors read back from the Object Lock archive: `larp.runtime.maintenance.verify_anchors(store, run_id, anchors)`.
    - A restore behind the latest anchor is refused as stale.
    - A rewritten journal is refused.

@@ -14,6 +14,7 @@ from larp.contracts import ContractError, Document
 from larp.runtime import halts
 
 ZERO = '0' * 64
+VERIFY_FETCH_ROWS = 1  # journal rows per server-side fetch: one row can be megabytes; 4 rows triple the peak (IDEA-094)
 FIELDS = ('projection','policy_state','execution_state')
 # Outbox tables whose rows must equal the journal: (table, id column, value column, batch key).
 OUTBOXES = (('audit_events','event_id','document','audit'),('commands','command_id','payload','commands'),
@@ -465,25 +466,33 @@ class PostgresStore:
             base=dict(version=0,head=ZERO,fields=None,initial=digest(bytes(run['initial'])),reservations={},
                       ids={table:frozenset() for table,*_ in OUTBOXES},chunks=0)
         head,version,last = base['head'],base['version'],None
-        reservations=dict(base['reservations']); new={table:{} for table,*_ in OUTBOXES}
-        for raw,bhash,ehash,previous,stored,sequence in db.execute(
-                'SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events '
-                'WHERE run_id=%s AND sequence>%s ORDER BY sequence',(run_id,base['version'])):
-            raw = bytes(raw)
-            b = Document(raw).read()
-            if (b['run_id'],b['wallet_id'],b['chain_id'])!=(run_id,run['wallet_id'],run['chain_id']):
-                raise IntegrityError('Journal identity differs from wallet authority')
-            version += 1
-            expected = digest(bytes.fromhex(head)+bytes.fromhex(digest(raw)))
-            if (digest(raw),digest(doc(b['event']).payload),previous,stored,sequence) != (
-                    bhash,ehash,head,expected,version):
-                raise IntegrityError('Journal corruption')
-            head,last = stored,b
-            for delta in b.get('reservation_deltas',[]):
-                key=(delta['intent_id'],delta['asset'])
-                reservations[key]=reservations.get(key,0)+delta['units']
-            for table,id_column,_,key in OUTBOXES:
-                for item in b.get(key,[]): new[table][item[id_column]]=doc(item).payload
+        # Outbox values are kept as SHA-256 digests and compared with digests computed by the server, and the journal
+        # is read through a server-side cursor a few rows at a time: memory does not grow with the journal (IDEA-094).
+        reservations=dict(base['reservations']); new={table:{} for table,*_ in OUTBOXES}; audits={}
+        # Binary results: text-format bytea is hex, twice the bytes on the wire and in memory.
+        with db.cursor(name='larp_verify_events',binary=True) as cursor:
+            cursor.itersize=VERIFY_FETCH_ROWS
+            cursor.execute('SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events '
+                           'WHERE run_id=%s AND sequence>%s ORDER BY sequence',(run_id,base['version']))
+            for raw,bhash,ehash,previous,stored,sequence in cursor:
+                raw = bytes(raw)
+                b = Document(raw).read()
+                if (b['run_id'],b['wallet_id'],b['chain_id'])!=(run_id,run['wallet_id'],run['chain_id']):
+                    raise IntegrityError('Journal identity differs from wallet authority')
+                version += 1
+                expected = digest(bytes.fromhex(head)+bytes.fromhex(digest(raw)))
+                if (digest(raw),digest(doc(b['event']).payload),previous,stored,sequence) != (
+                        bhash,ehash,head,expected,version):
+                    raise IntegrityError('Journal corruption')
+                head,last = stored,b
+                for delta in b.get('reservation_deltas',[]):
+                    key=(delta['intent_id'],delta['asset'])
+                    reservations[key]=reservations.get(key,0)+delta['units']
+                for table,id_column,_,key in OUTBOXES:
+                    for item in b.get(key,[]): new[table][item[id_column]]=digest(doc(item).payload)
+                for item in b.get('audit',[]):
+                    audits[item['event_id']]=(item['timestamp_ms'],[digest(c.encode('utf-8')) for c in item['chunks']])
+                del raw,b
         if (head,version) != (run['head'],run['version']):
             raise IntegrityError('Truncated or rewound journal')
         if digest(bytes(run['initial']))!=base['initial']:
@@ -507,26 +516,26 @@ class PostgresStore:
         for table,id_column,value_column,_ in OUTBOXES:
             ids[table]=base['ids'][table]|frozenset(new[table])
             # Table/column names are internal constants, never client inputs.
-            rows={r[0]:bytes(r[1]) for r in db.execute(
-                f'SELECT {id_column},{value_column} FROM {table} WHERE run_id=%s AND {id_column}=ANY(%s::text[])',
-                (run_id,list(new[table])))}
+            rows=dict(db.execute(
+                f"SELECT {id_column},encode(sha256({value_column}),'hex') FROM {table} "
+                f'WHERE run_id=%s AND {id_column}=ANY(%s::text[])',(run_id,list(new[table]))).fetchall())
             count=db.execute(f'SELECT count(*) FROM {table} WHERE run_id=%s',(run_id,)).fetchone()[0]
             if rows!=new[table] or count!=len(ids[table]):
                 raise IntegrityError('Outbox/job definition differs from journal')
         chunks,expected_chunks,timestamps=base['chunks'],{},{}
-        for event_id,raw in new['audit_events'].items():
-            audit=Document(raw).read()
-            timestamps[event_id]=audit['timestamp_ms']
+        for event_id,(timestamp_ms,bodies) in audits.items():
+            timestamps[event_id]=timestamp_ms
             if event_id not in base['ids']['audit_events']:
-                chunks+=len(audit['chunks'])
-            for index,chunk in enumerate(audit['chunks']):
-                expected_chunks[(event_id,index)]=chunk.encode('utf-8')
+                chunks+=len(bodies)
+            for index,body in enumerate(bodies):
+                expected_chunks[(event_id,index)]=body
         # The deadline query filters on this column, so it must equal the document.
         if timestamps!=dict(db.execute('SELECT event_id,timestamp_ms FROM audit_events WHERE run_id=%s '
                                        'AND event_id=ANY(%s::text[])',(run_id,list(timestamps))).fetchall()):
             raise IntegrityError('Audit timestamp differs from journal')
-        actual_chunks={(r[0],r[1]):bytes(r[2]) for r in db.execute(
-            'SELECT event_id,chunk_index,body FROM audit_chunks WHERE run_id=%s AND event_id=ANY(%s::text[])',
+        actual_chunks={(r[0],r[1]):r[2] for r in db.execute(
+            "SELECT event_id,chunk_index,encode(sha256(body),'hex') FROM audit_chunks WHERE run_id=%s "
+            'AND event_id=ANY(%s::text[])',
             (run_id,list(new['audit_events'])))}
         count=db.execute('SELECT count(*) FROM audit_chunks WHERE run_id=%s',(run_id,)).fetchone()[0]
         if actual_chunks!=expected_chunks or count!=chunks:

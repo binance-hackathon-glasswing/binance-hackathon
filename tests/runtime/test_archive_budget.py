@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import tracemalloc
+import unittest
 from unittest.mock import MagicMock, patch
 
 from larp.contracts import ContractError, Document
@@ -169,7 +170,7 @@ class Decoupling(Harness):
 class Budget(Harness):
     def test_ar3_an_oversized_backup_is_refused_within_its_byte_bound(self):
         grow(self, 0, 120)  # about 41 MB of raw journal rows
-        bound = 1 * MIB
+        bound = 64 * 1024
         worker = self.worker(max_payload_bytes=bound)
         tracemalloc.start()
         try:
@@ -342,3 +343,22 @@ class Fixture(DriverHarness):
         print('AR4 traced peaks (bytes):', peaks)
         self.assertLessEqual(peaks['full'], 0.25 * peaks['v1'])
         self.assertLessEqual(peaks[96], 2 * peaks[48])
+
+
+class Limits(unittest.TestCase):
+    """AR8: the archive unit's limits against the measured budget (IDEA-094)."""
+
+    def directive(self, name):
+        unit = (REPO / 'deploy/systemd/larp-archive.service').read_text(encoding='utf-8')
+        [value] = [line.split('=', 1)[1] for line in unit.splitlines() if line.startswith(name + '=')]
+        return value
+
+    def test_ar8_unit_limits_cover_the_measured_backup_budget(self):
+        from larp.runtime.maintenance import PREPARING_STALE_MS
+        timeout_s = int(self.directive('TimeoutStartSec'))
+        self.assertLess(timeout_s * 1000, PREPARING_STALE_MS)  # a running export is never closed as interrupted
+        memory = int(self.directive('MemoryMax').rstrip('M')) * MIB
+        # max_archive_bytes as gate_a.prepare writes it; the measured peak below is for a segment at that bound.
+        self.assertIn('max_archive_bytes=64 * 1024 * 1024', (REPO / 'larp/runtime/gate_a.py').read_text())
+        measured_peak = 234_246_144  # IDEA-094 AR8: VmHWM, prepare and delivery of a 62.8 MB segment in one process
+        self.assertGreaterEqual(memory, 2 * measured_peak)

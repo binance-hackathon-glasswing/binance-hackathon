@@ -138,3 +138,44 @@ as expected: the AR5 v1 round trip (compatibility check) and nothing else.
 - 2026-10-25 correction (Claude Code): the recorded base run at `21420648` is **10 failed, 1 passed**; AR7 fails on
   base (RSS growth 90.2 MB) and only the AR5 v1 round trip passes. "9 failed, 2 passed" above was an earlier run whose
   AR7 probe inherited the parent's peak-RSS mark.
+
+## Results (2026-10-25, Claude Code; pinned Docker Python 3.12.15 / PostgreSQL 14.24 on Apple-silicon Linux)
+
+Implementation (files): `larp/storage/backup.py` (Backup.v2 `export_segment`, `restore_chain`, `segment_header`),
+`larp/storage/postgres.py` (streaming `_verify`), `larp/runtime/maintenance.py` (`prepare_anchor`,
+`prepare_backup`, PREPARING latch, `BACKUP_PREPARATION_FAILED`), `larp/runtime/operations.py` (order; restore
+takes one `--receipt` per segment), `larp/storage/archive.py` (`.json.gz` keys), `deploy/systemd/larp-archive.service`.
+
+| ID | Result | Evidence |
+|---|---|---|
+| AR1 | PASS | Killed export: the hour's anchor object exists and health was published before the kill. |
+| AR2 | PASS | Killed export: 1 export over 5 runs; after 30 min `BACKUP_PREPARATION_FAILED`, `PreparationInterrupted`, Healthy=0. Refused export: 1 call over 5 runs, error class `ContractError`; the next day's slot ACKs and health returns to healthy. |
+| AR3 | PASS | 41 MB journal, 64 KiB bound: refused as `BackupOverBound` within 2 × bound + 16 MiB traced; slot `PERMANENT`, nothing delivered. |
+| AR4 | PASS | 96-round fixture: full v2 segment traced peak 11.5 MB vs v1 1,131 MB (1.0 %); 24-round daily segment 4.8 MB at round 48 vs 7.8 MB at round 96 (1.63×). |
+| AR5 | PASS | Daily → incident → daily chain restores (any order) to the exact head; `verify_anchors` passes 3 anchors; run quarantined. Missing base, duplicate, tampered, foreign-chain and non-backup inputs refused with nothing restored. v1 restores. |
+| AR6 | PASS | Segments hold exactly the events after their acknowledged base; an unacknowledged (PENDING) backup is not a base. Fixture sizes: full segment 4.9 MB vs v1 188.4 MB (39×) for a 93.5 MB raw journal; daily segment of 48 events (37.3 MB raw) 1.7 MB (22×). |
+| AR7 | PASS | Full verification RSS growth 4.4 MB for a 42.5 MB journal (largest row 0.6 MB; bound 18 MB). Base 90.2 MB. One row per fetch (4 rows: 16.9 MB; 16: 46.5 MB) and binary transfer (text-format bytea is hex). |
+| AR8 | PASS | See limits below; `Limits` test ties `TimeoutStartSec` < `PREPARING_STALE_MS` and `MemoryMax` ≥ 2 × measured peak. |
+| AR9 | PASS | Full suite: branch **2668 passed, 9 skipped, 4008 subtests, 5 failed**; base `4b164649` **2656 passed, 9 skipped, 4004 subtests, 5 failed** — the same 5 on both, all environment-only in this container: 3 need `git` metadata the worktree mount lacks (`test_deploy_presetup` ignored-directory check, `test_final_review_d` credential scan via `git ls-files`, `test_gate_a` GA15b ignored-path check) and 2 need nested bubblewrap (`test_worker_release` Sandbox). Org CI unavailable; mirror CI not run (user pushes it). |
+
+Limits (AR8):
+- **`max_archive_bytes` = 64 MiB (unchanged).** Projected day-14 daily segment: constant-row case 214 × 2.7 MB
+  ≈ 580 MB raw ≈ 26–29 MB compressed at the measured 20–22× → fits with ≥2× headroom. Fixture-growth case
+  (compressed cost per event ≈ 12.6 KB + 0.13 KB × n, fitted from the full and daily fixture segments) ≈ 83 MB on
+  day 14: segments are refused from about day 11 (`BackupOverBound`, Healthy=0, anchors continue; earlier segments
+  stay restorable). Raising the bound needs more memory than primary has spare (`MemoryMax` totals 3 GB already);
+  the real lever is ARCH-01.
+- **`MemoryMax=512M` (unchanged).** Measured peak RSS for prepare plus delivery of a 62.8 MB segment in one process:
+  234 MB (230 MB with binary cursors; 40 MB baseline; prepare and delivery each ≈3× the segment, memory released in
+  between). 2.2× headroom. Rows of ~12 MB (growth case, day 14) add roughly 60–100 MB of parsed state.
+- **`TimeoutStartSec` 240 → 1200.** The hourly anchor's full verification ran at 50–57 MB/s of raw journal here
+  (CPU-bound); on the host it is network-bound: db.t4g.micro's baseline is ≈8 MB/s [ESTIMATE from the EC2 t4g.micro
+  baseline], and the incident plateaued at ≈7 MB/s. Day-14 journals of 8 GB (constant case) take ≈1000 s at that
+  rate; 1200 s covers it. In the growth case the hourly verify passes 1200 s around day 10 → ARCH-01. Kept below
+  `PREPARING_STALE_MS` = 30 min.
+
+Decision: implemented as proposed. Result state: **supported** offline (AR1–AR9); host acceptance and ARCH-01 open.
+
+Calibration query for Yao (read-only, replaces the run-4 estimate; output stays in the ignored activation folder):
+`SELECT sequence, octet_length(batch), pg_column_size(batch) FROM events WHERE run_id=<run> ORDER BY sequence;`
+— fit `a`, `b` and the raw/on-disk ratio, then re-run the projection above.

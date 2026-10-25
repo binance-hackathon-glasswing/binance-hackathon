@@ -140,6 +140,15 @@ Use `verify(run_id, minimum_version=..., anchored_head=...)` against independent
 retained authority/anchor evidence. Database restore alone cannot regain wallet
 authority, and `offline=True` cannot activate a dev/live run.
 
+The archive job writes **Backup.v2 segments** instead (IDEA-094): `export_segment`
+streams the journal rows after the newest acknowledged backup, plus every other
+table, through gzip under `max_archive_bytes`, without the outbox values the journal
+already holds and with each row's states as a delta. A restore needs the whole chain
+of segment receipts: `restore_chain(store, payloads)` (any order) rebuilds exact bytes
+and runs the same journal verification. A backup slot is exported once; a failed,
+refused or killed export is recorded on its slot and reported as
+`BACKUP_PREPARATION_FAILED` while anchors and health continue.
+
 `anchor(...)` validates the selected sequence/head, passes an immutable head record
 to a write-once receiver and stores its acknowledgement. The declared hourly anchor
 interval remains 3600 seconds in the example config. Actual destination, worker
