@@ -3,6 +3,7 @@
 - Date / author: 2026-10-25 / Claude Code (review of PR280, asked by the user: "ensure our agent is able to trade
   smoothly for 14 days"). Owner for review: Keegan (runtime/storage). Host steps: Yao.
 - Status: **open — pre-registered (criteria SD1–SD7 below committed before any criterion test was run).**
+- 2026-10-25 status (Claude Code): **supported offline** (results below); Keegan review and host acceptance open.
 - Related: IDEA-094 (PR280; ARCH-01 item 1), IDEA-036 (hourly anchors), IDEA-055 (balance adoption, `_quiet_since`),
   IDEA-085 (connection reuse), F-114/F-117/F-124 (no human action during the scored run; automatic restarts only).
 
@@ -85,3 +86,35 @@ environment prevents a run (stated).
   `EvidenceContext.v1` summaries, not the evidence state. Their only part that grows with run length is the
   unresolved adverse findings, about 1.6 KB per latch in the IDEA-094 fixture: ≈2,600 latches before 4 MiB, against
   the fixture's synthetic one per round.
+
+## Results (2026-10-25, Claude Code; PostgreSQL 16.15 and Python 3.12.3 on Linux x86_64 — not the pinned 14.24 Docker image, which this container cannot run)
+
+- 2026-10-25 note (Claude Code): after the red commit `d772ef23`, the tests' `anchors()` helper was changed to read the
+  delivered S3 objects (the outbox payload is emptied after delivery). The red result is unaffected: on base, SD1 fails
+  at the `_verify` base assertion before the helper runs. Three tests were added with the fix: incident backup later
+  in the hour (fails without the seeding line), a full check that never completes, and an unwritable state directory.
+
+Implementation: `larp/runtime/maintenance.py` (`VerificationState`, `_verified`, `full_check`, `verification_reasons`,
+incident-backup seeding), `larp/runtime/operations.py` (state directory, full check last, overdue health),
+`larp/storage/postgres.py` (`journal(full=False)`, `export_checkpoint`, `adopt_checkpoint`),
+`larp/runtime/driver.py` (`_quiet_since`), `deploy/systemd/larp-archive.service` (`StateDirectory`).
+
+| ID | Result | Evidence |
+|---|---|---|
+| SD1 | PASS | Fresh store per run: the second and third anchors verify from versions 4 and 7 (`_verify` bases `[4]`, `[7]`). The anchor's sequence and head equal the database's. An incident backup in a run with no anchor to prepare continues from the saved checkpoint (no genesis verification). |
+| SD2 | PASS | Missing, corrupt, wrong-schema, other-run, replaced-head and malformed checkpoints all verify from genesis, and the anchor head is correct. An event changed after the checkpoint is refused (IntegrityError, no anchor for that hour). An unwritable state directory still delivers the anchor, and the full check reports `FileNotFoundError`. |
+| SD3 | PASS | One full verification per interval, last in the run. A killed full check is not retried in runs 2–4 of that interval and runs again the next interval. A row changed before the checkpoint passes the incremental anchor (the documented tradeoff) and is found by the next daily full check: IntegrityError, checkpoint discarded, and the next anchor verifies in full and refuses (`ARCHIVE_PREPARATION_FAILED`). `FULL_VERIFICATION_OVERDUE` appears at 2 intervals + 1 min, not at 2 intervals − 1 min. When no full check ever completes, the count starts at the first attempt. |
+| SD4 | PASS | Without `STATE_DIRECTORY`, every anchor verifies from genesis and nothing is written. Without a state directory the new Maintenance methods are not called at all. This was found by the full suite: `test_service_health` R5 mocks `Maintenance`, and has passed unmodified since the fix. |
+| SD5 | PASS | `journal(full=False)` continues from the process checkpoint (no genesis verification) and returns the same bytes as `full=True`. It refuses a changed row and a row whose batch hash was recomputed off the head chain. `_quiet_since` passes `full=False`. |
+| SD6 | PASS | `StateDirectory=larp-archive`, `StateDirectoryMode=0700`; `tests/runtime` (host unit tests included) 653 passed, 9 skipped. |
+| SD7 | PASS | Full suite, same container and database: branch `605d7438` **2687 passed, 11 skipped, 4016 subtests, 0 failed**; PR280 head `67d2abfb` **2671 passed, 11 skipped, 4008 subtests, 0 failed**. The difference is the 16 new tests. |
+
+Result state: **supported** offline (SD1–SD7). Not run: the pinned PostgreSQL 14.24 image, mirror CI, the host.
+
+Review of PR280 itself (same session): no blocking defect found. The Backup.v2 delta/restore round trip, streaming
+`_verify`, the PREPARING latch and the `once` ordering were read against their tests, and its 70 archive,
+maintenance, operations and storage tests pass here. One precondition is recorded in ARCH-02: incremental segments need
+a database that holds the final run only.
+
+Host acceptance (Yao, with ARCH-02): after install, `/var/lib/larp-archive` exists (0700, `larp-archive`) and holds one
+checkpoint file after the first run. Later hourly runs finish in seconds, and one run per day takes the full check.
