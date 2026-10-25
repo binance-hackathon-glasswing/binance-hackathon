@@ -89,3 +89,9 @@ Additional prospective checks: exact old and new PostgreSQL replay; eight synthe
 fill to dust, admission above cap through `permitted`, per-leg slot boundaries, malformed/future timestamps,
 quote-child reuse, refund/spacing interaction and unchanged discretionary/gas/window guards. Run focused tests
 red on the reviewed PR290 behavior before implementing; commit/push all execution code before running it.
+
+MC-RV02 prospective recovery-fixture update: the existing RC1 fixture stops as soon as no intent is planned,
+assuming immediate mandatory retry after an abort. New spacing intentionally defers the aborted name to the next
+slot. Update the real-execution recovery harness to advance only on MANDATORY_RETRY_SPACING; preserve all other
+stop conditions. Require transient-abort recovery to reach dust and persistent adverse pricing to keep bounded,
+spaced retries above five while other names sell and allowances stay clean. Repeat focused recovery and full suite.
