@@ -13,6 +13,8 @@ from .schema import SYMBOLS, integer
 
 BASELINE = 'TREND_GUARDED_VOL'
 SCHEMA = 'S1ExecutionBounds.v1'
+MANDATORY_CADENCE = 'MANDATORY_CADENCE_V1'
+CADENCE_MS = 900_000  # IDEA-102: one new mandatory attempt per UTC quarter-hour slot
 
 
 HOURS = ('NYSE_SESSION', 'KIT_OPEN_STATE')
@@ -81,11 +83,18 @@ def leg_key(symbol, side, mandatory):
     return ('SAFETY' if mandatory else 'DISCRETIONARY') + ':' + side + ':' + symbol
 
 
-def budget(value, current_session):
+def cadence_policy(context):
+    value = context.get('execution_attempt_policy')
+    if value not in (None, MANDATORY_CADENCE):
+        raise ContractError('Unknown S1 execution attempt policy')
+    return value == MANDATORY_CADENCE
+
+
+def budget(value, current_session, *, now_ms=None):
     """Malformed/future state cannot masquerade as a fresh allowance."""
     if value is None:
         return {'session': current_session, 'counts': {}, 'closed': {}}
-    if type(value) is not dict or not {'session', 'counts'} <= set(value) <= {'session', 'counts', 'closed'}:
+    if type(value) is not dict or not {'session', 'counts'} <= set(value) <= {'session', 'counts', 'closed', 'last_ms'}:
         raise ContractError('Malformed S1 execution attempt budget')
     prior = integer(value['session'])
     counts = value['counts']
@@ -100,10 +109,17 @@ def budget(value, current_session):
     closed = {k: integer(v, 1) for k, v in closed.items()}
     if any(v > counts[k] for k, v in closed.items()):
         raise ContractError('Closed S1 attempt exceeds the reserved count')
+    last = value.get('last_ms', {})
+    if type(last) is not dict or not set(last) <= valid_keys:
+        raise ContractError('Malformed S1 last reservation times')
+    last = {k: integer(v) for k, v in last.items()}
+    if now_ms is not None and any(v > now_ms for v in last.values()):
+        raise ContractError('S1 last reservation time is in the future')
     if prior > current_session:
         raise ContractError('S1 execution attempt session moved backwards')
     return {'session': current_session, 'counts': counts if prior == current_session else {},
-            'closed': closed if prior == current_session else {}}
+            'closed': closed if prior == current_session else {},
+            **({'last_ms': last} if 'last_ms' in value else {})}
 
 
 def interval(context, cfg, mandatory):
@@ -169,13 +185,20 @@ def reserve(context, cfg, state, symbol, side, mandatory, now_ms, *, quotes=()):
     if not start <= now_ms < end:
         return None, 'EXECUTION_WINDOW_CLOSED'
     key = leg_key(symbol, side, mandatory)
+    spaced = mandatory and cadence_policy(context)
     reused = _reuse(context, state, key, start, end, symbol, side, quotes)
-    if reused is not None and reused['ordinal'] <= cfg['execution']['max_attempts_per_leg_session']:
+    if reused is not None and (spaced or reused['ordinal'] <= cfg['execution']['max_attempts_per_leg_session']):
         return reused, None
+    if spaced:
+        last = state.get('last_ms', {}).get(key)
+        if last is not None and last // CADENCE_MS >= now_ms // CADENCE_MS:
+            return None, 'MANDATORY_RETRY_SPACING'
     ordinal = state['counts'].get(key, 0) + 1
-    if ordinal > cfg['execution']['max_attempts_per_leg_session']:
+    if not spaced and ordinal > cfg['execution']['max_attempts_per_leg_session']:
         return None, 'LEG_ATTEMPT_LIMIT'
     state['counts'][key] = ordinal
+    if spaced:
+        state.setdefault('last_ms', {})[key] = now_ms
     return dict(schema=SCHEMA, session_index=state['session'], leg=key, ordinal=ordinal,
                 valid_from_ms=start, valid_until_ms=end), None
 
@@ -227,12 +250,14 @@ def permitted(projection, intent, now_ms):
                 return False  # a pre-flatten BUY cannot sign/submit across the scheduled boundary
         start, end = interval(context, cfg, planned['mandatory'])
         key = leg_key(planned['symbol'], planned['side'], planned['mandatory'])
-        slots = budget(record['plan']['execution_attempt_budget'], context['session_index'])
+        slots = budget(record['plan']['execution_attempt_budget'], context['session_index'], now_ms=now_ms)
         count = slots['counts'][key]
         ordinal = integer(authority['ordinal'], 1)
         return (authority == dict(schema=SCHEMA, session_index=context['session_index'], leg=key,
                                   ordinal=ordinal, valid_from_ms=start, valid_until_ms=end)
-                and ordinal == count == slots['closed'].get(key) <= cfg['execution']['max_attempts_per_leg_session']
+                and ordinal == count == slots['closed'].get(key)
+                and ((planned['mandatory'] and cadence_policy(context))
+                     or ordinal <= cfg['execution']['max_attempts_per_leg_session'])
                 and start <= now_ms < end)
     except (ContractError, KeyError, TypeError, ValueError, AttributeError, StopIteration):
         return False

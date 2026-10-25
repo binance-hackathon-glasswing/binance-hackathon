@@ -32,6 +32,8 @@ class RecordedPorts:
         context = (record.get("policy_input") or {}).get("context") or {}
         cause = next((e[len(FAILURE):] for e in record.get("errors", []) if e.startswith(FAILURE)), None)
         recorded = copy(self.builder)
+        # IDEA-102: historical rounds keep their recorded cap/output bytes.
+        recorded.execution_attempt_policy = context.get('execution_attempt_policy')
         if cause is not None:
             recorded.market = recorded.calendar = recorded.health = recorded.series = recorded.gas_quotes = _failing(cause)
             return recorded
