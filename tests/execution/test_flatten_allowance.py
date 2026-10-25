@@ -5,11 +5,14 @@ import unittest
 from larp.execution import Blocked, Conflict, REVOKE_TOKENS, USDT, possible_swap_hashes
 from larp.marketdata.port import TOKENS
 from tests import execution_fixtures as f
-from tests.execution.test_allowance_recovery import AllowanceRecovery, PostgresRecovery, step
+from tests.execution import test_allowance_recovery as recovery
+from tests.execution.test_allowance_recovery import step
 
 
-class AbortCleanup(AllowanceRecovery):
-    def test_expiry_does_not_extend_cleanup_authority_and_pending_revoke_keeps_barrier(self):
+class AbortCleanup(unittest.TestCase):
+    harness = recovery.AllowanceRecovery.harness
+
+    def test_expiry_does_not_extend_cleanup_authority(self):
         h = self.harness(); i = h.intent()
         h.executor.create(i, h.now); h.finish_step(i)
         state = h.executor.abort_unsigned(i.key, i.valid_until)
@@ -112,7 +115,10 @@ class AbortCleanup(AllowanceRecovery):
             self.assertEqual(len(h.venue.broadcasts), 1)
 
 
-class AbortPostgres(PostgresRecovery):
+class AbortPostgres(unittest.TestCase):
+    setUp = recovery.PostgresRecovery.setUp
+    restart = recovery.PostgresRecovery.restart
+
     def test_preexisting_execution_without_abort_field_keeps_its_original_hash_chain(self):
         import json
         from dataclasses import asdict

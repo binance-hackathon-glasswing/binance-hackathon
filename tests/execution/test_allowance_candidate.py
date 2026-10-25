@@ -5,14 +5,14 @@ import unittest
 from larp.contracts import ContractError, Document
 from larp.execution import NATIVE_BNB
 from larp.strategy.profiles import build_live_profiles, validate_live
-from tests.execution.test_caps_review import CapsReview
+from tests.execution import test_caps_review as caps
 from tests.strategy.live_fixtures import registry
 from tools.deploy.enable_allowance_recovery import candidate
 
 
 class RecoveryCandidate(unittest.TestCase):
     def test_eight_child_candidate_and_exit_reserve_pass_caps_review(self):
-        c = CapsReview('test_pins_and_private_output_no_overwrite_or_content_echo')
+        c = caps.CapsReview('test_pins_and_private_output_no_overwrite_or_content_echo')
         c.setUp(); self.addCleanup(c.doCleanups)
         c.profile = build_live_profiles(Document.from_dict(c.profile['quote_cost_summary']), registry(),
                                         initial_gas_only=True)['REHEARSAL'].read()
@@ -39,7 +39,8 @@ class RecoveryCandidate(unittest.TestCase):
         c.save_inputs()
         self.assertIn('INITIAL_SIGNED_CHILD_GAS_ENVELOPE', c.report()['blockers'])
 
-    def test_runtime_cannot_claim_a_different_router_policy(self):
-        from tests.marketdata.test_untrusted_quote_verifier import profile
-        with self.assertRaises(ContractError):
-            candidate(profile(), {}, {}, {}, decision_id='test')
+        from copy import deepcopy
+        wrong = deepcopy(runtime)
+        wrong['driver']['untrusted_router_policy_sha256'] = 'b' * 64
+        with self.assertRaisesRegex(ContractError, 'same router policy'):
+            candidate(c.profile, c.config, c.policy, wrong, decision_id='IDEA-096 mismatch regression')

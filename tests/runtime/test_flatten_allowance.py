@@ -16,13 +16,19 @@ from tests.execution.test_allowance_recovery import Harness, Venue
 from tests.execution.test_postgres_execution import ExecutionGuards, RegistrySigner
 from tests.execution import test_untrusted_router as u
 from tests.integration.test_settlement import observation, command
-from tests.runtime.test_s3_scheduled_flatten import ScheduledFlattenPersistence, RUN
+from tests.runtime import test_s3_scheduled_flatten as persistence
+from tests.support import DatabaseCase
+
+RUN = persistence.RUN
 from tests.strategy.test_s3_scheduled_flatten import AFTER_CLOSE, S3
 from tests.strategy.test_execution_bounds import at, milliseconds
 from tests.strategy.test_s1_plan import AT_95, NAMES
 
 
-class FlattenRecovery(ScheduledFlattenPersistence):
+class FlattenRecovery(DatabaseCase):
+    coordinator = persistence.ScheduledFlattenPersistence.coordinator
+    start = persistence.ScheduledFlattenPersistence.start
+
     def test_dirty_stock_and_usdt_reach_flat_through_real_planner_execution_and_settlement(self):
         for dirty in (USDT, u.u.TOKENS - {USDT}):
             with self.subTest(dirty=dirty):

@@ -359,7 +359,8 @@ def validate_sequence(state, step, payload, gates):
     if len(matching) > 1:
         raise Blocked('duplicate execution step')
     prior = tuple(a for a in state.attempts if a.step != step)
-    if state.abort_pending:
+    aborting = getattr(state, 'abort_pending', False)  # historical public validation fixtures predate F3
+    if aborting:
         if (step != 'REVOKE:' + state.intent.pay_token
                 or not any(a.step == 'APPROVE' and a.state == 'FINAL_SUCCESS' for a in prior)
                 or any(a.step == 'SWAP' and not (a.state == 'NOT_SUBMITTED' or
@@ -371,7 +372,7 @@ def validate_sequence(state, step, payload, gates):
             or any(not approval_step(a.step) or a.state != 'FINAL_SUCCESS' for a in prior)
             or any(a.step == 'APPROVE' for a in prior[:-1])):
         raise Blocked('invalid preceding execution steps')
-    if step in REVOKE_TOKENS and not state.abort_pending and any(a.step == 'APPROVE' for a in prior):
+    if step in REVOKE_TOKENS and not aborting and any(a.step == 'APPROVE' for a in prior):
         raise Blocked('allowance cleanup cannot follow trade approval')
     if step == "SWAP" and prior and prior[-1].step != 'APPROVE':
         raise Blocked('swap requires final trade approval after cleanup')

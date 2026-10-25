@@ -9,8 +9,8 @@ proof. The checks:
 - the transaction decodes with the signer's own `UntrustedRouterDecoder` (byte-exact layout; the recipient is not in
   the calldata, so it stays unverified, as the signer and execution accept only in this mode);
 - the minimum output is inside the slippage limit and the inner deadline is after the response arrived;
-- the decoder's live preflight passes on the read RPC: at one numeric block the router dispatches the swap selector to
-  the pinned facet, both code hashes are pinned, and no other pinned token has an allowance to the router.
+- at one numeric block the router dispatches the swap selector to the pinned facet and both code hashes match.
+  Other-token allowances refuse by default; an explicit recovery opt-in records them for executor cleanup.
 
 Gas: a swap cannot be estimated before its approve (IDEA-070 KG-DEC-01-H P3), so no exact estimate exists when the
 plan is made. The proof reserves the profile's `gas_action_budget_units`, which bounds every fee execution can
@@ -107,8 +107,8 @@ class UntrustedQuoteVerifier:
         available = datetime.fromisoformat(raw['available_at'].replace('Z', '+00:00'))
         if available.tzinfo is None or economics.deadline <= available.timestamp():
             raise Blocked('quote expired at retrieval completion')
-        # The execution service's own swap check, before the approve (approved=False): live router pins, no
-        # other-token allowance. The decoder comes from the signer's pinned policy, never from the response.
+        # Live pins always apply. Without recovery, the execution service's own before-approve preflight also
+        # requires clean other-token allowances. The decoder comes from the pinned policy, never the response.
         intent = SimpleNamespace(router=self.decoder.router, wallet=self.wallet,
                                  pay_token=economics.pay_token, amount=economics.amount)
         dirty = {}
