@@ -189,6 +189,8 @@ def settle(current, observation):
         # Logged without a tx hash, with the reason in the round's output (kit convention; IDEA-042 L2).
         order = record["orders"][index]
         if o.get("attempt_refund") is True:
+            if any(key.startswith(o["intent_id"] + ":") for key in record.get("execution_broadcasts", {})):
+                raise ContractError("A broadcast intent cannot refund an unclaimed attempt")
             refund_attempt(projection, intent)
         record.setdefault("aborted", []).append({"intent_id": o["intent_id"], "symbol": order["symbol"],
                                                  "side": order["side"], "amount": order["amount"],

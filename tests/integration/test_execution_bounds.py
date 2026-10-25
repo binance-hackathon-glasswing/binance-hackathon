@@ -246,3 +246,37 @@ class RefundUnclaimed(DurableBudget):
         for missing in (dict(), dict(execution_attempt_budget=None)):  # non-S1 rounds have no budget
             refund_attempt(missing, dict(execution_bounds=bounds))
             refund_attempt(dict(execution_attempt_budget=dict(session=80, counts={LEG: 1}, closed={})), dict())
+
+    def test_rv01_broadcast_supporting_approval_cannot_refund(self):
+        coordinator = self.coordinator()
+        intent = self.child(coordinator, 'a/quote1')
+        before = self.budget()
+        coordinator.observe('approve', doc(dict(schema='ExecutionObservation.v1', run_id='run', wallet_id='fake-wallet',
+            round_id='a/quote1', intent_id=intent['intent_id'], event_id='approve', kind='BROADCAST_ATTEMPTED',
+            observed_at=datetime.fromtimestamp(self.now / 1000, timezone.utc).isoformat(), step='approve',
+            tx_hash='0x' + 'a' * 64)), settle)
+        with self.assertRaises(ContractError):
+            coordinator.observe('bad-refund', doc(unclaimed_fact(intent, 'a/quote1', 'bad-refund', self.now,
+                reason=EXPIRED_REASON, attempt_refund=True)), settle)
+        self.assertEqual(self.budget(), before)
+        coordinator.observe('ordinary-abort', doc(unclaimed_fact(intent, 'a/quote1', 'ordinary-abort', self.now,
+            reason='ABORTED_BEFORE_SWAP_BROADCAST')), settle)
+        coordinator.close('a/quote1', self.now, 'COMPLETE')
+        self.assertEqual(self.budget()['counts'][LEG], 1)
+        self.assert_replay(coordinator)
+
+    def test_rv01_real_expire_skips_claimed_and_refunds_unclaimed(self):
+        from unittest.mock import patch
+        from larp.runtime.driver import ServiceExecution
+        coordinator = self.coordinator()
+        intent = self.child(coordinator, 'a/quote1')
+        execution = ServiceExecution(coordinator, '0x' + '1' * 40, grace_ms=0)
+        now = intent['expires_ms']
+        with patch.object(execution, '_records', return_value={execution.key(intent['intent_id'])}):
+            self.assertEqual(execution.expire(now), [])
+        self.assertEqual(self.budget()['counts'][LEG], 1)
+        self.assertEqual(execution.expire(now), [intent['intent_id']])
+        self.assertNotIn(LEG, self.budget()['counts'])
+        self.assertEqual(execution.expire(now), [])
+        coordinator.close('a/quote1', now, 'COMPLETE')
+        self.assert_replay(coordinator)

@@ -301,3 +301,13 @@ Checked:
     systemd, 3 bubblewrap, 2 opt-in fixtures, 1 root directory mode, 1 no GitHub origin. Not GitHub CI
     (billing-blocked).
   - Not installed; run 5 keeps its build.
+
+## S4-F1-RV01 — PR290 review (2026-10-26 SGT)
+
+Pre-registered review repair: the reducer accepted a refund-tagged unclaimed expiry even after a supporting approval
+broadcast was journaled. The producer excludes claimed commands, but settlement must also refuse that contradictory
+fact; any recorded broadcast means this was not an unclaimed command.
+
+Pass criteria: reject a refund after approve, cleanup or swap broadcast without changing budget/reservations;
+keep ordinary post-approve abort settlement valid without a refund; exercise the real ServiceExecution.expire path
+for an unclaimed versus claimed command; retain exact replay and run the pinned Linux/PostgreSQL suite. No deployment.
