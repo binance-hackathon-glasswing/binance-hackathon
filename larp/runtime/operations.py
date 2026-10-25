@@ -101,13 +101,12 @@ def main(argv=None):
                 restore_chain(target, payloads)  # Backup.v2: every segment receipt of the chain, in any order
             print(json.dumps(dict(restored=True, quarantined=True, signing_enabled=False)))
             return 0
+        # IDEA-095: systemd's StateDirectory= holds the verification checkpoint between runs.
+        verification = VerificationState(os.environ['STATE_DIRECTORY']) if os.environ.get('STATE_DIRECTORY') else None
         worker = Maintenance(IamPostgresStore(c, clients['rds']), archive,
                              backup_interval_ms=c['backup_interval_hours'] * HOUR_MS,
                              max_attempts=c['max_attempts'], retry_ms=c['retry_seconds'] * 1000,
-                             max_payload_bytes=c['max_archive_bytes'],
-                             # IDEA-095: systemd's StateDirectory= holds the verification checkpoint between runs.
-                             verification=(VerificationState(os.environ['STATE_DIRECTORY'])
-                                           if os.environ.get('STATE_DIRECTORY') else None))
+                             max_payload_bytes=c['max_archive_bytes'], verification=verification)
         failures = []
 
         def deliver():
@@ -118,7 +117,7 @@ def main(argv=None):
 
         def report():
             health = worker.health(c['run_id'], int(time.time() * 1000)).read()
-            overdue = worker.verification_reasons(c['run_id'], int(time.time() * 1000))
+            overdue = worker.verification_reasons(c['run_id'], int(time.time() * 1000)) if verification else []
             if overdue:
                 health['healthy'] = False
                 health['reasons'] = sorted(set(health['reasons'] + overdue))
@@ -147,7 +146,8 @@ def main(argv=None):
             # IDEA-095: anchors verify from the saved checkpoint; the whole journal is re-read once per backup
             # interval, last, so a run killed inside it has already sent its anchor, health and backup.
             try:
-                worker.full_check(c['run_id'], int(time.time() * 1000))
+                if verification is not None:
+                    worker.full_check(c['run_id'], int(time.time() * 1000))
             except Exception as exc:
                 failures.append(type(exc).__name__)
             health = report()
