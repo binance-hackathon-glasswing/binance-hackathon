@@ -111,7 +111,7 @@ def test_mc5_existing_integrity_gas_market_and_window_guards_still_apply():
     ledger['bnb_units'] = 0
     cases.append(changed(snapshot, portfolio=ledger))
     cases.append(changed(snapshot, markets=[dict(m, token_open=False) for m in context['markets']]))
-    cases.append(changed(snapshot, profile=dict(context['profile'], signing_end='2026-10-10T14:00:00Z')))
+    cases.append(with_quotes(flatten('2026-10-27T14:00:00Z')))
     for candidate in cases:
         result = run(candidate)
         assert not result['intents'], result
