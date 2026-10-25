@@ -16,7 +16,7 @@ from larp.contracts import ContractError, Document
 from larp.risk.planner import exit_parts
 from larp.strategy.profiles import validate_live
 from larp.strategy.schema import ceil, floor, fraction
-from tools.deploy.build_rehearsal_candidate import fs1_review_options, gas_formulas, pinned_profiles
+from tools.deploy.build_rehearsal_candidate import fs1_review_options, gas_formulas, pinned_profiles, with_recovery_gas
 
 DECISION = 'IDEA-093 FS1 (2026-10-25)'
 # IDEA-084 PF-04 (adopted): first buy Oct 29 14:00, new risk ends Nov 9 21:00, flatten Nov 10 19:00, signing ends
@@ -55,7 +55,9 @@ def fs1_block(raw):
     return block
 
 
-def build(*, s1_raw, s1_decision):
+def build(*, s1_raw, s1_decision, allowance_recovery=False):
+    """`allowance_recovery` (IDEA-098): the IDEA-096 eight-child gas envelope and exit reserve at the CAP-02 ceilings;
+    everything else is FS1's."""
     if type(s1_decision) is not str or not s1_decision.strip():
         raise ContractError('An FS1 block and the decision behind it go together')
     block = fs1_block(s1_raw)
@@ -84,6 +86,8 @@ def build(*, s1_raw, s1_decision):
                 'post-approve requote under it (S2-F6, IDEA-090 F16)')
     p['provenance']['policy_id'] = dict(decision_id=DECISION,
         formula='FS1, the final scored-run strategy: S1 with 24/7 KIT_OPEN_STATE hours under openState, live FINAL only')
+    if allowance_recovery:
+        with_recovery_gas(p)
     p['activation_self_check'] = self_check(p)
     p['provenance']['activation_self_check'] = dict(decision_id='IDEA-093 SC (GAP-74, F-125; 2026-10-25, proposed)',
         formula='cheapest measured round trip (spread + 2*median impact + fee, then symbol); '
@@ -111,8 +115,11 @@ def main(argv=None):
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--s1-config', type=Path, required=True, help='the FS1 block (JSON)')
     parser.add_argument('--s1-decision', required=True, help='decision ID for the supplied block')
+    parser.add_argument('--allowance-recovery', action='store_true',
+                        help='IDEA-098: the IDEA-096 recovery gas envelope at the CAP-02 ceilings')
     args = parser.parse_args(argv)
-    p = build(s1_raw=args.s1_config.read_bytes(), s1_decision=args.s1_decision)
+    p = build(s1_raw=args.s1_config.read_bytes(), s1_decision=args.s1_decision,
+              allowance_recovery=args.allowance_recovery)
     with args.output.open('xb') as stream:
         stream.write(p.payload + b'\n')
     print(p.digest('StrategyProfile.v1'))

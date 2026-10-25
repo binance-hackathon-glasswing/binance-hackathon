@@ -12,7 +12,8 @@ the dev wallet's actual balances; it does not require a 30 USDT dev-wallet seed.
 | File | SHA-256 |
 |---|---|
 | `../fs1-final-20261025/fs1-block.json` (the `s1` block; same bytes as S2's) | `35e20c38e23657da6723e31b18f323e5f5ede778de938d73c72ff1a2c1408d03` |
-| `fs1-rehearsal.json` (file bytes; the `PROFILE_SHA` to pin) | `54802665f3fd28cfcdf4fcb3dd9653db2ce5fab00b4ecfd8a183774d436c4115` |
+| `fs1-rehearsal-recovery.json` (IDEA-098: FS1-R plus IDEA-096 allowance-recovery gas; the `PROFILE_SHA` to pin for the AL9 dev run) | `17ab891dec35f8db5388623042e826c65aa7ee7c1ca5861b18913e146d976e36` |
+| `fs1-rehearsal.json` (cleanup off) | `54802665f3fd28cfcdf4fcb3dd9653db2ce5fab00b4ecfd8a183774d436c4115` |
 | `StrategyProfile.v1` digest | `22a9ad90916730bf3c13299aedc4fce54c028abc0f62eb9bc51e6733ac89deb9` |
 | M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-rehearsal.json`; the `PROBE_SHA` to pin) | `7d5a5602a2f01f1a789f1bb69a400a4114c2507207d00c695e7220561c2e8693` |
 
@@ -56,3 +57,9 @@ python -m tools.deploy.build_rehearsal_candidate --exit-children 2 --fs1-rehears
 ```
 
 It prints the digest above; the output must be byte-identical to `fs1-rehearsal.json`.
+
+## IDEA-098: the recovery profile
+
+`fs1-rehearsal-recovery.json` is `tools/deploy/build_rehearsal_candidate.py --exit-children 2 --fs1-rehearsal
+--allowance-recovery` on the same inputs: the same recovery gas as the FINAL recovery profile (IDEA-098 RC2), so the
+next dev run can show IDEA-096's AL9 live (an aborted swap followed by its zero-approve, then a flat flatten).

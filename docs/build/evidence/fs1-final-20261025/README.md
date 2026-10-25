@@ -9,7 +9,8 @@ PR278-RV01 adds four explicit behavior fields below. Earlier receipts/pins in ID
 | File | SHA-256 |
 |---|---|
 | `fs1-block.json` (the profile's `s1` block; byte-identical to S2's `s2-block.json`) | `35e20c38e23657da6723e31b18f323e5f5ede778de938d73c72ff1a2c1408d03` |
-| `fs1-final.json` (file bytes; the `PROFILE_SHA` to pin) | `19176e6c6537291bb41f440636f51d7f6313d2444ebf7242cc145316d840f291` |
+| `fs1-final-recovery.json` (IDEA-098: FS1 plus IDEA-096 allowance-recovery gas; **the `PROFILE_SHA` to pin**) | `b8ba06e248b48b6406d77c1bda4110001324382e91bb63c71a27ce514731892f` |
+| `fs1-final.json` (cleanup off; superseded for install by the recovery profile) | `19176e6c6537291bb41f440636f51d7f6313d2444ebf7242cc145316d840f291` |
 | `StrategyProfile.v1` digest of the same profile | `969532f583ee0015533178d4ca4bd5917c6bb6340e9e396c47e8a38db91d559f` |
 | M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-final.json`) | `5b642bd3b58638f9e7e495340ee6a0bb733a32f4effe90cf187bedcda900a289` |
 | Model routing `config/intelligence/aiand-routing.fs1.json` | `9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4` |
@@ -66,3 +67,13 @@ python -m tools.deploy.build_final_candidate \
 ```
 
 It prints the `StrategyProfile.v1` digest above. The output must be byte-identical to `fs1-final.json`.
+
+## IDEA-098: the recovery profile
+
+`fs1-final-recovery.json` is `tools/deploy/build_final_candidate.py --allowance-recovery` on the same inputs. It differs
+from `fs1-final.json` only in IDEA-096's recovery gas at the CAP-02 signed ceilings (1,200,000 gas × 160,000,000 wei):
+`gas_action_budget_units` 1.536e15 wei (eight children: up to five other-token revokes, the approve, and the swap or the
+pay-token revoke after an abort), `exit_gas_reserve_units` 1.536e16 wei (0.01536 BNB; five positions × two exit children),
+and the provenance of those two keys and of `gas_sizing_budget_units` (value unchanged). The strategy, windows, sizes,
+slippage and the activation self-check are unchanged. Without it, one swap aborted after its approve leaves an open
+allowance that blocks every later trade in another token, as in run 4's flatten (IDEA-096, IDEA-098 RC1x).

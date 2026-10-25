@@ -14,6 +14,43 @@ from larp.strategy.profiles import validate_live
 from larp.strategy.schema import ceil, fraction, initial_gas_only
 
 
+def _exit_shape(p):
+    """(positions, balanced exit children per position) that the exit reserve covers."""
+    if p['baseline'] == 'TREND_GUARDED_VOL':
+        from larp.strategy.s1 import config
+        positions, hard = len(TOKENS), config(p)['hard']
+    else:
+        positions, hard = 4, fraction(p['hard_name_weight'])
+    return positions, exit_parts(ceil(hard * p['expected_equity_units']), p['per_trade_cap_units'])
+
+
+def has_recovery_gas(p, action):
+    positions, children = _exit_shape(p)
+    return (p['gas_action_budget_units'] == action and p['exit_gas_reserve_units'] == positions * children * action
+            and 'gas_sizing_budget_units' in p)
+
+
+def recovery_gas(p, *, max_gas, max_gas_price, decision_id, data_hash):
+    """Set the eight-child recovery gas envelope and exit reserve on profile `p` (in place) and return it."""
+    action = 8 * max_gas * max_gas_price
+    # Clean-pair sizing stays measured. The verifier adds the observed cleanup count at expected price;
+    # charging every clean entry for five hypothetical revokes can make the smallest position infeasible.
+    sizing = p.get('gas_sizing_budget_units', p['gas_action_budget_units'])
+    if sizing > action:
+        raise ContractError('Measured recovery sizing exceeds the eight-child signed envelope')
+    positions, children = _exit_shape(p)
+    p.update(gas_action_budget_units=action, gas_sizing_budget_units=sizing,
+             exit_gas_reserve_units=positions * children * action)
+    for name, formula in dict(
+            gas_action_budget_units='8 children*max_gas*max_gas_price; <=5 other-token revokes + approve + swap '
+                                    'or abort pay-token revoke; original authority only',
+            gas_sizing_budget_units='clean-pair expected gas; verifier adds observed other-token revokes '
+                                   '*ceil(max measured approve gas*5/4); action reserves signed maxima',
+            exit_gas_reserve_units=f'{positions} positions*{children} balanced exit children*gas_action_budget_units').items():
+        p['provenance'][name] = dict(decision_id=decision_id, data_hash=data_hash, formula=formula)
+    return p
+
+
 def candidate(profile, execution, signing_policy, runtime, *, decision_id):
     p, e, s, r = map(deepcopy, (profile, execution, signing_policy, runtime))
     validate_live(p)
@@ -33,26 +70,10 @@ def candidate(profile, execution, signing_policy, runtime, *, decision_id):
         raise ContractError('Runtime and execution identities differ')
     evidence = hashlib.sha256(Document.from_dict(dict(profile=p, execution=e, policy=s)).payload).hexdigest()
     action = 8 * e['max_gas'] * e['max_gas_price']
-    # Clean-pair sizing stays measured. The verifier adds the observed cleanup count at expected price;
-    # charging every clean entry for five hypothetical revokes can make the smallest position infeasible.
-    sizing = p.get('gas_sizing_budget_units', p['gas_action_budget_units'])
-    if sizing > action:
-        raise ContractError('Measured recovery sizing exceeds the eight-child signed envelope')
-    if p['baseline'] == 'TREND_GUARDED_VOL':
-        from larp.strategy.s1 import config
-        positions, hard = len(TOKENS), config(p)['hard']
-    else:
-        positions, hard = 4, fraction(p['hard_name_weight'])
-    children = exit_parts(ceil(hard * p['expected_equity_units']), p['per_trade_cap_units'])
-    p.update(gas_action_budget_units=action, gas_sizing_budget_units=sizing,
-             exit_gas_reserve_units=positions * children * action)
-    for name, formula in dict(
-            gas_action_budget_units='8 children*max_gas*max_gas_price; <=5 other-token revokes + approve + swap '
-                                    'or abort pay-token revoke; original authority only',
-            gas_sizing_budget_units='clean-pair expected gas; verifier adds observed other-token revokes '
-                                   '*ceil(max measured approve gas*5/4); action reserves signed maxima',
-            exit_gas_reserve_units=f'{positions} positions*{children} balanced exit children*gas_action_budget_units').items():
-        p['provenance'][name] = dict(decision_id=decision_id, data_hash=evidence, formula=formula)
+    if not has_recovery_gas(p, action):
+        # A profile built with these values (IDEA-098) keeps its bytes, so its approved hash survives the opt-in.
+        recovery_gas(p, max_gas=e['max_gas'], max_gas_price=e['max_gas_price'], decision_id=decision_id,
+                     data_hash=evidence)
     raw = Document.from_dict(p).payload + b'\n'
     sha = hashlib.sha256(raw).hexdigest()
     e.update(allowance_recovery=True, gas_budget=action, strategy_profile_sha256=sha)
@@ -66,7 +87,7 @@ def candidate(profile, execution, signing_policy, runtime, *, decision_id):
             'runtime.json': Document.from_dict(r).payload + b'\n',
             'allowance-recovery-review.json': Document.from_dict(dict(
                 schema='AllowanceRecoveryCandidate.v1', decision_id=decision_id, ready_to_install=False,
-                signing_enabled=False, gas_action_budget_units=action, gas_sizing_budget_units=sizing,
+                signing_enabled=False, gas_action_budget_units=action, gas_sizing_budget_units=p['gas_sizing_budget_units'],
                 exit_gas_reserve_units=p['exit_gas_reserve_units'], profile_sha256=sha,
                 remaining_gates=['FRESH_CAPS_REVIEW', 'GATE_A_CHECK', 'ISAAC_SIGNER_APPROVAL',
                                  'KEEGAN_GAS_TIMING_ACCEPTANCE', 'AL9_LIVE_HOST_ACCEPTANCE'])).payload + b'\n'}
