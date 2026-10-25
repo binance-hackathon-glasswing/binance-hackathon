@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from larp.contracts import Document
 from larp.integration.runtime import initial_projection
 from larp.integration.settlement import settle
-from larp.research.fixtures import with_quotes
+from larp.research.fixtures import changed, with_quotes
 from larp.storage.postgres import doc
 from tests.integration.test_execution_bounds import DurableBudget as _DurableBudget, unclaimed_fact
 from tests.strategy.test_execution_bounds import at
@@ -21,6 +21,7 @@ class MandatoryRetry(_DurableBudget):
         super().setUp()
         self.template = at('2026-10-12T14:00:00Z', held={'NVDAB': 2000}, profile_changes={
             'new_risk_end': '2026-10-12T12:00:00Z', 'flatten_start': '2026-10-12T13:00:00Z'})
+        self.template = changed(self.template, execution_session=self.calendar.window(self.now))
         self.context = self.template.context.read()
         self.profile = self.context['profile']
         self.h = Document.from_dict(self.profile).digest('StrategyProfile.v1')
