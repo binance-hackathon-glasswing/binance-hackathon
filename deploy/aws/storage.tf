@@ -76,6 +76,25 @@ resource "aws_db_parameter_group" "larp" {
     name  = "rds.force_ssl"
     value = "1"
   }
+  # IDEA-100 DB2: query and lock visibility. The library loads at the next reboot; after it, an admin runs
+  # `CREATE EXTENSION pg_stat_statements` once, outside a run. Logs go to the exported postgresql log.
+  parameter {
+    name         = "shared_preload_libraries"
+    value        = "pg_stat_statements"
+    apply_method = "pending-reboot"
+  }
+  parameter {
+    name  = "pg_stat_statements.track"
+    value = "top"
+  }
+  parameter {
+    name  = "log_min_duration_statement"
+    value = "1000"
+  }
+  parameter {
+    name  = "log_lock_waits"
+    value = "1"
+  }
 }
 resource "aws_db_instance" "larp" {
   identifier                          = var.name
