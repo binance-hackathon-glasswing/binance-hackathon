@@ -71,3 +71,24 @@ Result state: **supported** offline.
 **Still to do (owners):** Keegan and Isaac accept the wording and placement. It reaches a host only in a new build:
 the FS1 final release must be built from a commit that contains this change. The live check (Yao): the first
 FINAL round log, from the activation self-check, shows `reason_summary` for its SKHYB BUY and SELL.
+
+## PR287-RV01 — independent review criteria (2026-10-25)
+
+Review base: canonical `f52107f0`; incoming PR head `b7063e0d`. Scope: derived audit summaries only.
+No wallet, host installation or owner approval is part of this review.
+
+Findings from code inspection: terminal/scheduled/self-check phrases say a sale happened even for an
+unsubmitted order; `DEEP_DRAWDOWN` describes a current 88% threshold although `update_risk` latches the
+condition across recoveries; `BOUNDED_FALSIFIER` can be discretionary, so calling its reduction required is
+inaccurate. The audit fallback also omits the otherwise promised empty `decision_summaries` list.
+
+Pass criteria, registered before new tests or execution:
+- RV1: summaries describe intended actions, not guaranteed fills; an aborted order cites its own stored
+  `intent_id`-bound non-submission reason without borrowing another order's outcome. Deep-drawdown wording
+  describes the latch; discretionary falsifier wording does not claim a mandatory requirement.
+- RV2: a real oversized round's fallback output contains a nonempty reason and `decision_summaries=[]`,
+  with no orders or execution commands. Multi-order summaries retain order and decision identity.
+- RV3: malformed optional input cannot raise; repeat summarization leaves the input unchanged and gives
+  identical results. Existing round logging, settlement and replay checks pass without changing order schema.
+- RV4: full suite passes on pinned Python 3.12.15, recursive dependency locks and PostgreSQL 14.24;
+  record exact skips/exclusions and CI availability. Code and tests must be pushed before execution.
