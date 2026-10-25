@@ -84,6 +84,8 @@ def main(argv=None):
     assembly.add_argument('--untrusted-router-policy-sha256', help='Reviewed SHA-256 of that policy file (LD03)')
     assembly.add_argument('--allowance-recovery', action='store_true',
                           help='Candidate opt-in; execution/signer policy and gas acceptance remain required')
+    assembly.add_argument('--carry-over', type=Path,
+                          help="IDEA-097 S4: the previous run's HoldingsCarryOver.v1 export (an S4 profile requires it)")
     args = parser.parse_args(argv)
     try:
         if args.command == 'capture':
@@ -127,7 +129,8 @@ def main(argv=None):
                         execution=args.execution, runtime_mode=args.runtime_mode, adoption_ref=args.model_adoption_ref,
                         untrusted_router_policy_file=args.untrusted_router_policy_file,
                         untrusted_router_policy_sha256=args.untrusted_router_policy_sha256,
-                        allowance_recovery=args.allowance_recovery)
+                        allowance_recovery=args.allowance_recovery,
+                        carry_over_raw=None if args.carry_over is None else args.carry_over.read_bytes())
         write_new(args.out, files)
         report = json.loads(files['preparation-report.json'])
         # No account IDs, wallet, contacts, endpoints, credentials or raw input data in stdout.

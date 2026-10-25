@@ -3,7 +3,7 @@
 - Date / author: 2026-10-25 (~09:40Z) / Claude Code, from read-only host and chain checks requested by Yao
   ("check if our agent is selling the stocks now for the flatten process"). Owners for the fix: Keegan
   (execution/gas caps, LD06/LD10), Isaac (signer policy), Keith (planner order, if F1 is taken). Host checks: Yao.
-- Status: **implemented for review in PR282 — F2/F3/F4 source and offline regressions; owner/profile/host acceptance and AL9 remain open.**
+- Status: **F2/F3/F4 merged to canonical via PR282 after review PR282-RV01 (2026-10-25); defaults disabled. Owner/profile/host acceptance and AL9 remain open (FLAT-01).**
 - Related: IDEA-088 (quote verifier, PR268), IDEA-089 (S2, run 4), IDEA-090 S2-F6 (post-approve requote aborts),
   IDEA-092 (S3 scheduled flatten), IDEA-093 (FS1 final candidate, PR278), IDEA-049-C LD06 (allowance cleanup),
   LD10 (gas budgets), SKILL.md §0.3 #1 (no manual trading).
@@ -179,8 +179,34 @@ limits (annotation captured); no GitHub CI PASS is claimed.
 Remaining ownership: **Keegan** — fresh quote/caps packet, actual BNB coverage, gas/timing/token behavior and AL9;
 **Isaac** — exact signer exception/configuration and manifested candidate acceptance; **Yao/host owners** — authorized
 next-run installation and live evidence. Existing run 4 and final candidate are not silently changed. FLAT-01 stays
-open for these acceptance items; F1 is optional/deferred. PR282 stays OPEN for teammate review, unmerged.
+open for these acceptance items; F1 is optional/deferred. (PR282 was then reviewed and merged; see PR282-RV01.)
 
 Final documentation-only follow-up: release-register/bundle checks pass **14 tests / 12 subtests** after the
 receipt/backlog/index updates. All recorded code/test hashes still match `1210a9f0`; no executable changes followed
 the full passing run. The existing PR title/body now describe implementation and the remaining review gates.
+
+### PR282-RV01 — review, fixes and merge (2026-10-25, Claude Code for Yao)
+
+Reviewed the PR282 diff against canonical `f56bcf6c`: the executor's `abort_pending` sequence/gas rules, the store's
+digest and NOT_SUBMITTED / ABORTED_UNBROADCAST checks, signer reuse of `validate_sequence`, the opt-in quote verifier,
+the fixed-LiquidMesh revoke, Gate A scope binding, the candidate generator and the F4 exports. The strict swap preflight
+(`untrusted_router.py`) is byte-identical to base. The signer reads the same stored state, so it signs the abort revoke
+under the same bounded rule. No change to the recovery design. Three fixes, commit `48224098`:
+
+| # | Finding | Fix |
+|---|---|---|
+| RV01-1 | `RouterAllowanceCheck` caught only `Blocked`. An `OSError` or web3 `Unavailable` from the read (artifact write, full disk) would propagate out of `RoundDriver.once` and stop rounds and terminal exits. The check runs whenever a quote verifier is configured, even with recovery off. | Any `RuntimeError`/`OSError` → `ALLOWANCE_READ_UNAVAILABLE`, as the gas monitor's `SKIPPED`. |
+| RV01-2 | The check loaded the run and queried open rounds on every driver cycle before its 60 s `NOT_DUE` test. | `NOT_DUE` returns before any store read. |
+| RV01-3 | `UntrustedQuoteVerifier` read per-symbol `approve_gas_bnb_units` outside its profile check, so a profile without it raised a raw `KeyError` even with recovery disabled. Every recorded profile has the field. | Read inside the check; a missing field is a `ContractError`. |
+
+Design note, not changed: with recovery on, any `Blocked` swap requote after a successful approve aborts at once and
+cleans up. It does not use the remaining prepare probes (`test_failed_requote_durably_requests_abort_cleanup_without_another_quote`).
+This gives up swap retries so that cleanup happens inside the original authority. Keegan's FLAT-01 timing review covers it.
+
+Validation of `48224098`: pinned Python 3.12.15 / PostgreSQL 14.24, Linux aarch64 Docker, standalone clone, internal
+network. **2707 passed, 0 failed, 8 skipped, 3 deselected, 4018 subtests**: the 2705 above plus 2 new RV01
+regressions, same skips and deselections. A first run on a read-only git worktree mount had 4 failures, all
+environmental (unresolvable `.git` pointer, read-only `deploy/activation`). All 4 pass in the clone.
+[Receipt](../build/evidence/pr282-rv01-review-20261025.json). GitHub CI is still blocked by billing. Yao asked for the
+merge, so PR282 is merged into `codex/system-testing-20261012`. Merging is not activation: no install, profile,
+signer or wallet change. FLAT-01's acceptance items and AL9 stay open.
