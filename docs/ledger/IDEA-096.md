@@ -145,6 +145,38 @@ new `abort_pending` field, so pre-existing records remain loadable without rewri
 Abort cleanup gets its own bounded prepare-probe budget once; restart cannot reset it. Original time/gas and
 health/market guards still govern; no post-expiry authority or automatic install is implied.
 
-Focused validation and full-suite receipt will be recorded below after completion. Initial red integration fixture
+Final validation is recorded below; the receipt binds the tested source and exact local environment. Initial red integration fixture
 runs were corrected to model explicit tx absence, terminal-round attestation, and fresh per-token quote bindings;
 no live RPC/host/wallet action was taken. All executable revisions were committed and pushed before execution.
+
+
+### AL-IMPL01 validation — 2026-10-25
+
+Tested pushed source `1210a9f039799b8fe4120cb01b894d107620680e` on Linux aarch64, Python 3.12.15,
+PostgreSQL 14.24; all 45 applicable recursively pinned test dependencies matched. Full suite:
+**2705 passed, 0 failed, 8 skipped, 3 deselected, 4018 subtests passed**, 248.53 s.
+[Machine-readable receipt](../build/evidence/pr282-allowance-recovery-validation-20261025.json) includes hashes,
+command, images, exclusions and the initial full-run corrections. No source, code or tests changed after that run.
+Shell syntax checks and `git diff --check` pass. `untrusted_router.py` is byte-identical to base.
+
+| Criterion | Offline evidence / remaining boundary |
+|---|---|
+| AL1 | Exact canonical refusal probe, then enabled verifier accepts and records dirty SKHYB; disabled refusal remains explicit. |
+| AL2 / AL3 | Real PostgreSQL coordinator/ContextBuilder/planner/execution registry/settlement sells five held names to dust with dirty USDT or all five stock allowances; no reservations/allowances remain. Synthetic venue/chain; strict real decoder/preflight. Separate executor cases cover a prior BUY's abandoned/expired approval. |
+| AL4 | Contamination between prepare/authorize or signing/broadcast refuses; existing strict router tests pass. Signer retains independent zero-only opt-in/scope, payload/sequence/fee checks. |
+| AL5 | Authorized post-approve abort clears the pay allowance with gas-only accounting inside the parent budget. Original expiry/health/window limits are intentionally preserved; out-of-authority cases leave an observable allowance for F2. |
+| AL6 | PostgreSQL restart after approve, after signed swap abort, and every cleanup prepare/authorize/sign/broadcast/final stage; revoked swap bytes cannot recover, cleanup never sends twice, unknown sends retain barrier. Existing maintenance observation accounting/exact replay suite passes. Legacy records without the new field preserve their hash chain. |
+| AL7 | Recomputed eight-child candidate is numerically COVERED by caps_review and validate_live; Gate A preparation/check_scope binds explicit opt-in and router pins. Full existing Gate A checker suites pass with synthetic inputs. Actual private candidate/release/Gate A/host qualification and owner approval remain open. |
+| AL8 | Public pinned allowance amounts and sanitized refusal symbols pass export tests; runtime low-severity incident is durable/idempotent at quiet boundaries. Current RC7 observer scripts updated, older copies preserved. |
+| AL9 | NOT RUN — next authorized dev run and live owner acceptance required. |
+
+Eight skips: optional private public-source fixture, external recorded market artifacts, root directory-mode
+semantics, and five systemd runner checks. Three unchanged nested-bubblewrap cases were explicitly deselected
+because this Docker host cannot supply their namespaces/proc mounts. This is not a host/systemd/sandbox release
+acceptance. GitHub runtime check `121141195890` / run `40184126677` did not start due account payment/spending
+limits (annotation captured); no GitHub CI PASS is claimed.
+
+Remaining ownership: **Keegan** — fresh quote/caps packet, actual BNB coverage, gas/timing/token behavior and AL9;
+**Isaac** — exact signer exception/configuration and manifested candidate acceptance; **Yao/host owners** — authorized
+next-run installation and live evidence. Existing run 4 and final candidate are not silently changed. FLAT-01 stays
+open for these acceptance items; F1 is optional/deferred. PR282 stays OPEN for teammate review, unmerged.

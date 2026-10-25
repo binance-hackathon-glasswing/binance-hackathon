@@ -1,8 +1,10 @@
 # Current shared build and remaining work
 
-IDEA-096 (2026-10-25, incident): run 4's terminal flatten stalled. An aborted SKHYB swap left its approve open, and the quote
-verifier then refuses every other name's sell (09:30Z NVDAB INCIDENT). The fix spec is drafted and AL1–AL9 are pre-registered; no code is changed.
-The FS1 final candidate has the same gap. [Entry](../ledger/IDEA-096.md) / [evidence](evidence/flatten-allowance-20261025.json); backlog FLAT-01.
+IDEA-096 / PR282 (2026-10-25): F2/F3/F4 allowance recovery, bounded durable abort cleanup and monitoring implemented
+for teammate review; defaults remain disabled. Local pinned Python3.12.15/PG14.24:2705 tests/4018 subtests PASS,
+8 explicit skips/3 nested-sandbox cases deselected. GitHub CI cannot start (billing). Exact candidate gas/caps/signer,
+Gate A/host acceptance and AL9 remain open in FLAT-01; no merge/install or running-profile change.
+[Entry](../ledger/IDEA-096.md) / [validation](evidence/pr282-allowance-recovery-validation-20261025.json).
 
 PR277-RV01 (2026-10-24): S3 dev-rehearsal scheduled flatten reviewed with a repair bounding pre-cut BUY command
 and independent execution/signer/broadcast authority at the schedule; first flat/DONE re-entry remains allowed.
