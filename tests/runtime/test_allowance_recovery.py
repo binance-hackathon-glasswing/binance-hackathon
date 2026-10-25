@@ -44,3 +44,17 @@ class QuietAllowanceIncident(DatabaseCase):
         version = self.store.load('run').read()['version']
         self.assertEqual(RouterAllowanceCheck(c, d, '0x' + '1' * 40)(2000), 'CHECKED')
         self.assertEqual(self.store.load('run').read()['version'], version)
+
+    def test_passive_check_never_stops_the_cycle_and_is_not_due_before_any_store_read(self):
+        class Down:
+            mode = 'live'
+
+            def call(self, method, params):
+                raise OSError('no space left on device')
+        d = UntrustedRouterDecoder(policy())
+        d.bind(Down())
+        c = SimpleNamespace(store=self.store, run_id='run')
+        check = RouterAllowanceCheck(c, d, '0x' + '1' * 40)
+        self.assertEqual(check(1000), 'ALLOWANCE_READ_UNAVAILABLE')
+        c.store = None  # any store access before the interval check would raise
+        self.assertEqual(check(1001), 'NOT_DUE')

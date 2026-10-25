@@ -62,7 +62,9 @@ class UntrustedQuoteVerifier:
             action, sizing = profile['gas_action_budget_units'], profile['gas_sizing_budget_units']
             scale = profile['quote_cost_summary']['bnb_decimals']
             slippage = profile['slippage_bps']
-        except (KeyError, TypeError, AttributeError, ContractError):
+            cleanup_sizing = max((r['approve_gas_bnb_units'] * 5 + 3) // 4
+                                 for r in profile['quote_cost_summary']['symbols'].values())
+        except (KeyError, TypeError, AttributeError, ValueError, ContractError):
             raise ContractError('The quote verifier needs an initial-gas-only profile with both gas budgets') from None
         if initial is not True or any(type(v) is not int or v <= 0 for v in (action, sizing)) or sizing > action:
             raise ContractError('The quote verifier needs an initial-gas-only profile with both gas budgets')
@@ -71,8 +73,7 @@ class UntrustedQuoteVerifier:
         self.decoder, self.wallet = decoder, wallet.lower()
         self.action, self.sizing = action, sizing
         self.slippage_bps, self.slippage = slippage, slippage_percent(slippage)
-        self.cleanup_sizing = max((r['approve_gas_bnb_units'] * 5 + 3) // 4
-                                  for r in profile['quote_cost_summary']['symbols'].values())
+        self.cleanup_sizing = cleanup_sizing
         if type(allowance_recovery) is not bool:
             raise ContractError('allowance_recovery must be an explicit boolean')
         self.allowance_recovery = allowance_recovery
