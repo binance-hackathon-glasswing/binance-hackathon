@@ -67,3 +67,8 @@ environment prevents a run (stated).
   acceptance against the final wallet's actual BNB (GAP-73), and the install itself.
 - Run 4: it keeps RC7 and stays stuck until the SKHYB allowance is consumed. No manual wallet action is proposed
   (SKILL.md §0.3 #1).
+
+- 2026-10-25 clarification (Claude Code, before any criterion test was run): RC2's "their provenance" also includes
+  `gas_sizing_budget_units`. Its value is unchanged, but PR282's recovery formula rewrites its provenance to say that
+  the verifier adds the observed revokes. The shared helper writes all three provenance entries, exactly as
+  `candidate()` already does.
