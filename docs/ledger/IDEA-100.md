@@ -109,3 +109,30 @@ safety checks (swap preflight, signer policy, Gate A/B) do not change. Each PR r
 - **Optional:** DB3 and DB4 (fewer reads, idle backoff), if they fit the final build. DB6 only after its own review.
 - **DB7:** 24 h with no alarm, credit or surplus balance stable (not steadily climbing), and no single statement
   above 30 % of total time. The 8 % CPU target is dropped.
+
+## DB1, DB2, DB5 implementation: design choices (2026-10-26, Claude Code; written before any test or code)
+
+Asked by the user ("Can you implement PR 288?"). This implements the three required rows; DB3, DB4 and DB6 stay
+optional and are not part of it. The pass criteria are the ones pre-registered above. Choices the spec leaves open:
+
+- **DB1.** One `aws_cloudwatch_metric_alarm.database_health` map of five alarms beside `database_storage`, using
+  `local.alarm_actions` and `local.alarm_footer`. Thresholds in bytes: 60 MiB free memory, 600 MiB swap. Only the
+  credit-balance alarm treats missing data as breaching, as the spec says; the other four use `notBreaching`.
+  Evidence offline: `terraform test` with the mock provider (no AWS access here). `terraform plan` against the real
+  account and the SNS test publish are host checks for Yao.
+- **DB2.** The four parameters go into `aws_db_parameter_group.larp` (`pending-reboot` for
+  `shared_preload_libraries`). The read-only check is `checks/db-top-queries.sh` in the run-5 sheet folder and in the
+  FS1 run sheet folder, in the same shape as `checks/db-sizes.sh`. It reads `pg_stat_statements` in one READ ONLY
+  transaction and prints the top 15 statements by total time, query text cut to 160 characters. Query texts are
+  already normalised by the extension (constants as `$n`), so no parameter values are printed.
+- **DB5.** Two parts:
+  - **Daily cap.** `Maintenance(max_exports_per_day=…)`: `prepare_backup` counts this run's backup rows whose slot falls
+    in the current UTC day, in any status, from `archive_outbox`. That count is durable and survives restarts. At the
+    cap it prepares nothing and returns None, and `health()` reports `BACKUP_DAILY_CAP`. The default `None` keeps
+    current behaviour. `operations once` passes 3, or the optional config key `max_exports_per_day`.
+  - **Backoff.** It lives in `operations once`, not in the timer, so the cheap steps keep their one-minute cadence:
+    anchor, delivery and health, as the spec's "anchors and health still run hourly" requires. After a run with any
+    failure, a backoff file in `StateDirectory` records the count and the next allowed time: 60 s, then 120 s, 240 s …
+    up to 3600 s. Until that time the run skips the two heavy steps, the backup export and the daily full verification,
+    and reports `ARCHIVE_BACKOFF`. A run without failures clears the file. Without a state directory there is no
+    backoff, as with IDEA-095. `larp-archive.timer` is unchanged (`OnUnitInactiveSec=60s`); only a comment is added.
