@@ -24,6 +24,9 @@ DEFAULT_PROFILE = ROOT / 'docs/build/evidence/rehearsal-exit-split-20261021/rehe
 BINDING_KEYS = {'schema', 'run_id', 'build_id', 'database_host', 'database_name', 'database_ca_file',
                 'database_ca_sha256', 'region', 'untrusted_router_policy_file', 'untrusted_router_policy_sha256'}
 SHA256 = re.compile(r'[0-9a-f]{64}')
+WALLET = re.compile(r'0x[0-9a-f]{40}')
+# IDEA-103 FI3: the caps decision's policy and the execution mode for each environment.
+ENVIRONMENTS = dict(REHEARSAL=('development', 'dev'), FINAL=('final', 'live'))
 
 
 def require(ok):
@@ -93,26 +96,51 @@ def chain_start(holdings, portfolio, usdt_deficit):
     return dict(portfolio, cash_units=usdt['chain'], bnb_units=bnb['chain'])
 
 
+def fresh_start(packet, wallet, run_id, mode):
+    """IDEA-103 FI4: a fresh final wallet has no ledger. Its book is the finalized chain alone: no stock unit (dust
+    included), no router allowance, no pending nonce, the probe's own FRESH_TARGET read of this exact wallet."""
+    holdings, private = packet['holdings'], packet['private_caps_inputs']
+    require(type(wallet) is str and WALLET.fullmatch(wallet) is not None and private['wallet'] == wallet)
+    require(packet['identity'].get('target') == 'FRESH_FINAL_WALLET' and holdings['status'] == 'FRESH_TARGET')
+    source = private['portfolio']
+    assets = holdings['assets']
+    require(set(assets) == {'USDT', 'BNB', *source['positions']})
+    require(all(type(assets[s]['chain']) is int and assets[s]['chain'] == 0 for s in source['positions']))
+    require(not any(packet['router']['allowances_to_router'].values()))
+    usdt, bnb = assets['USDT']['chain'], assets['BNB']['chain']
+    require(type(usdt) is int and usdt >= 0 and type(bnb) is int and bnb >= 0)
+    return dict(schema=source['schema'], wallet_id=wallet, run_id=run_id, mode=mode, cash_units=usdt, bnb_units=bnb,
+                bnb_decimals=source['bnb_decimals'], reservations={},
+                positions={s: dict(p, units=0, cost_basis_units=0) for s, p in source['positions'].items()})
+
+
 def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0, profile=DEFAULT_PROFILE,
-            allowance_recovery=False):
+            allowance_recovery=False, environment='REHEARSAL', fresh_wallet=None):
     if bindings is not None:
         outside_checkout(output)
     # The profile must be the one the probe carried (selected_profile_sha256), checked before any output exists.
     profile_raw = Path(profile).read_bytes()
     require(hashlib.sha256(profile_raw).hexdigest() == packet['selected_profile_sha256'])
     selected = json.loads(profile_raw)
+    # IDEA-103 FI3: the profile's environment selects the caps policy and the execution mode; they must agree.
+    require(environment in ENVIRONMENTS and selected.get('environment') == environment)
+    policy_name, mode = ENVIRONMENTS[environment]
+    # A fresh wallet (no ledger) exists only for the FINAL install, with hosted bindings.
+    require(fresh_wallet is None or (environment == 'FINAL' and bindings is not None and usdt_deficit == 0))
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
     private = packet['private_caps_inputs']
     require(packet['configs_unchanged'])
     require(packet['holdings']['status'] == 'MATCH' or bindings is not None)
     require(type(usdt_deficit) is int and usdt_deficit >= 0 and (bindings is not None or usdt_deficit == 0))
     require(packet['holdings']['latest_nonce'] == packet['holdings']['pending_nonce'])
-    require(not held(packet['in_flight']['reservations']) and not packet['in_flight']['execution_pending'])
+    # The installed run's in-flight state belongs to another wallet when the target is a fresh final wallet.
+    require(fresh_wallet is not None
+            or (not held(packet['in_flight']['reservations']) and not packet['in_flight']['execution_pending']))
     # IDEA-097 S4: with IDEA-096 allowance recovery opted in, the new run clears a leftover allowance itself.
     require(type(allowance_recovery) is bool)
     require(allowance_recovery or not any(packet['router']['allowances_to_router'].values()))
     decision = json.loads((ROOT / 'docs/build/evidence/signer-numeric-ceilings-20261021.json').read_bytes())
-    policy = decision['policies']['development']['signing_policy']
+    policy = decision['policies'][policy_name]['signing_policy']
     portfolio = private['portfolio']
     run_id = packet['identity']['run_id']
     if bindings is not None:
@@ -122,9 +150,10 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
         # The new signed run has no ledger yet: it starts from the finalized chain holdings, checked
         # against the source ledger (chain_start), nonce, allowances and nothing in flight. The source stays recorded.
         run_id = bindings['run_id']
-        portfolio = dict(chain_start(packet['holdings'], portfolio, usdt_deficit), run_id=run_id)
+        portfolio = (fresh_start(packet, fresh_wallet, run_id, mode) if fresh_wallet is not None else
+                     dict(chain_start(packet['holdings'], portfolio, usdt_deficit), run_id=run_id))
     config = dict(schema='ExecutionService.v1', run_id=run_id, build_id=build_id,
-        mode='dev', wallet_address=private['wallet'], interval_seconds=1, database_dsn_file='/etc/larp/execution-dsn',
+        mode=mode, wallet_address=private['wallet'], interval_seconds=1, database_dsn_file='/etc/larp/execution-dsn',
         router=policy['allowed_spenders'][0], token_decimals=private['token_decimals'],
         max_gas=decision['execution_ceiling']['max_gas'],
         max_gas_price=decision['execution_ceiling']['max_gas_price_wei'],
@@ -143,15 +172,15 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
         (output / name).chmod(0o600)
         return dict(path=name, sha256=hashlib.sha256(raw).hexdigest())
     base = json.dumps(policy, sort_keys=True, separators=(',', ':')).encode() + b'\n'
-    require(hashlib.sha256(base).hexdigest() == decision['policies']['development']['sha256_canonical_json_lf'])
-    # The reviewed development policy, with only the zero-only recovery scope switched on when opted in (IDEA-096).
+    require(hashlib.sha256(base).hexdigest() == decision['policies'][policy_name]['sha256_canonical_json_lf'])
+    # The reviewed policy, with only the zero-only recovery scope switched on when opted in (IDEA-096).
     policy_ref = pin('signing-policy.json', dict(policy, allowance_recovery=True) if allowance_recovery else policy)
     # The exact selected bytes: an S1 profile's provenance is UTF-8 (e.g. "IDEA-075 §4"), which the ASCII encoder
     # above would escape, so re-encoding would no longer match selected_profile_sha256 (SJ-11-RH01).
     profile_ref = pin('profile.json', selected, profile_raw)
     require(profile_ref['sha256'] == config['strategy_profile_sha256'])
     inputs = dict(schema='GateBCapsInputs.v1', wallet=private['wallet'], run_id=config['run_id'],
-        build_id=build_id, environment='REHEARSAL', max_age_seconds=300,
+        build_id=build_id, environment=environment, max_age_seconds=300,
         files=dict(profile=profile_ref, signing_policy=policy_ref,
             execution_config=pin('execution-config.json' if bindings else 'execution-numeric-scope.json', config),
             initial_state=pin('current-holdings.json', portfolio)),
@@ -170,12 +199,13 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
 
 
 def assemble_hosted(packet, output, bindings, signer_out, *, now=None, usdt_deficit=0, profile=DEFAULT_PROFILE,
-                    allowance_recovery=False):
+                    allowance_recovery=False, environment='REHEARSAL', fresh_wallet=None):
     """SJ-04: review and assemble on one clock; a refusal writes no candidate and echoes nothing private."""
     from larp.signer.assembly import assemble, write_new
     outside_checkout(signer_out)
     inputs, result, now = collect(packet, output, bindings['build_id'], bindings=bindings, now=now,
-                                  usdt_deficit=usdt_deficit, profile=profile, allowance_recovery=allowance_recovery)
+                                  usdt_deficit=usdt_deficit, profile=profile, allowance_recovery=allowance_recovery,
+                                  environment=environment, fresh_wallet=fresh_wallet)
     if result['numeric_status'] != 'COVERED':
         return result, now, None
     files = assemble(inputs, now=now, base_dir=output)
@@ -199,12 +229,19 @@ def main(argv=None):
     parser.add_argument('--allowance-recovery', action='store_true',
                         help='IDEA-096/097: opt execution and signer policy into zero-only allowance recovery; '
                              'a leftover router allowance is then accepted for the new run to clear')
+    parser.add_argument('--environment', choices=sorted(ENVIRONMENTS), default='REHEARSAL',
+                        help='IDEA-103: FINAL uses the caps decision\'s final policy and live mode; must match the profile')
+    parser.add_argument('--fresh-wallet', help='IDEA-103 FINAL only: the fresh final wallet the probe targeted '
+                                              '(--target-wallet); its book is the chain alone')
     args = parser.parse_args(argv)
+    if args.fresh_wallet is not None and (args.environment != 'FINAL' or args.bindings is None):
+        parser.error('--fresh-wallet needs --environment FINAL and --bindings')
     if args.bindings is None:
         if args.build_id is None or args.signer_out is not None or args.accept_usdt_deficit_units:
             parser.error('--build-id is required; --signer-out and a USDT deficit need --bindings')
         _, result, now = collect(read_packet(args.packet.read_bytes()), args.output_dir, args.build_id,
-                                 profile=args.profile, allowance_recovery=args.allowance_recovery)
+                                 profile=args.profile, allowance_recovery=args.allowance_recovery,
+                                 environment=args.environment)
         print(json.dumps(dict(numeric_status=result['numeric_status'], blockers=result['blockers'],
                              reviewed_at=now, missing=result['missing_quote_coverage'])))
         return 0
@@ -215,7 +252,8 @@ def main(argv=None):
         result, now, signer_sha256 = assemble_hosted(packet, args.output_dir, json.loads(args.bindings.read_bytes()),
                                                      args.signer_out, usdt_deficit=args.accept_usdt_deficit_units,
                                                      profile=args.profile,
-                                                     allowance_recovery=args.allowance_recovery)
+                                                     allowance_recovery=args.allowance_recovery,
+                                                     environment=args.environment, fresh_wallet=args.fresh_wallet)
     except (*ERRORS, AssertionError, zlib.error):
         # Never echo hostnames, paths, DSNs, raw input or exception messages.
         print(json.dumps(dict(status='SIGNER_ASSEMBLY_REFUSED', ready_to_install=False,

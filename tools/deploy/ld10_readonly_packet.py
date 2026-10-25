@@ -6,6 +6,7 @@ The compressed sanitized result includes private exact quote/portfolio evidence.
 import argparse
 import base64
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -23,10 +24,34 @@ def exit_children(whole, proceeds, cap_raw, limit):
 """
 
 
-def script(profile_bytes):
+# IDEA-103 FI4: a FINAL install captures a fresh final wallet while a dev run is still installed on primary.
+TARGET = (
+    ("    wallet = config['wallet_address'].lower()\n",
+     "    wallet = TARGET_WALLET  # IDEA-103: the fresh final wallet, not the installed run's\n"),
+    ("    check = compare_balances(portfolio, plain, settled_block=projection.get('settled_block'))\n",
+     "    # IDEA-103: a fresh wallet has no ledger; reconcile against an empty book, so every unit shows as chain units.\n"
+     "    fresh = dict(portfolio, cash_units=0, bnb_units=0, reservations={},\n"
+     "                 positions={s: dict(p, units=0, cost_basis_units=0) for s, p in portfolio['positions'].items()})\n"
+     "    check = compare_balances(fresh, plain, settled_block=None)\n"
+     "    if check['status'] != 'SKIPPED':\n"
+     "        check = dict(check, status='FRESH_TARGET')\n"),
+    ("        run=dict(version=run[1], epoch=run[2], quarantined=run[3]))\n",
+     "        run=dict(version=run[1], epoch=run[2], quarantined=run[3]), target='FRESH_FINAL_WALLET')\n"),
+)
+
+
+def script(profile_bytes, target_wallet=None):
+    if target_wallet is not None and (type(target_wallet) is not str
+                                      or not re.fullmatch(r'0x[0-9a-fA-F]{40}', target_wallet)):
+        raise ValueError('target wallet must be a 0x-prefixed 40-hex address')
     source = (ROOT / 'docs/build/ops/ld02-20261020/execution-packet.sh').read_text()
     source = source.split("<<'PY'\n", 1)[1].rsplit('\nPY', 1)[0]
     source = 'SELECTED_PROFILE_B64 = ' + repr(base64.b64encode(profile_bytes).decode()) + '\n' + source
+    if target_wallet is not None:
+        for old, new in TARGET:
+            assert source.count(old) == 1, old
+            source = source.replace(old, new, 1)
+        source = 'TARGET_WALLET = ' + repr(target_wallet.lower()) + '\n' + source
     needle = "    driver = config['driver']\n"
     source = source.replace(needle, "    selected_raw = base64.b64decode(SELECTED_PROFILE_B64)\n    profile = json.loads(selected_raw)\n" + needle, 1)
     source = source.replace("    forbidden = forbidden_values(config, secrets, providers)\n", "    forbidden = [v for v in forbidden_values(config, secrets, providers) if not isinstance(v, str) or v.lower() not in (wallet, wallet[2:])]\n", 1)
@@ -89,9 +114,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--profile', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--target-wallet', help='IDEA-103 FINAL: read this fresh wallet instead of the installed run\'s')
     args = parser.parse_args()
     with args.output.open('x') as stream:
-        stream.write(script(args.profile.read_bytes()))
+        stream.write(script(args.profile.read_bytes(), target_wallet=args.target_wallet))
 
 
 if __name__ == '__main__':

@@ -25,12 +25,15 @@
 
 ## Open PRs brought in (integration branch `claude/fs1-integration-20261026`)
 
-| PR | What | State when merged here |
+| PR | What | State |
 |---|---|---|
-| 290 | S4-F1: an expired, never-claimed command gives its attempt back | merged into canonical as `be31b37a` during this work |
-| 291 | IDEA-102: mandatory sells spaced one per cadence slot, not capped per session | open, head `61a1dba1` (implementation present; its MC-RV01 results not yet recorded by its author) |
-| 292 | IDEA-100 DB1/DB2/DB5 (with PR288's spec) | open, head `c586fd64` |
-| 281 | ARCH-01 trigger (docs) | open, head `d433c82a` |
+| 290 | S4-F1: an expired, never-claimed command gives its attempt back | merged into canonical (`be31b37a`) by its owners during this work; taken from canonical unchanged |
+| 291 | IDEA-102: mandatory sells spaced one per cadence slot, not capped per session | merged into canonical (`b6b2e3e3`, with its later test fix `7e31de34`) by its owners; taken from canonical unchanged |
+| 292 | IDEA-100 DB1/DB2/DB5 (with PR288's spec) | open, head `c586fd64`, merged here |
+| 281 | ARCH-01 trigger (docs) | open, head `d433c82a`, merged here |
+
+The user asked that this work not overlap the changes made in 290 and 291: this branch carries canonical's code for
+every file those PRs touch, byte for byte, and changes none of it.
 
 Every PR merged on 2026-10-24/25 (#267–#287, #289) is already in canonical.
 
@@ -38,7 +41,7 @@ Every PR merged on 2026-10-24/25 (#267–#287, #289) is already in canonical.
 
 | # | Pass when |
 |---|---|
-| FI1 | The branch contains canonical and the four heads above. Conflicts are docs only and keep both sides' lines. All four FS1 profiles rebuild byte for byte (`fs1-final.json` `19176e6c…`, `fs1-final-recovery.json` `b8ba06e2…`, `fs1-rehearsal.json` `54802665…`, `fs1-rehearsal-recovery.json` `17ab891d…`). |
+| FI1 | The branch contains canonical (with 290 and 291) and the two open heads above. Conflicts are docs only and keep both sides' lines. All four FS1 profiles rebuild byte for byte (`fs1-final.json` `19176e6c…`, `fs1-final-recovery.json` `b8ba06e2…`, `fs1-rehearsal.json` `54802665…`, `fs1-rehearsal-recovery.json` `17ab891d…`). |
 | FI2 | Parallel settings: FS1's signed live preparation writes `assessment_workers` 5 and `continuation_rounds` 4 (PL-9), and the FS1 M4 script refuses a package without them. Wallet execution is unchanged (serial). |
 | FI3 | FINAL caps review: `review_rehearsal_caps.py --environment FINAL` uses CAP-02's `final` signing policy (hash checked), an execution config with `mode` `live`, and caps-review inputs with `environment` FINAL. It refuses a REHEARSAL profile under FINAL and a FINAL profile under the REHEARSAL default. The default (REHEARSAL) path is unchanged: every existing test passes as it is. |
 | FI4 | Fresh final wallet: `ld10_readonly_packet.py --target-wallet 0x…` produces a probe that reads holdings, nonce, allowances and quotes for that wallet, not the installed run's, and marks the holdings `FRESH_TARGET` (no ledger). Without the flag the probe bytes are unchanged (the S4 probe `379c476b…` still rebuilds). The FINAL review with `--fresh-wallet` builds the starting book from the chain only, and refuses: any stock unit above 0 (dust included), a pending nonce, an open router allowance, a packet target other than the bindings' wallet, or a non-FRESH_TARGET packet. |
