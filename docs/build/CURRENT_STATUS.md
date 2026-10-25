@@ -1,5 +1,12 @@
 # Current shared build and remaining work
 
+PR283-RV01 / IDEA-098 (2026-10-25): FS1 recovery profile integration reviewed for merge into PR278's branch.
+Fixed stale cleanup-off install/probe references and completed RC4 synthetic numeric coverage. Pinned Linux
+Python3.12.15/PG14.24: 2818 tests/4029 subtests PASS, 8 explicit skips/3 nested-sandbox deselections; CI billing-blocked.
+Recovery FINAL `b8ba06e2…`, FS1-R `17ab891d…`, S4 `58b31806…` unchanged. Fresh FINAL Q1/M3/scripts, exact
+signer/profile approval, real gas/BNB/timing and AL9 remain owner gates. PR278 remains a separate open review.
+[Review](../ledger/IDEA-098.md#pr283-rv01-results-and-merge-decision) / [receipt](evidence/pr283-review-20261025.json).
+
 IDEA-097 S4 (2026-10-25): run 5 carries run 4's book over and flattens with PR282's allowance recovery. The profile is `58b31806` (flatten already begun, signing to Tue 12:00Z, exit reserve 0.01536 BNB). Implemented with the run-5 sheet and supported offline: Linux 3.12.15 + PG 14.24 at `04c8997b`, 2722 passed and 0 failed. Approval, BNB top-up and install remain. [Entry](../ledger/IDEA-097.md).
 
 PR278-RV01 (2026-10-25): **FS1 remains open for teammate review.** Repairs cover healthy PF02 recovery,

@@ -1,4 +1,4 @@
-# IDEA-098 — FS1 with allowance recovery: the final can always sell after an aborted swap
+# IDEA-098 — FS1 allowance recovery within the original execution authority
 
 - Date / author: 2026-10-25 / Claude Code, asked by the user ("add the fixes to the pipeline in a new PR; ensure it can
   run smoothly for 14 days by buying and selling without disruptions"). Owners: Keegan (gas/caps, execution), Isaac
@@ -21,9 +21,10 @@ Two PRs address this, but neither makes the final safe on its own:
 - **PR278** builds the FS1 final candidate. It does not contain PR282, and its profile `19176e6c…` reserves gas with
   "cleanup disabled".
 
-As things stand, the final would have run 4's deadlock. One aborted swap after an approval would block every later
-trade in another token for the rest of the 14 days. That includes the F-125 activation self-check's SELL, any loss-ladder
-reduction and the terminal flatten. The 20 bp slippage makes aborts rarer, but it cannot exclude them.
+Without recovery, a leftover allowance can block trades in other tokens until it is consumed or cleared.
+The no-recovery harness below also shows that a successful retry of the same token can consume it; persistence
+for the whole 14 days is not established. This can affect the activation self-check SELL, loss-ladder reductions
+and terminal flatten. The slippage setting alone does not exclude quote refusals.
 
 ## Decision (proposed; Isaac and Keegan to accept)
 
@@ -139,3 +140,37 @@ Prospective checks:
 
 Commit/push all changed executable code/tests before running it. GitHub CI/account status, real caps/gas/timing,
 exact signer/profile approval, FS1-specific scripts and AL9 remain separately recorded if unavailable.
+
+
+### PR283-RV01 results and merge decision
+
+At pushed source `b3a333de6f8a82c3b06b7bcd49dc1e7a1440c2f1`: focused suite **49 passed**; full suite
+**2818 passed, 0 failed, 8 skipped, 3 deselected, 4029 subtests passed**, 265.50 s. Linux aarch64,
+Python 3.12.15 / PostgreSQL 14.24; all 45 applicable dependency pins matched. Source, profiles, commands, artifact
+hashes, environment/exclusions and CI annotation are in [the review receipt](../build/evidence/pr283-review-20261025.json).
+
+RV1 fixes stale install references without changing any profile bytes. F0p/M3 now require the recovery profile and
+a newly pinned probe; the existing dev-only reviewer is explicitly insufficient for FINAL. M4 distinguishes its
+standalone policy output from assembled signer.json and requires final prepared/release pin checks before install.
+The two historical cleanup-off probes remain labeled comparison evidence. FINAL-specific scripts/Q1/M3 remain
+owner work, not completed by this documentation correction.
+
+RV2 completes the prospective RC4 numeric success case using synthetic FINAL-sized signer caps and quote fees
+inside CAP-02. The whole numeric status is COVERED; approval/install/signing remain false. Independent one-wei
+short gas/BNB cases, insufficient USDT input cap and over-ceiling quote fees still block. This resolves the earlier
+fixture-only RC4 limitation offline; real M3 against the final wallet remains required.
+
+RV3/RV4 pass. FINAL `b8ba06e2…`, FS1-R `17ab891d…` and S4 `58b31806…` are unchanged and rebuild exactly.
+The current canonical execution/signer/strict-preflight code is unchanged by this review. No application source or
+tests changed after the full passing run; subsequent edits record documentation/evidence only.
+
+Eight skips are the optional private public-source fixture, external recorded artifacts, root directory-mode
+semantics and five systemd runner cases. Three nested Sandbox cases were explicitly deselected because this Docker
+host cannot supply their namespaces/proc mounts. No host/sandbox/systemd acceptance is claimed. GitHub run
+`40197344800` did not start jobs due account billing/spending limits; runtime annotation `121180942791` confirms it.
+The merge uses the user's explicit PR283 review/fix/merge request and this pinned local validation; CI PASS is not claimed.
+
+Merge decision: approve source integration into `claude/final-strategy-20261025` (PR278's branch), preserving history;
+PR278's own integration merge remains separate. **Keegan:** fresh FINAL gas/caps/BNB/timing evidence.
+**Isaac:** exact profile/signer acceptance. **Yao/host owners:** FINAL-specific scripts, Q1/M3/release preparation,
+installation and AL9. These remain in FLAT-01/IDEA-093/GAP-73; this merge grants no deployment or wallet authority.

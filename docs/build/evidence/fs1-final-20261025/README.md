@@ -75,8 +75,8 @@ from `fs1-final.json` only in IDEA-096's recovery gas at the CAP-02 signed ceili
 `gas_action_budget_units` 1.536e15 wei (eight children: up to five other-token revokes, the approve, and the swap or the
 pay-token revoke after an abort), `exit_gas_reserve_units` 1.536e16 wei (0.01536 BNB; five positions × two exit children),
 and the provenance of those two keys and of `gas_sizing_budget_units` (value unchanged). The strategy, windows, sizes,
-slippage and the activation self-check are unchanged. Without it, one swap aborted after its approve leaves an open
-allowance that blocks every later trade in another token, as in run 4's flatten (IDEA-096, IDEA-098 RC1x).
+slippage and the activation self-check are unchanged. Without recovery, an aborted swap can leave an allowance
+that blocks other-token swaps until it is consumed or cleared (IDEA-096, IDEA-098 RC1x).
 
 PR283-RV01: regenerate `ld10_readonly_packet.py` with `--profile fs1-final-recovery.json` and final-wallet
 bindings, record its new probe hash, and use it in FINAL-specific M3 assembly. The historical cleanup-off probe
