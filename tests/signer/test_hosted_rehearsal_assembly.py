@@ -202,6 +202,27 @@ class HostedRehearsalAssembly(unittest.TestCase):
                     self.run_hosted(name, packet=packet)
                 self.assertFalse((self.root / (name + '-signer')).exists())
 
+    def test_allowance_recovery_accepts_a_leftover_allowance_and_opts_execution_and_signer_in(self):
+        # IDEA-097 S4: run 4 left an SKHYB allowance; the new run opts into IDEA-096 recovery and clears it itself.
+        packet = deepcopy(self.packet)
+        packet['router']['allowances_to_router'].update(SKHYB=68939879194155372)
+        with self.assertRaises(AssertionError):
+            self.run_hosted('strict', packet=packet)
+        self.assertFalse((self.root / 'strict-signer').exists())
+        with patch.object(tool, 'review', covered), patch('larp.signer.assembly.review', covered):
+            tool.assemble_hosted(packet, self.root / 'rec-private', self.bindings, self.root / 'rec-signer', now=NOW,
+                                 allowance_recovery=True)
+        private = self.root / 'rec-private'
+        self.assertIs(json.loads((private / 'execution-config.json').read_bytes())['allowance_recovery'], True)
+        policy = json.loads((private / 'signing-policy.json').read_bytes())
+        decision = json.loads((ROOT / 'docs/build/evidence/signer-numeric-ceilings-20261021.json').read_bytes())
+        self.assertEqual(policy, dict(decision['policies']['development']['signing_policy'], allowance_recovery=True))
+        signer = json.loads((self.root / 'rec-signer/signer.json').read_bytes())
+        self.assertIs(signer['signing_policy']['allowance_recovery'], True)
+        with self.assertRaises(AssertionError):
+            tool.collect(packet, self.root / 'bad-private', BUILD, bindings=self.bindings, now=NOW,
+                         allowance_recovery='yes')
+
     def test_uncovered_numeric_review_writes_no_candidate(self):
         # The real reviewer on a packet without quotes: missing coverage, never a signer.json.
         result, _, digest = tool.assemble_hosted(self.packet, self.root / 'real-private', self.bindings,
