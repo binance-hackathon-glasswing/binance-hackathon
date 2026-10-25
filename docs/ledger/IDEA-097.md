@@ -164,3 +164,6 @@ Checked:
   (UTC, F-121). Final activation (install, F-125 self-check from Oct 27 00:00Z) needs the same primary and signer
   hosts, which run 5 occupies until it is retired. Proposed: end run 5 by about 2026-10-26T20:00Z, and retire it as soon
   as it is flat.
+- PR284-RV01 validation (Claude Code, PostgreSQL 16.15 / Python 3.12.3, not the pinned 14.24 image): full suite at
+  `ef88ba11` **2724 passed, 11 skipped, 4018 subtests, 0 failed**; base `51b846f8` **2707 passed, 11 skipped, 4018
+  subtests, 0 failed** (+17 = this PR's tests and the RV01-1 regression). Not merged: RV01-2 and RV01-3 are open.
