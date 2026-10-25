@@ -140,6 +140,25 @@ Use `verify(run_id, minimum_version=..., anchored_head=...)` against independent
 retained authority/anchor evidence. Database restore alone cannot regain wallet
 authority, and `offline=True` cannot activate a dev/live run.
 
+The archive job writes **Backup.v2 segments** instead (IDEA-094): `export_segment`
+streams the journal rows after the newest acknowledged backup, plus every other
+table, through gzip under `max_archive_bytes`, without the outbox values the journal
+already holds and with each row's states as a delta. A restore needs the whole chain
+of segment receipts: `restore_chain(store, payloads)` (any order) rebuilds exact bytes
+and runs the same journal verification. A backup slot is exported once; a failed,
+refused or killed export is recorded on its slot and reported as
+`BACKUP_PREPARATION_FAILED` while anchors and health continue.
+
+Under systemd the archive job keeps its **verification checkpoint** in
+`StateDirectory=larp-archive` (`$STATE_DIRECTORY`, IDEA-095). Each hourly anchor
+verifies only the events after the checkpoint. Once per backup interval, after the
+anchor, health and backup, the job re-verifies the whole journal. That start is
+recorded first, so a run killed by `TimeoutStartSec` does not retry it until the next
+interval. Health reports `FULL_VERIFICATION_OVERDUE` when no full verification has
+completed within two intervals. A missing or unusable checkpoint file only means the
+next anchor verifies in full. Incremental segments need a database that holds this one
+run: a database shared with other runs gets a full segment every time.
+
 `anchor(...)` validates the selected sequence/head, passes an immutable head record
 to a write-once receiver and stores its acknowledgement. The declared hourly anchor
 interval remains 3600 seconds in the example config. Actual destination, worker

@@ -14,8 +14,9 @@ class OperationsTests(unittest.TestCase):
     def test_prepare_failure_still_drains_delivery_and_reports_unhealthy(self):
         from unittest.mock import patch,MagicMock
         worker=MagicMock()
-        worker.prepare.side_effect=ContractError('Synthetic oversized backup')
-        worker.once.side_effect=[True,False]
+        worker.prepare_anchor.side_effect=ContractError('Synthetic anchor failure')
+        worker.prepare_backup.side_effect=ContractError('Synthetic oversized backup')
+        worker.once.side_effect=[True,False,False]
         worker.health.return_value=Document.from_dict(dict(healthy=True,reasons=[]))
         worker.service_health.return_value=Document.from_dict(dict(runtime_alive=False,halt_reasons=[],quarantined=False,
                                                                 audit_overdue=0,signing_unanswered=0))
@@ -31,7 +32,10 @@ class OperationsTests(unittest.TestCase):
                     patch('larp.runtime.operations.Maintenance',return_value=worker), \
                     patch('builtins.print') as output:
                 self.assertEqual(1,main(['once','--config',str(path)]))
+            # Delivery runs after the anchor (and after a prepared backup); health is sent before and after the
+            # backup step (IDEA-094).
             self.assertEqual(2,worker.once.call_count)
+            self.assertEqual(2,clients['cloudwatch'].put_metric_data.call_count)
             health=json.loads(output.call_args.args[0])
             self.assertIn('ARCHIVE_PREPARATION_FAILED',health['reasons'])
             self.assertFalse(health['healthy'])

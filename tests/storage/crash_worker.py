@@ -23,6 +23,7 @@ def main():
                 if sql.startswith('INSERT INTO events'):
                     os._exit(73)
                 return result
+            def cursor(self,*args,**kwargs): return self.connection.cursor(*args,**kwargs)  # verification reads
         @contextmanager
         def crashing():
             with original() as db: yield CrashConnection(db)
