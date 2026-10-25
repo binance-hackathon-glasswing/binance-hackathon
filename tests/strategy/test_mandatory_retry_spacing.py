@@ -1,10 +1,7 @@
 """IDEA-102 MC1–MC6: mandatory retry authority; synthetic prices only."""
 from copy import deepcopy
-from dataclasses import replace
-from datetime import timedelta
 import pytest
 
-from larp.contracts import ContractError
 from larp.research.fixtures import changed, with_quotes
 from larp.strategy import execution_bounds as bounds, s1
 from tests.strategy.test_execution_bounds import at, milliseconds, round_record, run
@@ -26,6 +23,9 @@ def flatten(stamp='2026-10-10T14:00:00Z', **extra):
 def test_mc1_sixth_mandatory_attempt_in_next_slot_is_planned():
     s = flatten(execution_attempt_budget=dict(session=80, counts={LEG: 5}, closed={LEG: 5},
         last_ms={LEG: milliseconds('2026-10-10T13:45:00Z')}))
+    legacy = run(changed(s, execution_attempt_policy=None,
+        execution_attempt_budget=dict(session=80, counts={LEG: 5}, closed={LEG: 5})))
+    assert 'LEG_ATTEMPT_LIMIT' in {r['reason'] for r in legacy['rejections']}
     result = run(with_quotes(s))
     assert result['intents'], result
     assert result['intents'][0]['execution_bounds']['ordinal'] == 6
@@ -111,7 +111,7 @@ def test_mc5_existing_integrity_gas_market_and_window_guards_still_apply():
     ledger['bnb_units'] = 0
     cases.append(changed(snapshot, portfolio=ledger))
     cases.append(changed(snapshot, markets=[dict(m, token_open=False) for m in context['markets']]))
-    cases.append(replace(snapshot, observed_at=snapshot.observed_at.replace(day=27)))
+    cases.append(changed(snapshot, profile=dict(context['profile'], signing_end='2026-10-10T14:00:00Z')))
     for candidate in cases:
         result = run(candidate)
         assert not result['intents'], result
@@ -124,7 +124,7 @@ def test_mc6_optional_last_ms_is_validated_even_when_session_rolls():
     now = milliseconds('2026-10-10T14:00:00Z')
     assert bounds.budget(dict(session=80, counts={}), 80) == dict(session=80, counts={}, closed={})
     base = dict(session=80, counts={}, closed={})  # a refund may remove a count but must keep spacing
-    for bad in (None, [], {'invented': now}, {LEG: True}, {LEG: 1.5}, {LEG: -1}, {LEG: now + 1}):
+    for bad in (None, [], {'invented': now}, {LEG: True}, {LEG: '1.5'}, {LEG: -1}, {LEG: now + 1}):
         snapshot = flatten(execution_attempt_budget=dict(base, last_ms=bad))
         result = run(snapshot)
         assert not result['intents'] and not result['quote_requests']
