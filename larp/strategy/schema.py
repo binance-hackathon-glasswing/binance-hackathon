@@ -49,6 +49,9 @@ def ratio(value):
 
 def review_options(p):
     """IDEA-093 PR278-RV01: explicit S1 opt-ins; absence preserves historical policy behavior."""
+    if 's1_capital_basis' in p and (p.get('baseline') != 'TREND_GUARDED_VOL'
+                                   or p['s1_capital_basis'] != 'EXCLUDE_GAS'):
+        raise ContractError('s1_capital_basis requires S1 and EXCLUDE_GAS')
     if 'entry_cost_basis' in p and (p.get('baseline') != 'TREND_GUARDED_VOL'
                                     or p['entry_cost_basis'] != 'AUTHORIZED_MINIMUM'):
         raise ContractError('entry_cost_basis requires S1 and AUTHORIZED_MINIMUM')
@@ -56,6 +59,16 @@ def review_options(p):
         if key in p and (p.get("baseline") != "TREND_GUARDED_VOL"
                          or type(p[key]) is not int or p[key] != decided):
             raise ContractError(key + " requires S1 and the exact PR278-RV01 value " + str(decided))
+
+
+def stock_capital_scale(p, ledger, total_equity):
+    """F-125: native gas is not saleable stock-buying capital. Keep total-equity risk accounting intact."""
+    if p.get('s1_capital_basis') != 'EXCLUDE_GAS':
+        return Fraction(1)
+    safe = max(0, total_equity - p['cost_reserve_units'])
+    gas_value = Fraction(integer(ledger['bnb_units']) * integer(ledger['bnb_price_units']),
+                         10**integer(ledger['bnb_decimals']))
+    return max(Fraction(0), safe - gas_value) / max(1, safe)
 
 
 def floor(value):

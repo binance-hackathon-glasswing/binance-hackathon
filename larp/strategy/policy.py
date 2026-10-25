@@ -12,7 +12,7 @@ from fractions import Fraction
 from larp.contracts import ContractError, Document, Proposal, Target, TargetKind
 from larp.integration.contract import accept_for_strategy, authority, red_flag_directives
 from .features import declared_weight, features
-from .schema import fraction, instant, integer, markets, profile, ratio, value, equity
+from .schema import fraction, instant, integer, markets, profile, ratio, value, equity, stock_capital_scale
 from . import s1 as s1_plan
 from . import scheduled_flatten
 from .predicates import predicate_records, update_blocks, update_directive_blocks
@@ -88,7 +88,7 @@ def decide(snapshot, state):
         rebalance = (set(snapshot.universe) if applied is None or fraction(applied) != level or still is True
                      else set(still) & set(snapshot.universe) if type(still) is list else set())
         s1 = dict(cfg=cfg, level=level, trend=trend, limiter=limiter, limiter_record=limiter_record,
-                  rebalance=rebalance, pending=set(), seen=set())
+                  rebalance=rebalance, pending=set(), seen=set(), capital_scale=stock_capital_scale(p, ledger, E))
     for symbol in snapshot.universe:
         units = ledger["positions"].get(symbol, {}).get("units", 0)
         m = market.get(symbol)
@@ -193,7 +193,7 @@ def decide(snapshot, state):
                 (published and symbol not in blocked and a.get("review_complete_excluding_timed_blocks") is True)))
             if due and fresh_review:
                 last_review = session
-            want = s1["level"] * s1["cfg"]["weights"][symbol]
+            want = s1["level"] * s1["cfg"]["weights"][symbol] * s1['capital_scale']
             gap = want * (E - p["cost_reserve_units"]) - value(units, m)
             gates = (symbol not in blocked and window_open and (p.get("mode") != "LIVE" or type(m.get("measured_roundtrip_bps")) is int)
                      and (not p["assessment_required"] or fresh_review)
@@ -207,7 +207,8 @@ def decide(snapshot, state):
             if symbol in s1["rebalance"] and (costed_cut or gap <= -step or (gap >= step and gates)):
                 targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "S1_LEVEL_CHANGE", want))
                 s1["pending"].add(symbol)
-            elif (symbol not in s1["rebalance"] and gates and gross < s1["level"] - s1["cfg"]["band"]
+            elif (symbol not in s1["rebalance"] and gates
+                  and gross < (s1["level"] - s1["cfg"]["band"]) * s1['capital_scale']
                   and gap >= step):
                 targets.append(Target(symbol, TargetKind.TARGET_WEIGHT, "S1_TOP_UP", want))
             else:
@@ -285,6 +286,9 @@ def decide(snapshot, state):
         **({"s1": {"trend_state": s1["trend"]["state"], "trend_evaluated_session": s1["trend"]["evaluated_session"],
                    "limiter": s1["limiter"], "applied_target": ratio(s1["level"]), "rebalance": s1["pending"]},
             "s1_round": {"target_gross": ratio(s1["level"]), "trend": s1["trend"], "limiter": s1["limiter_record"],
+                         **({'stock_capital_scale': ratio(s1['capital_scale']),
+                             'fundable_target_gross': ratio(s1['level'] * s1['capital_scale'])}
+                            if p.get('s1_capital_basis') == 'EXCLUDE_GAS' else {}),
                          "rebalance": s1["pending"]}} if s1 is not None else {})}))
     return Proposal(snapshot.snapshot_id, state.policy_id, now + timedelta(seconds=p["proposal_seconds"]),
                     tuple(targets), following)

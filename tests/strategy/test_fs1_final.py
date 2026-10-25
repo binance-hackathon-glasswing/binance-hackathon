@@ -195,7 +195,7 @@ def test_s4_6_differs_from_the_generators_final_s1_profile_only_where_decided():
     base_block = dict(value, execution={k: v for k, v in value['execution'].items() if k != 'hours'})
     generated = pinned_profiles(s1=base_block, s1_decision=p['provenance']['s1']['decision_id'])['FINAL'].read()
     # The generator's FINAL signing_end (Nov 11 14:45) already equals PF-04's; its provenance still differs.
-    reviewed = {'entry_cost_basis', 'run_halt_recovery_bps', 's1_reduction_cost_cap_bps'}
+    reviewed = {'entry_cost_basis', 'run_halt_recovery_bps', 's1_reduction_cost_cap_bps', 's1_capital_basis'}
     decided = {'trade_after', 'new_risk_end', 'flatten_start', 'slippage_bps', 'policy_id', 's1', 'exit_gas_reserve_units', 'provenance', *reviewed}
     assert {k for k in set(p) | set(generated) if p.get(k) != generated.get(k)} == decided
     assert {k for k in p['s1'] if p['s1'][k] != generated['s1'][k]} == {'execution'}
@@ -306,7 +306,7 @@ def test_s4r_1_rehearsal_rebuilds_and_passes_dev_preparation_and_runtime_build()
 def test_s4r_2_differs_from_s2_only_in_slippage_window_and_policy_and_keeps_the_final_block():
     p = json.loads(REHEARSAL.read_bytes())
     s2p = json.loads(s2.PROFILE.read_bytes())
-    changed_keys = {*WINDOW, 'slippage_bps', 'policy_id', 'entry_cost_basis', 'run_halt_recovery_bps',
+    changed_keys = {*WINDOW, 'slippage_bps', 'policy_id', 'entry_cost_basis', 'run_halt_recovery_bps', 's1_capital_basis',
                     's1_reduction_cost_cap_bps'}
     assert {k for k in set(p) | set(s2p) if p.get(k) != s2p.get(k)} == changed_keys | {'provenance'}
     # `baseline` and `s1` share the block's decision ID, which names FS1-R; the block bytes are S2's (same data hash).
