@@ -582,3 +582,21 @@ that named only one of the two cost gates, and the S4-6 list of deliberate FS1 k
 
 **Live, not testable offline:** the actual final-wallet trade, its `tx_hash` in delivered round logs, and the
 uploader ack (run sheet J-SC). The install must finish before 2026-10-28T18:00Z for the buy to happen.
+
+## PR278-RV03 — merge into canonical (2026-10-25)
+
+Merged at the user's request ("Can you fix and merge 278"), in a Claude Code session. Earlier notes in this entry
+and in the PR body asked to keep PR278 open for teammate review; this request supersedes them. Isaac's PR283
+(IDEA-098) and canonical PR282 (IDEA-096 allowance recovery) were already in the branch.
+
+**Checked on the merged head** (PR278 `2003c04e` + canonical `7fc9f601`, merge `c5c6213c`, no conflicts):
+- all four FS1 profiles rebuild byte for byte: FINAL recovery `b8ba06e2…` (the one the run sheet installs), FINAL
+  cleanup-off `19176e6c…`, FS1-R recovery `17ab891d…`, FS1-R `54802665…`;
+- full suite on Python 3.12 (pinned lock) with PostgreSQL 16, not the pinned 14.24: **2819 passed, 11 skipped,
+  4033 subtests, 0 failed**. All skips are environment-only (systemd runner, bubblewrap, root, opt-in fixtures);
+- `git diff --check` clean; no placeholders or secret-like files in the diff;
+- GitHub Actions did not run: every job ended within 3 s with no runner assigned (account billing limit).
+
+**Not a review of the whole diff** (4,355 lines across RV01, PL, SC, PR283). It relies on those recorded reviews.
+**Not approval:** merging to canonical installs or approves nothing. Every owner gate in the run sheet and in the
+IDEA-093 / FLAT-01 lines of `INCOMPLETE_WORK.md` remains open.

@@ -1,15 +1,22 @@
 # Current shared build and remaining work
 
+PR278-RV03 (2026-10-25): **PR278 (FS1, IDEA-093/098) merged into canonical at the user's request.** Before the merge
+canonical `7fc9f601` (PR286) was merged in; all four FS1 profiles rebuild byte for byte (FINAL recovery `b8ba06e2…`
+to install, cleanup-off `19176e6c…` for comparison, FS1-R `17ab891d…` / `54802665…`); full suite 2819 passed,
+11 environment-only skips, 4033 subtests, 0 failed on Python 3.12 + PostgreSQL 16 (not the pinned 14.24); GitHub CI
+billing-blocked. Merging is not approval: every FS1 owner gate below (values, profile/signer/caps approval, F0p
+scripts, Q1/M3, model adoption, budget, GAP-73..75, install) remains open. [Record](../ledger/IDEA-093.md#pr278-rv03--merge-into-canonical-2026-10-25).
+
 PR283-RV01 / IDEA-098 (2026-10-25): FS1 recovery profile integration reviewed for merge into PR278's branch.
 Fixed stale cleanup-off install/probe references and completed RC4 synthetic numeric coverage. Pinned Linux
 Python3.12.15/PG14.24: 2818 tests/4029 subtests PASS, 8 explicit skips/3 nested-sandbox deselections; CI billing-blocked.
 Recovery FINAL `b8ba06e2…`, FS1-R `17ab891d…`, S4 `58b31806…` unchanged. Fresh FINAL Q1/M3/scripts, exact
-signer/profile approval, real gas/BNB/timing and AL9 remain owner gates. PR278 remains a separate open review.
+signer/profile approval, real gas/BNB/timing and AL9 remain owner gates. PR278 was later merged (PR278-RV03 above).
 [Review](../ledger/IDEA-098.md#pr283-rv01-results-and-merge-decision) / [receipt](evidence/pr283-review-20261025.json).
 
 IDEA-097 S4 (2026-10-25): run 5 carries run 4's book over and flattens with PR282's allowance recovery. The profile is `58b31806` (flatten already begun, signing to Tue 12:00Z, exit reserve 0.01536 BNB). Implemented with the run-5 sheet and supported offline: Linux 3.12.15 + PG 14.24 at `04c8997b`, 2722 passed and 0 failed. Approval, BNB top-up and install remain. [Entry](../ledger/IDEA-097.md).
 
-PR278-RV01 (2026-10-25): **FS1 remains open for teammate review.** Repairs cover healthy PF02 recovery,
+PR278-RV01 (2026-10-25; superseded by the PR278-RV03 merge above): Repairs cover healthy PF02 recovery,
 authorized-minimum entry cost, pending cost-gated small reductions and gas-excluded stock allocation after
 PR279/F-125's 30 USDT gas instruction. FINAL profile `19176e6c…`, REHEARSAL `54802665…`.
 Combined source `d7741f91` includes current integration `5b5f0c89` and PL: full suite2766 tests/4027 subtests PASS;
