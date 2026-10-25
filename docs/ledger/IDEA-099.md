@@ -99,3 +99,9 @@ the I3/A10 BUY `amount` is **USDT spent**, while SELL `amount` is the **token qu
 misleading. RV5: both stock and gas BUY summaries explicitly say `BUY <symbol> for <amount> USDT`;
 SELL continues to say `SELL <amount> <symbol>`. Metadata and kit `orders` remain identical. The initial
 full run was interrupted to fix this issue; only the subsequent completed run counts as full validation.
+
+RV6 (2026-10-26 SGT, registered before execution): the planner can produce no intents and no rejections
+while requesting its first quote, or while a mandatory reduction waits for a valid mark/input. Such rounds
+must name the pending quote/reduction and affected symbol rather than assert `no target change`.
+Test with real planner output as well as structured blocked requirements; preserve error precedence,
+three-reason limit and the genuine no-change fallback. The second partial full run is also superseded.
