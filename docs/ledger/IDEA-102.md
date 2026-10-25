@@ -72,3 +72,20 @@ Discretionary legs keep the per-session cap exactly as today.
 
 Strategy sizes, slippage, the flatten window, `max_attempts_per_leg_session` (still 5 for discretionary legs), the
 signer and execution caps.
+
+## MC-RV01 — implementation/replay review, pre-registered 2026-10-26 SGT
+
+Two refinements are necessary to meet MC7 and the existing guards:
+- New ContextBuilder rounds record runtime-owned `execution_attempt_policy: MANDATORY_CADENCE_V1`.
+  Replay restores that field's presence/value from each recorded context; historical contexts without it retain
+  their original cap and output bytes. This is a journal format discriminator, not a profile option; every newly
+  built S1 runtime uses the new rule, with unchanged profile hashes.
+- Refunds retain `last_ms`: refunding an unclaimed command must not admit another new mandatory attempt in the
+  same slot. Validation permits timestamps for known legs whose counts have just been refunded.
+- MC5 clarification: the existing exit reserve protects buys; an affordable mandatory sale may consume that
+  reserve. Preserve that behavior and every per-intent gas, fee, integrity, health, HALT and window check.
+
+Additional prospective checks: exact old and new PostgreSQL replay; eight synthetic pre-swap aborts followed by a
+fill to dust, admission above cap through `permitted`, per-leg slot boundaries, malformed/future timestamps,
+quote-child reuse, refund/spacing interaction and unchanged discretionary/gas/window guards. Run focused tests
+red on the reviewed PR290 behavior before implementing; commit/push all execution code before running it.
