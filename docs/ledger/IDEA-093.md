@@ -493,3 +493,62 @@ their temporary directory closed) were fixed in the test only.
 under load (each admission is one short transaction with a 1 s SQLite timeout; a timeout surfaces as budget
 unavailable and that stage falls back to the AIand reviewers). Signed-path trading was already per tick before this
 change; continuation rounds affect only the cadence path (FS1-R and other unrouted runs).
+
+## SC: the F-125 activation self-check on the final wallet (GAP-74; requested 2026-10-25 SGT; pre-registered before tests or code)
+
+**Request (in chat):** "Yes, design and build the GAP-74 pre-Oct-29 final-wallet self-check and handover for FS1 in
+this PR, with pre-registered criteria."
+
+**What F-125 asks (checked, SKILL.md §1.10 F-125):** before Oct 29, on the final wallet, by the registered version:
+"Run your system through the full chain once": the agent gathers data, reasons and decides; a trade executes on the
+final wallet (after the 30 USDT → BNB MetaMask swap); a decision record with a reason summary is generated; trace
+uploads work. Registration (commit, manifest, version event) comes before any trading.
+
+**Decision: one run spans the self-check and the scored run (GAP-74's second option).**
+- A separate self-check run would have to end with zero stock, dust included, before a second install
+  (`gate_a.initial_state`, IDEA-092 H1/H2), and would need a second install inside Oct 27–29. A run never sells
+  another run's holdings, so a stuck sell would block the scored-run install.
+- With one run, the build and profile registered at final activation make the self-check trade and then trade the
+  scored run unchanged (F-117, F-114). No second version event or install is needed; automatic restarts (F-124) resume
+  the same run.
+
+**Design.**
+- New FINAL-only profile key `activation_self_check` = {`symbol`, `buy_after`, `buy_until`, `flat_by`, `pay_units`},
+  checked by `validate_live` (S1 baseline; `buy_after < buy_until < flat_by <= trade_after`; symbol eligible;
+  `minimum_trade_units <= pay_units <= per_trade_cap_units - cost_reserve_units`). Profiles without the key are
+  unchanged byte for byte.
+- One helper, `larp/strategy/self_check.py`, gives the phase from the profile, the persisted risk state, the ledger
+  and the time, for both the policy and the independent planner:
+  - **WAIT** before `buy_after`, or while a self-check reservation is in flight;
+  - **BUY** in `[buy_after, buy_until)` with the symbol unheld and the check not yet bought: the policy proposes one
+    BUY of about `pay_units` of `symbol`; the planner admits that one BUY although `trade_after` has not come
+    (every other new-risk halt still applies: loss latches, health, gas, terminal, caps, cost and impact gates);
+  - **SELL** once the symbol is held: a mandatory SELL of the whole position, reason `ACTIVATION_SELF_CHECK`; no BUY
+    of any name while it is pending; the planner records `activation_self_check: BOUGHT` in the risk state;
+  - **DONE** when it was bought and the position and reservations are zero: recorded once, never undone;
+  - **EXPIRED** at `flat_by` if not DONE: recorded; nothing is forced; any residual position simply becomes part of
+    FS1's book from `trade_after` (the same run owns it).
+- **Re-entry.** S1 does not re-buy a name it has held without a fresh review. On DONE, the policy clears the self-check
+  symbol's `ever_held` once (marker `self_check_cleared`), so FS1 can buy it in the scored run. Every other name, and
+  any later holding of the same name, keeps today's rule.
+- **FS1 values (proposed; Keith/Keegan accept):** symbol **SKHYB**, the cheapest measured round trip in the pinned
+  quote summary (spread 2 bp + 2 × impact 1 bp); `pay_units` = `ceil(minimum_trade_units × 1.02)` = 19.010169 USDT;
+  `buy_after` 2026-10-27T00:00:00Z (install can be later: the buy then comes at the first round after install);
+  `buy_until` 2026-10-28T18:00:00Z; `flat_by` 2026-10-28T23:00:00Z, before Oct 29 in UTC (F-121) and before FS1's
+  first ordinary buy (Oct 29 14:00Z).
+- **Not changed:** FS1-R (its window cannot hold a pre-`trade_after` check), the signer, caps, wallet barrier, logging.
+  Every self-check round is an ordinary round log with the swap's `tx_hash`, so the decision-record and trace-upload
+  parts of F-125 are checked on the same rounds; the run sheet adds that check.
+
+| # | Pass when |
+|---|---|
+| SC-1 | Without the key, every existing profile, policy and planner test passes unchanged, and the committed FS1-R profile is byte-identical |
+| SC-2 | `validate_live` refuses the key on a REHEARSAL or non-S1 profile, with a window outside `buy_after < buy_until < flat_by <= trade_after`, an ineligible symbol, or `pay_units` below the minimum or above the cap minus the reserve |
+| SC-3 | In BUY phase, before `trade_after`, the plan has exactly one BUY intent: `symbol`, worth at least `minimum_trade_units`, at most `pay_units` plus rounding; no other name is bought; outside `[buy_after, buy_until)` nothing is bought before `trade_after` |
+| SC-4 | The other new-risk gates still apply in BUY phase: a run halt, daily halt, unhealthy health input, closed market or a cost-capped quote stops the self-check BUY |
+| SC-5 | Once held, the plan is a mandatory SELL of the whole position with reason `ACTIVATION_SELF_CHECK`; no BUY of any name while it is pending; the risk state records BOUGHT |
+| SC-6 | When flat with no reservations after BOUGHT, the risk state records DONE, and from `trade_after` FS1 builds all five names including the self-check symbol (the one-time re-entry clearance); a later sale of that name keeps the normal re-entry rule |
+| SC-7 | At `flat_by` without DONE the state is EXPIRED and nothing is forced; a residual position is kept into FS1's book |
+| SC-8 | Real PostgreSQL: a run commits the self-check BUY and SELL with settled synthetic fills, restarts between them, reaches DONE, and the journal replays to the same head with every live port disabled |
+| SC-9 | The rebuilt FS1 profile carries the key with the values above, rebuilds byte for byte, passes `validate_live`, signed live preparation and `gate_a_check`; it differs from the previous FS1 candidate only in the key and its provenance |
+| SC-10 | Full local CI replica as before, no new failures |
