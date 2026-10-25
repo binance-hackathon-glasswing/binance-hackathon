@@ -136,3 +136,19 @@ optional and are not part of it. The pass criteria are the ones pre-registered a
     up to 3600 s. Until that time the run skips the two heavy steps, the backup export and the daily full verification,
     and reports `ARCHIVE_BACKOFF`. A run without failures clears the file. Without a state directory there is no
     backoff, as with IDEA-095. `larp-archive.timer` is unchanged (`OnUnitInactiveSec=60s`); only a comment is added.
+
+## DB1, DB2, DB5 results (2026-10-26; Python 3.12 from the pinned lock, PostgreSQL 16 — not the pinned 14.24 image; Terraform 1.13.5, AWS provider 6.61.0, mock provider)
+
+Commits: `6689bf8d` (design choices), `52a26321` (tests, red on canonical `1ed5a248`: the alarms are undeclared; 12
+failures counting subtests in the archive/check file, whose 3 guard tests pass on base by design), `8d2d731e`
+(implementation).
+
+| # | Result |
+|---|---|
+| DB1 | **PASS offline.** `deploy/aws` `terraform test`: 21 passed (19 before + 2 new). `database_health.tftest.hcl` asserts exactly 5 `database_health` alarms with the IDEA-100 metrics, comparisons, thresholds (60 MiB, 600 MiB in bytes) and windows; the alarm topics, the instance dimension and the F-114 footer on each; only the credit-balance alarm treats missing data as breaching. `fmt -check` and `validate` pass. **Not run here:** `terraform plan` against the account ("adds exactly 5 alarms, changes nothing else" — this change set also changes the parameter group, DB2) and the SNS test publish: host steps for Yao (FS1 run sheet row F0d). |
+| DB2 | **PASS offline.** The tftest asserts the parameter group holds `rds.force_ssl` plus exactly the four new parameters, with `shared_preload_libraries` at `pending-reboot`. `checks/db-top-queries.sh` (run-5 sheet) parses, is one READ ONLY transaction with a 30 s statement timeout, `LIMIT 15`, query text cut to 160 characters, and has no write or reset statement (test). Deviation: the spec named both sheets; the FS1 sheet has no `checks/` folder yet (F0p), so it is in the run-5 sheet and F0p copies it. **Not run here:** reboot, `CREATE EXTENSION`, rows printed, slow statements and lock waits in `postgresql.log` (F0d, outside a run). |
+| DB5 | **PASS.** `tests/runtime/test_archive_backoff.py` (11 tests, 5 subtests): a fourth backup export in a UTC day is refused and named `BACKUP_DAILY_CAP`; the count survives a new process; the next day exports again; no cap keeps the old behaviour; `operations once` uses 3; invalid caps are refused. Backoff: repeated failures give pauses of 60, 120, 240, 480, 960, 1920, 3600, 3600 s; during a pause the export and full check do not run, health says `ARCHIVE_BACKOFF`, and the new hour's anchor and the health metrics still go out; a clean run clears it; without a state directory nothing changes. The existing archive, growth, maintenance, operations and host-unit tests pass unchanged (ARCH-02's offline checks). Deviation: the timer itself is unchanged (comment only); the backoff is in `operations once` so the cheap steps keep their 60 s cadence. |
+| Suite | Same container: branch **2851 passed, 11 skipped, 4060 subtests, 0 failed**; base `1ed5a248` **2840 passed, 11 skipped, 4055 subtests, 0 failed**. The difference is the 11 new tests. `deploy/bootstrap` `terraform test` 1/1. GitHub Actions cannot run (billing). |
+
+**Still to do:** Keegan reviews; Yao applies DB1/DB2 outside any run (F0d: apply, SNS test, one reboot, extension) and
+installs a build containing DB5; DB7's 24 h check on the next run. DB3, DB4 and DB6 stay optional and are not built.
