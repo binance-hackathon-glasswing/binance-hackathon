@@ -14,6 +14,7 @@ from larp.contracts import ContractError, Document
 from larp.runtime import halts
 
 ZERO = '0' * 64
+VERIFY_FETCH_ROWS = 1  # journal rows per server-side fetch: one row can be megabytes; 4 rows triple the peak (IDEA-094)
 FIELDS = ('projection','policy_state','execution_state')
 # Outbox tables whose rows must equal the journal: (table, id column, value column, batch key).
 OUTBOXES = (('audit_events','event_id','document','audit'),('commands','command_id','payload','commands'),
@@ -465,25 +466,33 @@ class PostgresStore:
             base=dict(version=0,head=ZERO,fields=None,initial=digest(bytes(run['initial'])),reservations={},
                       ids={table:frozenset() for table,*_ in OUTBOXES},chunks=0)
         head,version,last = base['head'],base['version'],None
-        reservations=dict(base['reservations']); new={table:{} for table,*_ in OUTBOXES}
-        for raw,bhash,ehash,previous,stored,sequence in db.execute(
-                'SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events '
-                'WHERE run_id=%s AND sequence>%s ORDER BY sequence',(run_id,base['version'])):
-            raw = bytes(raw)
-            b = Document(raw).read()
-            if (b['run_id'],b['wallet_id'],b['chain_id'])!=(run_id,run['wallet_id'],run['chain_id']):
-                raise IntegrityError('Journal identity differs from wallet authority')
-            version += 1
-            expected = digest(bytes.fromhex(head)+bytes.fromhex(digest(raw)))
-            if (digest(raw),digest(doc(b['event']).payload),previous,stored,sequence) != (
-                    bhash,ehash,head,expected,version):
-                raise IntegrityError('Journal corruption')
-            head,last = stored,b
-            for delta in b.get('reservation_deltas',[]):
-                key=(delta['intent_id'],delta['asset'])
-                reservations[key]=reservations.get(key,0)+delta['units']
-            for table,id_column,_,key in OUTBOXES:
-                for item in b.get(key,[]): new[table][item[id_column]]=doc(item).payload
+        # Outbox values are kept as SHA-256 digests and compared with digests computed by the server, and the journal
+        # is read through a server-side cursor a few rows at a time: memory does not grow with the journal (IDEA-094).
+        reservations=dict(base['reservations']); new={table:{} for table,*_ in OUTBOXES}; audits={}
+        # Binary results: text-format bytea is hex, twice the bytes on the wire and in memory.
+        with db.cursor(name='larp_verify_events',binary=True) as cursor:
+            cursor.itersize=VERIFY_FETCH_ROWS
+            cursor.execute('SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events '
+                           'WHERE run_id=%s AND sequence>%s ORDER BY sequence',(run_id,base['version']))
+            for raw,bhash,ehash,previous,stored,sequence in cursor:
+                raw = bytes(raw)
+                b = Document(raw).read()
+                if (b['run_id'],b['wallet_id'],b['chain_id'])!=(run_id,run['wallet_id'],run['chain_id']):
+                    raise IntegrityError('Journal identity differs from wallet authority')
+                version += 1
+                expected = digest(bytes.fromhex(head)+bytes.fromhex(digest(raw)))
+                if (digest(raw),digest(doc(b['event']).payload),previous,stored,sequence) != (
+                        bhash,ehash,head,expected,version):
+                    raise IntegrityError('Journal corruption')
+                head,last = stored,b
+                for delta in b.get('reservation_deltas',[]):
+                    key=(delta['intent_id'],delta['asset'])
+                    reservations[key]=reservations.get(key,0)+delta['units']
+                for table,id_column,_,key in OUTBOXES:
+                    for item in b.get(key,[]): new[table][item[id_column]]=digest(doc(item).payload)
+                for item in b.get('audit',[]):
+                    audits[item['event_id']]=(item['timestamp_ms'],[digest(c.encode('utf-8')) for c in item['chunks']])
+                del raw,b
         if (head,version) != (run['head'],run['version']):
             raise IntegrityError('Truncated or rewound journal')
         if digest(bytes(run['initial']))!=base['initial']:
@@ -507,26 +516,26 @@ class PostgresStore:
         for table,id_column,value_column,_ in OUTBOXES:
             ids[table]=base['ids'][table]|frozenset(new[table])
             # Table/column names are internal constants, never client inputs.
-            rows={r[0]:bytes(r[1]) for r in db.execute(
-                f'SELECT {id_column},{value_column} FROM {table} WHERE run_id=%s AND {id_column}=ANY(%s::text[])',
-                (run_id,list(new[table])))}
+            rows=dict(db.execute(
+                f"SELECT {id_column},encode(sha256({value_column}),'hex') FROM {table} "
+                f'WHERE run_id=%s AND {id_column}=ANY(%s::text[])',(run_id,list(new[table]))).fetchall())
             count=db.execute(f'SELECT count(*) FROM {table} WHERE run_id=%s',(run_id,)).fetchone()[0]
             if rows!=new[table] or count!=len(ids[table]):
                 raise IntegrityError('Outbox/job definition differs from journal')
         chunks,expected_chunks,timestamps=base['chunks'],{},{}
-        for event_id,raw in new['audit_events'].items():
-            audit=Document(raw).read()
-            timestamps[event_id]=audit['timestamp_ms']
+        for event_id,(timestamp_ms,bodies) in audits.items():
+            timestamps[event_id]=timestamp_ms
             if event_id not in base['ids']['audit_events']:
-                chunks+=len(audit['chunks'])
-            for index,chunk in enumerate(audit['chunks']):
-                expected_chunks[(event_id,index)]=chunk.encode('utf-8')
+                chunks+=len(bodies)
+            for index,body in enumerate(bodies):
+                expected_chunks[(event_id,index)]=body
         # The deadline query filters on this column, so it must equal the document.
         if timestamps!=dict(db.execute('SELECT event_id,timestamp_ms FROM audit_events WHERE run_id=%s '
                                        'AND event_id=ANY(%s::text[])',(run_id,list(timestamps))).fetchall()):
             raise IntegrityError('Audit timestamp differs from journal')
-        actual_chunks={(r[0],r[1]):bytes(r[2]) for r in db.execute(
-            'SELECT event_id,chunk_index,body FROM audit_chunks WHERE run_id=%s AND event_id=ANY(%s::text[])',
+        actual_chunks={(r[0],r[1]):r[2] for r in db.execute(
+            "SELECT event_id,chunk_index,encode(sha256(body),'hex') FROM audit_chunks WHERE run_id=%s "
+            'AND event_id=ANY(%s::text[])',
             (run_id,list(new['audit_events'])))}
         count=db.execute('SELECT count(*) FROM audit_chunks WHERE run_id=%s',(run_id,)).fetchone()[0]
         if actual_chunks!=expected_chunks or count!=chunks:
@@ -545,14 +554,19 @@ class PostgresStore:
         """
         with self.transaction() as db:
             db.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
-            run=self._run(db,run_id,lock=False)
-            base=None
-            if not full:
-                with self._checkpoint_lock:
-                    base=self._checkpoints.get(run_id)
-                if base is not None and not self._continues(db,run_id,run,base):
-                    base=None
-            checkpoint=self._verify(db,run_id,run,base)
+            run=self._snapshot(db,run_id,full)
+        return run
+
+    def _snapshot(self,db,run_id,full):
+        """`verified_snapshot` inside the caller's REPEATABLE READ transaction."""
+        run=self._run(db,run_id,lock=False)
+        base=None
+        if not full:
+            with self._checkpoint_lock:
+                base=self._checkpoints.get(run_id)
+            if base is not None and not self._continues(db,run_id,run,base):
+                base=None
+        checkpoint=self._verify(db,run_id,run,base)
         with self._checkpoint_lock:
             known=self._checkpoints.get(run_id)
             if known is None or base is None or known['version']<=checkpoint['version']:
@@ -580,17 +594,83 @@ class PostgresStore:
             raise IntegrityError('Restore behind external authority/anchor')
         return run['head']
 
-    def journal(self,run_id,*,after_version=0,through_version=None):
+    def journal(self,run_id,*,after_version=0,through_version=None,full=True):
+        """The journal documents after `after_version`. full=False (a bounded suffix read inside a trading cycle,
+        IDEA-095) continues from this process's checkpoint instead of re-reading the whole journal. In the same
+        snapshot it reads every row after `after_version` up to the verified head and checks that their hash chain,
+        from the head stored at `after_version`, ends exactly at that head (PR280-RV01), so a returned range that ends
+        before the checkpoint is still tied to it."""
         if (type(after_version) is not int or after_version<0 or
                 (through_version is not None and
                  (type(through_version) is not int or through_version<after_version))):
             raise ContractError('Invalid journal sequence bounds')
-        self.verify(run_id)
+        if full:
+            self.verify(run_id)
+            with self.transaction() as db:
+                rows=db.execute('SELECT batch FROM events WHERE run_id=%s AND sequence>%s '
+                                'AND (%s::bigint IS NULL OR sequence<=%s) ORDER BY sequence',
+                                (run_id,after_version,through_version,through_version)).fetchall()
+            return [Document(bytes(raw)) for (raw,) in rows]
         with self.transaction() as db:
-            return [Document(bytes(r[0])) for r in db.execute(
-                'SELECT batch FROM events WHERE run_id=%s AND sequence>%s '
-                'AND (%s::bigint IS NULL OR sequence<=%s) ORDER BY sequence',
-                (run_id,after_version,through_version,through_version))]
+            db.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
+            run=self._snapshot(db,run_id,False)
+            head=ZERO if after_version==0 else (db.execute('SELECT head FROM events WHERE run_id=%s AND sequence=%s',
+                                                           (run_id,after_version)).fetchone() or (None,))[0]
+            if head is None:
+                raise IntegrityError('Truncated or rewound journal')
+            out,version=[],after_version
+            # One row at a time: the bridge past `through_version` is checked but never kept.
+            with db.cursor(name='journal_suffix') as cursor:
+                cursor.execute('SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events '
+                               'WHERE run_id=%s AND sequence>%s AND sequence<=%s ORDER BY sequence',
+                               (run_id,after_version,run['version']))
+                for raw,bhash,ehash,previous,stored,sequence in cursor:
+                    raw=bytes(raw)
+                    version+=1
+                    if (digest(raw),digest(doc(Document(raw).read()['event']).payload),previous,stored,sequence) != (
+                            bhash,ehash,head,digest(bytes.fromhex(head)+bytes.fromhex(digest(raw))),version):
+                        raise IntegrityError('Journal corruption')
+                    head=stored
+                    if through_version is None or sequence<=through_version:
+                        out.append(Document(raw))
+            if (head,version)!=(run['head'],run['version']):
+                raise IntegrityError('Journal range does not reach the verified head')
+        return out
+
+    def export_checkpoint(self,run_id):
+        """This process's verified checkpoint as JSON-ready data, or None (IDEA-095: kept outside the database)."""
+        with self._checkpoint_lock:
+            c=self._checkpoints.get(run_id)
+        if c is None:
+            return None
+        return dict(version=c['version'],head=c['head'],fields=c['fields'],initial=c['initial'],chunks=c['chunks'],
+                    reservations=sorted([intent,asset,units] for (intent,asset),units in c['reservations'].items()),
+                    ids={table:sorted(c['ids'][table]) for table,*_ in OUTBOXES})
+
+    def adopt_checkpoint(self,run_id,value):
+        """Continue from a checkpoint `export_checkpoint` wrote. Returns False, adopting nothing, unless the value is
+        well formed; whether the database still extends it is checked by the next verification (`_continues`)."""
+        hexes=lambda v:type(v) is str and len(v)==64 and all(ch in '0123456789abcdef' for ch in v)
+        try:
+            c=dict(version=value['version'],head=value['head'],fields=value['fields'],initial=value['initial'],
+                   chunks=value['chunks'],
+                   reservations={(intent,asset):units for intent,asset,units in value['reservations']},
+                   ids={table:frozenset(value['ids'][table]) for table,*_ in OUTBOXES})
+        except (KeyError,TypeError,ValueError):
+            return False
+        if (type(value)!=dict or set(value)!={'version','head','fields','initial','chunks','reservations','ids'}
+                or set(value['ids'])!={table for table,*_ in OUTBOXES}
+                or type(c['version']) is not int or c['version']<0 or type(c['chunks']) is not int or c['chunks']<0
+                or not hexes(c['head']) or not hexes(c['initial'])
+                or not (c['fields'] is None or (type(c['fields']) is dict and set(c['fields'])==set(FIELDS)
+                                                and all(hexes(v) for v in c['fields'].values())))
+                or any(type(k) is not str for key in c['reservations'] for k in key)
+                or any(type(u) is not int for u in c['reservations'].values())
+                or any(type(i) is not str for ids in c['ids'].values() for i in ids)):
+            return False
+        with self._checkpoint_lock:
+            self._checkpoints[run_id]=c
+        return True
 
     def metrics(self,run_id):
         with self.transaction() as db:

@@ -2,14 +2,15 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 import time
 
 from larp.contracts import ContractError, Document
 from larp.runtime.database import IamPostgresStore, check_iam_settings
-from larp.runtime.maintenance import Maintenance, HOUR_MS
+from larp.runtime.maintenance import Maintenance, HOUR_MS, VerificationState
 from larp.storage.archive import S3Archive
-from larp.storage.backup import restore
+from larp.storage.backup import GZIP_MAGIC, restore, restore_chain
 from larp.storage.postgres import PostgresStore, Unavailable, doc
 
 
@@ -75,7 +76,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('check', 'once', 'health', 'restore'))
     parser.add_argument('--config', required=True)
-    parser.add_argument('--receipt')
+    parser.add_argument('--receipt', action='append', help='a backup receipt; repeat for every Backup.v2 segment')
     parser.add_argument('--target-dsn-file')
     args = parser.parse_args(argv)
     clients, c = None, None
@@ -91,35 +92,67 @@ def main(argv=None):
         if args.command == 'restore':
             if not args.receipt or not args.target_dsn_file:
                 raise ContractError('Restore requires a pinned receipt and an empty-target DSN credential file')
-            receipt = Document(Path(args.receipt).read_bytes())
-            payload = Document(archive.fetch(receipt))
+            payloads = [archive.fetch(Document(Path(p).read_bytes())) for p in args.receipt]
             target = PostgresStore(Path(args.target_dsn_file).read_text(encoding='utf-8').strip())
             # Migrations must already be applied with a provisioning role.
-            restore(target, payload)
+            if len(payloads) == 1 and payloads[0][:2] != GZIP_MAGIC:
+                restore(target, Document(payloads[0]))  # Backup.v1
+            else:
+                restore_chain(target, payloads)  # Backup.v2: every segment receipt of the chain, in any order
             print(json.dumps(dict(restored=True, quarantined=True, signing_enabled=False)))
             return 0
+        # IDEA-095: systemd's StateDirectory= holds the verification checkpoint between runs.
+        verification = VerificationState(os.environ['STATE_DIRECTORY']) if os.environ.get('STATE_DIRECTORY') else None
         worker = Maintenance(IamPostgresStore(c, clients['rds']), archive,
                              backup_interval_ms=c['backup_interval_hours'] * HOUR_MS,
                              max_attempts=c['max_attempts'], retry_ms=c['retry_seconds'] * 1000,
-                             max_payload_bytes=c['max_archive_bytes'])
-        now = int(time.time() * 1000)
-        preparation_error=None
-        if args.command == 'once':
-            try:
-                worker.prepare(c['run_id'], now)
-            except Exception as exc:
-                preparation_error=type(exc).__name__
+                             max_payload_bytes=c['max_archive_bytes'], verification=verification)
+        failures = []
+
+        def deliver():
             # Per invocation bound; timer supplies subsequent delivery capacity.
             for _ in range(4):
                 if not worker.once(c['run_id'], int(time.time() * 1000)):
                     break
-        health = worker.health(c['run_id'], int(time.time() * 1000)).read()
-        if preparation_error:
-            health['healthy']=False
-            health['reasons']=sorted(set(health['reasons']+['ARCHIVE_PREPARATION_FAILED']))
-            health['preparation_error']=preparation_error
-        health['services'] = worker.service_health(c['run_id'], int(time.time() * 1000)).read()
-        publish_health(clients['cloudwatch'], c['deployment'], health['healthy'], health['services'])
+
+        def report():
+            health = worker.health(c['run_id'], int(time.time() * 1000)).read()
+            overdue = worker.verification_reasons(c['run_id'], int(time.time() * 1000)) if verification else []
+            if overdue:
+                health['healthy'] = False
+                health['reasons'] = sorted(set(health['reasons'] + overdue))
+            if failures:
+                health['healthy'] = False
+                health['reasons'] = sorted(set(health['reasons'] + ['ARCHIVE_PREPARATION_FAILED']))
+                health['preparation_error'] = ','.join(sorted(set(failures)))
+            health['services'] = worker.service_health(c['run_id'], int(time.time() * 1000)).read()
+            publish_health(clients['cloudwatch'], c['deployment'], health['healthy'], health['services'])
+            return health
+        if args.command == 'once':
+            # IDEA-094: the hour's anchor is queued and sent, and health is published, before any backup export
+            # starts. A killed or refused export then cannot cost the anchor or the metric; its slot is recorded and
+            # is not exported again, so the next run reports it (BACKUP_PREPARATION_FAILED).
+            try:
+                worker.prepare_anchor(c['run_id'], int(time.time() * 1000))
+            except Exception as exc:
+                failures.append(type(exc).__name__)
+            deliver()
+            health = report()
+            try:
+                if worker.prepare_backup(c['run_id'], int(time.time() * 1000)) is not None:
+                    deliver()
+            except Exception as exc:
+                failures.append(type(exc).__name__)
+            # IDEA-095: anchors verify from the saved checkpoint; the whole journal is re-read once per backup
+            # interval, last, so a run killed inside it has already sent its anchor, health and backup.
+            try:
+                if verification is not None:
+                    worker.full_check(c['run_id'], int(time.time() * 1000))
+            except Exception as exc:
+                failures.append(type(exc).__name__)
+            health = report()
+        else:
+            health = report()
         print(json.dumps(health, sort_keys=True))
         return 0 if health['healthy'] else 1
     except Exception:
