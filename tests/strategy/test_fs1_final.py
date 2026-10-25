@@ -202,7 +202,7 @@ def test_s4_6_differs_from_the_generators_final_s1_profile_only_where_decided():
     assert p['s1']['execution'] == dict(generated['s1']['execution'], hours='KIT_OPEN_STATE')
     # Two balanced exit children per position, as S2 (LD10-P03); the gas formulas as the rehearsal builder writes them.
     assert p['exit_gas_reserve_units'] == 10 * p['gas_action_budget_units'] > generated['exit_gas_reserve_units']
-    assert {k for k in p['provenance'] if p['provenance'][k] != generated['provenance'][k]} == {
+    assert {k for k in p['provenance'] if p['provenance'][k] != generated['provenance'].get(k)} == {
         *WINDOW, 'slippage_bps', 'policy_id', 's1', 'exit_gas_reserve_units',
         'gas_action_budget_units', 'gas_sizing_budget_units', *reviewed}
 
@@ -310,7 +310,7 @@ def test_s4r_2_differs_from_s2_only_in_slippage_window_and_policy_and_keeps_the_
                     's1_reduction_cost_cap_bps'}
     assert {k for k in set(p) | set(s2p) if p.get(k) != s2p.get(k)} == changed_keys | {'provenance'}
     # `baseline` and `s1` share the block's decision ID, which names FS1-R; the block bytes are S2's (same data hash).
-    assert {k for k in p['provenance'] if p['provenance'][k] != s2p['provenance'][k]} == changed_keys | {'s1', 'baseline'}
+    assert {k for k in p['provenance'] if p['provenance'][k] != s2p['provenance'].get(k)} == changed_keys | {'s1', 'baseline'}
     for key in ('s1', 'baseline'):
         assert {k for k in p['provenance'][key] if p['provenance'][key][k] != s2p['provenance'][key].get(k)} \
             == {'decision_id'}, key

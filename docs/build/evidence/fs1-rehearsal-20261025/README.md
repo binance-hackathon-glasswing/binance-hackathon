@@ -7,9 +7,9 @@ final run.
 | File | SHA-256 |
 |---|---|
 | `../fs1-final-20261025/fs1-block.json` (the `s1` block; same bytes as S2's) | `35e20c38e23657da6723e31b18f323e5f5ede778de938d73c72ff1a2c1408d03` |
-| `fs1-rehearsal.json` (file bytes; the `PROFILE_SHA` to pin) | `62b38000f65b5bf1ee2e04ae56b6f5090485cbb49967356a388848e2f5979be9` |
-| `StrategyProfile.v1` digest | `c0ba0637a804f5278e030ba229591c69a2c0d6079d71fac71dadb6378f44fe6b` |
-| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-rehearsal.json`; the `PROBE_SHA` to pin) | `15cce45b0bf59f876a162675884aab092281a4144d718d13d30956af4db439e4` |
+| `fs1-rehearsal.json` (file bytes; the `PROFILE_SHA` to pin) | `ce0dcde4b5c1b305f3d31351787e3da375531c8fdcaa745ee58bd183be39550a` |
+| `StrategyProfile.v1` digest | `3885387efa3a7aa3c2d58b90137827f3d83268f660d5e260929b28256ec94dd6` |
+| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-rehearsal.json`; the `PROBE_SHA` to pin) | `5ac57ee7beab957e79430ae41946ada3a56f14ebaa8d10802568aca1aee38c99` |
 
 ## Against S2's profile `eb55d76a…`
 
@@ -19,12 +19,14 @@ It differs only in:
   SGT, an hour after run 4's `signing_end`, so run 4 can retire flat first), `new_risk_end` 2026-10-26T06:00:00Z,
   `flatten_start` 2026-10-26T07:00:00Z, `signing_end` 2026-10-26T12:00:00Z (Mon 20:00 SGT, before Monday's NYSE open);
 - `policy_id` `larp-fs1-rehearsal-v1`;
+- PR278-RV01's `entry_cost_basis=AUTHORIZED_MINIMUM`, `run_halt_recovery_bps=500` and
+  `s1_reduction_cost_cap_bps=50`, with the same semantics as FINAL;
 - the provenance of those keys, and the decision ID on `s1`/`baseline` (same block bytes and data hash).
 
 The `s1` block equals the FS1 FINAL profile's. Every buy and sell in this window is off-hours, which is the case FS1
 adds. Like every signed dev rehearsal so far it uses the deterministic assessor (no hosted models); FS1's AIand routing
-is tested offline only (IDEA-093 FS1-3/FS1-4). (First built as "S4-R"; it differs from that build only in `policy_id`
-and provenance text.)
+is tested offline only (IDEA-093 FS1-3/FS1-4). Earlier S4-R/FS1-R hashes and receipts are historical. The reviewed
+candidate needs new exact-profile/caps/gas/signer and release qualification, including sub-entry-minimum reductions.
 
 ## Before installing: the wallet must hold no stock
 

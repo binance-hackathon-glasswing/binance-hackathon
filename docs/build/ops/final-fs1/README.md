@@ -12,7 +12,7 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
 
 | Item | Value |
 |---|---|
-| Strategy profile | `docs/build/evidence/fs1-final-20261025/fs1-final.json`, `PROFILE_SHA` `75767d3e4d202d0e25645f7015cde5dcf4b50c07609b9731ae1b6d52b8d62f76`, M3 probe `fcd18d03…` |
+| Strategy profile | `docs/build/evidence/fs1-final-20261025/fs1-final.json`, `PROFILE_SHA` `f5ac59decd5baeb66d8344a90452a89530435afc4e098d8333804123019ae942`, M3 probe `690b8d1c…` |
 | Model routing | `config/intelligence/aiand-routing.fs1.json` → `/etc/larp/model-routing.json`, `9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4` (ChatGPT `gpt-6.1-sol` first; Kimi K3 / GLM-5.3 through AIand) |
 | Router policy, CAP-02 | unchanged from run 4: UNTRUSTED `05759e90…`, CAP-02 `3241abd3…` (re-confirm at A1) |
 | Run mode / environment | `live` / FINAL (the profile is refused in any other mode) |
@@ -38,8 +38,8 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
 | D1 | Yao, Mac | new database (proposed `larp_final`), run ID (proposed `larp-final-fs1`) | `D1_DONE` |
 | M1 | Mac or CI | bundle from the PR278 merge; check it contains the FS1 builder and routing file | `M1_DONE` |
 | Q1 | Yao, Mac | `tools/deploy/quote_check.py --pay-units 38000000` BUY, and SELL, for each name. The tool is pinned to run 3's profile (8 bp, dev wallet address; quotes do not check balances), so a pass is at a tighter limit than FS1's 20 bp; no FS1-pinned variant is built | ten `VERIFIED_EXECUTABLE` |
-| M2, M3 | Yao, Mac | M3 against `fs1-final.json` (probe `fcd18d03…`) and the final wallet | `numeric_status: COVERED` at FS1's sizes (38.2 USDT cap, two exit children) |
-| A1 | Isaac | approve `PROFILE_SHA` `75767d3e…`, the final `signer.json`, caps/gas coverage | recorded in IDEA-093 |
+| M2, M3 | Yao, Mac | M3 against `fs1-final.json` (probe `690b8d1c…`) and the final wallet | `numeric_status: COVERED` at FS1's sizes (38.2 USDT cap, two exit children) |
+| A1 | Isaac | approve `PROFILE_SHA` `f5ac59de…`, the final `signer.json`, caps/gas coverage | recorded in IDEA-093 |
 | M4 | Yao, Mac | `prepare_shadow.py prepare … --execution service --runtime-mode live --profile fs1-final.json --model-routing config/intelligence/aiand-routing.fs1.json --model-routing-sha256 9b86c732… --model-adoption-ref "<F0m>"` plus the RC7 router-policy pair; the M4 script's `'dev'` identity checks become `'live'` | `runtime.json` `mode` `live`, `assessor` `aiand_routed`, routing pin `9b86c732…`; `gate_a_check` PASS |
 | P2–P3 | primary | as RC7; also install `/etc/larp/model-routing.json` readable by `larp-runtime` | preflight and checks PASS |
 | B1 | primary | `model_budget init --routing-file /etc/larp/model-routing.json` with the **reconciled** prior spend (F0b), as `larp-runtime` | status shows the frozen pacing and the routing hash |

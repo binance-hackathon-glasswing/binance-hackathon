@@ -4,14 +4,14 @@ The candidate `StrategyProfile.v1` for the scored run (final wallet, `live` mode
 **candidate for review**: not approved, installed or bound to a `signer.json`. Isaac's approval of this hash and of the
 final `signer.json`, Keegan's code/release review, the model-adoption reference and budget reconciliation, and the
 final install (Yao) are still required. Install steps: [`docs/build/ops/final-fs1/README.md`](../../ops/final-fs1/README.md).
-(FS1 was first built as "S4"; it differs from that build only in `policy_id` and provenance text.)
+PR278-RV01 adds three explicit behavior fields below. Earlier receipts/pins in IDEA-093 are historical.
 
 | File | SHA-256 |
 |---|---|
 | `fs1-block.json` (the profile's `s1` block; byte-identical to S2's `s2-block.json`) | `35e20c38e23657da6723e31b18f323e5f5ede778de938d73c72ff1a2c1408d03` |
-| `fs1-final.json` (file bytes; the `PROFILE_SHA` to pin) | `75767d3e4d202d0e25645f7015cde5dcf4b50c07609b9731ae1b6d52b8d62f76` |
-| `StrategyProfile.v1` digest of the same profile | `9249bf118af7191043d46f2f8684f853d5f843d4fc1a6f719573b7238d85624e` |
-| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-final.json`) | `fcd18d03da1ff71ecfb33d0bbf5ad08eda9f6e435b26806eae00f17954648cc8` |
+| `fs1-final.json` (file bytes; the `PROFILE_SHA` to pin) | `f5ac59decd5baeb66d8344a90452a89530435afc4e098d8333804123019ae942` |
+| `StrategyProfile.v1` digest of the same profile | `b6dbed22ab90e3c3e3ea4e7a528535ee559db52e9be7b627561781a17feda6ae` |
+| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-final.json`) | `690b8d1c770c91e633b993ecb1e8e0f4620b7f5f63efb646fbaf112fd65a8a87` |
 | Model routing `config/intelligence/aiand-routing.fs1.json` | `9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4` |
 
 ## What it is
@@ -26,6 +26,13 @@ registry, L = 660 s / m = 30 s, initial-only gas budgets, two exit children per 
 - `slippage_bps` 20 (S2 had 8; S2-F6 aborted 3 of run 4's 4 buys at the post-approve requote);
 - equal weights 1/5, levels 95/60/30%, hard name line 35%, deterministic limiter, trend start UP;
 - FINAL sizes: 200 USDT expected equity, 38.2 USDT per-trade cap, 0.2 USDT cost reserve, 18.637 USDT minimum trade.
+- `entry_cost_basis=AUTHORIZED_MINIMUM`: entry cost/reserve tests include authorized slippage, fee and expected gas.
+- `run_halt_recovery_bps=500`: PF02 clears only the 8% buy stop below5% drawdown with healthy reconciled valuation.
+- `s1_reduction_cost_cap_bps=50`: pending level reductions may sell below the entry minimum only when the exact
+  quote's authorized minimum clears both50bp and the cash cost reserve. Blocked reductions remain pending.
+
+The runtime still supplies no trend series: the prior/start trend state is retained. These repairs do not prove
+alpha or activate a predictive signal. See [PR278-RV01 research/review](../../../research/fs1-review-20261025.md).
 
 **Models in decisions.** With the FS1 routing (ChatGPT `gpt-6.1-sol` first, Kimi K3 / GLM-5.3 reviewing through
 AIand), the model assesses EDGAR evidence each round. A finding counts only once the deterministic verifier matches it
@@ -40,7 +47,8 @@ at install, and the scored run must remain one run (automatic restarts resume it
 
 It differs only in `s1.execution.hours`, `trade_after`, `new_risk_end`, `flatten_start` (PF-04; `signing_end` is
 already 14:45), `slippage_bps`, `policy_id`, `exit_gas_reserve_units` (two exit children, as S2) and the provenance of
-those keys and of the two gas-budget formulas (`tests/strategy/test_fs1_final.py`, S4-6).
+those keys and of the two gas-budget formulas, plus the three PR278-RV01 fields/provenance above
+(`tests/strategy/test_fs1_final.py`, S4-6). Fresh profile/cap/gas/signer/release review is required.
 
 ## Reproduce
 
