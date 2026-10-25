@@ -446,6 +446,13 @@ class Configuration(unittest.TestCase):
             cfg['driver']['balance_rpc_providers'] = [dict(url='https://rpc.invalid/', source_id='synthetic-rpc')]
             (fixture.root / 'profile.json').write_bytes(PROFILE.read_bytes())
             cfg['driver']['strategy_profile_sha256'] = gate_a.digest(PROFILE.read_bytes())
+            from tests.marketdata.test_session_history import SEMANTICS
+            from tests.runtime.test_gate_a import captured
+            history_raw = json.dumps(SEMANTICS).encode()
+            (fixture.root / 'token-history.json').write_bytes(history_raw)
+            cfg['driver'].update(token_history_file=str(fixture.root / 'token-history.json'),
+                                 token_history_sha256=hashlib.sha256(history_raw).hexdigest(),
+                                 issuers=gate_a.issuer_map(captured()))
             cfg['mode'] = 'live'
             secrets = dict(fixture.secrets, LARP_AIAND_API_KEY='synthetic-aiand-runtime-key')
             with patch('socket.create_connection', side_effect=AssertionError('no network')):

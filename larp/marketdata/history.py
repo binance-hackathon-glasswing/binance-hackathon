@@ -206,6 +206,8 @@ class SessionHistory:
                         raise ContractError('Malformed historical candle quantity') from exc
                     if not number.is_finite() or (number <= 0 if n < 4 else number < 0):
                         raise ContractError('Invalid historical candle quantity')
+                    if len(number.as_tuple().digits) > 64 or abs(number.as_tuple().exponent) > 64:
+                        raise ContractError('Historical candle precision outside bounded representation')
                     values.append(format(number, 'f'))
                 trades = int(row[6]) if type(row[6]) is str and row[6].isdigit() else row[6]
                 if trades is not None and (type(trades) is not int or trades < 0):

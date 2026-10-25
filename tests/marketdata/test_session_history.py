@@ -92,7 +92,7 @@ def test_fetch_after_cutoff_is_only_available_on_later_decision(tmp_path):
     assert len(port.calls) == 5
 
 
-@pytest.mark.parametrize('defect', ['missing', 'no-trades', 'future-capture', 'nan', 'bad-volume', 'misaligned'])
+@pytest.mark.parametrize('defect', ['missing', 'no-trades', 'future-capture', 'nan', 'bad-volume', 'misaligned', 'exponent', 'stale-capture'])
 def test_incomplete_or_invalid_data_does_not_fabricate_a_window(tmp_path, defect):
     port = Port()
     if defect == 'missing':
@@ -105,6 +105,10 @@ def test_incomplete_or_invalid_data_does_not_fabricate_a_window(tmp_path, defect
         port.source[5][3] = 'NaN'
     elif defect == 'bad-volume':
         port.source[5][4] = '-1'
+    elif defect == 'exponent':
+        port.source[5][3] = '1e1000000000'
+    elif defect == 'stale-capture':
+        port.available = NOW-86_400_000
     else:
         port.source[5][5] += 1
     result = reader(tmp_path, port)(NOW)
@@ -226,4 +230,4 @@ def test_fs1_preparation_pins_history_and_transfer_refuses_tampering():
         elif defect=='pin': v['runtime.json']['driver']['token_history_sha256']='0'*64
         elif defect=='path': v['runtime.json']['driver']['token_history_file']='/elsewhere/token-history.json'
         else: del f['token-history.json']
-        with pytest.raises((ContractError,KeyError)): gate_a_check.check_inputs(f,v)
+        with pytest.raises(ContractError): gate_a_check.check_inputs(f,v)

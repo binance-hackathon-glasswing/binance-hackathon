@@ -13,3 +13,9 @@ Date: 2026-10-26 SGT. Owner: Yao Zhu / Codex. User request: wire the existing hi
 7. Commit and push any decision/trading/logging code before executing it. Run focused checks then full pinned Linux/Python3.12/PostgreSQL14 suite, with skips reported. No deployment, credentials, live providers, spending or economic-performance experiment. Existing release/host/qualification and EXP-007 owner gates remain; source integration does not establish profitability.
 
 A pinned timestamp/adjustment qualification input is an installation prerequisite, not an organiser requirement or a claim that current private evidence has been independently qualified. The completed PR must document its exact schema and transfer path; it must not substitute a synthetic example for real qualification.
+
+## TH-RV01 — implementation review and initial checks
+
+The first focused pass exposed failure backoff not surviving restart; failed attempts now persist through the same atomic cache as successful history. Required FS1 synthetic preparations/composition fixtures now supply explicit synthetic semantics and all five identities. Late captures are deferred and captures predating their claimed closes are refused.
+
+At d8e95f02:55 focused tests PASS, including actual strategy/planner SELL/BUY and real PostgreSQL replay. The first full run had2893 passed/1 failed/11 skipped/4060 subtests; the sole failure was the parallel-FS1 composition fixture omitting the new pinned input. Update that fixture without relaxing startup requirements. Prospective additional boundary: refuse extreme decimal exponents before expanding them; reject stale capture metadata. Repeat focused and full pinned checks.
