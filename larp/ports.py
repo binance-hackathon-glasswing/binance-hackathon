@@ -178,6 +178,10 @@ def validate_execution_observation(observation: dict) -> dict:
                 or o.get('approved_amount') != '0' or type(o.get('spender')) is not str
                 or not re.fullmatch(r'0x[0-9a-f]{40}', o['spender'])):
             raise ContractError('Invalid zero-only allowance maintenance fact')
+    if "attempt_refund" in o and (kind != "NOT_SUBMITTED" or o["attempt_refund"] is not True
+                                  or o.get("reason") != "COMMAND_EXPIRED_UNCLAIMED"):
+        # IDEA-097 S4-F1: only a command the execution service never claimed gives its attempt back.
+        raise ContractError("attempt_refund is only an unclaimed command expiry")
     if kind == "BROADCAST_ATTEMPTED":
         if o.get("step") not in ('approve', 'swap', *cleanup) or not TX_HASH.fullmatch(o.get("tx_hash") or ""):
             raise ContractError("A broadcast attempt names its step and transaction hash")
