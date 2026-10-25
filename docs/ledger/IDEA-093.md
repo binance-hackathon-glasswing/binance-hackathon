@@ -312,3 +312,25 @@ historical synthetic profiles/cadence tests reserve only quoted cost. Scope the 
 explicit hashed `entry_cost_basis=AUTHORIZED_MINIMUM` on FS1/FS1-R, alongside the other two opt-ins. Historical
 profiles retain their old cost semantics and bytes; this is a compatibility correction, not an increase in FS1's
 50bp cost or cash reserve. Existing profile tests are updated to expect these three deliberate new fields.
+
+## PR278-RV02 — second review (2026-10-25, separate from Yao's PR278-RV01)
+
+Review of PR278 requested in a Claude Code session; it ran alongside PR278-RV01 and reached the branch after RV01's
+commits up to `c4d10c91`. It does not review or accept RV01's changes and leaves RV01's "keep PR278 open" note in place.
+
+**Checked at `da5af854` (before RV01):** both profiles then pinned rebuilt byte for byte; `aiand-routing.fs1.json`
+`9b86c732…` equals the v4 repair example minus `openai_trial`, and its three prompt hashes match
+`config/intelligence/prompts/routing/`; the scope check refuses `KIT_OPEN_STATE` for a FINAL in any mode but `live` and
+for a REHEARSAL in any mode but `dev`. Full suite on Python 3.12 (pinned lock) with PostgreSQL 16 (not the pinned 14.24):
+2682 passed, 11 skipped, 4004 subtests, 0 failed. The two extra skips against FS1-7 come from the environment only (no
+bubblewrap; root ignores directory modes).
+
+**Fixed (no profile or routing bytes change):** `build_final_candidate.s4_block` renamed `fs1_block`; the scope-check
+comments in `gate_a`, `gate_a_check` and `execution_live.main` name FS1 as well as S2-1. With RV01's commits, both
+candidates still rebuild byte for byte (`fs1-final.json` `f5ac59de…`, `fs1-rehearsal.json` `ce0dcde4…`), and the full suite on
+the combined head passes: 2715 passed, 11 skipped (same environment skips), 4004 subtests, 0 failed.
+
+**Finding recorded, not built (PR278-RV02-F1):** the run sheet reuses the RC7 scripts, but M1, D1, M3, M4 and P4 are
+pinned to run 4 (S2 profile `eb55d76a…`, `--runtime-mode dev`, assessor `deterministic`, `larp_rehearsal4`). The
+final install needs reviewed FS1 copies. Added as run-sheet row F0p and to the IDEA-093 line in `INCOMPLETE_WORK.md`
+(owner Yao, review Keegan).

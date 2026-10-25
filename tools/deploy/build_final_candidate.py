@@ -28,7 +28,7 @@ POLICY_ID = 'larp-fs1-final-v1'
 EXIT_CHILDREN = 2
 
 
-def s4_block(raw):
+def fs1_block(raw):
     """The FS1 block from its exact bytes: weights 1/5, deterministic limiter, KIT_OPEN_STATE hours, 5 attempts."""
     if type(raw) is not bytes:
         raise ContractError('FS1 configuration must be the exact file bytes')
@@ -54,7 +54,7 @@ def s4_block(raw):
 def build(*, s1_raw, s1_decision):
     if type(s1_decision) is not str or not s1_decision.strip():
         raise ContractError('An FS1 block and the decision behind it go together')
-    block = s4_block(s1_raw)
+    block = fs1_block(s1_raw)
     # The shared generator validates its profiles before the hours are set; the hours go on with the final values.
     base = dict(block, execution={k: v for k, v in block['execution'].items() if k != 'hours'})
     p = pinned_profiles(s1=base, s1_decision=s1_decision)['FINAL'].read()
