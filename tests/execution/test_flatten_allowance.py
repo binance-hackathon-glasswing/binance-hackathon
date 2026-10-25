@@ -9,6 +9,30 @@ from tests.execution.test_allowance_recovery import AllowanceRecovery, PostgresR
 
 
 class AbortCleanup(AllowanceRecovery):
+    def test_expiry_does_not_extend_cleanup_authority_and_pending_revoke_keeps_barrier(self):
+        h = self.harness(); i = h.intent()
+        h.executor.create(i, h.now); h.finish_step(i)
+        state = h.executor.abort_unsigned(i.key, i.valid_until)
+        self.assertEqual(state.status, 'ABORTED')
+        self.assertEqual(h.rpc.allowances[USDT], i.amount)
+        self.assertEqual(len(h.venue.broadcasts), 1)
+
+    def test_rejected_swap_proved_not_submitted_gets_cleanup_without_reusing_nonce_authority(self):
+        from larp.execution import Rejected
+        h = self.harness(); i = h.intent()
+        h.executor.create(i, h.now); h.finish_step(i)
+        for method in ('prepare', 'authorize', 'sign'):
+            h.now += 1; getattr(h.executor, method)(i.key, h.now)
+        h.venue.broadcast_fault = Rejected('INSUFFICIENT_FUNDS')
+        h.now += 1; h.executor.broadcast(i.key, h.now)
+        h.now += i.timeout
+        state = h.executor.reconcile(i.key, h.now)
+        self.assertTrue(state.abort_pending)
+        self.assertEqual(state.status, 'ACTIVE')
+        h.venue.broadcast_fault = None
+        h.finish_step(i)
+        self.assertFalse(h.rpc.allowances[USDT])
+
     def test_abort_after_approve_cleans_inside_original_gas_and_releases_only_after_zero_read(self):
         h = self.harness(); i = h.intent()
         h.executor.create(i, h.now)

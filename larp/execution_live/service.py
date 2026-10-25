@@ -157,7 +157,7 @@ class ExecutionService:
             # intent instead of leaving authorize() to fail on every restart.
             return self.executor.abort_unsigned(key, now)
         if not state.attempts or state.attempts[-1].state=='FINAL_SUCCESS' or (
-                state.abort_pending and state.attempts[-1].state == 'ABORTED'):
+                state.abort_pending and state.attempts[-1].state in {'ABORTED', 'NOT_SUBMITTED'}):
             if state.prepare_probes >= state.intent.max_prepare_probes:
                 return self.executor.abort_unsigned(key, now)
             return self.executor.prepare(key,now)

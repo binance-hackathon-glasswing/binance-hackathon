@@ -362,10 +362,11 @@ def validate_sequence(state, step, payload, gates):
     if state.abort_pending:
         if (step != 'REVOKE:' + state.intent.pay_token
                 or not any(a.step == 'APPROVE' and a.state == 'FINAL_SUCCESS' for a in prior)
-                or any(a.step == 'SWAP' and (a.state != 'ABORTED' or a.broadcast_at is not None)
+                or any(a.step == 'SWAP' and not (a.state == 'NOT_SUBMITTED' or
+                           a.state == 'ABORTED' and a.broadcast_at is None)
                        for a in prior)):
             raise Blocked('aborting intent only authorizes its pay-token zero approval')
-        prior = tuple(a for a in prior if a.state != 'ABORTED')
+        prior = tuple(a for a in prior if a.state not in {'ABORTED', 'NOT_SUBMITTED'})
     if (len({a.step for a in prior}) != len(prior)
             or any(not approval_step(a.step) or a.state != 'FINAL_SUCCESS' for a in prior)
             or any(a.step == 'APPROVE' for a in prior[:-1])):
@@ -381,7 +382,8 @@ def validate_sequence(state, step, payload, gates):
                          and attempt.gas_used is not None
                          else attempt.payload.gas) * attempt.payload.gas_price
                         for attempt in state.attempts if attempt.step != step
-                        and not (attempt.state == 'ABORTED' and attempt.broadcast_at is None))
+                        and not (attempt.state == 'NOT_SUBMITTED' or
+                                 attempt.state == 'ABORTED' and attempt.broadcast_at is None))
     if previous_cost + payload.gas * payload.gas_price > state.intent.gas_budget:
         raise Blocked("parent gas budget exceeded")
 
@@ -462,7 +464,7 @@ class Executor:
         if state.status != "ACTIVE":
             return state
         if state.attempts and state.attempts[-1].state != "FINAL_SUCCESS" and not (
-                state.abort_pending and state.attempts[-1].state == 'ABORTED'):
+                state.abort_pending and state.attempts[-1].state in {'ABORTED', 'NOT_SUBMITTED'}):
             return state  # No second step while outgoing outcome is uncertain.
         integer(now)
         if now < state.last_observed_at:
@@ -630,8 +632,11 @@ class Executor:
             # WR12 (#54): the node refused these bytes. Release only once the timeout has passed and the wallet's
             # chain nonce (latest = pending) still equals this attempt's nonce, so nothing used it; otherwise hold.
             if timed_out and type(gates.nonce) is int and gates.nonce == attempt.payload.nonce:
+                rejected = replace(state, attempts=state.attempts[:-1] + (replace(attempt, state='NOT_SUBMITTED'),))
+                cleanup = self._cleanup_due(rejected, now)
                 return self._update_attempt(state, replace(attempt, state="NOT_SUBMITTED"), "NOT_SUBMITTED", gates,
-                                            status="ABORTED", blocked_reason="broadcast rejected; not submitted")
+                                            status='ACTIVE' if cleanup else 'ABORTED', abort_pending=cleanup,
+                                            blocked_reason="broadcast rejected; not submitted")
             return self._update_attempt(state, attempt, "REJECTED_UNRESOLVED", gates, blocked_reason=(
                 "rejected broadcast nonce unresolved; wallet barrier retained" if timed_out
                 else "broadcast rejected; wallet barrier retained until timeout"))

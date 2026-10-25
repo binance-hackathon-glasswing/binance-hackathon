@@ -188,7 +188,8 @@ class ExecutionStore:
                     last = stored.attempts[-1] if stored is not None and stored.attempts else None
                     if (len(ended) != 1 or last is None or last.state != 'REJECTED' or last.broadcast_at is None
                             or current.attempts[-1] != replace(last, state='NOT_SUBMITTED')
-                            or current.status != 'ABORTED' or stored.status != 'ACTIVE'):
+                            or current.status != ('ACTIVE' if current.abort_pending else 'ABORTED')
+                            or stored.status != 'ACTIVE'):
                         raise Conflict('not-submitted needs a rejected possible send')
                 if event.get('type') == 'ABORTED_UNBROADCAST':
                     if (stored is None or stored.status != 'ACTIVE' or not stored.attempts
@@ -232,7 +233,7 @@ class ExecutionStore:
             if signed is None:
                 return None
             state, attempt = self._attempt(db, attempt_id)
-            if state.status == 'ABORTED' or attempt.state == 'ABORTED':
+            if state.status == 'ABORTED' or attempt.state in {'ABORTED', 'NOT_SUBMITTED'}:
                 raise Conflict('attempt signing authority revoked')
             return signed
 
