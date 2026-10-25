@@ -419,3 +419,43 @@ new option is S1-only and exact-valued, generated profiles/provenance/hashes reb
 commit/restart/exact replay preserves recovery and all-five construction using synthetic ports. GAS-5: affected
 tests and full merged suite pass (concurrent PL work is independently owned and must be complete for a green head).
 Economic/live acceptance stays open: no funding, signing, upload or host activation is authorized by these tests.
+
+### PR278-RV01 results — source review complete; keep PR278 open (2026-10-25 SGT)
+
+Four explicit profile refinements are implemented: PF02 run-stop recovery; authorized-minimum BUY cost;
+cost-gated pending small level SELLs; and F-125 gas-excluded stock capital. The original suspected FS1-R builder
+defect was disproved and withdrawn. Relevant commits: tests `342b9f53`, repairs `111200b0`/`a82a70d2`, first
+profile pins `c4d10c91`, F-125 capital sizing/tests `92df8662`, current candidate pins/run sheet `37f674c3`.
+Current FINAL file `0401e966…` / digest `ac5de572…` / probe `518b1e76…`; REHEARSAL `54802665…` /
+digest `22a9ad90…` / probe `7d5a5602…`. Full pins: candidate READMEs and the receipt below.
+
+Validation on pushed combined head **`d7741f916681c1f1d48b7e11c1d26d41d795baa6`**, including current canonical
+`5b5f0c89` (PR279/280) and the separate PL implementation:
+
+- Full clean-clone suite: **2766 passed, 9 skipped, 4027 subtests, 0 failures**, no deselection, 255.92 s;
+  pinned Python 3.12.15, PostgreSQL 14.24, offline/synthetic ports on an internal Docker network.
+- Five actual-systemd checks run separately: **5 passed /5 subtests** (release refusal and automatic restart).
+  Two further environment skips resolved separately: non-root directory permission and GitHub-origin refusal
+  **2 passed**. Across these runs, **2773 unique tests pass**; only the two external/private-fixture tests remain
+  unrun. No GitHub Actions or exact new host-release qualification is claimed.
+- GAS-1..4 focused run: **63 tests /9 subtests pass**. Real PostgreSQL commits five settled synthetic buys,
+  restarts the coordinator between every leg, retains healthy recovery, and replays the exact journal without
+  external ports. Other bounded checks enumerate 1296 recovery paths and a 273-case cost grid.
+- Both candidate profiles rebuild byte for byte. Offline demo PASS, 67652-byte valid simulated trace.
+- Earlier environment failures and the superseded incomplete run are retained truthfully in the receipt.
+
+Evidence: [receipt](../build/evidence/pr278-review-20261025.json) and
+[research/formal review](../research/fs1-review-20261025.md), including eight primary literature sources with
+access grades, RV-H1 crowd/news hypothesis and RV-E1 prospective evaluation design. No new market experiment
+was run and no predictive alpha, return forecast or maximum-profit claim is supported. The exact FS1 policy
+was not what EXP008 tested; EXP007 remains frozen/unrun. Literature supports testable conditional mechanisms,
+not a universal instruction to chase attention or follow a crowd.
+
+**Remaining, explicitly owned:** Keith/Keegan reconcile missing live trend series versus a declared static
+baseline, accept the four new fields and finish actual-size round-trip cost ranking; Keith/Isaac/Keegan resolve
+material fixed-price BNB risk valuation under the 30 USDT seed (GAP-73) and accept fresh profile/gas/cap evidence;
+Keith/Keegan/Yao implement the registered final-wallet self-check/handover (GAP-74) and FS1 install scripts/new
+release qualification; Yao confirms funding (GAP-75); team/Yao complete model adoption, independent quality
+evidence, budget and secret bindings. The run sheet now states these gaps rather than treating a dev 8 bp quote
+as FINAL qualification or the final wallet as still holding 200 USDT cash after gas funding. No full backlog
+item is closed, no release installed, and no wallet/model/upload action performed by this review.

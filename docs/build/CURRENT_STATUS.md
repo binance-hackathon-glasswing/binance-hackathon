@@ -1,5 +1,17 @@
 # Current shared build and remaining work
 
+PR278-RV01 (2026-10-25): **FS1 remains open for teammate review.** Repairs cover healthy PF02 recovery,
+authorized-minimum entry cost, pending cost-gated small reductions and gas-excluded stock allocation after
+PR279/F-125's 30 USDT gas instruction. FINAL profile `0401e966…`, REHEARSAL `54802665…`.
+Combined source `d7741f91` includes current integration `5b5f0c89` and PL: full suite2766 tests/4027 subtests PASS;
+5 systemd and2 non-root/origin checks separately PASS (only2 external/private fixtures remain unrun).
+Real PostgreSQL all-five construction/restart/exact replay and offline demo pass. [Review](../research/fs1-review-20261025.md) /
+[receipt](evidence/pr278-review-20261025.json) / [owners](../ledger/IDEA-093.md#pr278-rv01-results--source-review-complete-keep-pr278-open-2026-10-25-sgt).
+Predictive edge is NOT_ESTABLISHED. Missing live trend series, material fixed-price BNB risk valuation (GAP-73),
+registered final-wallet self-check/handover (GAP-74), funding check (GAP-75), exact profile/model/caps/release and
+FS1 install-script acceptance remain. No merge, deployment or wallet action is implied; earlier receipts below
+remain evidence only for their recorded source/configuration.
+
 PR277-RV01 (2026-10-24): S3 dev-rehearsal scheduled flatten reviewed with a repair bounding pre-cut BUY command
 and independent execution/signer/broadcast authority at the schedule; first flat/DONE re-entry remains allowed.
 2659 tests/4004 subtests PASS, 8 explicit skips, 3 unchanged nested-sandbox cases deselected on pinned Linux/Python3.12.15/PG14.24;
