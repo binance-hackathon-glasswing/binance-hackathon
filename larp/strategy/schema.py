@@ -49,6 +49,9 @@ def ratio(value):
 
 def review_options(p):
     """IDEA-093 PR278-RV01: explicit S1 opt-ins; absence preserves historical policy behavior."""
+    if 'entry_cost_basis' in p and (p.get('baseline') != 'TREND_GUARDED_VOL'
+                                    or p['entry_cost_basis'] != 'AUTHORIZED_MINIMUM'):
+        raise ContractError('entry_cost_basis requires S1 and AUTHORIZED_MINIMUM')
     for key, decided in (("run_halt_recovery_bps", 500), ("s1_reduction_cost_cap_bps", 50)):
         if key in p and (p.get("baseline") != "TREND_GUARDED_VOL"
                          or type(p[key]) is not int or p[key] != decided):

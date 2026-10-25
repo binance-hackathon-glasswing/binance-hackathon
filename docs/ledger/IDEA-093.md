@@ -306,3 +306,9 @@ confirm RV01-1/2/3 and the absent new profile options/validation. RV01-4's hypot
 all four refusal tests pass on the original implementation because `s1_block` and the existing reserve check
 already enforce these conditions. Retain those regression tests; no validator rewrite is needed. This correction
 supersedes the provisional finding above. Candidate generation will add only RV01-1/3's explicit profile opt-ins.
+
+First repair `111200b0`: all32 focused cases pass. The broader strategy/risk suite exposed25 failures because
+historical synthetic profiles/cadence tests reserve only quoted cost. Scope the new entry-cost semantics to an
+explicit hashed `entry_cost_basis=AUTHORIZED_MINIMUM` on FS1/FS1-R, alongside the other two opt-ins. Historical
+profiles retain their old cost semantics and bytes; this is a compatibility correction, not an increase in FS1's
+50bp cost or cash reserve. Existing profile tests are updated to expect these three deliberate new fields.

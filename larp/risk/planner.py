@@ -488,7 +488,8 @@ def plan(snapshot, proposal_or_none):
                                   10**ledger["bnb_decimals"]))
         # RV01-2: the authorized minimum, not the displayed quote, is the executable cost bound.
         # Gas here is the declared expected allowance; the full action budget remains reserved below.
-        mark = value(quote['min_receive_units'] if side == 'BUY' else q, m)
+        minimum_buy = side == 'BUY' and p.get('entry_cost_basis') == 'AUTHORIZED_MINIMUM'
+        mark = value(quote['min_receive_units'] if minimum_buy else q, m)
         proceeds = quote['min_receive_units'] if costed_reduction else cash
         cost = max(Fraction(0), cash - mark if side == "BUY" else mark - proceeds) + fee + gas_value
         if costed_reduction and cost * 10000 > mark * p['s1_reduction_cost_cap_bps']:

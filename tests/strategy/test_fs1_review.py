@@ -15,7 +15,7 @@ from tests.strategy.test_s1_plan import AT_95, FALLING, NAMES, settled, snap
 from tests.strategy.test_fs1_final import BLOCK, profile
 from tests.strategy.test_equal_weight import with_state
 
-OPTIONS = dict(run_halt_recovery_bps=500, s1_reduction_cost_cap_bps=50)
+OPTIONS = dict(run_halt_recovery_bps=500, s1_reduction_cost_cap_bps=50, entry_cost_basis='AUTHORIZED_MINIMUM')
 
 
 def recovered(*, nav=190_000_001, healthy=True, **context):
@@ -104,7 +104,7 @@ def test_recovery_bounded_paths_preserve_hysteresis_after_serialization():
 
 
 def test_buy_cost_is_bounded_at_authorized_minimum_not_quoted_output():
-    s = snap(profile_changes=dict(slippage_bps=20, cost_reserve_units=200_000))
+    s = snap(profile_changes=dict(OPTIONS, slippage_bps=20, cost_reserve_units=200_000))
     s = changed(s, markets=[m for m in s.context.read()['markets'] if m['symbol'] == 'NVDAB'])
     # At 30bp quoted spread, the additional 20bp authorized slippage plus gas exceeds 50bp.
     s = with_quotes(s, spread_bps=30)
@@ -115,7 +115,7 @@ def test_buy_cost_is_bounded_at_authorized_minimum_not_quoted_output():
 
 def test_every_accepted_buy_in_cost_grid_satisfies_exact_minimum_fill_bound():
     """Finite grid of spreads/slippage; cost is recomputed independently with integer rational arithmetic."""
-    s = snap(profile_changes=dict(slippage_bps=20, cost_reserve_units=200_000))
+    s = snap(profile_changes=dict(OPTIONS, slippage_bps=20, cost_reserve_units=200_000))
     s = changed(s, markets=[m for m in s.context.read()['markets'] if m['symbol'] == 'NVDAB'])
     for spread in range(0, 61, 5):
         quoted = with_quotes(s, spread_bps=spread)
@@ -195,7 +195,8 @@ def test_rehearsal_refuses_a_different_strategy(mutation):
 
 
 @pytest.mark.parametrize('key,bad', [('run_halt_recovery_bps', 501), ('run_halt_recovery_bps', True),
-                                   ('s1_reduction_cost_cap_bps', 51), ('s1_reduction_cost_cap_bps', True)])
+                                   ('s1_reduction_cost_cap_bps', 51), ('s1_reduction_cost_cap_bps', True),
+                                   ('entry_cost_basis', 'EXPECTED')])
 def test_profile_options_cannot_loosen_the_decided_values(key, bad):
     from larp.strategy.profiles import validate_live
     p = profile()
