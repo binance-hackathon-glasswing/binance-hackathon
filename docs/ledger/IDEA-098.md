@@ -174,3 +174,7 @@ Merge decision: approve source integration into `claude/final-strategy-20261025`
 PR278's own integration merge remains separate. **Keegan:** fresh FINAL gas/caps/BNB/timing evidence.
 **Isaac:** exact profile/signer acceptance. **Yao/host owners:** FINAL-specific scripts, Q1/M3/release preparation,
 installation and AL9. These remain in FLAT-01/IDEA-093/GAP-73; this merge grants no deployment or wallet authority.
+
+Final documentation/packaging follow-up: **15 tests / 12 subtests PASS** (release register, bundle and RC6 install
+references). All tested application/config/test hashes and all three profiles still match the full-suite receipt.
+The PR description records PR283-RV01 and the user-authorized stacked merge scope.
