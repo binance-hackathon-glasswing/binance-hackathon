@@ -31,7 +31,9 @@ class FlattenRecovery(ScheduledFlattenPersistence):
                 fixture = with_quotes(at(AFTER_CLOSE, profile_changes=S3, held={s: AT_95 for s in NAMES}))
                 context = fixture.context.read()
                 context['portfolio'].update(wallet_id=f.WALLET, bnb_units=10**9, bnb_decimals=18)
+                quote_template = next(q for m in context['markets'] for q in m['quotes'] if q['side'] == 'SELL')
                 for row in context['markets']:
+                    row['quotes'] = [dict(quote_template, quote_id='synthetic-exit-' + row['symbol'])]
                     for quote in row.get('quotes', []):
                         quote['gas_bnb_units'] = 10**7
                 self.profile, self.profile_hash = context['profile'], fixture.policy_profile_hash
@@ -45,7 +47,7 @@ class FlattenRecovery(ScheduledFlattenPersistence):
                     for row in rows:
                         row.update(observed_at=stamp, available_at=stamp, close_at=stamp)
                         for quote in row.get('quotes', []):
-                            quote.update(available_at=stamp, expires_at=datetime.fromtimestamp(
+                            quote.update(observed_at=stamp, available_at=stamp, expires_at=datetime.fromtimestamp(
                                 now / 1000 + 600, timezone.utc).isoformat())
                     return rows
                 calendar = lambda now: dict(index=80, remaining=10)
