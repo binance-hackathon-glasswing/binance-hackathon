@@ -111,4 +111,24 @@ Isaac and Keegan must accept them.
 
 ## Results
 
-(none yet)
+### AL-IMPL01 — implementation contract (2026-10-25, before execution)
+
+Implement F2/F3/F4 on this PR; F1 is unnecessary for correctness and deferred. Defaults remain disabled;
+candidate assembly must explicitly opt runtime, execution and signer into the same recovery scope and budget.
+Use at most five pre-trade revokes (other tokens), one exact trade approve, and either swap or pay-token
+abort revoke. The existing eight-child envelope remains conservative. The pay allowance is overwritten by
+the exact trade approve, reserving its unique revoke identity for abort cleanup. No swap preflight changes.
+
+Persist abort intent before cleanup, revoke any unbroadcast swap capability atomically, hold the wallet barrier
+and reservation until cleanup terminates, and publish ordinary gas-only approval facts plus NOT_SUBMITTED.
+Never renew expiry/window/margin or bypass HALT/health/signer guards for cleanup. Consequently AL5/AL6 are
+bounded by original authority: expiry, dependency/pin failure, exhausted gas or a reverted revoke can leave
+an explicitly reported dirty allowance for the next independently authorized intent (F2), not an unauthorized
+late wallet action. AL9 and actual owner/host acceptance remain live gates.
+
+Prospective checks: AL1 red verifier regression on the PR's unchanged base; AL2/AL3 five-name synthetic exits
+with dirty stock/USDT; AL4 strict signing/broadcast refusal after fresh contamination; AL5 gas accounting;
+AL6 durable PostgreSQL restart at each abort/cleanup stage, revoked signature and exact observation replay;
+AL7 explicit opt-in config/caps/profile candidate coverage and disabled compatibility; AL8 sanitized exports.
+Run focused suites, then the pinned Linux Python 3.12.15 / PostgreSQL 14.24 suite. Nested bubblewrap and
+host/systemd acceptance require their supported environments. Commit/push all changed executable code before tests.
