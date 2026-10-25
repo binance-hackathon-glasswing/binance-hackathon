@@ -259,3 +259,36 @@ Checked:
   - The RDS instance stalled at 13:33Z and restarted at 13:43Z, before the install (IDEA-100).
   - An expired AWS login made several status reads stale, about 15:08–15:30Z. Read-only checks need a fresh
     `aws login`.
+
+## S4-F1 — an expired, never-claimed command spends a sell's attempt (2026-10-26; pre-registered before code)
+
+- **Finding (run 5, live).** GOOGLB's second half was refused at 16:30Z with `LEG_ATTEMPT_LIMIT`. Its 5
+  `SAFETY:SELL:GOOGLB` attempts that session were:
+  - three rounds, about 14:00–14:30Z, ending `COMMAND_EXPIRED_UNCLAIMED`. The execution service was not started
+    until P5 (about 14:50Z), after the signer's SSM delay;
+  - one price-check abort before the approve;
+  - one sale (15:00Z).
+
+  The budget resets when the next session opens: session 204, Mon 2026-10-26 13:30Z (21:30 SGT). That is before
+  `signing_end` at 20:00Z.
+- **Why it counts.** `execution_bounds.reserve` consumes an attempt at planning. `ServiceExecution.expire` ends a
+  command the execution service never claimed with `NOT_SUBMITTED / COMMAND_EXPIRED_UNCLAIMED`. Nothing gives the
+  attempt back, although that command never reached the signer, the chain or a quote reuse.
+- **Fix.**
+  - `expire` marks its fact `attempt_refund: true`. The ports validator accepts the field only on `NOT_SUBMITTED`
+    with reason `COMMAND_EXPIRED_UNCLAIMED`.
+  - The settlement reducer gives the attempt back only when the fact carries the flag, and only for the latest
+    attempt of that leg in the same session: the intent's `execution_bounds.ordinal` equals the projection budget's
+    count.
+  - Facts without the flag (every existing journal) replay unchanged.
+  - Claimed intents, aborts, refusals and broadcasts never refund. The 5-attempt cap still bounds every attempt that
+    can reach the wallet.
+- **Pass when (ER1–ER6):**
+  - **ER1 (red on base):** an unclaimed expiry leaves the leg's count at its ordinal.
+  - **ER2:** with the fix, an unclaimed expiry of the latest attempt gives the count and the closed slot back, and the
+    next round can plan the same leg. Three such expiries leave the budget where it started.
+  - **ER3:** no refund for a claimed intent, an abort or refused NOT_SUBMITTED, an older ordinal, another session, or
+    a fact without the flag.
+  - **ER4:** the validator refuses `attempt_refund` on any other kind or reason, or with a non-boolean value.
+  - **ER5:** replay of the new facts is exact. Existing journals and fixtures replay byte for byte (the full suite).
+  - **ER6:** the full pinned suite passes with no new failures.
