@@ -29,6 +29,9 @@ def validate_config(value):
     for key in ('retention_days', 'backup_interval_hours', 'max_attempts', 'retry_seconds', 'max_archive_bytes'):
         if type(value[key]) is not int or value[key] < 1:
             raise ContractError('Invalid positive integer setting: ' + key)
+    if 'max_exports_per_day' in value and (type(value['max_exports_per_day']) is not int
+                                           or value['max_exports_per_day'] < 1):
+        raise ContractError('Invalid positive integer setting: max_exports_per_day')
     # Explicit per-object Object Lock expiry overrides the bucket default.
     # Match deploy/aws/variables.tf, including the full archive retention window.
     if value['retention_days'] < 82:
@@ -48,6 +51,17 @@ def cloud_clients(c):
     settings = Config(connect_timeout=5, read_timeout=15, retries={'total_max_attempts': 2, 'mode': 'standard'},
                       ignore_configured_endpoint_urls=True)
     return {name: session.client(name, config=settings) for name in ('s3', 'rds', 'cloudwatch')}
+
+
+# IDEA-100 DB5: after a run whose heavy steps failed, those steps (backup export, daily full check) wait 60 s, then
+# twice as long after each further failure, up to an hour. The anchor, delivery and health keep the timer's cadence.
+BACKOFF_FIRST_S, BACKOFF_MAX_S = 60, 3600
+MAX_EXPORTS_PER_DAY = 3
+
+
+def backoff_seconds(failures):
+    """The pause after `failures` consecutive failed runs (1 -> 60 s, 2 -> 120 s, ... capped at an hour)."""
+    return min(BACKOFF_FIRST_S * 2 ** (failures - 1), BACKOFF_MAX_S)
 
 
 def _metric(deployment, service, name, value):
@@ -106,8 +120,14 @@ def main(argv=None):
         worker = Maintenance(IamPostgresStore(c, clients['rds']), archive,
                              backup_interval_ms=c['backup_interval_hours'] * HOUR_MS,
                              max_attempts=c['max_attempts'], retry_ms=c['retry_seconds'] * 1000,
-                             max_payload_bytes=c['max_archive_bytes'], verification=verification)
+                             max_payload_bytes=c['max_archive_bytes'], verification=verification,
+                             max_exports_per_day=c.get('max_exports_per_day', MAX_EXPORTS_PER_DAY))
         failures = []
+        # The backoff lives in the unit's state directory with the verification checkpoint, so a restart keeps it.
+        # Without one there is no backoff (as without IDEA-095's checkpoint).
+        now_ms = int(time.time() * 1000)
+        saved = verification.load(c['run_id']) if verification else {}
+        paused = type(saved.get('resume_ms')) is int and now_ms < saved['resume_ms']
 
         def deliver():
             # Per invocation bound; timer supplies subsequent delivery capacity.
@@ -125,6 +145,10 @@ def main(argv=None):
                 health['healthy'] = False
                 health['reasons'] = sorted(set(health['reasons'] + ['ARCHIVE_PREPARATION_FAILED']))
                 health['preparation_error'] = ','.join(sorted(set(failures)))
+            if paused:
+                health['healthy'] = False
+                health['reasons'] = sorted(set(health['reasons'] + ['ARCHIVE_BACKOFF']))
+                health['resume_ms'] = saved['resume_ms']
             health['services'] = worker.service_health(c['run_id'], int(time.time() * 1000)).read()
             publish_health(clients['cloudwatch'], c['deployment'], health['healthy'], health['services'])
             return health
@@ -138,18 +162,28 @@ def main(argv=None):
                 failures.append(type(exc).__name__)
             deliver()
             health = report()
-            try:
-                if worker.prepare_backup(c['run_id'], int(time.time() * 1000)) is not None:
-                    deliver()
-            except Exception as exc:
-                failures.append(type(exc).__name__)
-            # IDEA-095: anchors verify from the saved checkpoint; the whole journal is re-read once per backup
-            # interval, last, so a run killed inside it has already sent its anchor, health and backup.
-            try:
+            if not paused:
+                try:
+                    if worker.prepare_backup(c['run_id'], int(time.time() * 1000)) is not None:
+                        deliver()
+                except Exception as exc:
+                    failures.append(type(exc).__name__)
+                # IDEA-095: anchors verify from the saved checkpoint; the whole journal is re-read once per backup
+                # interval, last, so a run killed inside it has already sent its anchor, health and backup.
+                try:
+                    if verification is not None:
+                        worker.full_check(c['run_id'], int(time.time() * 1000))
+                except Exception as exc:
+                    failures.append(type(exc).__name__)
                 if verification is not None:
-                    worker.full_check(c['run_id'], int(time.time() * 1000))
-            except Exception as exc:
-                failures.append(type(exc).__name__)
+                    # Only a run that tried the heavy steps moves the backoff: a failure lengthens it, success clears it.
+                    count = saved.get('failures') if type(saved.get('failures')) is int else 0
+                    try:
+                        verification.save(c['run_id'], **(
+                            dict(failures=count + 1, resume_ms=now_ms + backoff_seconds(count + 1) * 1000)
+                            if failures else dict(failures=0, resume_ms=None)))
+                    except OSError:
+                        failures.append('BackoffStateUnwritable')
             health = report()
         else:
             health = report()

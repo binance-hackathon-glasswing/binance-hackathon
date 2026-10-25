@@ -59,6 +59,7 @@ cp -R docs/build/ops/rehearsal-install-s4-20261025 deploy/activation/ && cd depl
 | C1 | signer | `python3.12 -I ssm_run.py --signer checks/signer-status.sh` (before T2) | active, 0 restarts, no refusal after the start line |
 | T2 | Yao, Mac | Terraform `enable_signer_provisioning = false` | plan destroys only the 8; SA5; SA9 |
 | M9 | Yao, Mac | `bash mac/m9-cleanup-s3-package.sh <prefix from M4>` | `M9_DONE` |
+| DBQ | anyone, read-only | `python3.12 -I ssm_run.py checks/db-top-queries.sh` (IDEA-100 DB2) | top 15 statements by database time; `n/a UndefinedTable` until the extension exists (needs the DB2 reboot, which waits until this run is retired) |
 | J-flat | anyone | `checks/trading-status.sh`, `mac/chain-monitor.py`, every round until flat | S4-L1: first SELL clears or uses the SKHYB allowance (`REVOKE` or SKHYB first); every position sold to dust before Tue 12:00Z; balance check MATCH; all six router allowances 0 at the end |
 
 ## Why this order
