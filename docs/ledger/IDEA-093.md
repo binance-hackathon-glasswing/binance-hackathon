@@ -392,3 +392,30 @@ trades one at a time on the wallet.
 | PL-8 | Continuation rounds replay to the same head, and a restart inside a slot does not create a duplicate continuation |
 | PL-9 | The examples carry both settings (mirrored); `gate_a.prepare` writes them; FS1's live runtime builds with five routed assessors |
 | PL-10 | Full local CI replica as before, no new failures |
+
+## PR278-RV01-GAS — F-125 follow-up (2026-10-25; criteria before execution)
+
+PR279 is merged; F-125 instructs a 30 USDT final-wallet gas swap unless organisers explicitly permit less.
+Reviewed F-120/F-125, verbatim source page and kit gas conventions, IDEA-055 D6/B7, and the actual startup,
+policy and planner code. The current 95% target treats non-saleable BNB as stock-buying capital: at 170 USDT cash
+and 30 USDT BNB, four roughly 38 USDT names can consume the funds and starve the fifth. This is an allocation
+defect, independent of whether BNB counts in the eventual score. Also, BNB is marked at a fixed profile price:
+market moves do **not** directly trigger our stops; the problem is unobserved valuation error. B7 only tests
+floor plus one top-up, not the actual seeded balance. Its old <=5% materiality argument no longer covers F-125.
+
+Review candidate: explicit `s1_capital_basis=EXCLUDE_GAS` on FS1 and FS1-R. Apply the nominal 95/60/30% levels
+to cash plus marked eligible stocks minus the existing cost reserve; keep the frozen equal fifths. Convert this
+budget to weights in total-equity units for the existing proposal contract. The independent planner must clamp
+to the same fundable cap. Keep nominal trend/limiter state separate so changes in valuation do not trigger drift
+sales. Loss triggers, peak, opening equity and the fixed BNB accounting price remain unchanged pending D6 owner
+resolution and score valuation. At 170 cash, the high target is about 161.5 USDT total /32.3 per name before costs.
+This leaves the existing 5% uninvested share of deployable assets, rather than treating gas as spendable USDT.
+
+Pass criteria GAS-1: 30-USDT synthetic gas wallet builds all five names through sequential settled buys with
+nonnegative cash and unchanged gas reserve checks; equal target notionals and independent planner clamp.
+GAS-2: target stock notional is invariant to BNB price for fixed cash/stocks; nominal-level changes still reduce
+positions, while gas mark changes alone cause no discretionary sell. GAS-3: old profiles keep their exact behavior;
+new option is S1-only and exact-valued, generated profiles/provenance/hashes rebuild. GAS-4: real PostgreSQL
+commit/restart/exact replay preserves recovery and all-five construction using synthetic ports. GAS-5: affected
+tests and full merged suite pass (concurrent PL work is independently owned and must be complete for a green head).
+Economic/live acceptance stays open: no funding, signing, upload or host activation is authorized by these tests.
