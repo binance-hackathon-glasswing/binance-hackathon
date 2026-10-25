@@ -9,7 +9,7 @@ from fractions import Fraction
 
 from larp.contracts import ContractError, Document, TargetKind, validate_proposal
 from larp.strategy.schema import (ceil, equity, floor, fraction, instant, integer,
-                                  markets, profile, ratio, value)
+                                  markets, profile, ratio, value, stock_capital_scale)
 from .accounting import update_risk
 from .gas import plan_top_up
 from larp.strategy import s1 as s1_plan
@@ -188,6 +188,7 @@ def plan(snapshot, proposal_or_none):
     # IDEA-076 (S1): its top level, five names, its hard name line and no gross trim line except the 12% deep cut
     # replace the proposal's 80% / four-name / 20% limits, which bind every other baseline unchanged.
     s1 = s1_plan.config(p) if p["baseline"] == s1_plan.BASELINE else None
+    capital_scale = stock_capital_scale(p, ledger, E) if s1 else Fraction(1)
     s1_level = None
     if s1:
         # A hard-line HOLD-round trim still goes to the accepted reduced level, not always the high level.
@@ -196,8 +197,9 @@ def plan(snapshot, proposal_or_none):
         s1_level = min(s1["high"], fraction(applied)) if applied is not None else s1["high"]
         if s1_level <= 0:
             raise ContractError("S1 applied target must be positive")
+        s1_level *= capital_scale
     max_positions = len(snapshot.universe) if s1 else 4
-    gross_limit = s1["high"] if s1 else min(Fraction(4, 5), fraction(p["regime_gross_weight"]))
+    gross_limit = s1["high"] * capital_scale if s1 else min(Fraction(4, 5), fraction(p["regime_gross_weight"]))
     if r["deep_cut"]:
         gross_limit = min(gross_limit, Fraction(2, 5))
     # IDEA-037: optional hard lines; drift between the cap and the line is held, not trimmed. The deep
@@ -364,7 +366,7 @@ def plan(snapshot, proposal_or_none):
                 result["rejections"].append({"symbol": symbol, "reason": "MISSING_MARKET"})
                 continue
             current = held.get(symbol, 0)
-            name_cap = s1["high"] * s1["weights"][symbol] if s1 else fraction(p["operating_name_weight"])
+            name_cap = s1["high"] * s1["weights"][symbol] * capital_scale if s1 else fraction(p["operating_name_weight"])
             desired = 0 if t.kind is TargetKind.EXIT else floor(
                 min(t.weight, name_cap) * safe_equity * 10**m["decimals"] / m["price_units"])
             if desired == current:

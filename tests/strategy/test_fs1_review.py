@@ -15,7 +15,8 @@ from tests.strategy.test_s1_plan import AT_95, FALLING, NAMES, settled, snap
 from tests.strategy.test_fs1_final import BLOCK, profile
 from tests.strategy.test_equal_weight import with_state
 
-OPTIONS = dict(run_halt_recovery_bps=500, s1_reduction_cost_cap_bps=50, entry_cost_basis='AUTHORIZED_MINIMUM')
+OPTIONS = dict(run_halt_recovery_bps=500, s1_reduction_cost_cap_bps=50, entry_cost_basis='AUTHORIZED_MINIMUM',
+               s1_capital_basis='EXCLUDE_GAS')
 
 
 def recovered(*, nav=190_000_001, healthy=True, **context):
@@ -196,7 +197,7 @@ def test_rehearsal_refuses_a_different_strategy(mutation):
 
 @pytest.mark.parametrize('key,bad', [('run_halt_recovery_bps', 501), ('run_halt_recovery_bps', True),
                                    ('s1_reduction_cost_cap_bps', 51), ('s1_reduction_cost_cap_bps', True),
-                                   ('entry_cost_basis', 'EXPECTED')])
+                                   ('entry_cost_basis', 'EXPECTED'), ('s1_capital_basis', 'INCLUDE_GAS')])
 def test_profile_options_cannot_loosen_the_decided_values(key, bad):
     from larp.strategy.profiles import validate_live
     p = profile()
@@ -204,3 +205,39 @@ def test_profile_options_cannot_loosen_the_decided_values(key, bad):
     p['provenance'][key] = dict(decision_id='synthetic', formula='synthetic')
     with pytest.raises(ContractError):
         validate_live(p)
+
+
+def gas_wallet():
+    s = snap(profile_changes=dict(OPTIONS, cost_reserve_units=200_000))
+    c = s.context.read()
+    c['portfolio'].update(cash_units=170_000_000, bnb_units=30_000_000)
+    c['portfolio']['risk']['run_halt'] = True
+    c['health'].update(new_spending_ok=True, balances_ok=True)
+    return changed(s, **c)
+
+
+def test_gas_capital_targets_are_equal_fundable_and_independent_of_bnb_mark():
+    from fractions import Fraction
+    from dataclasses import replace
+    s = gas_wallet()
+    for bnb_price in (500_000, 1_000_000, 2_000_000):
+        c = s.context.read()
+        c['portfolio']['bnb_price_units'] = bnb_price
+        marked = changed(s, **c)
+        proposal = decide(marked, marked.policy_state)
+        E = equity(c['portfolio'], {m['symbol']: m for m in c['markets']})
+        notionals = {t.weight * (E - c['profile']['cost_reserve_units']) for t in proposal.targets}
+        assert notionals == {Fraction(170_000_000 - 200_000) * Fraction(19, 100)}
+        assert proposal.next_policy_state.data.read()['s1']['applied_target'] == [19, 20]
+        if bnb_price == 1_000_000:
+            # An oversized policy proposal cannot make the independent planner count gas as cash.
+            forged = replace(proposal, targets=tuple(replace(t, weight=Fraction(19, 100)) for t in proposal.targets))
+            assert plan(marked, forged).read()['quote_requests'] == plan(marked, proposal).read()['quote_requests']
+
+
+def test_gas_mark_drift_does_not_create_discretionary_sales():
+    s = snap({n: 3226 for n in NAMES}, state=settled([19, 20]), profile_changes=OPTIONS)
+    c = s.context.read()
+    c['portfolio'].update(cash_units=8_700_000, bnb_units=30_000_000, bnb_price_units=2_000_000)
+    drift = changed(s, **c)
+    assert all(t.kind is TargetKind.KEEP_QUANTITY for t in decide(drift, drift.policy_state).targets)

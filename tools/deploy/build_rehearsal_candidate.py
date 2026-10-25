@@ -29,7 +29,10 @@ FS1_SLIPPAGE_BPS = 20
 
 def fs1_review_options(p):
     """Explicit, hashed review refinements shared by FINAL and its rehearsal (IDEA-093 PR278-RV01)."""
-    p.update(run_halt_recovery_bps=500, s1_reduction_cost_cap_bps=50, entry_cost_basis='AUTHORIZED_MINIMUM')
+    p.update(run_halt_recovery_bps=500, s1_reduction_cost_cap_bps=50, entry_cost_basis='AUTHORIZED_MINIMUM',
+             s1_capital_basis='EXCLUDE_GAS')
+    p['provenance']['s1_capital_basis'] = dict(decision_id='IDEA-093 PR278-RV01-GAS; F-125 (review candidate)',
+        formula='Nominal S1 levels apply to cash plus marked stocks minus cost reserve; native gas excluded')
     p['provenance']['entry_cost_basis'] = dict(decision_id='IDEA-093 PR278-RV01 (review candidate)',
         formula='BUY cost reserve and 50bp entry cap use authorized minimum output plus fee and expected gas')
     p['provenance']['run_halt_recovery_bps'] = dict(decision_id='IDEA-084 PF-02; IDEA-093 PR278-RV01',
