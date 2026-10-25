@@ -3,6 +3,9 @@ Description=Check durable LARP archive jobs every minute
 
 [Timer]
 OnBootSec=60s
+# IDEA-100 DB5: kept at 60 s so the hourly anchor and the health metrics never wait. After a failed run, the heavy
+# steps (backup export, daily full check) back off inside `operations once` (60 s doubling to 1 h, state in the unit's
+# StateDirectory), and backup exports are capped at 3 per UTC day.
 OnUnitInactiveSec=60s
 AccuracySec=1s
 Unit=larp-archive.service

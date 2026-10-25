@@ -63,6 +63,47 @@ resource "aws_cloudwatch_metric_alarm" "database_storage" {
   alarm_actions       = local.alarm_actions
   dimensions          = { DBInstanceIdentifier = aws_db_instance.larp.identifier }
 }
+# IDEA-100 DB1: the 1 GB burstable database stalled on 2026-10-25 when its CPU credits ran out under a looping job.
+# These watch the instance itself: credits, borrowed (surplus) credits, memory, swap and connections.
+locals {
+  database_alarms = {
+    credit-balance = {
+      metric      = "CPUCreditBalance", comparison = "LessThanThreshold", threshold = 20, periods = 3, missing = "breaching"
+      description = "RDS CPU credits are below 20 for 15 minutes (missing data counts). A burstable instance out of credits falls to its 10 % CPU baseline and queries queue (IDEA-100). Check RDS CPU and the top queries (checks/db-top-queries.sh), and the archive job's last runs."
+    }
+    surplus-credits = {
+      metric      = "CPUSurplusCreditBalance", comparison = "GreaterThanThreshold", threshold = 10, periods = 3, missing = "notBreaching"
+      description = "RDS is borrowing CPU credits (surplus above 10 for 15 minutes). Unlimited mode does not throttle, but sustained surplus is charged against the account credits (IDEA-100 billing check). Check what keeps the CPU above its baseline (checks/db-top-queries.sh)."
+    }
+    freeable-memory = {
+      metric      = "FreeableMemory", comparison = "LessThanThreshold", threshold = 62914560, periods = 2, missing = "notBreaching"
+      description = "RDS freeable memory is below 60 MiB for 10 minutes. The 1 GB instance then swaps and slows every service. Check connections and the archive job (IDEA-100)."
+    }
+    swap-usage = {
+      metric      = "SwapUsage", comparison = "GreaterThanThreshold", threshold = 629145600, periods = 3, missing = "notBreaching"
+      description = "RDS swap use is above 600 MiB for 15 minutes; queries are slowed by paging (IDEA-100). Check memory, connections and the top queries."
+    }
+    connections = {
+      metric      = "DatabaseConnections", comparison = "GreaterThanThreshold", threshold = 15, periods = 1, missing = "notBreaching"
+      description = "More than 15 database connections for 5 minutes. The services normally hold a few; a climb usually means a stuck or looping client (IDEA-100). Check `systemctl` on primary and signer for restart loops."
+    }
+  }
+}
+resource "aws_cloudwatch_metric_alarm" "database_health" {
+  for_each            = local.database_alarms
+  alarm_name          = "${var.name}-database-${each.key}"
+  alarm_description   = "${each.value.description} ${local.alarm_footer}"
+  comparison_operator = each.value.comparison
+  evaluation_periods  = each.value.periods
+  metric_name         = each.value.metric
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = each.value.comparison == "LessThanThreshold" ? "Minimum" : "Maximum"
+  threshold           = each.value.threshold
+  treat_missing_data  = each.value.missing
+  alarm_actions       = local.alarm_actions
+  dimensions          = { DBInstanceIdentifier = aws_db_instance.larp.identifier }
+}
 resource "aws_cloudwatch_metric_alarm" "host" {
   for_each            = aws_instance.host
   alarm_name          = "${var.name}-${each.key}-host-status"

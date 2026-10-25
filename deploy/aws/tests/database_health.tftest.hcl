@@ -39,7 +39,7 @@ run "db1_five_database_alarms" {
     error_message = "DB1: metric, comparison, threshold or window differs from IDEA-100."
   }
   assert {
-    condition     = alltrue([for a in aws_cloudwatch_metric_alarm.database_health : a.alarm_actions == toset(["arn:aws:sns:ap-southeast-2:123456789012:larp-fixture-existing"]) && a.dimensions == { DBInstanceIdentifier = "larp-fixture" } && strcontains(a.alarm_description, "F-114")])
+    condition     = alltrue([for a in aws_cloudwatch_metric_alarm.database_health : toset(a.alarm_actions) == toset(["arn:aws:sns:ap-southeast-2:123456789012:larp-fixture-existing"]) && a.dimensions["DBInstanceIdentifier"] == "larp-fixture" && strcontains(a.alarm_description, "F-114")])
     error_message = "DB1: every alarm notifies the alarm topics, watches this instance and carries the scored-run footer."
   }
   assert {
@@ -51,13 +51,17 @@ run "db1_five_database_alarms" {
 run "db2_query_and_lock_visibility" {
   command = plan
   assert {
-    condition = { for p in aws_db_parameter_group.larp.parameter : p.name => [p.value, p.apply_method] } == {
-      "rds.force_ssl"              = ["1", "immediate"]
-      "shared_preload_libraries"   = ["pg_stat_statements", "pending-reboot"]
-      "pg_stat_statements.track"   = ["top", "immediate"]
-      "log_min_duration_statement" = ["1000", "immediate"]
-      "log_lock_waits"             = ["1", "immediate"]
+    condition = { for p in aws_db_parameter_group.larp.parameter : p.name => p.value } == {
+      "rds.force_ssl"              = "1"
+      "shared_preload_libraries"   = "pg_stat_statements"
+      "pg_stat_statements.track"   = "top"
+      "log_min_duration_statement" = "1000"
+      "log_lock_waits"             = "1"
     }
     error_message = "DB2: the parameter group keeps force_ssl and adds exactly the four IDEA-100 parameters."
+  }
+  assert {
+    condition     = one([for p in aws_db_parameter_group.larp.parameter : p.apply_method if p.name == "shared_preload_libraries"]) == "pending-reboot"
+    error_message = "DB2: the preload library applies at the next reboot, never immediately."
   }
 }

@@ -136,10 +136,10 @@ class Backoff(Growth):
 
     def test_db5_anchors_and_health_continue_during_backoff(self):
         grow(self, 0, 3, audit_every=None)
-        self.once(T0 + MINUTE)                                   # fails: 60 s pause
-        self.once(T0 + 2 * MINUTE)                               # runs the heavy steps, fails again: 120 s pause
+        self.once(T0 + 58 * MINUTE)                              # fails: 60 s pause
+        self.once(T0 + 59 * MINUTE)                              # runs the heavy steps, fails again: 120 s pause
         grow(self, 3, 1, audit_every=None)
-        health, backups, _ = self.once(T0 + HOUR_MS)             # next hour, still inside the pause
+        health, backups, _ = self.once(T0 + 60 * MINUTE + 30_000)  # next hour, still inside the pause
         self.assertEqual(0, backups)
         self.assertIn('ARCHIVE_BACKOFF', health['reasons'])
         self.assertEqual(2, len(self.anchors()))                 # the new hour's anchor was prepared and delivered

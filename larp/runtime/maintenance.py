@@ -10,6 +10,7 @@ from larp.storage.backup import GZIP_MAGIC, export_segment
 from larp.storage.postgres import Conflict, IntegrityError, Unavailable, digest, doc
 
 HOUR_MS = 3600000
+DAY_MS = 24 * HOUR_MS
 RUNTIME_HEARTBEAT_MS = 600000   # a runtime session heartbeat older than this counts as down (IDEA-047 R5)
 SIGNER_ANSWER_S = 120           # a signing request unanswered for longer counts against the signer (IDEA-047 R5)
 # An anchor carries identifiers, times and hashes only: never keys, credentials or evidence text (IDEA-036 #6).
@@ -78,10 +79,12 @@ def verify_anchors(store, run_id, anchors):
 class Maintenance:
     def __init__(self, store, archive, *, backup_interval_ms, max_attempts=8,
                  retry_ms=60000, max_payload_bytes=64 * 1024 * 1024, preparing_stale_ms=PREPARING_STALE_MS,
-                 verification=None):
+                 verification=None, max_exports_per_day=None):
         for number in (backup_interval_ms, max_attempts, retry_ms, max_payload_bytes, preparing_stale_ms):
             if type(number) is not int or number < 1:
                 raise ContractError('Maintenance budgets must be positive integers')
+        if max_exports_per_day is not None and (type(max_exports_per_day) is not int or max_exports_per_day < 1):
+            raise ContractError('The daily export cap must be a positive integer')
         if backup_interval_ms < HOUR_MS or retry_ms < 1000:
             raise ContractError('Invalid maintenance cadence')
         self.store, self.archive = store, archive
@@ -89,6 +92,8 @@ class Maintenance:
         self.retry_ms, self.max_payload_bytes = retry_ms, max_payload_bytes
         self.preparing_stale_ms = preparing_stale_ms
         self.verification = verification  # a VerificationState, or None: every anchor verifies in full
+        # IDEA-100 DB5: at most this many backup exports per UTC day, counted from the durable outbox (None: no cap).
+        self.max_exports_per_day = max_exports_per_day
 
     def prepare(self, run_id, now_ms):
         self.prepare_anchor(run_id, now_ms)
@@ -181,35 +186,18 @@ class Maintenance:
 
     def prepare_backup(self, run_id, now_ms):
         """Prepare at most one backup segment (IDEA-094). Returns the slot attempted, or None. A refused or failed
-        export is recorded on its slot (PERMANENT, error class) and re-raised; the slot is never exported twice."""
-        backup_slot = now_ms // self.backup_interval_ms * self.backup_interval_ms
+        export is recorded on its slot (PERMANENT, error class) and re-raised; the slot is never exported twice. With a
+        daily cap, nothing is prepared once the UTC day has that many backup slots (IDEA-100 DB5)."""
         with self.store.transaction() as db:
             run = self._tick(db, run_id, now_ms)
             # A PREPARING row left by a killed export is closed for good; the next slot starts a new segment.
             db.execute("UPDATE archive_outbox SET status='PERMANENT',last_error='PreparationInterrupted' "
                        "WHERE run_id=%s AND kind='backup' AND status='PREPARING' AND next_ms<%s",
                        (run_id, now_ms - self.preparing_stale_ms))
-            needs_backup = not db.execute('SELECT 1 FROM archive_outbox WHERE run_id=%s '
-                                          "AND kind='backup' AND slot_ms=%s", (run_id, backup_slot)).fetchone()
-            # Declared: the journal is uploaded daily "and after any incident" (IDEA-049 D-FND-008). An incident
-            # (supervisor restart, HALT) committed after the newest backup gets one more backup now.
-            incident = db.execute("SELECT max(sequence) FROM events WHERE run_id=%s "
-                                  "AND (event_id LIKE 'incident:%%' OR event_id LIKE 'halt:%%')", (run_id,)).fetchone()[0]
-            covered = db.execute("SELECT max(covers_sequence) FROM archive_outbox WHERE run_id=%s AND kind='backup'",
-                                 (run_id,)).fetchone()[0]
-            # At most one incident backup per hour: a crash loop journals an incident every few seconds (IDEA-049
-            # D-FND-021). Scheduled backups sit on interval boundaries.
-            recent = db.execute("SELECT 1 FROM archive_outbox WHERE run_id=%s AND kind='backup' "
-                                'AND slot_ms %% %s <> 0 AND slot_ms > %s LIMIT 1',
-                                (run_id, self.backup_interval_ms, now_ms - HOUR_MS)).fetchone()
-            preparing = db.execute("SELECT 1 FROM archive_outbox WHERE run_id=%s AND kind='backup' "
-                                   "AND status='PREPARING' LIMIT 1", (run_id,)).fetchone()
             version = run['version']
-            needs_incident_backup = (incident is not None and (covered is None or covered < incident)
-                                     and recent is None)
-            if preparing or not (needs_backup or needs_incident_backup):
+            slot = self._due(db, run_id, now_ms)
+            if slot is None or self._capped(db, run_id, now_ms):
                 return None
-            slot = backup_slot if needs_backup else now_ms
             # The base is the newest acknowledged segment: an unacknowledged one may never arrive (IDEA-094).
             # A database holding other runs too gets self-contained segments (a base names this run only).
             base = None
@@ -249,6 +237,38 @@ class Maintenance:
                            (type(exc).__name__, run_id, slot))  # the class only: never SDK or database text
             raise
         return slot
+
+    def _due(self, db, run_id, now_ms):
+        """The backup slot to export now, or None: the interval's scheduled slot, else an incident backup."""
+        backup_slot = now_ms // self.backup_interval_ms * self.backup_interval_ms
+        needs_backup = not db.execute('SELECT 1 FROM archive_outbox WHERE run_id=%s '
+                                      "AND kind='backup' AND slot_ms=%s", (run_id, backup_slot)).fetchone()
+        # Declared: the journal is uploaded daily "and after any incident" (IDEA-049 D-FND-008). An incident
+        # (supervisor restart, HALT) committed after the newest backup gets one more backup now.
+        incident = db.execute("SELECT max(sequence) FROM events WHERE run_id=%s "
+                              "AND (event_id LIKE 'incident:%%' OR event_id LIKE 'halt:%%')", (run_id,)).fetchone()[0]
+        covered = db.execute("SELECT max(covers_sequence) FROM archive_outbox WHERE run_id=%s AND kind='backup'",
+                             (run_id,)).fetchone()[0]
+        # At most one incident backup per hour: a crash loop journals an incident every few seconds (IDEA-049
+        # D-FND-021). Scheduled backups sit on interval boundaries.
+        recent = db.execute("SELECT 1 FROM archive_outbox WHERE run_id=%s AND kind='backup' "
+                            'AND slot_ms %% %s <> 0 AND slot_ms > %s LIMIT 1',
+                            (run_id, self.backup_interval_ms, now_ms - HOUR_MS)).fetchone()
+        preparing = db.execute("SELECT 1 FROM archive_outbox WHERE run_id=%s AND kind='backup' "
+                               "AND status='PREPARING' LIMIT 1", (run_id,)).fetchone()
+        needs_incident_backup = incident is not None and (covered is None or covered < incident) and recent is None
+        if preparing or not (needs_backup or needs_incident_backup):
+            return None
+        return backup_slot if needs_backup else now_ms
+
+    def _capped(self, db, run_id, now_ms):
+        """True when this UTC day already has `max_exports_per_day` backup slots, in any status (IDEA-100 DB5)."""
+        if self.max_exports_per_day is None:
+            return False
+        day = now_ms // DAY_MS * DAY_MS
+        return db.execute("SELECT count(*) FROM archive_outbox WHERE run_id=%s AND kind='backup' "
+                          'AND slot_ms >= %s AND slot_ms < %s', (run_id, day, day + DAY_MS)).fetchone()[0] \
+            >= self.max_exports_per_day
 
     @staticmethod
     def _enqueue(db, run_id, kind, slot, payload, covers=None):
@@ -356,6 +376,7 @@ class Maintenance:
                                         "AND status IN ('PERMANENT','EXHAUSTED')", (run_id,)).fetchone()[0]
             projection = Document(bytes(run['projection'])).read()
             breaches = len(deadline_breaches(db, run_id, now_ms)) + len(unlogged_rounds(projection, now_ms))
+            capped = self._capped(db, run_id, now_ms) and self._due(db, run_id, now_ms) is not None
         ages = {kind: max(0, now_ms - latest[kind]) if kind in latest else None for kind in ('anchor', 'backup')}
         reasons = []
         if run['quarantined']:
@@ -377,6 +398,8 @@ class Maintenance:
             reasons.append('BACKUP_PREPARATION_FAILED')
         if audit_failures or breaches:
             reasons.append('AUDIT_DELIVERY_BLOCKED')
+        if capped:
+            reasons.append('BACKUP_DAILY_CAP')  # a backup is due but today's exports are used up (IDEA-100 DB5)
         return doc(dict(schema='MaintenanceHealth.v1', healthy=not reasons, reasons=reasons,
                         counts=counts, age_ms=ages, missed=missed, audit_failures=audit_failures,
                         backup_failure=backup_failure,

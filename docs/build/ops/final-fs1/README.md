@@ -31,6 +31,7 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
 | F0a | Keith + Keegan + Yao | GAP-74 is built into FS1 (IDEA-093 SC): **one run spans the self-check and the scored run**, so no second install or version event. The profile key `activation_self_check` buys about 32 USDT of SKHYB between 2026-10-27T00:00Z and 2026-10-28T18:00Z, sells it whole, and records DONE before 2026-10-28T23:00Z; FS1 then trades as usual from Oct 29 14:00Z. Keith/Keegan accept the values; the install (P4/P5) must finish **before 2026-10-28T18:00Z** or no self-check buy is made (the run then records EXPIRED and still trades the scored run) | IDEA-093 SC, F-125 |
 | F0k | Yao | the final wallet's key on the signer (as SJ-06 K1, for the final wallet) | G-09 |
 | F0p | Yao (Keegan reviews) | **make FS1 copies of the RC7 scripts; not built yet.** The RC7 scripts are pinned to run 4: `mac/m4-prepare.py` (S2 profile `eb55d76a…`, `--runtime-mode dev`, assessor `deterministic`, no routing args, run 4's adoption text), `mac/m3-recapture-assemble.sh`, `mac/d1-create-db.sh`, `mac/setup_rehearsal_db.py`, `mac/prepare_rehearsal_db.py`, `mac/m1-*-bundle.sh` and `host/p4-init-activate-start.sh` (run 4 database/run ID/build). The FS1 copies pin `fs1-final-recovery.json` (the `PROFILE_SHA` above), `live`, `aiand_routed`, the routing pair `9b86c732…`, the F0m adoption reference, the final wallet, database and run ID, and the new RC | the steps below cannot run on the RC7 scripts unchanged; editing them by hand at install time is not a reviewed path |
+| F0d | Yao (Keegan reviews) | IDEA-100 DB1/DB2 on the database, **outside any run**: `terraform apply` of `deploy/aws` (five `database-*` alarms, four parameters); confirm each alarm with an SNS test publish; reboot the RDS instance once so `shared_preload_libraries` loads; as admin, `CREATE EXTENSION pg_stat_statements`; then `checks/db-top-queries.sh` (run-5 sheet; copy it with F0p) prints rows | IDEA-100: the 1 GB instance stalled on 2026-10-25; the reboot must not interrupt a run |
 
 ## Order (differences from the RC7 sheet)
 
@@ -56,7 +57,7 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
   start a new run while stocks are held: its install would refuse them and its books would not own them.
 - The runtime must be up across every 00:00Z (UTC day roll), including weekends, or new buys stop as
   `NEW_RISK_HALTED` until the next roll.
-- Read-only checks only: `checks/trading-status.sh`, `checks/primary-status.sh`, the chain monitor, the OpenAI budget
+- Read-only checks only: `checks/trading-status.sh`, `checks/primary-status.sh`, `checks/db-top-queries.sh` (IDEA-100), the chain monitor, the OpenAI budget
   status. No pause, no flatten, no restart by hand (F-114).
 - Expected behaviour: the book is built in the first sessions after Oct 29 14:00Z and held; trades after that only on
   verified red flags (AIand/ChatGPT assessment + verifier), loss-ladder cuts, and the terminal flatten from Nov 10 19:00Z.
