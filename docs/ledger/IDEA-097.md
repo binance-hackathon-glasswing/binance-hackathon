@@ -292,3 +292,12 @@ Checked:
   - **ER4:** the validator refuses `attempt_refund` on any other kind or reason, or with a non-boolean value.
   - **ER5:** replay of the new facts is exact. Existing journals and fixtures replay byte for byte (the full suite).
   - **ER6:** the full pinned suite passes with no new failures.
+- **S4-F1 results (tested source `9c34dd45`): PASS.**
+  - **ER1–ER4:** red on base `1ed5a248`, all 5 new tests failing as expected; the 4 existing EB3/5 tests still
+    pass. Green after the fix.
+  - **ER5:** exact replay of the new facts (`assert_replay`); the existing replay and driver suites pass unchanged.
+  - **ER6:** full suite in the team's Linux image `larp-test:pr282` (Python 3.12.15) with a disposable
+    PostgreSQL 14.24 container, from a git clone: **2844 passed, 0 failed, 12 skipped, 4055 subtests**. Skips: 5
+    systemd, 3 bubblewrap, 2 opt-in fixtures, 1 root directory mode, 1 no GitHub origin. Not GitHub CI
+    (billing-blocked).
+  - Not installed; run 5 keeps its build.
