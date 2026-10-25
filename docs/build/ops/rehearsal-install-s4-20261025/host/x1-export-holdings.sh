@@ -29,13 +29,24 @@ assert c['run_id'] == os.environ['RUN'], 'history config names another run'
 s = RO(c, rds_client(c['region']))
 with s.transaction() as db:
     version, projection = db.execute('SELECT version,projection FROM runs WHERE run_id=%s', (c['run_id'],)).fetchone()
+    # The projection's portfolio never carries live reservations (ledger_from rebuilds them from this table), so the
+    # in-flight check reads the table and the execution barrier itself.
+    reserved = db.execute('SELECT intent_id,asset,units FROM reservations WHERE run_id=%s AND units<>0 '
+                          'ORDER BY intent_id,asset', (c['run_id'],)).fetchall()
+    unfinished = db.execute('SELECT count(*) FROM execution_records WHERE run_id=%s AND NOT terminal',
+                            (c['run_id'],)).fetchone()[0]
 raw = bytes(projection)
+reservations = {}
+for intent, asset, units in reserved:
+    reservations.setdefault(intent, {})[asset] = int(units)
+if unfinished:
+    reservations['UNFINISHED_EXECUTION_RECORDS'] = {'count': int(unfinished)}  # refused by gate_a and X1-save
 portfolio = json.loads(raw)['portfolio']
 positions = {sym: dict(units=p['units'], decimals=p['decimals'], cost_basis_units=p['cost_basis_units'])
              for sym, p in sorted(portfolio['positions'].items())}
 export = dict(schema='HoldingsCarryOver.v1', source_run_id=c['run_id'], wallet_id=portfolio['wallet_id'],
               source_version=version, projection_sha256=hashlib.sha256(raw).hexdigest(),
-              reservations=portfolio.get('reservations', {}), positions=positions,
+              reservations=reservations, positions=positions,
               exported_at=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
 print('CARRY_OVER ' + json.dumps(export, sort_keys=True, separators=(',', ':')))
 PY

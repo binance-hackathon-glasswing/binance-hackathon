@@ -127,3 +127,40 @@ as well when u build s4, we can always add more gas reserve as needed".
 Remaining: Keegan reviews the carry-over accounting (opening equity at cost) and the recovery gas. Isaac approves the
 profile, probe and `signer.json`. Yao: B0, then the sheet. PR282's own review gates (FLAT-01) still apply, because
 S4 runs on its code.
+
+## PR284-RV01 review (2026-10-25, Claude Code; asked by the user to review and merge if there are no issues)
+
+Checked:
+- the carry-over acceptance in `gate_a.initial_state`/`prepare`/`check_inputs`;
+- `carry_over.require_scope`;
+- the caps-review recovery opt-in (`review_rehearsal_caps`);
+- the S4 profile's recovery gas;
+- the X1 export;
+- the run-5 sheet against SKILL.md §0.3, F-120 and F-125.
+
+**The code paths are sound:**
+- the export must equal the captured chain units;
+- a FINAL profile, missing `KIT_OPEN_STATE` hours and S3 are all refused;
+- a missing or extra export file is refused;
+- the report pins the export hash, and `gate_a_check` rebuilds the starting state from it.
+
+**Fixed in this review:**
+- **RV01-1 (bug, X1).** `x1-export-holdings.sh` took `reservations` from `projection['portfolio']`. That copy is never
+  updated, because `ledger_from` rebuilds reservations from the `reservations` table. The "no reservations in flight"
+  check therefore always passed. X1 now reads non-zero rows of the `reservations` table and counts unfinished
+  `execution_records`; either one makes the export's `reservations` non-empty, which X1-save and `gate_a` refuse.
+  `larp_execution` already has SELECT on both tables. Regression test:
+  `test_x1_reads_live_reservations_and_the_execution_barrier_not_the_projection_copy`.
+
+**Open, team decisions needed before run 5 (not changed here):**
+- **RV01-2 (rule).** Step B0 tops up the dev wallet's BNB by hand. The team's confirmed F-120 reading (SKILL.md §0.3 #1,
+  Yao Zhu 2026-10-16) allows manual USDT → BNB swaps only *before* a wallet's first agent trade. After that, only the
+  agent's own logged top-ups are allowed (G-13). The dev wallet's first agent trade was 2026-10-24 06:00Z (run 4), and
+  a transfer from another wallet is never-do #3. B0 therefore needs either:
+  - an explicit, recorded team decision that amends §0.3 for the dev phase; or
+  - a smaller reviewed S4 gas envelope that the wallet's current ≈0.00518 BNB covers. The four small run-4 positions
+    each need one exit child; the actual gas is about 0.0000242 BNB per approve and swap.
+- **RV01-3 (schedule).** `signing_end` is 2026-10-27T12:00Z, but F-125 says the development phase ends Mon Oct 26
+  (UTC, F-121). Final activation (install, F-125 self-check from Oct 27 00:00Z) needs the same primary and signer
+  hosts, which run 5 occupies until it is retired. Proposed: end run 5 by about 2026-10-26T20:00Z, and retire it as soon
+  as it is flat.

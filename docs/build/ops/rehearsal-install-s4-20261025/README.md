@@ -35,7 +35,7 @@ cp -R docs/build/ops/rehearsal-install-s4-20261025 deploy/activation/ && cd depl
 
 | Step | Who / where | Command | Done when |
 |---|---|---|---|
-| B0 | Yao (wallet owner) | Add BNB to the dev wallet: at least 0.0102 BNB more, so the wallet holds about 0.02 BNB | the chain monitor shows BNB ≥ 0.01536 plus headroom. Recovery's exit reserve is 0.01536 BNB (5 × 2 × 0.001536); Gate B and caps review refuse below it |
+| B0 | Yao (wallet owner) | **Blocked pending a team decision (IDEA-097 PR284-RV01-2): a manual top-up after the dev wallet's first agent trade (Oct 24) conflicts with SKILL.md §0.3 #1 / F-120 as the team reads it.** Add BNB to the dev wallet: at least 0.0102 BNB more, so the wallet holds about 0.02 BNB | the chain monitor shows BNB ≥ 0.01536 plus headroom. Recovery's exit reserve is 0.01536 BNB (5 × 2 × 0.001536); Gate B and caps review refuse below it |
 | D1 | Yao, Mac | `bash mac/d1-create-db.sh` (any time) | `S4-D1 PASS`, `D1_DONE` |
 | M1-local | Mac | `PY=<venv>/bin/python RC4=<CI RC4 bundle dir larp-d03bbb16cf51-x86_64> bash mac/m1-local-bundle.sh` (BUILD = canonical after this PR merges) | S4, carry-over and recovery checks pass; integrity checks pass; `M1_DONE` |
 | (M1) | Mac | `[BUILD=<sha>] bash mac/m1-fetch-bundle.sh <run id>`, if a mirror run is made | digest match, `build.env`, `M1_DONE` |

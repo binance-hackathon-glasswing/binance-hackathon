@@ -88,3 +88,13 @@ def test_x1_output_round_trips_into_the_s4_starting_state(tmp_path):
     busy = json.dumps(export(source_run_id=OLD_RUN, reservations={'r': {}}), sort_keys=True)
     (sheet / 'results/x1-export-holdings-stdout.txt').write_text('CARRY_OVER ' + busy + '\nX1_DONE\n')
     assert subprocess.run([sys.executable, '-I', str(sheet / 'mac/x1-save-export.py')]).returncode != 0
+
+
+def test_x1_reads_live_reservations_and_the_execution_barrier_not_the_projection_copy():
+    """Review fix (PR284): `projection['portfolio']['reservations']` is never updated (ledger_from rebuilds reservations
+    from the table), so X1's in-flight check must read the reservations table and unfinished execution records."""
+    x1 = text('host/x1-export-holdings.sh')
+    assert "FROM reservations WHERE run_id=%s AND units<>0" in x1
+    assert "FROM execution_records WHERE run_id=%s AND NOT terminal" in x1
+    assert "portfolio.get('reservations'" not in x1
+    assert 'reservations=reservations, positions=positions' in x1
