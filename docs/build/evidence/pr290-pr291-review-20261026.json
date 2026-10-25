@@ -1,0 +1,98 @@
+{
+  "schema": "PRReviewEvidence.v1",
+  "date_sgt": "2026-10-26",
+  "repository": "binance-hackathon-glasswing/binance-hackathon",
+  "base": "codex/system-testing-20261012",
+  "merge_method": "merge",
+  "records": [
+    "IDEA-097 S4-F1-RV01",
+    "IDEA-102 MC-RV01/02/03"
+  ],
+  "pr289": {
+    "merge_commit": "4b048d2fa3aa04a3074a55b6d4751b8d39b4704c",
+    "scope": "documentation and prior verification records"
+  },
+  "pr290": {
+    "runtime_test_source": "313c57581f54f9beecf1a80afea2f859f2ea116c",
+    "head": "6203526fc74f0af58ec6ccbfb64e8ca951856e93",
+    "merge_commit": "be31b37a1e085b94f9e8830f79bc1c57e041a883",
+    "focused": {
+      "passed": 71,
+      "subtests": 45,
+      "skipped": 0
+    },
+    "full": {
+      "passed": 2847,
+      "subtests": 4055,
+      "skipped": 11,
+      "failed": 0,
+      "seconds": 271.59
+    },
+    "review_fix": "Refund-tagged facts after any recorded intent broadcast are refused; real expiry producer/claimed exclusion and exact replay verified"
+  },
+  "pr291": {
+    "runtime_test_source": "7e31de348184f8daccc923cceac44ef07120587c",
+    "focused": {
+      "passed": 51,
+      "subtests": 32,
+      "skipped": 0,
+      "seconds": 27.05
+    },
+    "full": {
+      "passed": 2858,
+      "subtests": 4055,
+      "skipped": 11,
+      "failed": 0,
+      "seconds": 280.05
+    },
+    "acceptance": {
+      "MC1": "PASS_OFFLINE",
+      "MC2": "PASS_OFFLINE",
+      "MC3": "PASS_OFFLINE",
+      "MC4": "PASS_OFFLINE",
+      "MC5": "PASS_OFFLINE",
+      "MC6": "PASS_OFFLINE",
+      "MC7": "PASS_OFFLINE",
+      "MC8": "PASS_OFFLINE"
+    },
+    "initial_full": {
+      "source": "61a1dba1",
+      "passed": 2861,
+      "failed": 1,
+      "skipped": 11,
+      "cause": "Existing RC1 fixture assumed immediate mandatory retries; updated to next-slot pacing; removed four duplicate collected fixture tests"
+    }
+  },
+  "environment": {
+    "os": "Linux aarch64",
+    "python": "3.12.15",
+    "postgresql": "14.24",
+    "image": "larp-test:pr282",
+    "database": "disposable local container",
+    "working_copy": "writable disposable copy; local Git index and registered origin"
+  },
+  "skips": {
+    "systemd": 5,
+    "bubblewrap": 3,
+    "root_directory_permissions": 1,
+    "optional_private_source_fixture": 1,
+    "optional_recorded_market_fixture": 1
+  },
+  "ci": {
+    "status": "BILLING_BLOCKED_BEFORE_JOB_START",
+    "runs": [
+      40215592208,
+      40216077210
+    ],
+    "annotation": "The job was not started because recent account payments have failed or your spending limit needs to be increased."
+  },
+  "deployed": false,
+  "real_wallet_or_provider_calls": false,
+  "remaining_owners": {
+    "release_and_runtime": "Keegan",
+    "strategy": "Keith",
+    "gas_and_signer": "Isaac",
+    "host_and_final_wallet": "Yao",
+    "record": "docs/INCOMPLETE_WORK.md IDEA-093 FS1"
+  }
+}

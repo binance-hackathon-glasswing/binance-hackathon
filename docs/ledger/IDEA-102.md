@@ -3,7 +3,7 @@
 - Date / author: 2026-10-26 (SGT) / Yao's decision in a Claude Code session ("yes change it"). The record and spec are
   by Claude Code; the implementation is for a teammate (ChatGPT/Codex). Review: Keith (strategy rules), Keegan
   (runtime).
-- Status: **open — decided; spec and pass criteria MC1–MC8 pre-registered below. Not implemented.**
+- Status: **implemented and reviewed; MC1–MC8 PASS offline at `7e31de34`. Exact release/owner/host acceptance remains with the FS1 owners.**
 - Related: IDEA-076 Q14 (S1 per-leg/session attempt budget), IDEA-089 S2-9 (3 → 5 attempts),
   IDEA-097 S4-F1 (PR290, refund of never-claimed attempts), IDEA-093 FS1 (final profile), IDEA-084 PF-04 (final
   calendar).
@@ -95,3 +95,38 @@ assuming immediate mandatory retry after an abort. New spacing intentionally def
 slot. Update the real-execution recovery harness to advance only on MANDATORY_RETRY_SPACING; preserve all other
 stop conditions. Require transient-abort recovery to reach dust and persistent adverse pricing to keep bounded,
 spaced retries above five while other names sell and allowances stay clean. Repeat focused recovery and full suite.
+
+## MC-RV03 — final review and verification results (2026-10-26 SGT)
+
+Tested runtime/test source: `7e31de348184f8daccc923cceac44ef07120587c`, containing merged PR289/290 and the
+reviewed mandatory retry implementation. All decision/trading/logging changes were pushed before execution.
+
+- **MC1/MC4 PASS:** a sixth mandatory SELL is planned and admitted; discretionary BUY/SELL retains its cap.
+  Schema, session, leg, interval, exact token/amount and reserved/closed ordinal checks remain enforced.
+- **MC2 PASS:** same-leg same-slot requests are refused; matching committed quote children reuse their parent,
+  including ordinals above the configured cap. Slots are independent per leg and survive restarts/refunds.
+- **MC3/MC5 PASS:** existing execution-bounds tests pass unchanged. Integrity/journal/ownership/clock, market, gas
+  and signing-window refusals retain their prior behavior. No gas, fee, allowance/preflight or signer cap changed.
+- **MC6 PASS:** optional historical budgets load; unknown legs, malformed/non-integer/negative/future timestamps
+  are refused. Last reservation times survive a count refund and session rollover. No migration/profile key added.
+- **MC7 PASS:** PostgreSQL historical-format journals replan/replay byte-exactly under the current builder; new
+  journals containing ordinal9, timestamp state and same-slot refusals replay exactly without live ports.
+- **MC8 PASS:** eight synthetic pre-swap price aborts followed by a ninth intent fill reach dust within the window,
+  with one new attempt per slot and no reservations remaining. The real executor/allowance recovery fixture also
+  reaches flat after a transient abort; a persistently adverse name retries beyond five while the other four sell.
+
+Focused final run: **51 tests /32 subtests /0 skips**,27.05s. Full pinned Linux aarch64/Python3.12.15/PostgreSQL14.24
+run: **2858 tests /4055 subtests PASS /11 skipped /0 failures**,280.05s. Disposable PostgreSQL and a writable
+copy with a local Git index/registered origin. The skips are five opt-in systemd, three bubblewrap, one root-mode
+permission case and two optional external/private fixtures; these remain unrun. No real providers, wallet or deployment.
+
+The first combined full run at61a1dba1 had2861 passes/1 failure/11 skips: RC1 still assumed an immediate retry.
+MC-RV02 corrected that assumption to the requested cadence; four accidentally recollected base-fixture tests were
+also removed from the new module. Final counts above are one complete green run, not combined rerun counts.
+
+GitHub run40216077210 started no jobs: its runtime annotation reports failed recent account payments or spending
+limits. Local pinned acceptance is distinct from hosted CI. CAP-01 implementation/review is complete and removed
+from the live checklist. Exact-source release, Keith/Keegan strategy/runtime acceptance, Isaac gas/signer coverage
+and Yao host/final-wallet acceptance remain in the existing IDEA-093 FS1 checklist; this source merge installs nothing.
+
+Machine receipt: [PR290/291 review](../build/evidence/pr290-pr291-review-20261026.json).
