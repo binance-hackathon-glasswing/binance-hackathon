@@ -223,6 +223,21 @@ class HostedRehearsalAssembly(unittest.TestCase):
             tool.collect(packet, self.root / 'bad-private', BUILD, bindings=self.bindings, now=NOW,
                          allowance_recovery='yes')
 
+    def test_released_reservations_of_a_traded_source_run_are_not_in_flight(self):
+        # IDEA-097: run 4 traded, so the probe lists its released reservation rows with zero units per asset.
+        packet = deepcopy(self.packet)
+        packet['in_flight']['reservations'] = {'USDT': dict(count=9, units=0), 'INCOMING:SKHYB': dict(count=2, units=0)}
+        self.run_hosted('released', packet=packet)
+        self.assertTrue((self.root / 'released-signer/signer.json').exists())
+        for name, value in (('held', {'USDT': dict(count=1, units=5)}), ('malformed', {'USDT': dict(count=1)}),
+                            ('boolean', {'USDT': dict(count=1, units=False)}), ('listed', ['r'])):
+            with self.subTest(name):
+                bad = deepcopy(self.packet)
+                bad['in_flight']['reservations'] = value
+                with self.assertRaises(AssertionError):
+                    self.run_hosted(name, packet=bad)
+                self.assertFalse((self.root / (name + '-signer')).exists())
+
     def test_uncovered_numeric_review_writes_no_candidate(self):
         # The real reviewer on a packet without quotes: missing coverage, never a signer.json.
         result, _, digest = tool.assemble_hosted(self.packet, self.root / 'real-private', self.bindings,

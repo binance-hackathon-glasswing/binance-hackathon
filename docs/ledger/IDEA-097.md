@@ -185,3 +185,24 @@ Checked:
 - PR284-RV01-3 validation (Claude Code, PostgreSQL 16.15 / Python 3.12.3): full suite at `477ac4f1` **2724 passed,
   11 skipped, 4018 subtests, 0 failed**; S4/run-5/Gate A/S2/S3/hosted-assembly suites 103 passed. Merged on the user's
   instruction; B0 (RV01-2) remains a blocked run-sheet step.
+
+## M3-R1 — M3 treats released reservations as in flight (2026-10-25 ~13:55Z; pre-registered before the fix was tested)
+
+- **Finding.** All three M3 attempts (13:21Z, and 13:45–13:49Z with run 4 idle) refused with
+  `SIGNER_ASSEMBLY_REFUSED`. In every one, only "nothing in flight" failed; assets MATCH, nonce settled, no allowance
+  open.
+  - The LD02 probe reports `in_flight.reservations` as `SELECT asset, count(*), sum(units) FROM reservations GROUP BY
+    asset`, which gives run 4's released rows: 8 assets, all with `units: 0`.
+  - `review_rehearsal_caps.collect` required that dict to be empty. A source run that has traded can therefore never
+    pass M3. Run 3, M3's previous source, never traded.
+- **Fix.** Only positive units are in flight, as X1 already reads them (PR284-RV01-1).
+- **Pass when (M3-R1):**
+  - a packet listing released rows with zero units assembles;
+  - positive units, a missing `units`, a boolean `units` and the old list form are still refused, with no candidate
+    written;
+  - the new test fails on canonical `9fe5fb07` and passes after the fix;
+  - the hosted-assembly suite passes.
+- **M3-R1 result: PASS.**
+  - The new test fails on canonical `9fe5fb07` (the old check refuses run 4's released rows).
+  - After the fix it passes, as do the hosted-assembly, S1 caps, S4 and run-5 sheet suites (39 passed).
+  - Full suite without PostgreSQL: 2178 passed, 0 failed. The change touches no database code.

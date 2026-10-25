@@ -67,6 +67,16 @@ def hosted(bindings):
     return dict(connection, database_user='larp_execution')
 
 
+def held(reservations):
+    """True while any reservation holds units. The LD02 probe groups the reservations table by asset as
+    {asset: {count, units}}; released rows stay with zero units, so a source run that has traded still lists them
+    (IDEA-097: run 4). Only positive units are in flight, as X1 reads them (PR284-RV01-1)."""
+    if type(reservations) is dict:
+        return any(type(r) is not dict or type(r.get('units')) is not int or r['units'] != 0
+                   for r in reservations.values())
+    return bool(reservations)
+
+
 def chain_start(holdings, portfolio, usdt_deficit):
     """SJ-04-A1: a new run's holdings are the finalized chain values. Stocks must match the source ledger;
     USDT may fall short by exactly the declared seed debit; BNB may only exceed it."""
@@ -97,7 +107,7 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
     require(packet['holdings']['status'] == 'MATCH' or bindings is not None)
     require(type(usdt_deficit) is int and usdt_deficit >= 0 and (bindings is not None or usdt_deficit == 0))
     require(packet['holdings']['latest_nonce'] == packet['holdings']['pending_nonce'])
-    require(not packet['in_flight']['reservations'] and not packet['in_flight']['execution_pending'])
+    require(not held(packet['in_flight']['reservations']) and not packet['in_flight']['execution_pending'])
     # IDEA-097 S4: with IDEA-096 allowance recovery opted in, the new run clears a leftover allowance itself.
     require(type(allowance_recovery) is bool)
     require(allowance_recovery or not any(packet['router']['allowances_to_router'].values()))
