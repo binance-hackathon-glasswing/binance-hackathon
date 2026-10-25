@@ -2,12 +2,13 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 import time
 
 from larp.contracts import ContractError, Document
 from larp.runtime.database import IamPostgresStore, check_iam_settings
-from larp.runtime.maintenance import Maintenance, HOUR_MS
+from larp.runtime.maintenance import Maintenance, HOUR_MS, VerificationState
 from larp.storage.archive import S3Archive
 from larp.storage.backup import GZIP_MAGIC, restore, restore_chain
 from larp.storage.postgres import PostgresStore, Unavailable, doc
@@ -103,7 +104,10 @@ def main(argv=None):
         worker = Maintenance(IamPostgresStore(c, clients['rds']), archive,
                              backup_interval_ms=c['backup_interval_hours'] * HOUR_MS,
                              max_attempts=c['max_attempts'], retry_ms=c['retry_seconds'] * 1000,
-                             max_payload_bytes=c['max_archive_bytes'])
+                             max_payload_bytes=c['max_archive_bytes'],
+                             # IDEA-095: systemd's StateDirectory= holds the verification checkpoint between runs.
+                             verification=(VerificationState(os.environ['STATE_DIRECTORY'])
+                                           if os.environ.get('STATE_DIRECTORY') else None))
         failures = []
 
         def deliver():
@@ -114,6 +118,10 @@ def main(argv=None):
 
         def report():
             health = worker.health(c['run_id'], int(time.time() * 1000)).read()
+            overdue = worker.verification_reasons(c['run_id'], int(time.time() * 1000))
+            if overdue:
+                health['healthy'] = False
+                health['reasons'] = sorted(set(health['reasons'] + overdue))
             if failures:
                 health['healthy'] = False
                 health['reasons'] = sorted(set(health['reasons'] + ['ARCHIVE_PREPARATION_FAILED']))
@@ -134,6 +142,12 @@ def main(argv=None):
             try:
                 if worker.prepare_backup(c['run_id'], int(time.time() * 1000)) is not None:
                     deliver()
+            except Exception as exc:
+                failures.append(type(exc).__name__)
+            # IDEA-095: anchors verify from the saved checkpoint; the whole journal is re-read once per backup
+            # interval, last, so a run killed inside it has already sent its anchor, health and backup.
+            try:
+                worker.full_check(c['run_id'], int(time.time() * 1000))
             except Exception as exc:
                 failures.append(type(exc).__name__)
             health = report()

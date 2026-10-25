@@ -1,5 +1,9 @@
 """Durable archive maintenance, independent of model and trade scheduling."""
 
+import json
+import os
+from pathlib import Path
+
 from larp.audit.delivery import deadline_breaches, unlogged_rounds
 from larp.contracts import ContractError, Document
 from larp.storage.backup import GZIP_MAGIC, export_segment
@@ -15,6 +19,37 @@ ZERO_HEAD = '0' * 64
 # payload after it, PERMANENT with the error class if it fails. A PREPARING row older than this was left by a killed
 # process (the unit's TimeoutStartSec is shorter) and is closed as PreparationInterrupted.
 PREPARING_STALE_MS = 30 * 60000
+
+
+class VerificationState:
+    """The archive host's verification checkpoint and full-check times, one JSON file per run in the unit's
+    StateDirectory (IDEA-095). It lies outside the database's trust domain, as the runtime's in-memory checkpoint does.
+    A file that is missing or does not parse as this run's state reads as empty: the next anchor verifies in full."""
+    SCHEMA = 'ArchiveVerification.v1'
+
+    def __init__(self, directory):
+        self.directory = Path(directory)
+
+    def path(self, run_id):
+        return self.directory / (digest(run_id.encode('utf-8')) + '.json')
+
+    def load(self, run_id):
+        try:
+            value = json.loads(self.path(run_id).read_bytes())
+        except (OSError, ValueError):
+            return {}
+        return value if type(value) is dict and value.get('schema') == self.SCHEMA and value.get('run_id') == run_id \
+            else {}
+
+    def save(self, run_id, **changes):
+        value = dict(self.load(run_id), **changes, schema=self.SCHEMA, run_id=run_id)
+        path = self.path(run_id)
+        partial = path.with_name(path.name + '.partial')
+        with open(partial, 'wb') as out:
+            out.write(json.dumps(value, sort_keys=True, separators=(',', ':')).encode('utf-8'))
+            out.flush()
+            os.fsync(out.fileno())
+        os.replace(partial, path)
 
 
 def verify_anchors(store, run_id, anchors):
@@ -42,7 +77,8 @@ def verify_anchors(store, run_id, anchors):
 
 class Maintenance:
     def __init__(self, store, archive, *, backup_interval_ms, max_attempts=8,
-                 retry_ms=60000, max_payload_bytes=64 * 1024 * 1024, preparing_stale_ms=PREPARING_STALE_MS):
+                 retry_ms=60000, max_payload_bytes=64 * 1024 * 1024, preparing_stale_ms=PREPARING_STALE_MS,
+                 verification=None):
         for number in (backup_interval_ms, max_attempts, retry_ms, max_payload_bytes, preparing_stale_ms):
             if type(number) is not int or number < 1:
                 raise ContractError('Maintenance budgets must be positive integers')
@@ -52,6 +88,7 @@ class Maintenance:
         self.backup_interval_ms, self.max_attempts = backup_interval_ms, max_attempts
         self.retry_ms, self.max_payload_bytes = retry_ms, max_payload_bytes
         self.preparing_stale_ms = preparing_stale_ms
+        self.verification = verification  # a VerificationState, or None: every anchor verifies in full
 
     def prepare(self, run_id, now_ms):
         self.prepare_anchor(run_id, now_ms)
@@ -79,9 +116,9 @@ class Maintenance:
             needs_anchor = not db.execute('SELECT 1 FROM archive_outbox WHERE run_id=%s '
                                           "AND kind='anchor' AND slot_ms=%s", (run_id, slot)).fetchone()
         if needs_anchor:
-            # Full verification uses a read-only snapshot, never a wallet lock.
+            # Verification uses a read-only snapshot, never a wallet lock.
             # The anchor identifies that snapshot even if new rounds commit later.
-            run = self.store.verified_snapshot(run_id)
+            run = self._verified(run_id, now_ms)
             if run['quarantined']:
                 raise Conflict('Quarantined runs cannot prepare new anchors')
             payload = doc(dict(schema='Anchor.v2', run_id=run_id, slot_ms=slot,
@@ -89,6 +126,58 @@ class Maintenance:
                                owner_epoch=run['epoch']))
             with self.store.transaction() as db:
                 self._enqueue(db, run_id, 'anchor', slot, payload)
+
+    def _verified(self, run_id, now_ms):
+        """Full verification, or, with a saved checkpoint, only the events after it (IDEA-095): each run of
+        `operations once` is a new process, and a full one reads the whole journal from the database."""
+        if self.verification is None:
+            return self.store.verified_snapshot(run_id)
+        seeded = self.store.adopt_checkpoint(run_id, self.verification.load(run_id).get('checkpoint'))
+        try:
+            run = self.store.verified_snapshot(run_id, full=not seeded)
+        except IntegrityError:
+            self._keep(run_id, checkpoint=None)  # the next run verifies in full
+            raise
+        self._keep(run_id, checkpoint=self.store.export_checkpoint(run_id), **({} if seeded else dict(full_ms=now_ms)))
+        return run
+
+    def _keep(self, run_id, **changes):
+        """Save after an anchor's verification. An unwritable state directory never costs the anchor: later anchors
+        then verify in full, and the full check's own save fails and reports it."""
+        try:
+            self.verification.save(run_id, **changes)
+        except OSError:
+            pass
+
+    def full_check(self, run_id, now_ms):
+        """Once per backup interval, last in `operations once` (IDEA-095): verify the whole journal. The attempt is
+        saved before it starts, so a run killed inside it (TimeoutStartSec) is not repeated until the next interval. A
+        failure discards the checkpoint: the next anchor verifies in full and refuses. True if a check ran."""
+        if self.verification is None:
+            return False
+        saved = self.verification.load(run_id)
+        slot = now_ms // self.backup_interval_ms * self.backup_interval_ms
+        if any(type(saved.get(key)) is int and saved[key] >= slot for key in ('full_ms', 'attempt_ms')):
+            return False
+        self.verification.save(run_id, attempt_ms=now_ms,
+                               **({} if type(saved.get('first_attempt_ms')) is int else dict(first_attempt_ms=now_ms)))
+        try:
+            self.store.verified_snapshot(run_id)
+        except IntegrityError:
+            self.verification.save(run_id, checkpoint=None)
+            raise
+        self.verification.save(run_id, checkpoint=self.store.export_checkpoint(run_id), full_ms=now_ms)
+        return True
+
+    def verification_reasons(self, run_id, now_ms):
+        """FULL_VERIFICATION_OVERDUE when no full verification completed within two backup intervals (IDEA-095)."""
+        if self.verification is None:
+            return []
+        saved = self.verification.load(run_id)
+        # Before any full verification completed, the clock starts at the first full-check attempt.
+        since = next((saved[key] for key in ('full_ms', 'first_attempt_ms') if type(saved.get(key)) is int), None)
+        return ['FULL_VERIFICATION_OVERDUE'] if since is not None and now_ms - since > 2 * self.backup_interval_ms \
+            else []
 
     def prepare_backup(self, run_id, now_ms):
         """Prepare at most one backup segment (IDEA-094). Returns the slot attempted, or None. A refused or failed
@@ -139,6 +228,9 @@ class Maintenance:
                                   (run_id, slot, now_ms, version)).fetchone()
         if not inserted:
             return None
+        if self.verification is not None and self.store.export_checkpoint(run_id) is None:
+            # An incident backup in a later run of the hour: continue from the saved checkpoint (IDEA-095).
+            self.store.adopt_checkpoint(run_id, self.verification.load(run_id).get('checkpoint'))
         try:
             # Snapshot in a separate repeatable-read transaction, taken after `version` was read.
             segment = export_segment(self.store, max_bytes=self.max_payload_bytes, base=base)

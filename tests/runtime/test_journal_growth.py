@@ -56,9 +56,9 @@ class Growth(Harness):
             self.store = saved
 
     def anchors(self):
-        with self.store.transaction() as db:
-            return [Document(bytes(r[0])).read() for r in db.execute(
-                "SELECT payload FROM archive_outbox WHERE kind='anchor' ORDER BY slot_ms")]
+        """The delivered anchors, oldest first."""
+        found = [Document(self.client.objects[key]['Body']).read() for key in self.objects('anchor')]
+        return sorted(found, key=lambda a: a['slot_ms'])
 
     def saved(self):
         from larp.runtime.maintenance import VerificationState
@@ -125,6 +125,15 @@ class Anchors(Growth):
         self.assertEqual(1, code)
         self.assertIn('IntegrityError', health['preparation_error'])
         self.assertEqual([T0], [a['slot_ms'] for a in self.anchors()])  # no anchor for the changed journal
+
+    def test_sd2_an_unwritable_state_directory_never_costs_the_anchor(self):
+        grow(self, 0, 4, audit_every=None)
+        self.state = self.state / 'missing'
+        (code, health), calls = self.run_fresh(T0 + MINUTE)
+        self.assertEqual(None, calls[0])
+        self.assertEqual(1, len(self.anchors()))
+        self.assertEqual(1, code)  # the full check cannot record its attempt, so it does not run, and says so
+        self.assertIn('FileNotFoundError', health['preparation_error'])
 
     def test_sd4_without_a_state_directory_every_anchor_verifies_in_full(self):
         grow(self, 0, 4, audit_every=None)
@@ -195,6 +204,38 @@ class FullCheck(Growth):
                 (code, health), _ = self.run_fresh(now)
                 self.assertEqual(overdue, 'FULL_VERIFICATION_OVERDUE' in health['reasons'])
                 self.assertEqual(int(overdue), code)
+
+
+    def test_sd3_a_full_check_that_never_completes_is_reported_after_two_intervals(self):
+        grow(self, 0, 4, audit_every=None)
+        self.run_fresh(T0 + MINUTE, state=False)  # this hour's anchor exists before the state directory does
+        (code, health), _ = self.run_fresh(T0 + 2 * MINUTE, kill_full=False)
+        self.assertEqual(0, code, health)  # no completed full check yet, and not overdue
+        self.assertEqual(T0 + 2 * MINUTE, self.saved()['full_ms'])
+        self.saved_state_without_full()
+        for day, overdue in ((1, False), (2, False), (3, True)):
+            with self.assertRaises(Killed):
+                self.run_fresh(T0 + day * DAY_MS + 3 * MINUTE, kill_full=True)
+            (code, health), _ = self.run_fresh(T0 + day * DAY_MS + 4 * MINUTE)
+            self.assertEqual(overdue, 'FULL_VERIFICATION_OVERDUE' in health['reasons'], day)
+
+    def saved_state_without_full(self):
+        from larp.runtime.maintenance import VerificationState
+        state = VerificationState(self.state)
+        value = state.load('run')
+        value.pop('full_ms')
+        value.pop('first_attempt_ms', None)
+        state.path('run').write_text(json.dumps(value))
+
+    def test_sd1_an_incident_backup_later_in_the_hour_continues_from_the_checkpoint(self):
+        grow(self, 0, 4, audit_every=None)
+        self.run_fresh(T0 + MINUTE)
+        self.run_fresh(T0 + HOUR_MS + MINUTE)  # this hour's anchor: the next run has none to prepare
+        grow(self, 4, 2, audit_every=None, incident_at=(5,))
+        (code, health), calls = self.run_fresh(T0 + HOUR_MS + 30 * MINUTE)
+        self.assertEqual(0, code, health)
+        self.assertEqual(2, len(self.objects('backup')))  # the daily segment and the incident segment
+        self.assertNotIn(None, calls)
 
 
 class TradingCycle(Growth):

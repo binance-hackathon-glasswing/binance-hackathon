@@ -589,17 +589,70 @@ class PostgresStore:
             raise IntegrityError('Restore behind external authority/anchor')
         return run['head']
 
-    def journal(self,run_id,*,after_version=0,through_version=None):
+    def journal(self,run_id,*,after_version=0,through_version=None,full=True):
+        """The journal documents after `after_version`. full=False (a bounded suffix read inside a trading cycle,
+        IDEA-095) continues from this process's checkpoint instead of re-reading the whole journal, and checks the
+        returned rows' hash chain from the head stored at `after_version`."""
         if (type(after_version) is not int or after_version<0 or
                 (through_version is not None and
                  (type(through_version) is not int or through_version<after_version))):
             raise ContractError('Invalid journal sequence bounds')
-        self.verify(run_id)
+        if full:
+            self.verify(run_id)
+        else:
+            self.verified_snapshot(run_id,full=False)
         with self.transaction() as db:
-            return [Document(bytes(r[0])) for r in db.execute(
-                'SELECT batch FROM events WHERE run_id=%s AND sequence>%s '
-                'AND (%s::bigint IS NULL OR sequence<=%s) ORDER BY sequence',
-                (run_id,after_version,through_version,through_version))]
+            rows=db.execute('SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events '
+                            'WHERE run_id=%s AND sequence>%s AND (%s::bigint IS NULL OR sequence<=%s) ORDER BY sequence',
+                            (run_id,after_version,through_version,through_version)).fetchall()
+            head=ZERO if after_version==0 else (db.execute('SELECT head FROM events WHERE run_id=%s AND sequence=%s',
+                                                           (run_id,after_version)).fetchone() or (None,))[0]
+        if not full and head is None:
+            raise IntegrityError('Truncated or rewound journal')
+        out=[]
+        for raw,bhash,ehash,previous,stored,sequence in rows:
+            raw=bytes(raw)
+            if not full and (digest(raw),digest(doc(Document(raw).read()['event']).payload),previous,stored,sequence) != (
+                    bhash,ehash,head,digest(bytes.fromhex(head)+bytes.fromhex(digest(raw))),after_version+len(out)+1):
+                raise IntegrityError('Journal corruption')
+            head=stored
+            out.append(Document(raw))
+        return out
+
+    def export_checkpoint(self,run_id):
+        """This process's verified checkpoint as JSON-ready data, or None (IDEA-095: kept outside the database)."""
+        with self._checkpoint_lock:
+            c=self._checkpoints.get(run_id)
+        if c is None:
+            return None
+        return dict(version=c['version'],head=c['head'],fields=c['fields'],initial=c['initial'],chunks=c['chunks'],
+                    reservations=sorted([intent,asset,units] for (intent,asset),units in c['reservations'].items()),
+                    ids={table:sorted(c['ids'][table]) for table,*_ in OUTBOXES})
+
+    def adopt_checkpoint(self,run_id,value):
+        """Continue from a checkpoint `export_checkpoint` wrote. Returns False, adopting nothing, unless the value is
+        well formed; whether the database still extends it is checked by the next verification (`_continues`)."""
+        hexes=lambda v:type(v) is str and len(v)==64 and all(ch in '0123456789abcdef' for ch in v)
+        try:
+            c=dict(version=value['version'],head=value['head'],fields=value['fields'],initial=value['initial'],
+                   chunks=value['chunks'],
+                   reservations={(intent,asset):units for intent,asset,units in value['reservations']},
+                   ids={table:frozenset(value['ids'][table]) for table,*_ in OUTBOXES})
+        except (KeyError,TypeError,ValueError):
+            return False
+        if (type(value)!=dict or set(value)!={'version','head','fields','initial','chunks','reservations','ids'}
+                or set(value['ids'])!={table for table,*_ in OUTBOXES}
+                or type(c['version']) is not int or c['version']<0 or type(c['chunks']) is not int or c['chunks']<0
+                or not hexes(c['head']) or not hexes(c['initial'])
+                or not (c['fields'] is None or (type(c['fields']) is dict and set(c['fields'])==set(FIELDS)
+                                                and all(hexes(v) for v in c['fields'].values())))
+                or any(type(k) is not str for key in c['reservations'] for k in key)
+                or any(type(u) is not int for u in c['reservations'].values())
+                or any(type(i) is not str for ids in c['ids'].values() for i in ids)):
+            return False
+        with self._checkpoint_lock:
+            self._checkpoints[run_id]=c
+        return True
 
     def metrics(self,run_id):
         with self.transaction() as db:
