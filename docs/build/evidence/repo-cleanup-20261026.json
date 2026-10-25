@@ -1356,6 +1356,8 @@
       "reason": "protected"
     }
   ],
-  "mutation_state": "PLANNED",
-  "policy": "Only ancestor-proven refs; preserve main, canonical, open PR heads, original current branch, unique histories, and checked-out local branches. Ordinary atomic push deletion uses Git old-ref comparison; no force option or history rewrite."
+  "mutation_state": "COMPLETED",
+  "policy": "Only ancestor-proven refs; preserve main, canonical, open PR heads, original current branch, unique histories, and checked-out local branches. Ordinary atomic push deletion uses Git old-ref comparison; no force option or history rewrite.",
+  "remote_deleted": 137,
+  "local_deleted": 23
 }
