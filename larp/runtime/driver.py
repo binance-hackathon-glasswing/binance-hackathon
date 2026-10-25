@@ -176,12 +176,18 @@ class ShadowExecution:
         return closed
 
 
-def not_submitted(current, round_id, intent_id, event_id, now_ms, reason, round_terminal):
-    """A final NOT_SUBMITTED fact for an intent that never reached the chain (larp/ports.py I4)."""
-    return dict(schema='ExecutionObservation.v1', run_id=current['run_id'], wallet_id=current['wallet_id'],
+def not_submitted(current, round_id, intent_id, event_id, now_ms, reason, round_terminal, *, refund=False):
+    """A final NOT_SUBMITTED fact for an intent that never reached the chain (larp/ports.py I4).
+
+    `refund` (IDEA-097 S4-F1) marks an expired command the execution service never claimed: it never reached the
+    signer or the chain, so the settlement reducer gives its S1 attempt back."""
+    fact = dict(schema='ExecutionObservation.v1', run_id=current['run_id'], wallet_id=current['wallet_id'],
                 round_id=round_id, intent_id=intent_id, event_id=event_id, kind='NOT_SUBMITTED',
                 observed_at=iso(now_ms), settlement='FINAL', origin='EXECUTION_RECONCILER', intent_terminal=True,
                 round_terminal=round_terminal, reason=reason)
+    if refund:
+        fact['attempt_refund'] = True
+    return fact
 
 
 class ServiceExecution:
@@ -331,7 +337,7 @@ class ServiceExecution:
             final = set(record.get('final_intents', [])) | {intent['intent_id']}
             remaining = [i for i in record['plan'].get('intents', []) if i['intent_id'] not in final]
             fact = not_submitted(current, round_id, intent['intent_id'], 'expired:' + intent['intent_id'], now_ms,
-                                 EXPIRED_REASON, not remaining)
+                                 EXPIRED_REASON, not remaining, refund=True)
             c.observe(fact['event_id'], Document.from_dict(fact), self.reducer)
             ended.append(intent['intent_id'])
         return ended
