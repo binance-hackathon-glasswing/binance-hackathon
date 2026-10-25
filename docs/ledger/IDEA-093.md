@@ -1,5 +1,9 @@
 # IDEA-093 — FS1 (first built as S4): the final live solution, 24/7 with every S2 fix and AIand/ChatGPT routing
 
+> PR278-RV01 is an independent review requested by Yao on 2026-10-25 SGT. The original results below describe
+> earlier commits. The review's criteria/results at the end govern its changes; no profitability or deployment
+> approval follows from offline tests. PR278 must remain open for teammate review.
+
 - Date / author: 2026-10-25 SGT (2026-10-24 ~16:30Z) / team request in a Claude Code session on Keith's machine (request and the
   hours choice below); Claude Code (design, implementation, record). Strategy owner for review: Keith
 - Status: **open — implemented and tested offline 2026-10-25 (S4-1..S4-9, S4R-1..S4R-5 and FS1-1..FS1-7 PASS, local
@@ -267,3 +271,30 @@ pass without it (they are guards on behaviour that already existed for this prof
 | FS1-5 | **PASS.** With FS1's settings on a Saturday after Friday's close, a verified Item 4.02 assessment (the repository's synthetic rule model in place of AIand, through the same gate and verifier) gives an EXIT target, a `CLASS_1_EXIT` reduction and a mandatory SELL intent |
 | FS1-6 | **PASS.** A stock-free capture initializes; one unit of any of the five stocks is refused at install; FS1 has no scheduled flatten |
 | FS1-7 | **PASS (local replica).** Clean clone of `c7242513`: **2684 passed, 9 skipped, 4004 subtests, 0 failed**; `pip check`, offline demo, Docker build and run PASS; x86_64 bundle `7304b7ba…` and `test_host_bundle.sh` PASS for primary and signer. Terraform not rerun: no `deploy/` or workflow file changed in this entry. Systemd conditions not run |
+
+## PR278-RV01 — prospective review criteria (2026-10-25 SGT)
+
+User request: thorough final-strategy review with formal methods and primary online literature on price prediction
+and crowd behavior; implement necessary fixes, keep PR278 open. Reviewed original head `da5af854`, based on current
+canonical `4b164649`. No host, wallet, credentials, paid model calls or market-data collection is part of this review.
+Implementation/tests are committed and pushed before execution (SKILL F-61). Synthetic checks establish code
+properties, never an economic edge. Literature and the existing EXP008 report cannot establish FS1's future profit.
+
+### Findings and acceptance criteria, before implementation or tests
+
+| ID | Finding / proposed repair | Pass criterion |
+|---|---|---|
+| RV01-1 | PF02 recovery is absent: the 8% stop is permanently OR-latched. Add an explicit profile opt-in `run_halt_recovery_bps=500` to FS1/FS1-R, leaving historical profiles unchanged. | Stop at drawdown >=8%; clear only strictly below5% with complete fresh valuation, all health gates including reconciled balances true and no reservations/abnormal accounting. Persist the original peak, daily halt and deep cut; boundaries, restart serialization, repeated paths and unhealthy inputs checked. |
+| RV01-2 | Entry cost checks use quoted output, overlooking the weaker authorized minimum (20bp in FS1). | Evaluate BUY cost/reserve/50bp cap against `min_receive_units` at the current mark, plus explicit fee and expected gas. Acceptable quoted price but unacceptable authorized fill is refused. Exact-rational boundary and monotonicity checks; full gas reservations stay unchanged; mandatory exits keep their bypass. This bounds modeled cost, not realized gas or future prices. |
+| RV01-3 | At200USDT a95%->60% equal-weight cut is about14USDT/name, below the18.637USDT entry minimum, and policy silently drops its rebalance. Introduce opt-in `s1_reduction_cost_cap_bps=50` for FS1/FS1-R. | A pending S1 level decrease may quote/sell below the entry minimum only if its actual authorized-minimum SELL proceeds, fee and expected gas satisfy both50bp and the cash cost reserve. Rejected/blocked reductions remain pending through restart; no drift sale or mandatory classification is introduced; entry minimum, attempt/cadence/openState/signing gates unchanged. |
+| RV01-4 | `--fs1-rehearsal` accepts non-FS1 weights, a MODEL limiter or different attempt limits, so the claimed final-settings rehearsal can test another strategy. | Apply the same block validator as FINAL and require the two-child reserve. Refuse changed weights/mode/attempts; rebuild both candidates byte-for-byte with new profile pins; S2/S3 historical candidates remain byte-identical. |
+| RV01-5 | Missing live trend series, limited limiter inputs, no licensed crowd/return prediction input or held-out alpha evidence. | Record exact effective behavior, distinguish empirical vs synthetic evidence, and deliver an after-cost decision criterion and chronological validation design. No fabricated alpha, silent signal activation, tuning on dev PnL or replacement of frozen EXP007. Explicit owner decisions remain in the backlog. |
+| RV01-6 | Research and integration acceptance | Check primary sources for momentum/underreaction, attention/herding/disagreement, estimation risk and overfitting; record access level and applicability. Run focused counterexamples, finite state/exact arithmetic checks and full pinned Python3.12/PostgreSQL14 suite; report skips/environment limits. Verify candidate hashes, preparation, replay and existing execution regressions. Keep PR open/unmerged. |
+
+Formal scope: algebraic invariants plus bounded exhaustive state/path checks in ordinary Python using integers and
+fractions, not a machine-checked proof of all runtime behavior or market profitability. Prospective economic test:
+same point-in-time feasible five-name book and all-in execution model, chronological fit/calibration/held-out blocks,
+purge overlapping forward labels, all ablations/trials recorded, block confidence intervals on both absolute net
+return and improvement, and prospective shadow evidence before any new predictive/crowd overlay is eligible. No
+market experiment is run here because the necessary cleared point-in-time inputs and untouched evaluation block
+have not been supplied; classify economic acceptance as NOT_ESTABLISHED.
