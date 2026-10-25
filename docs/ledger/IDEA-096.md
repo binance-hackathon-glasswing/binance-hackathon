@@ -3,7 +3,7 @@
 - Date / author: 2026-10-25 (~09:40Z) / Claude Code, from read-only host and chain checks requested by Yao
   ("check if our agent is selling the stocks now for the flatten process"). Owners for the fix: Keegan
   (execution/gas caps, LD06/LD10), Isaac (signer policy), Keith (planner order, if F1 is taken). Host checks: Yao.
-- Status: **open — incident recorded; fix drafted and pass criteria AL1–AL9 pre-registered below. No code changed.**
+- Status: **implemented for review in PR282 — F2/F3/F4 source and offline regressions; owner/profile/host acceptance and AL9 remain open.**
 - Related: IDEA-088 (quote verifier, PR268), IDEA-089 (S2, run 4), IDEA-090 S2-F6 (post-approve requote aborts),
   IDEA-092 (S3 scheduled flatten), IDEA-093 (FS1 final candidate, PR278), IDEA-049-C LD06 (allowance cleanup),
   LD10 (gas budgets), SKILL.md §0.3 #1 (no manual trading).
@@ -111,4 +111,76 @@ Isaac and Keegan must accept them.
 
 ## Results
 
-(none yet)
+### AL-IMPL01 — implementation contract (2026-10-25, before execution)
+
+Implement F2/F3/F4 on this PR; F1 is unnecessary for correctness and deferred. Defaults remain disabled;
+candidate assembly must explicitly opt runtime, execution and signer into the same recovery scope and budget.
+Use at most five pre-trade revokes (other tokens), one exact trade approve, and either swap or pay-token
+abort revoke. The existing eight-child envelope remains conservative. The pay allowance is overwritten by
+the exact trade approve, reserving its unique revoke identity for abort cleanup. No swap preflight changes.
+
+Persist abort intent before cleanup, revoke any unbroadcast swap capability atomically, hold the wallet barrier
+and reservation until cleanup terminates, and publish ordinary gas-only approval facts plus NOT_SUBMITTED.
+Never renew expiry/window/margin or bypass HALT/health/signer guards for cleanup. Consequently AL5/AL6 are
+bounded by original authority: expiry, dependency/pin failure, exhausted gas or a reverted revoke can leave
+an explicitly reported dirty allowance for the next independently authorized intent (F2), not an unauthorized
+late wallet action. AL9 and actual owner/host acceptance remain live gates.
+
+Prospective checks: AL1 red verifier regression on the PR's unchanged base; AL2/AL3 five-name synthetic exits
+with dirty stock/USDT; AL4 strict signing/broadcast refusal after fresh contamination; AL5 gas accounting;
+AL6 durable PostgreSQL restart at each abort/cleanup stage, revoked signature and exact observation replay;
+AL7 explicit opt-in config/caps/profile candidate coverage and disabled compatibility; AL8 sanitized exports.
+Run focused suites, then the pinned Linux Python 3.12.15 / PostgreSQL 14.24 suite. Nested bubblewrap and
+host/systemd acceptance require their supported environments. Commit/push all changed executable code before tests.
+
+
+AL1 evidence: regression commit `60b0d3a8` was pushed before its initial failing run (the new opt-in was absent).
+A separate synthetic probe loaded the unchanged quote-verifier source at canonical `5b5f0c89` and confirmed the
+exact original refusal `quote proof refused: router allowance exceeds what this swap may take` for SKHYB dirty /
+NVDAB SELL. The fixed regression checks explicit disabled refusal plus enabled executable proof and amounts.
+
+Implementation: F2/F3/F4, candidate generator and operational monitoring; no planner reorder (F1). The strict
+`untrusted_router.py` preflight file is unchanged. Stored execution bytes are hash-verified before defaulting the
+new `abort_pending` field, so pre-existing records remain loadable without rewriting historical journals.
+Abort cleanup gets its own bounded prepare-probe budget once; restart cannot reset it. Original time/gas and
+health/market guards still govern; no post-expiry authority or automatic install is implied.
+
+Final validation is recorded below; the receipt binds the tested source and exact local environment. Initial red integration fixture
+runs were corrected to model explicit tx absence, terminal-round attestation, and fresh per-token quote bindings;
+no live RPC/host/wallet action was taken. All executable revisions were committed and pushed before execution.
+
+
+### AL-IMPL01 validation — 2026-10-25
+
+Tested pushed source `1210a9f039799b8fe4120cb01b894d107620680e` on Linux aarch64, Python 3.12.15,
+PostgreSQL 14.24; all 45 applicable recursively pinned test dependencies matched. Full suite:
+**2705 passed, 0 failed, 8 skipped, 3 deselected, 4018 subtests passed**, 248.53 s.
+[Machine-readable receipt](../build/evidence/pr282-allowance-recovery-validation-20261025.json) includes hashes,
+command, images, exclusions and the initial full-run corrections. No source, code or tests changed after that run.
+Shell syntax checks and `git diff --check` pass. `untrusted_router.py` is byte-identical to base.
+
+| Criterion | Offline evidence / remaining boundary |
+|---|---|
+| AL1 | Exact canonical refusal probe, then enabled verifier accepts and records dirty SKHYB; disabled refusal remains explicit. |
+| AL2 / AL3 | Real PostgreSQL coordinator/ContextBuilder/planner/execution registry/settlement sells five held names to dust with dirty USDT or all five stock allowances; no reservations/allowances remain. Synthetic venue/chain; strict real decoder/preflight. Separate executor cases cover a prior BUY's abandoned/expired approval. |
+| AL4 | Contamination between prepare/authorize or signing/broadcast refuses; existing strict router tests pass. Signer retains independent zero-only opt-in/scope, payload/sequence/fee checks. |
+| AL5 | Authorized post-approve abort clears the pay allowance with gas-only accounting inside the parent budget. Original expiry/health/window limits are intentionally preserved; out-of-authority cases leave an observable allowance for F2. |
+| AL6 | PostgreSQL restart after approve, after signed swap abort, and every cleanup prepare/authorize/sign/broadcast/final stage; revoked swap bytes cannot recover, cleanup never sends twice, unknown sends retain barrier. Existing maintenance observation accounting/exact replay suite passes. Legacy records without the new field preserve their hash chain. |
+| AL7 | Recomputed eight-child candidate is numerically COVERED by caps_review and validate_live; Gate A preparation/check_scope binds explicit opt-in and router pins. Full existing Gate A checker suites pass with synthetic inputs. Actual private candidate/release/Gate A/host qualification and owner approval remain open. |
+| AL8 | Public pinned allowance amounts and sanitized refusal symbols pass export tests; runtime low-severity incident is durable/idempotent at quiet boundaries. Current RC7 observer scripts updated, older copies preserved. |
+| AL9 | NOT RUN — next authorized dev run and live owner acceptance required. |
+
+Eight skips: optional private public-source fixture, external recorded market artifacts, root directory-mode
+semantics, and five systemd runner checks. Three unchanged nested-bubblewrap cases were explicitly deselected
+because this Docker host cannot supply their namespaces/proc mounts. This is not a host/systemd/sandbox release
+acceptance. GitHub runtime check `121141195890` / run `40184126677` did not start due account payment/spending
+limits (annotation captured); no GitHub CI PASS is claimed.
+
+Remaining ownership: **Keegan** — fresh quote/caps packet, actual BNB coverage, gas/timing/token behavior and AL9;
+**Isaac** — exact signer exception/configuration and manifested candidate acceptance; **Yao/host owners** — authorized
+next-run installation and live evidence. Existing run 4 and final candidate are not silently changed. FLAT-01 stays
+open for these acceptance items; F1 is optional/deferred. PR282 stays OPEN for teammate review, unmerged.
+
+Final documentation-only follow-up: release-register/bundle checks pass **14 tests / 12 subtests** after the
+receipt/backlog/index updates. All recorded code/test hashes still match `1210a9f0`; no executable changes followed
+the full passing run. The existing PR title/body now describe implementation and the remaining review gates.

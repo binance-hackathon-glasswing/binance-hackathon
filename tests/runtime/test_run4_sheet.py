@@ -99,7 +99,8 @@ def test_unchanged_steps_are_byte_identical_to_the_rc6_sheet():
     changed = {'README.md', 'mac/m1-local-bundle.sh', 'mac/m1-fetch-bundle.sh', 'mac/d1-create-db.sh',
                'mac/setup_rehearsal_db.py', 'mac/prepare_rehearsal_db.py', 'mac/m3-recapture-assemble.sh',
                'mac/m4-prepare.py', 'host/r1-retire-primary.sh', 'host/r1-retire-signer.sh',
-               'host/p3-install-primary.sh', 'host/p4-init-activate-start.sh'}
+               'host/p3-install-primary.sh', 'host/p4-init-activate-start.sh',
+               'checks/trading-status.sh', 'mac/chain-monitor.py'}  # IDEA-096 F4 public allowance diagnostics
     rc6 = {str(p.relative_to(RC6)) for p in RC6.rglob('*') if p.is_file()}
     rc7 = {str(p.relative_to(RC7)) for p in RC7.rglob('*') if p.is_file()}
     assert rc7 == rc6 | {'mac/q1-quote-check.sh'}

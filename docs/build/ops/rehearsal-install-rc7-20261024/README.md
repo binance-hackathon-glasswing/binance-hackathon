@@ -119,3 +119,9 @@ bypass a guard. Record how many of the five attempts per leg were used (S2-9).
 Stop trading at any time on primary with `systemctl disable --now larp-execution` (survives a reboot), or pause all
 database clients with `host/pause-primary-db-clients.sh`. S2 is never installed for the final run; on Monday the next
 run returns to S1 or another version with its own profile hash, build and approval.
+
+IDEA-096 F4 (PR282 source update, 2026-10-25): `checks/trading-status.sh` exports six pinned router allowances
+and `mac/chain-monitor.py` includes raw per-token amounts plus LOW severity DIRTY_ROUTER_ALLOWANCE alerts.
+These observer changes apply only when this newer checkout is copied; historical RC7 receipts and the running
+run-4 build remain bound to their recorded commits. Recovery itself needs the separately reviewed PR282
+candidate configuration, gas/caps, signer approval and host acceptance (see `docs/build/ALLOWANCE_RECOVERY.md`).

@@ -240,6 +240,7 @@ class Execution:
     prepare_probes: int = 0
     blocked_reason: str | None = None
     last_observed_at: int = 0
+    abort_pending: bool = False  # durable, no further positive approval or swap authority
 
 
 @dataclass(frozen=True)
@@ -358,11 +359,20 @@ def validate_sequence(state, step, payload, gates):
     if len(matching) > 1:
         raise Blocked('duplicate execution step')
     prior = tuple(a for a in state.attempts if a.step != step)
+    aborting = getattr(state, 'abort_pending', False)  # historical public validation fixtures predate F3
+    if aborting:
+        if (step != 'REVOKE:' + state.intent.pay_token
+                or not any(a.step == 'APPROVE' and a.state == 'FINAL_SUCCESS' for a in prior)
+                or any(a.step == 'SWAP' and not (a.state == 'NOT_SUBMITTED' or
+                           a.state == 'ABORTED' and a.broadcast_at is None)
+                       for a in prior)):
+            raise Blocked('aborting intent only authorizes its pay-token zero approval')
+        prior = tuple(a for a in prior if a.state not in {'ABORTED', 'NOT_SUBMITTED'})
     if (len({a.step for a in prior}) != len(prior)
             or any(not approval_step(a.step) or a.state != 'FINAL_SUCCESS' for a in prior)
             or any(a.step == 'APPROVE' for a in prior[:-1])):
         raise Blocked('invalid preceding execution steps')
-    if step in REVOKE_TOKENS and any(a.step == 'APPROVE' for a in prior):
+    if step in REVOKE_TOKENS and not aborting and any(a.step == 'APPROVE' for a in prior):
         raise Blocked('allowance cleanup cannot follow trade approval')
     if step == "SWAP" and prior and prior[-1].step != 'APPROVE':
         raise Blocked('swap requires final trade approval after cleanup')
@@ -372,7 +382,9 @@ def validate_sequence(state, step, payload, gates):
     previous_cost = sum((attempt.gas_used if attempt.state in {"FINAL_SUCCESS", "FINAL_REVERT"}
                          and attempt.gas_used is not None
                          else attempt.payload.gas) * attempt.payload.gas_price
-                        for attempt in state.attempts if attempt.step != step)
+                        for attempt in state.attempts if attempt.step != step
+                        and not (attempt.state == 'NOT_SUBMITTED' or
+                                 attempt.state == 'ABORTED' and attempt.broadcast_at is None))
     if previous_cost + payload.gas * payload.gas_price > state.intent.gas_budget:
         raise Blocked("parent gas budget exceeded")
 
@@ -452,7 +464,8 @@ class Executor:
         state = self._load(key)
         if state.status != "ACTIVE":
             return state
-        if state.attempts and state.attempts[-1].state != "FINAL_SUCCESS":
+        if state.attempts and state.attempts[-1].state != "FINAL_SUCCESS" and not (
+                state.abort_pending and state.attempts[-1].state in {'ABORTED', 'NOT_SUBMITTED'}):
             return state  # No second step while outgoing outcome is uncertain.
         integer(now)
         if now < state.last_observed_at:
@@ -467,13 +480,23 @@ class Executor:
                            last_observed_at=now), "PREPARE_PROBE", gates)
         try:
             gates.check(state.intent, now)
-            quote = self.venue.quote(state.intent, gates.nonce)
-            if self.allowance_recovery and not approved:
+            if state.abort_pending:
+                step = 'REVOKE:' + state.intent.pay_token
+                allowances = self.decoder.allowances(state.intent)
+                if not allowances[state.intent.pay_token]:
+                    return self._save(state, replace(state, status='ABORTED', last_observed_at=now),
+                                      'ABORT_CLEAN', gates)
+                if any(a.step == step for a in state.attempts):
+                    raise Blocked('confirmed cleanup did not clear allowance; no repeat authority')
+            else:
+                quote = self.venue.quote(state.intent, gates.nonce)
+            if self.allowance_recovery and not approved and not state.abort_pending:
                 # Validate fresh quote economics before spending cleanup gas. Every zero-only step
                 # remains inside this original intent's authority and aggregate reservation.
                 validate_payload(state.intent, 'SWAP', quote, gates, now, self.decoder)
                 allowances = self.decoder.allowances(state.intent)
-                dirty = sorted(token for token, amount in allowances.items() if amount)
+                dirty = sorted(token for token, amount in allowances.items()
+                               if amount and token != state.intent.pay_token)
                 if dirty:
                     step = 'REVOKE:' + dirty[0]
                     if any(a.step == step for a in state.attempts):
@@ -493,7 +516,10 @@ class Executor:
             if step == "SWAP" and payload.to != state.intent.router:
                 raise Blocked("requoted router differs from approved spender")
         except Blocked as error:
-            return self._save(state, replace(state, blocked_reason=str(error)), "PREPARE_BLOCKED", gates)
+            state = self._save(state, replace(state, blocked_reason=str(error)), "PREPARE_BLOCKED", gates)
+            if approved and self.allowance_recovery and not state.abort_pending:
+                return self.abort_unsigned(key, now)
+            return state
         except (TimeoutError, ConnectionError):
             return self._save(state, replace(state, blocked_reason="quote/gas dependency unavailable"),
                               "PREPARE_BLOCKED", gates)
@@ -607,8 +633,12 @@ class Executor:
             # WR12 (#54): the node refused these bytes. Release only once the timeout has passed and the wallet's
             # chain nonce (latest = pending) still equals this attempt's nonce, so nothing used it; otherwise hold.
             if timed_out and type(gates.nonce) is int and gates.nonce == attempt.payload.nonce:
+                rejected = replace(state, attempts=state.attempts[:-1] + (replace(attempt, state='NOT_SUBMITTED'),))
+                cleanup = self._cleanup_due(rejected, now)
                 return self._update_attempt(state, replace(attempt, state="NOT_SUBMITTED"), "NOT_SUBMITTED", gates,
-                                            status="ABORTED", blocked_reason="broadcast rejected; not submitted")
+                                            status='ACTIVE' if cleanup else 'ABORTED', abort_pending=cleanup,
+                                            prepare_probes=0 if cleanup else state.prepare_probes,
+                                            blocked_reason="broadcast rejected; not submitted")
             return self._update_attempt(state, attempt, "REJECTED_UNRESOLVED", gates, blocked_reason=(
                 "rejected broadcast nonce unresolved; wallet barrier retained" if timed_out
                 else "broadcast rejected; wallet barrier retained until timeout"))
@@ -638,6 +668,9 @@ class Executor:
             status = "FAILED"
         elif finalized and attempt.step == "SWAP":
             status = "COMPLETED"
+        elif finalized and state.abort_pending and attempt.step in REVOKE_TOKENS:
+            # A separate read in prepare confirms the zero allowance before releasing the barrier.
+            status = 'ACTIVE'
         return self._update_attempt(state, replace(attempt, state=phase, included_block=outcome.block_hash,
                                                   finalized_at=now if finalized else None,
                                    gas_used=outcome.gas_used), phase, gates, status=status,
@@ -678,8 +711,10 @@ class Executor:
         gates = self.guards.snapshot(state.intent, now)
         if now < state.last_observed_at:
             raise Blocked('clock regression')
+        cleanup = self._cleanup_due(state, now)
         return self._update_attempt(state, replace(attempt, state='ABORTED'), 'ABORTED_UNBROADCAST', gates,
-                                    status='ABORTED', last_observed_at=now)
+                                    status='ACTIVE' if cleanup else 'ABORTED', abort_pending=cleanup,
+                                    prepare_probes=0 if cleanup else state.prepare_probes, last_observed_at=now)
 
     def recover_signature(self, key, now):
         state = self._load(key)
@@ -708,8 +743,19 @@ class Executor:
         if attempts and attempts[-1].state == "PREPARED":
             attempts = attempts[:-1] + (replace(attempts[-1], state="ABORTED"),)
         gates = self.guards.snapshot(state.intent, now)
-        return self._save(state, replace(state, status="ABORTED", attempts=attempts,
+        cleanup = self._cleanup_due(state, now)
+        return self._save(state, replace(state, status='ACTIVE' if cleanup else 'ABORTED',
+                                        abort_pending=cleanup, attempts=attempts,
+                                        prepare_probes=0 if cleanup else state.prepare_probes,
                                         last_observed_at=now), "ABORTED_UNSIGNED", gates)
+
+    def _cleanup_due(self, state, now):
+        # Never extend the parent authority. If cleanup cannot finish here, F2 handles its allowance
+        # under the next independently authorized intent. Unknown submissions always retain their barrier.
+        return (self.allowance_recovery and not state.abort_pending
+                and now + state.intent.authority_margin < state.intent.valid_until
+                and any(a.step == 'APPROVE' and a.state == 'FINAL_SUCCESS' for a in state.attempts)
+                and not any(a.step == 'SWAP' and possibly_submitted(a) for a in state.attempts))
 
 
 def possibly_submitted(attempt):
