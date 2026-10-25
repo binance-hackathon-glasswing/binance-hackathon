@@ -206,6 +206,9 @@ def quote_verifier(d, profile, *, wallet, rpcs, projection):
     bound to the balance RPC providers for the live router preflight. A missing input refuses the start."""
     from larp.execution_live.config import untrusted_router_settings
     settings = untrusted_router_settings(d)
+    recovery = d.get('allowance_recovery', False)
+    if type(recovery) is not bool or recovery and settings is None:
+        raise ContractError('Allowance recovery needs explicit boolean scope and pinned router policy')
     if settings is None:
         return None
     if not rpcs:

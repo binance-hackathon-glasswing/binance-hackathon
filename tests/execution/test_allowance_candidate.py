@@ -19,6 +19,7 @@ class RecoveryCandidate(unittest.TestCase):
         c.config.update(untrusted_router_policy_file='/synthetic/policy.json',
                         untrusted_router_policy_sha256='a' * 64)
         c.policy['allowed_tokens'].remove(NATIVE_BNB)
+        c.inputs['quote_artifacts'] = [ref for ref in c.inputs['quote_artifacts'] if ref['path'] != 'BNB.json']
         runtime = {k: c.config[k] for k in ('run_id', 'build_id', 'wallet_address', 'mode')}
         runtime['driver'] = {k: c.config[k] for k in
                              ('untrusted_router_policy_file', 'untrusted_router_policy_sha256')}
