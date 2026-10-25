@@ -27,6 +27,7 @@ class MandatoryRetry(_DurableBudget):
         self.h = Document.from_dict(self.profile).digest('StrategyProfile.v1')
         self.initial = initial_projection(self.context['portfolio'])
         self.initial['portfolio']['risk']['day'] = '2026-10-09'
+        self.initial['portfolio']['run_id'] = 'run'
         with self.store.transaction() as db:
             db.execute('TRUNCATE runs CASCADE')
         self.store.initialize('run', 'fake-wallet', 56, doc(self.initial))
