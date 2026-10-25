@@ -434,7 +434,9 @@ def plan(snapshot, proposal_or_none):
     if s1:
         try:
             execution_bounds.session(c)
-            attempt_budget = execution_bounds.budget(c.get('execution_attempt_budget'), c['session_index'])
+            execution_bounds.cadence_policy(c)
+            attempt_budget = execution_bounds.budget(c.get('execution_attempt_budget'), c['session_index'],
+                                                      now_ms=int(now.timestamp() * 1000))
         except (ContractError, KeyError, TypeError):
             result['rejections'].append({'reason': 'EXECUTION_BOUNDS_INVALID'})
             return Document.from_dict(result)

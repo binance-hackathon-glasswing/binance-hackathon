@@ -124,6 +124,8 @@ class ContextBuilder:
         self.universe = tuple(sorted(universe or SYMBOLS))  # the coordinator's snapshot universe
         # {"bps", "hold_ms"} enables the price-jump guard (IDEA-055 PR 4); None keeps contexts as they were.
         self.price_jump = None
+        from larp.strategy.execution_bounds import MANDATORY_CADENCE
+        self.execution_attempt_policy = MANDATORY_CADENCE
 
     def __call__(self, current: dict, request: dict, assessment: dict | None, now_ms: int) -> tuple:
         projection = current["projection"]
@@ -203,6 +205,8 @@ class ContextBuilder:
             "health": self.health(current), "evidence_decisions": decisions,
         }
         if self.profile.get('baseline') == 'TREND_GUARDED_VOL':
+            if self.execution_attempt_policy is not None:
+                context['execution_attempt_policy'] = self.execution_attempt_policy
             context['execution_session'] = self.calendar.window(now_ms)
             context['execution_attempt_budget'] = projection.get('execution_attempt_budget')
             from larp.integration.exposure import exposure_inputs
