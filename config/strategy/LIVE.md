@@ -16,6 +16,15 @@ per-leg attempt values (IDEA-076 EB-01, Isaac B6). Construction, session/attempt
 semantics and the still-proposed example values are in
 [`S1_EXECUTION_BOUNDS.md`](../../docs/build/S1_EXECUTION_BOUNDS.md).
 
+IDEA-102: new S1 runtime rounds give mandatory (`SAFETY`) SELL legs one new
+attempt per UTC 15-minute slot per leg, without a per-session attempt ceiling.
+Quote follow-ups can reuse their committed parent's open slot. Discretionary
+BUY/SELL attempts retain the configured session cap. Ordinals remain auditable;
+unclaimed-expiry refunds retain the slot timestamp. Gas/action/signer fee,
+window, health, HALT, allowance recovery and strict preflight gates still apply.
+The runtime records `execution_attempt_policy: MANDATORY_CADENCE_V1`; historical
+journals without it replay under their original cap. No profile hash changes.
+
 ## B6 algebra (no P&L input)
 
 All money is USDT micro-units; BNB/token quantities retain explicit decimals.

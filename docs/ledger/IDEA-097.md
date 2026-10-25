@@ -259,3 +259,91 @@ Checked:
   - The RDS instance stalled at 13:33Z and restarted at 13:43Z, before the install (IDEA-100).
   - An expired AWS login made several status reads stale, about 15:08–15:30Z. Read-only checks need a fresh
     `aws login`.
+
+## S4-F1 — an expired, never-claimed command spends a sell's attempt (2026-10-26; pre-registered before code)
+
+- **Finding (run 5, live).** GOOGLB's second half was refused at 16:30Z with `LEG_ATTEMPT_LIMIT`. Its 5
+  `SAFETY:SELL:GOOGLB` attempts that session were:
+  - three rounds, about 14:00–14:30Z, ending `COMMAND_EXPIRED_UNCLAIMED`. The execution service was not started
+    until P5 (about 14:50Z), after the signer's SSM delay;
+  - one price-check abort before the approve;
+  - one sale (15:00Z).
+
+  The budget resets when the next session opens: session 204, Mon 2026-10-26 13:30Z (21:30 SGT). That is before
+  `signing_end` at 20:00Z.
+- **Why it counts.** `execution_bounds.reserve` consumes an attempt at planning. `ServiceExecution.expire` ends a
+  command the execution service never claimed with `NOT_SUBMITTED / COMMAND_EXPIRED_UNCLAIMED`. Nothing gives the
+  attempt back, although that command never reached the signer, the chain or a quote reuse.
+- **Fix.**
+  - `expire` marks its fact `attempt_refund: true`. The ports validator accepts the field only on `NOT_SUBMITTED`
+    with reason `COMMAND_EXPIRED_UNCLAIMED`.
+  - The settlement reducer gives the attempt back only when the fact carries the flag, and only for the latest
+    attempt of that leg in the same session: the intent's `execution_bounds.ordinal` equals the projection budget's
+    count.
+  - Facts without the flag (every existing journal) replay unchanged.
+  - Claimed intents, aborts, refusals and broadcasts never refund. The 5-attempt cap still bounds every attempt that
+    can reach the wallet.
+- **Pass when (ER1–ER6):**
+  - **ER1 (red on base):** an unclaimed expiry leaves the leg's count at its ordinal.
+  - **ER2:** with the fix, an unclaimed expiry of the latest attempt gives the count and the closed slot back, and the
+    next round can plan the same leg. Three such expiries leave the budget where it started.
+  - **ER3:** no refund for a claimed intent, an abort or refused NOT_SUBMITTED, an older ordinal, another session, or
+    a fact without the flag.
+  - **ER4:** the validator refuses `attempt_refund` on any other kind or reason, or with a non-boolean value.
+  - **ER5:** replay of the new facts is exact. Existing journals and fixtures replay byte for byte (the full suite).
+  - **ER6:** the full pinned suite passes with no new failures.
+- **S4-F1 results (tested source `9c34dd45`): PASS.**
+  - **ER1–ER4:** red on base `1ed5a248`, all 5 new tests failing as expected; the 4 existing EB3/5 tests still
+    pass. Green after the fix.
+  - **ER5:** exact replay of the new facts (`assert_replay`); the existing replay and driver suites pass unchanged.
+  - **ER6:** full suite in the team's Linux image `larp-test:pr282` (Python 3.12.15) with a disposable
+    PostgreSQL 14.24 container, from a git clone: **2844 passed, 0 failed, 12 skipped, 4055 subtests**. Skips: 5
+    systemd, 3 bubblewrap, 2 opt-in fixtures, 1 root directory mode, 1 no GitHub origin. Not GitHub CI
+    (billing-blocked).
+  - Not installed; run 5 keeps its build.
+
+## S4-F1-RV01 — PR290 review (2026-10-26 SGT)
+
+Pre-registered review repair: the reducer accepted a refund-tagged unclaimed expiry even after a supporting approval
+broadcast was journaled. The producer excludes claimed commands, but settlement must also refuse that contradictory
+fact; any recorded broadcast means this was not an unclaimed command.
+
+Pass criteria: reject a refund after approve, cleanup or swap broadcast without changing budget/reservations;
+keep ordinary post-approve abort settlement valid without a refund; exercise the real ServiceExecution.expire path
+for an unclaimed versus claimed command; retain exact replay and run the pinned Linux/PostgreSQL suite. No deployment.
+
+S4-F1-RV01 results: source `313c5758` passes 71 focused tests /45 subtests /zero skips, then the full
+Linux aarch64, Python3.12.15, PostgreSQL14.24 pinned suite: **2847 passed /4055 subtests /11 skipped /0 failed**,
+271.59s. Disposable PostgreSQL and writable test copy with registered Git origin; no live credentials, external
+provider calls or deployment. The 11 platform/optional-fixture skips retain prior scope. Refund producer/claimed
+exclusion, contradictory approval-broadcast refusal, latest-ordinal/session behavior and exact replay pass.
+
+## Run 6 (S4 rerun) and S4-L1 result (2026-10-25/26)
+
+- **Why a rerun.** Run 5 sold all but the second half of GOOGLB (0.029482). That leg hit `LEG_ATTEMPT_LIMIT` at
+  16:30Z (S4-F1; IDEA-102), and session 204 opens only at Mon 13:30Z.
+- **Sheet:** `build/ops/rehearsal-install-s4b-20261026/`. Same S4 profile `58b31806…`, same build `7fc9f601`; run
+  `larp-dev-rehearsal-20261026-s4b`, database `larp_rehearsal6`.
+- **Steps (UTC):**
+  - D1, then Q1 (GOOGLB SELL `VERIFIED_EXECUTABLE`, 17:02).
+  - M3 (17:02): `COVERED`, signer `1e052e26…`, which differs from run 5's `378e7b35…` only in `run_id` and
+    `database_name`.
+  - A1: Isaac approved `1e052e26…` (relayed by Yao).
+  - R1p (17:07): run 5 retired. X1: export `22a1ee89…` from run 5 version 96, GOOGLB 0.029482, cost 9.465624 USDT.
+  - M4: the first attempt was refused, "HEAD is verified at its configured remote branch". The release checkout's
+    branch `codex/system-testing-20261012` had moved on since `7fc9f601`. Fixed without rewriting anything: a new
+    branch `release/run6-7fc9f601` was pushed at the same commit and the checkout tracks it. Then every package check
+    PASS; opening equity 99.405436.
+  - P3. T1 (17:11), signer rebooted proactively (17:12), then R1s, S1 and S1b.
+  - **P4 (17:15:39) → S2 → P5 (17:17:07) back to back**, so no command expired unclaimed.
+  - T2 (8 destroyed) and M9.
+- **S4-L1: PASS (run 5 and run 6 together).**
+  - The last GOOGLB sold in run 6's first round after P5: 2 signatures, 0 refusals. Cash went 71.882083 →
+    81.373046 USDT.
+  - On-chain at 17:21:53Z: GOOGLB, NVDAB, SKHYB, TSLAB and MSFTB all 0; every router allowance 0; USDT
+    81.373047; BNB 0.024973.
+  - Run 6 balance check MATCH; no HALT, no quarantine.
+  - Across runs 5 and 6: 7 sells, 11 + 2 signatures, 0 refusals. Run 4's leftover allowances never blocked a sell
+    (used up, or cleared under recovery). The S4 flatten test is complete.
+- **Remaining:** retire run 6 before final activation (Oct 27), with the same R1p/R1s pattern for run
+  `larp-dev-rehearsal-20261026-s4b`; and PR290 (S4-F1) and IDEA-102 (CAP-01) before the final build.
