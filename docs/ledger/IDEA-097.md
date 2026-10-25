@@ -311,3 +311,9 @@ fact; any recorded broadcast means this was not an unclaimed command.
 Pass criteria: reject a refund after approve, cleanup or swap broadcast without changing budget/reservations;
 keep ordinary post-approve abort settlement valid without a refund; exercise the real ServiceExecution.expire path
 for an unclaimed versus claimed command; retain exact replay and run the pinned Linux/PostgreSQL suite. No deployment.
+
+S4-F1-RV01 results: source `313c5758` passes 71 focused tests /45 subtests /zero skips, then the full
+Linux aarch64, Python3.12.15, PostgreSQL14.24 pinned suite: **2847 passed /4055 subtests /11 skipped /0 failed**,
+271.59s. Disposable PostgreSQL and writable test copy with registered Git origin; no live credentials, external
+provider calls or deployment. The 11 platform/optional-fixture skips retain prior scope. Refund producer/claimed
+exclusion, contradictory approval-broadcast refusal, latest-ordinal/session behavior and exact replay pass.
