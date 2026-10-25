@@ -104,9 +104,24 @@ class Logged(DatabaseCase):
         planned = intent('x', reasons=['S1_LEVEL_CHANGE'], mandatory=False)
         log = self.run_round(Planned([planned], [dict(intent_id='intent:x', asset='USDT', units=10)]), settle=True)
         self.assertEqual(log['orders'], [dict(symbol='NVDAB', side='BUY', amount='10', tx_hash=TX)])
+        self.assertIn('BUY NVDAB for 10 USDT', log['output']['reason_summary'])
 
 
 class Phrases(unittest.TestCase):
+    def test_rv5_buy_cash_and_sell_token_units_are_explicit(self):
+        for symbol in ('NVDAB', 'BNB'):
+            with self.subTest(symbol=symbol):
+                fields = dict(symbol=symbol, side='BUY', amount='32.262', mandatory=False)
+                if symbol == 'BNB':
+                    fields['kind'] = 'GAS_TOP_UP'
+                summary, decisions = self.summarize(fields)
+                self.assertTrue(summary.startswith(f'BUY {symbol} for 32.262 USDT,'))
+                self.assertEqual(decisions[0]['amount'], '32.262')
+                self.assertEqual(decisions[0]['symbol'], symbol)
+        summary = self.one(side='SELL', amount='0.05', symbol='NVDAB')
+        self.assertTrue(summary.startswith('SELL 0.05 NVDAB,'))
+        self.assertNotIn('USDT', summary)
+
     def test_rv1_actions_do_not_claim_completion_or_current_drawdown(self):
         for code in ('TERMINAL_FLATTEN', 'SCHEDULED_FLATTEN', 'ACTIVATION_SELF_CHECK'):
             with self.subTest(code=code):
@@ -187,7 +202,7 @@ class Phrases(unittest.TestCase):
                                                  reasons=[code]),
                                             targets=[dict(symbol='NVDAB', kind='TARGET_WEIGHT', reason=code,
                                                           weight=[19, 100])])
-                self.assertIn('BUY 32 NVDAB', summary)
+                self.assertIn('BUY NVDAB for 32 USDT', summary)
                 self.assertIn('discretionary', summary)
                 self.assertIn(phrase, summary)
                 self.assertIn('19%', summary)

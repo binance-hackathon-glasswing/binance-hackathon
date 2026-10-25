@@ -230,6 +230,7 @@ class Settlement(pipeline.PipelineHarness):
         self.assertEqual(data["orders"], [{"symbol": intent["symbol"], "side": "BUY", "amount": intent["amount"]}])
         self.assertEqual(data["output"]["aborted"][0]["reason"], "QUOTE_EXPIRED")
         self.assertIn('not submitted (QUOTE_EXPIRED)', data['output']['reason_summary'])
+        self.assertIn(f"BUY {intent['symbol']} for {intent['amount']} USDT", data['output']['reason_summary'])
         self.assertEqual(data['output']['decision_summaries'][0]['decision_id'], intent['decision_id'])
 
 

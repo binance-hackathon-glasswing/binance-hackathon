@@ -68,9 +68,11 @@ def _strings(values):
 
 def order_sentence(intent, *, target=None, split=False, abort_reason=None):
     side, amount, symbol = intent.get('side'), intent.get('amount'), intent.get('symbol')
+    # I3 / A10: BUY amount is cash spent in USDT; SELL amount is the token quantity.
+    action = f'BUY {symbol} for {amount} USDT' if side == 'BUY' else f'{side} {amount} {symbol}'
     ending = f'; not submitted ({abort_reason}).' if abort_reason is not None else '.'
     if intent.get('kind') == 'GAS_TOP_UP':
-        return f'{side} {amount} {symbol}, gas top-up for transaction fees' + ending
+        return f'{action}, gas top-up for transaction fees' + ending
     codes = _strings(intent.get('reasons'))
     phrases = list(dict.fromkeys(ORDER.get(code, code) for code in codes)) or ['no reason code recorded']
     if len(phrases) > MAX_PHRASES:
@@ -82,7 +84,7 @@ def order_sentence(intent, *, target=None, split=False, abort_reason=None):
     if split:
         text += '; split by the per-trade cap'
     kind = 'mandatory' if intent.get('mandatory') is True else 'discretionary'
-    return f'{side} {amount} {symbol}, {kind}: {text}' + ending
+    return f'{action}, {kind}: {text}' + ending
 
 
 def _hold_sentence(record, plan):
