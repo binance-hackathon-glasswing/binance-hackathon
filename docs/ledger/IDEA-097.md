@@ -4,6 +4,8 @@
   Code). Approvals: Isaac (profile hash, `signer.json`), Keegan (carry-over accounting, runtime review). Host steps:
   Yao.
 - Status: **open — pre-registered. Criteria S4-1..S4-9 and S4-L1 below were committed before any S4 code or test.**
+- 2026-10-25 status: **supported offline** (S4-1..S4-6, S4-7′, S4-8′, S4-9 PASS; results below). Approval, B0 BNB top-up,
+  build and install (S4-L1) open.
 - Related: IDEA-089 (S2, run 4), IDEA-092 H1/H2 (install needs a stock-flat wallet), IDEA-096 (the leftover-allowance
   block on run 4's flatten), IDEA-090 S2-F6 (post-approve requote; on canonical, not in run 4's RC7), IDEA-093 (FS1,
   delayed; the scored run starts Oct 29), SKILL.md §0.3 #1 (no manual trading).
@@ -83,6 +85,44 @@
 | S4-9 | The full pinned suite passes with no new failures against canonical | full suite |
 | S4-L1 (live, team) | Run 5 installs from the export. Its first round sells SKHYB, the name with the allowance, then the other names; every position reaches dust before `signing_end`; balance check `MATCH`; all router allowances end at 0 | trading-status, chain monitor, BscScan |
 
-## Results
+## Revision before the S4 tests (2026-10-25 ~11:30Z; recorded before S4-1..S4-6 were run)
 
-(none yet)
+Yao, mid-session: "pr 282 should have the new updated logic to fix this kind of errors inside, do take a look there
+as well when u build s4, we can always add more gas reserve as needed".
+
+- **IDEA-096 F1 is dropped; PR282's F2/F3/F4 recovery is used instead.**
+  - PR282 (teammates, AL-IMPL01, 2705 tests PASS offline) clears a leftover allowance with a zero-only approve
+    before the trade approve, and clears an aborted swap's own approve. That covers USDT too, which F1 could not.
+  - My F1 draft (planner ordering, `router_allowance_units` on market rows) touched the same quote-verifier/port code.
+    It was an uncommitted working copy: its red-on-base test failed on canonical as expected (NVDAB first) and passed
+    after the change, and it was discarded before the merge.
+  - This branch merges `claude/flatten-allowance-deadlock-20261025` at `5cac4ca4`, the PR282 head.
+- **Criteria S4-7 and S4-8 are replaced** by:
+  - **S4-7′:** the S4 profile carries PR282's recovery gas (`gas_action_budget_units` = 8 × 1200000 × 160000000,
+    exit reserve 5 × 2 × that) and passes `validate_live`;
+  - **S4-8′:** M3's caps review (`review_rehearsal_caps --allowance-recovery`) refuses a leftover allowance without
+    the flag, and with it opts both execution and the signer policy into recovery and changes nothing else.
+- **`signing_end` is 2026-10-27T12:00Z** (Tue 20:00 SGT), not Mon 12:00Z. That allows a slower approval/install and
+  stays before FS1 (Oct 29).
+- **Gas.** Recovery's exit reserve is 0.01536 BNB, against about 0.00518 BNB in the wallet. Yao accepted adding BNB;
+  this is run-sheet step B0.
+
+## Results (2026-10-25, offline; tested source `a2a5ab81`)
+
+| # | Result |
+|---|---|
+| S4-1 | **PASS.** Profile `e79a92fc…` (digest `6164039c…`, M3 probe `9397c0cf…`) rebuilds byte for byte. It differs from S2's `eb55d76a…` only in the window, `policy_id`, `holdings_carry_over`, the two recovery gas keys and their provenance; `validate_live` passes. The builder refuses S4 without S2 hours, with one exit child, or with S3. |
+| S4-2 | **PASS.** The key is refused in FINAL, without `KIT_OPEN_STATE`, with `scheduled_flatten_at`, and with any value other than `RUN_EXPORT`. Profiles without it are unchanged. |
+| S4-3 | **PASS.** Run 4's units (GOOGLB 0.05896, NVDAB 0.08944, SKHYB 0.13788, TSLAB 0.05096) plus the exported cost; opening equity = cash + BNB value + Σ cost; day anchor and peak equal it. |
+| S4-4 | **PASS.** Refused: S4 without an export; an export under S2; one unit off (names the symbol); another wallet; the same run ID; reservations; negative or fractional cost; a holding with zero cost; cost without a holding; another schema; a missing key; a missing symbol. The stock-flat refusal is unchanged without the key. |
+| S4-5 | **PASS.** Signed dev `prepare` with the real S4 profile, carry-over and recovery packages `holdings-carry-over.json`, pins its hash in `input_hashes` and `holdings_carry_over`, and sets `driver.allowance_recovery`. `check_scope`/`check_inputs` pass. A tampered export, a dropped pin or a missing file is refused. `package_files` accepts the optional file, and the dev runtime builds without network. |
+| S4-6 | **PASS.** With `now` after `flatten_start`, every held name is `TERMINAL_FLATTEN` and every request is a mandatory SELL. |
+| S4-7′ | **PASS.** Action budget 1536000000000000 = 8 × 1200000 × 160000000; exit reserve 15360000000000000 = 5 × 2 × action; sizing budget unchanged from S2. |
+| S4-8′ | **PASS.** Hosted assembly refuses run 4's SKHYB allowance without `--allowance-recovery`. With it, execution `allowance_recovery: true`, the signing policy is the reviewed development policy plus `allowance_recovery: true`, and `signer.json` carries it. A non-boolean opt-in is refused. |
+| Sheet | **PASS.** `tests/runtime/test_run5_sheet.py`: one run and database; run 4 retired; probe/profile pins; recovery and carry-over flags in M3/M4; signer diff base `56e029af…`; all scripts parse; a synthetic X1 output saves 0600 without overwrite and rebuilds the S4 state; a truncated or in-flight export is refused. |
+| S4-9 | **PASS.** Full suite in the team's Linux image `larp-test:pr282` (Python 3.12.15) against a disposable PostgreSQL 14.24 container: **2717 passed, 12 skipped, 4018 subtests passed; 3 failed, all git-only**. The suite ran on a `git archive` copy without `.git`. Those three files (`test_deploy_presetup`, `test_final_review_d`, `test_gate_a`) pass when rerun in a git checkout: 82 passed, 107 subtests. The 12 skips are 5 systemd, 3 bubblewrap, 2 opt-in fixtures, 1 root directory-mode case and 1 no-GitHub-origin case. The same suite on macOS with PostgreSQL gave 2721 passed and 1 failure, the Linux-only `/proc` memory probe of IDEA-094 AR7. Not GitHub CI (billing-blocked); no host, systemd or release acceptance. |
+| S4-L1 | **NOT RUN.** It needs B0 (BNB top-up), the build, Isaac's approval and the install (run sheet `build/ops/rehearsal-install-s4-20261025/`). |
+
+Remaining: Keegan reviews the carry-over accounting (opening equity at cost) and the recovery gas. Isaac approves the
+profile, probe and `signer.json`. Yao: B0, then the sheet. PR282's own review gates (FLAT-01) still apply, because
+S4 runs on its code.

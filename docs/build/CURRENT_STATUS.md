@@ -1,5 +1,7 @@
 # Current shared build and remaining work
 
+IDEA-097 S4 (2026-10-25): run 5 carries run 4's book over and flattens with PR282's allowance recovery. The profile is `e79a92fc` (flatten already begun, signing to Tue 12:00Z, exit reserve 0.01536 BNB). Implemented with the run-5 sheet and supported offline: Linux 3.12.15 + PG 14.24, 2717 passed, and the 3 git-only failures pass in a git checkout. Approval, BNB top-up and install remain. [Entry](../ledger/IDEA-097.md).
+
 IDEA-096 / PR282 (2026-10-25): F2/F3/F4 allowance recovery, bounded durable abort cleanup and monitoring implemented
 for teammate review; defaults remain disabled. Local pinned Python3.12.15/PG14.24:2705 tests/4018 subtests PASS,
 8 explicit skips/3 nested-sandbox cases deselected. GitHub CI cannot start (billing). Exact candidate gas/caps/signer,
