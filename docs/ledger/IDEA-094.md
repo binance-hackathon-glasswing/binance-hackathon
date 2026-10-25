@@ -179,3 +179,5 @@ Decision: implemented as proposed. Result state: **supported** offline (AR1–AR
 Calibration query for Yao (read-only, replaces the run-4 estimate; output stays in the ignored activation folder):
 `SELECT sequence, octet_length(batch), pg_column_size(batch) FROM events WHERE run_id=<run> ORDER BY sequence;`
 — fit `a`, `b` and the raw/on-disk ratio, then re-run the projection above.
+- 2026-10-25 decision (Yao Zhu, in chat): mirror CI is skipped for PR280; the local pinned run (AR9) is the
+  review evidence.
