@@ -9,6 +9,7 @@ import hashlib
 import time
 
 from larp.audit.protocol import build_event,check_orders,event_id_for
+from larp.audit.reasons import round_summary
 from larp.contracts import ContractError,DecisionSnapshot,Document,PolicyState,validate_proposal
 from larp.storage.postgres import Conflict,IntegrityError,doc
 from larp.runtime.halts import mandatory_reduction,pausing_only
@@ -416,11 +417,14 @@ class Coordinator:
                     policy_output=record.get('policy_output'))
         if record.get('aborted'):
             output['aborted']=record['aborted']  # committed orders that never reached the chain, with the reason
+        # F-34 / G-04 (IDEA-099): a concise reason per order, and per round, from the record's structured fields.
+        output['reason_summary'],output['decision_summaries']=round_summary(record)
         if record.get('audit_fallback'):
             inputs=dict(version_id=self.version_id,round_id=round_id,
                         local_record_hash=doc(record).digest('larp.round.v1'),
                         omitted_content='Original complete I/O retained in the durable ROUND_PLANNED record; serialization budget exceeded.')
-            output=dict(status='AUDIT_CONTENT_UNSUPPORTED',errors=record['errors'],trading_blocked=True)
+            output=dict(status='AUDIT_CONTENT_UNSUPPORTED',errors=record['errors'],trading_blocked=True,
+                        reason_summary=round_summary(dict(record,orders=[]))[0])
             rationale='Deterministic serialization failure; original reasoning retained locally, not fabricated or truncated.'
         if self.test_rounds:
             inputs['example']=True

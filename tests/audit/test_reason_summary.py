@@ -154,6 +154,12 @@ class Phrases(unittest.TestCase):
         self.assertIn('VERSION_NOT_REGISTERED', summary)
         self.assertNotIn('minimum trade', summary)
 
+    def test_rs3_a_blocked_round_names_its_gates(self):
+        from larp.audit.reasons import round_summary
+        summary, _ = round_summary(dict(errors=[], orders=[], plan=dict(intents=[], rejections=[
+            dict(reason='EXECUTION_BLOCKED', gates=['WALLET_PENDING', 'SIGNING_END'])])))
+        self.assertEqual(summary, 'No order this round: execution blocked (WALLET_PENDING, SIGNING_END).')
+
     def test_rs3_nothing_to_do(self):
         from larp.audit.reasons import round_summary
         summary, _ = round_summary(dict(errors=[], orders=[], plan=dict(intents=[])))
