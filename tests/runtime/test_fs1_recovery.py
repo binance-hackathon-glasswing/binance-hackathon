@@ -336,6 +336,49 @@ def test_rc4_caps_review_gas_rows_cover_the_final_recovery_profile_at_the_cap_02
         c.doCleanups()
 
 
+def test_rv2_rc4_whole_numeric_review_covers_final_scope_and_retains_independent_limits():
+    """PR283-RV01: complete RC4 with FINAL-sized synthetic inputs; owner approval remains separate."""
+    from tools.deploy.enable_allowance_recovery import candidate
+    _, on = _profiles(FINAL, 'fs1-final')
+    c, runtime = recovery_inputs(on)
+    try:
+        c.policy['max_input_units'][USDT] = str(on['per_trade_cap_units'] * 10**12)
+        for n, ref in enumerate(c.inputs['quote_artifacts']):
+            quote = json.loads((c.root / ref['path']).read_bytes())
+            quote['response']['data']['tx']['gasPrice'] = '64000000'
+            c.inputs['quote_artifacts'][n] = c.pin(ref['path'], quote)
+        files = candidate(on, c.config, c.policy, runtime, decision_id='IDEA-098 PR283-RV01 RV2')
+        c.profile, c.config, c.policy = (json.loads(files[n]) for n in
+                                         ('profile.json', 'execution-config.json', 'signing-policy.json'))
+        c.ledger['bnb_units'] = on['exit_gas_reserve_units']
+        c.save_inputs()
+        result = c.report()
+        assert result['numeric_status'] == 'COVERED', result['blockers']
+        assert set(result['blockers']) == {'OWNER_REVIEW_REQUIRED', 'POLICY_APPROVAL_REQUIRED'}
+        assert not result['ready_to_install'] and not result['signing_enabled']
+
+        c.config['gas_budget'] -= 1
+        c.save_inputs()
+        assert 'INITIAL_SIGNED_CHILD_GAS_ENVELOPE' in c.report()['blockers']
+        c.config['gas_budget'] += 1
+        c.ledger['bnb_units'] -= 1
+        c.save_inputs()
+        assert 'INITIAL_BNB_EXIT_RESERVE' in c.report()['blockers']
+        c.ledger['bnb_units'] += 1
+        c.policy['max_input_units'][USDT] = str(on['per_trade_cap_units'] * 10**12 - 1)
+        c.save_inputs()
+        assert 'FULL_POSITION_USDT' in c.report()['blockers']
+        c.policy['max_input_units'][USDT] = str(on['per_trade_cap_units'] * 10**12)
+        c.save_inputs()
+        ref = c.inputs['quote_artifacts'][0]
+        quote = json.loads((c.root / ref['path']).read_bytes())
+        quote['response']['data']['tx']['gasPrice'] = str(c.config['max_gas_price'] + 1)
+        c.inputs['quote_artifacts'][0] = c.pin(ref['path'], quote)
+        assert 'QUOTE_EXCEEDS_EXECUTION_GAS_LIMITS' in c.report()['blockers']
+    finally:
+        c.doCleanups()
+
+
 # --- RC5: Gate A preparation with the opt-in ---------------------------------------------------------------------
 
 def test_rc5_signed_live_and_dev_preparation_carry_the_opt_in_and_pass_the_gate_check():
