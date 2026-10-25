@@ -33,7 +33,8 @@ class FlattenRecovery(ScheduledFlattenPersistence):
                 context['portfolio'].update(wallet_id=f.WALLET, bnb_units=10**9, bnb_decimals=18)
                 quote_template = next(q for m in context['markets'] for q in m['quotes'] if q['side'] == 'SELL')
                 for row in context['markets']:
-                    row['quotes'] = [dict(quote_template, quote_id='synthetic-exit-' + row['symbol'])]
+                    row['quotes'] = [dict(quote_template, quote_id='synthetic-exit-' + row['symbol'],
+                                          pay_asset=row['symbol'])]
                     for quote in row.get('quotes', []):
                         quote['gas_bnb_units'] = 10**7
                 self.profile, self.profile_hash = context['profile'], fixture.policy_profile_hash
