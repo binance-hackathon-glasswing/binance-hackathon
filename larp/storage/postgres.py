@@ -554,14 +554,19 @@ class PostgresStore:
         """
         with self.transaction() as db:
             db.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
-            run=self._run(db,run_id,lock=False)
-            base=None
-            if not full:
-                with self._checkpoint_lock:
-                    base=self._checkpoints.get(run_id)
-                if base is not None and not self._continues(db,run_id,run,base):
-                    base=None
-            checkpoint=self._verify(db,run_id,run,base)
+            run=self._snapshot(db,run_id,full)
+        return run
+
+    def _snapshot(self,db,run_id,full):
+        """`verified_snapshot` inside the caller's REPEATABLE READ transaction."""
+        run=self._run(db,run_id,lock=False)
+        base=None
+        if not full:
+            with self._checkpoint_lock:
+                base=self._checkpoints.get(run_id)
+            if base is not None and not self._continues(db,run_id,run,base):
+                base=None
+        checkpoint=self._verify(db,run_id,run,base)
         with self._checkpoint_lock:
             known=self._checkpoints.get(run_id)
             if known is None or base is None or known['version']<=checkpoint['version']:
@@ -591,32 +596,45 @@ class PostgresStore:
 
     def journal(self,run_id,*,after_version=0,through_version=None,full=True):
         """The journal documents after `after_version`. full=False (a bounded suffix read inside a trading cycle,
-        IDEA-095) continues from this process's checkpoint instead of re-reading the whole journal, and checks the
-        returned rows' hash chain from the head stored at `after_version`."""
+        IDEA-095) continues from this process's checkpoint instead of re-reading the whole journal. In the same
+        snapshot it reads every row after `after_version` up to the verified head and checks that their hash chain,
+        from the head stored at `after_version`, ends exactly at that head (PR280-RV01), so a returned range that ends
+        before the checkpoint is still tied to it."""
         if (type(after_version) is not int or after_version<0 or
                 (through_version is not None and
                  (type(through_version) is not int or through_version<after_version))):
             raise ContractError('Invalid journal sequence bounds')
         if full:
             self.verify(run_id)
-        else:
-            self.verified_snapshot(run_id,full=False)
+            with self.transaction() as db:
+                rows=db.execute('SELECT batch FROM events WHERE run_id=%s AND sequence>%s '
+                                'AND (%s::bigint IS NULL OR sequence<=%s) ORDER BY sequence',
+                                (run_id,after_version,through_version,through_version)).fetchall()
+            return [Document(bytes(raw)) for (raw,) in rows]
         with self.transaction() as db:
-            rows=db.execute('SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events '
-                            'WHERE run_id=%s AND sequence>%s AND (%s::bigint IS NULL OR sequence<=%s) ORDER BY sequence',
-                            (run_id,after_version,through_version,through_version)).fetchall()
+            db.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
+            run=self._snapshot(db,run_id,False)
             head=ZERO if after_version==0 else (db.execute('SELECT head FROM events WHERE run_id=%s AND sequence=%s',
                                                            (run_id,after_version)).fetchone() or (None,))[0]
-        if not full and head is None:
-            raise IntegrityError('Truncated or rewound journal')
-        out=[]
-        for raw,bhash,ehash,previous,stored,sequence in rows:
-            raw=bytes(raw)
-            if not full and (digest(raw),digest(doc(Document(raw).read()['event']).payload),previous,stored,sequence) != (
-                    bhash,ehash,head,digest(bytes.fromhex(head)+bytes.fromhex(digest(raw))),after_version+len(out)+1):
-                raise IntegrityError('Journal corruption')
-            head=stored
-            out.append(Document(raw))
+            if head is None:
+                raise IntegrityError('Truncated or rewound journal')
+            out,version=[],after_version
+            # One row at a time: the bridge past `through_version` is checked but never kept.
+            with db.cursor(name='journal_suffix') as cursor:
+                cursor.execute('SELECT batch,batch_hash,event_hash,previous_hash,head,sequence FROM events '
+                               'WHERE run_id=%s AND sequence>%s AND sequence<=%s ORDER BY sequence',
+                               (run_id,after_version,run['version']))
+                for raw,bhash,ehash,previous,stored,sequence in cursor:
+                    raw=bytes(raw)
+                    version+=1
+                    if (digest(raw),digest(doc(Document(raw).read()['event']).payload),previous,stored,sequence) != (
+                            bhash,ehash,head,digest(bytes.fromhex(head)+bytes.fromhex(digest(raw))),version):
+                        raise IntegrityError('Journal corruption')
+                    head=stored
+                    if through_version is None or sequence<=through_version:
+                        out.append(Document(raw))
+            if (head,version)!=(run['head'],run['version']):
+                raise IntegrityError('Journal range does not reach the verified head')
         return out
 
     def export_checkpoint(self,run_id):
