@@ -118,3 +118,25 @@ a database that holds the final run only.
 
 Host acceptance (Yao, with ARCH-02): after install, `/var/lib/larp-archive` exists (0700, `larp-archive`) and holds one
 checkpoint file after the first run. Later hourly runs finish in seconds, and one run per day takes the full check.
+
+## PR280-RV01 — SD5 range gap (Isaac, 2026-10-25; fix pre-registered before tests or code)
+
+**Finding (Isaac, PR280-RV01 at `ecc4e0d8`; confirmed by reading the code).** `journal(full=False)` checks the returned
+rows' hash chain from the head stored at `after_version` but never links its end to a trusted head. When
+`through_version` is before the process checkpoint, a consistently rewritten subchain (rows 3–5 re-hashed, row 6 and the
+run row untouched) is returned without error; full `verify` refuses it. The verification and the row read also run in
+two transactions, so they need not see the same snapshot. `_quiet_since` relies on the returned rows as evidence that
+intervening commits were wallet-neutral, and reads up to `current['version']`, which is at or just before the
+checkpoint, so the bridge to a trusted head is short.
+
+**Fix (proposed).** One REPEATABLE READ, READ ONLY transaction verifies from the checkpoint (as `verified_snapshot`)
+and reads every row after `after_version` up to the verified snapshot's version. Their chain from the head at
+`after_version` must end exactly at the verified `(head, version)`, so it passes through the checkpoint row and the
+newly verified rows. Only rows up to `through_version` are returned. `full=True` is unchanged.
+
+| ID | Criterion |
+|---|---|
+| SD8 | With this process's checkpoint at version 6: rows 3–5 rewritten as a self-consistent chain (batch bytes, batch hash, event hash, previous hash and head recomputed; row 6 and the run row unchanged) make `journal('run', after_version=2, through_version=5, full=False)` raise `IntegrityError` (red on `ecc4e0d8`). The same call on an untampered journal returns the same bytes as `full=True`, still without a genesis verification. The existing SD1–SD5 tests pass unchanged. |
+| SD9 | Full suite on the fixed head: no new failures against `ecc4e0d8` in the same environment; exact counts reported. |
+
+Result states: `supported` if SD8–SD9 pass; `not supported` if SD8 fails after the fix.
