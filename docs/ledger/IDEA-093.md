@@ -552,3 +552,33 @@ uploads work. Registration (commit, manifest, version event) comes before any tr
 | SC-8 | Real PostgreSQL: a run commits the self-check BUY and SELL with settled synthetic fills, restarts between them, reaches DONE, and the journal replays to the same head with every live port disabled |
 | SC-9 | The rebuilt FS1 profile carries the key with the values above, rebuilds byte for byte, passes `validate_live`, signed live preparation and `gate_a_check`; it differs from the previous FS1 candidate only in the key and its provenance |
 | SC-10 | Full local CI replica as before, no new failures |
+
+### SC results (2026-10-25 SGT)
+
+Commits: `36c9f753` (criteria), `11337ba3` (tests, red on base: 7 of 8 strategy cases and SC-8), `0a65e19e`
+(implementation, FS1 profile, run sheet).
+
+**Deviation from the pre-registered value (recorded before the results below):** `pay_units` is **32 USDT**, not
+`ceil(minimum_trade_units × 1.02)` = 19.01 USDT. With RV01's `entry_cost_basis=AUTHORIZED_MINIMUM`, a BUY's cost is
+the full 20 bp slippage allowance plus spread, impact and expected gas: at 19.01 USDT that is about 54 bp (gas alone
+about 30 bp) against the 50 bp entry-cost cap, so the self-check BUY would be refused live. 32 USDT (an ordinary
+FS1 entry, `floor(0.19 × (200 − 30 − 0.2))` rounded down to whole USDT) is about 42 bp, the same gate the scored-run
+entries pass. Found when the first SC-3 run on a 5.1 USDT fixture leg was refused `ENTRY_COST_CAP`; the fixture leg
+is now 20 USDT. Three test-only defects were also fixed: a malformed timestamp in an SC-2 case, a cost assertion
+that named only one of the two cost gates, and the S4-6 list of deliberate FS1 keys.
+
+| # | Result |
+|---|---|
+| SC-1 | **PASS.** All existing tests pass in the full run; FS1-R still rebuilds byte for byte (unchanged `54802665…`) |
+| SC-2 | **PASS.** Refused: a REHEARSAL profile (`SCOPE`), an ineligible symbol, `buy_after >= buy_until`, `flat_by` after `trade_after`, reversed times, `pay_units` below the minimum or at the cap, an extra field, a string amount, a null |
+| SC-3 | **PASS.** In BUY phase before `trade_after`, one SKHYB BUY (20 USDT fixture leg); without the key nothing; before `buy_after`, at `buy_until` and between `buy_until` and `flat_by`, nothing |
+| SC-4 | **PASS.** Run halt, daily halt, `new_spending_ok` false, closed market and a cost-refused quote each stop the self-check BUY |
+| SC-5 | **PASS.** Once held: mandatory SELL of all 2000 units, reason `ACTIVATION_SELF_CHECK`, no BUY, risk state BOUGHT |
+| SC-6 | **PASS.** BOUGHT and flat → DONE (no further buy before `trade_after`); in the scored window the self-check name gets a TARGET_WEIGHT despite `ever_held`, with `self_check_cleared`; a later holding keeps the normal re-entry block; without the key the block stands |
+| SC-7 | **PASS.** At `flat_by`: EXPIRED with or without a residual position, nothing forced; EXPIRED stays |
+| SC-8 | **PASS.** Real PostgreSQL: BUY leg, new coordinator, mandatory SELL leg (BOUGHT), new coordinator, DONE with no intents; flat, no reservations; exact journal replay with every live port disabled |
+| SC-9 | **PASS.** FS1 `19176e6c…` (digest `969532f5…`, probe `5b642bd3…`) carries SKHYB, 32 USDT, Oct 27 00:00Z / Oct 28 18:00Z / Oct 28 23:00Z; rebuilds byte for byte; differs from `0401e966…` only in `activation_self_check` and its provenance; `validate_live`, signed live preparation and `gate_a_check` pass |
+| SC-10 | **PASS (local replica).** Clean clone of `0a65e19e`: **2775 passed, 9 skipped, 4027 subtests, 0 failed**; `pip check`, demo, Docker build/run PASS; x86_64 bundle `e2b394b5…`, `test_host_bundle.sh` PASS for primary and signer. Systemd conditions not run here (passed in the reviewer's separate run at `d7741f91`; no unit file changed since) |
+
+**Live, not testable offline:** the actual final-wallet trade, its `tx_hash` in delivered round logs, and the
+uploader ack (run sheet J-SC). The install must finish before 2026-10-28T18:00Z for the buy to happen.

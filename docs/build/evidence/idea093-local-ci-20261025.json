@@ -126,5 +126,25 @@
   },
   "terraform": "not rerun: no deploy/ change",
   "systemd_conditions": "NOT RUN"
+ },
+ "sc_rerun": {
+  "tested_commit": "0a65e19e9e41ef1f74e4874b1b8b1abbc7d0699f",
+  "pip_check": "PASS",
+  "pytest": {
+   "passed": 2775,
+   "skipped": 9,
+   "subtests_passed": 4027,
+   "failed": 0,
+   "seconds": 486.66
+  },
+  "offline_demo": "PASS (67652-byte trace)",
+  "docker_build_and_run": "PASS",
+  "host_bundle": {
+   "bundle": "larp-0a65e19e9e41-x86_64.tar.gz",
+   "bundle_sha256": "e2b394b53ef17bb0d97ccf35b28c4155b7fa77a3298e96179c2757a79c21388d",
+   "test_host_bundle": "PASS primary and signer"
+  },
+  "terraform": "not rerun: no deploy/ change",
+  "systemd_conditions": "NOT RUN here"
  }
 }
