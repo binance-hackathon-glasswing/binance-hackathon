@@ -3,7 +3,8 @@
 - Date / author: 2026-10-25 / Claude Code, asked by the user ("yes, add the reason summary please") after a check of
   the F-125 self-check list ("Decision record generated with reason summary"). Owners for acceptance: Keegan
   (runtime/audit), Isaac (round-log contents); host check on the next run: Yao.
-- Status: **open — pre-registered (criteria RS1–RS7 below committed before any test or code).**
+- Status: **open — pre-registered (criteria RS1–RS7 committed before any test or code, `2223d953`); supported offline
+  2026-10-25 (results below). Owner acceptance, the release build and the live check remain.**
 - Related: F-34, F-99..F-101, F-125 (6), G-04, GAP-46, IDEA-042 (round log), IDEA-093 (FS1).
 
 ## Problem (read from the code at canonical `f52107f0`)
@@ -49,6 +50,24 @@ coordinator/replay tests.
 
 Result states: `supported` if RS1–RS7 pass; `not supported` if RS1–RS5 fail after the fix.
 
-## Results
+## Results (2026-10-25; Python 3.12 from the pinned lock, PostgreSQL 16 — not the pinned 14.24 image)
 
-(none yet)
+Commits: `2223d953` (criteria), `6418208c` (tests, red on `f52107f0`: 21 failed, 2 passed — the two passes are the
+subtest parents; `test_rs5_orders_keep_the_kit_schema` is a guard that passes on base by design), `52b743db`
+(implementation, plus the RS3 gates test).
+
+| # | Result |
+|---|---|
+| RS1 | **PASS.** A settled one-order round's log has `output.reason_summary` (one sentence, under 400 characters) and one `decision_summaries` entry with the intent's `decision_id`, `symbol`, `side` and `amount`. |
+| RS2 | **PASS.** Fixed phrases for every listed code, the policy target weight for discretionary orders (`19%`), the gas top-up, the per-trade-cap split; an unknown code appears verbatim. Example: `SELL 0.029481990606890322 GOOGLB, mandatory: terminal flatten: every position is sold before signing ends; split by the per-trade cap.` |
+| RS3 | **PASS.** Hold-only rounds name their errors first (`HALTED:CLOCK`, `VERSION_NOT_REGISTERED`, `COMMIT_REJECTED`), else up to three distinct rejection reasons with their symbols, or a whole-round block with its gates (`execution blocked (WALLET_PENDING, SIGNING_END)`), else `No order this round: no target change.`; `decision_summaries` is empty. The audit-fallback output also carries `reason_summary`. |
+| RS4 | **PASS.** Pure function of the stored record (same input, same output); every existing replay test passes unchanged. |
+| RS5 | **PASS.** `orders` bytes unchanged (`[{"symbol","side","amount","tx_hash"}]`); `check_orders` and protocol validation unchanged; the summary goes through the same `redact` as the rest of `output`. |
+| RS6 | **PASS.** No existing test needed a change: no test pins exact round-log bytes. |
+| RS7 | **PASS.** Same container: branch **2832 passed, 11 skipped, 4044 subtests, 0 failed**; base `f52107f0` (PR278-RV03 run) **2819 passed, 11 skipped, 4033 subtests, 0 failed**. The difference is the 13 new tests (11 subtests). The first branch run had 2 failures in `tests/runtime/test_run3_sheet.py` / `test_run4_sheet.py`, caused by a `__pycache__` folder this session left in the RC7 run-sheet folder (from importing `chain-monitor.py`); after removing it both files pass (14/14) on the branch and on base. |
+
+Result state: **supported** offline.
+
+**Still to do (owners):** Keegan and Isaac accept the wording and placement. It reaches a host only in a new build:
+the FS1 final release must be built from a commit that contains this change. The live check (Yao): the first
+FINAL round log, from the activation self-check, shows `reason_summary` for its SKHYB BUY and SELL.
