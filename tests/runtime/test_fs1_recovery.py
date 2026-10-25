@@ -113,6 +113,9 @@ class Run4Flatten(DatabaseCase):
             name = 'flatten-' + str(n)
             plan = self.start(c, name)
             if not plan['intents']:
+                if 'MANDATORY_RETRY_SPACING' in plan['reasons']:
+                    h.now = (h.now // 900 + 1) * 900  # IDEA-102: next UTC quarter-hour slot
+                    continue
                 break
             for planned in plan['intents']:
                 self.assertEqual(planned['side'], 'SELL')
@@ -220,15 +223,15 @@ class Run4Flatten(DatabaseCase):
 
     def test_rc1x_one_name_stays_adverse_recovery_still_sells_the_other_four(self):
         """Exploratory (added after the RC1 run, not pre-registered): every SELL of the first name is refused after
-        its approve. With recovery each abort is cleaned up, the other four reach dust, and the adverse name stops at
-        its leg attempt limit with no allowance open. Without recovery its open allowance blocks the others."""
+        its approve. With recovery each abort is cleaned up, the other four reach dust, and the adverse name keeps
+        spaced retries above the old cap with no allowance open. Without recovery its open allowance blocks the others."""
         limit = 5
         on = self.flatten(recovery=True, persistent=True)
         stuck = {s for s, p in on['ledger']['positions'].items() if p['units'] > self.profile['dust_units']}
         self.assertEqual(1, len(stuck), on['ledger']['positions'])
         self.assertEqual(set(NAMES) - stuck, set(on['sold']))
         self.assertFalse(any(on['allowances'].values()), on['allowances'])
-        self.assertLessEqual(max(on['ordinals'].values()), limit, on['ordinals'])
+        self.assertGreater(max(on['ordinals'].values()), limit, on['ordinals'])
         self.assertFalse(on['reservations'])
         off = self.flatten(recovery=False, persistent=True)
         held = {s for s, p in off['ledger']['positions'].items() if p['units'] > self.profile['dust_units']}

@@ -1,5 +1,13 @@
 # Current shared build and remaining work
 
+PR291 / IDEA-102 MC-RV03 (2026-10-26 SGT): mandatory S1 SELL legs now retry without a session ceiling,
+with one new attempt per leg per UTC15-minute slot. Quote children may reuse their parent's open slot; refunds
+retain spacing. Discretionary caps and all gas/window/health/signer/preflight checks remain. New runtime rounds
+record a replay discriminator; historical/new journals replay exactly. Source7e31de34: pinned Linux/Python3.12.15/
+PostgreSQL14.24 **2858 tests /4055 subtests PASS,11 platform/fixture skips**; focused51/32/zero skips.
+CAP-01 implementation/review is complete. [Receipt](evidence/pr290-pr291-review-20261026.json).
+GitHub CI remains billing-blocked; exact FS1 release/owner/host acceptance remains separate. No deployment.
+
 PR290 / S4-F1-RV01 (2026-10-26 SGT): unclaimed command expiry refunds only the latest leg attempt in the same
 session. Refund-tagged facts after any recorded broadcast are refused; claimed commands and ordinary aborts do
 not refund. Source313c5758: pinned Linux/Python3.12.15/PostgreSQL14.24 **2847 tests /4055 subtests PASS,11 skips**;

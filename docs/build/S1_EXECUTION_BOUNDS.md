@@ -49,10 +49,18 @@ authorize a new swap outside it.
 An attempt is a bounded quote/economic-action chain for one
 `(symbol, BUY/SELL, discretionary/safety)` leg. Separate safety and discretionary
 lanes prevent failed entries or discretionary sales from consuming a mandatory
-exit's allowance. Both lanes have the explicit configured maximum. Exhausted
-mandatory requirements remain outstanding with `LEG_ATTEMPT_LIMIT`; they are not
-treated as completed. The owner must confirm these proposed values and this retry
-scope against measured costs before activation.
+exit's allowance. IDEA-102 removes the configured session maximum from mandatory
+SELL legs in new runtime rounds. They receive at most one new attempt per leg
+per UTC 15-minute slot, refused with `MANDATORY_RETRY_SPACING` within that slot.
+Discretionary BUY/SELL legs retain `max_attempts_per_leg_session` and
+`LEG_ATTEMPT_LIMIT`. Ordinals continue increasing for audit. All existing gas,
+window, health, HALT, allowance-recovery and strict preflight guards still apply.
+The exit reserve continues to protect buys; an affordable mandatory sale may
+consume it. Profile hashes and configured discretionary ceilings do not change.
+
+New rounds record runtime-owned `execution_attempt_policy: MANDATORY_CADENCE_V1`.
+Historical journals without it retain their original configured maximum for both
+lanes and replay with their original plan bytes.
 
 The planner consumes a slot when it evaluates a leg's quote or requests its
 missing exact-input quote. Cost, route and quote refusals keep the spent slot.
@@ -62,14 +70,19 @@ refinement. A quote child can share its parent's slot only through a committed
 parent-round reference, matching profile/session/leg/interval/ordinal and an
 exact-input quote the parent requested. Ordinary fresh rounds cannot reuse it.
 An issued intent or terminal quote refusal closes that slot. Even if execution
-later ends NOT_SUBMITTED, an old parent cannot reopen it; a new retry consumes a
-new ordinal. The signer also binds window authority to the actual planned
+later ends NOT_SUBMITTED, an old parent cannot reopen it. IDEA-097 S4-F1 refunds
+only an explicitly tagged never-claimed expiry of the latest attempt in the same
+session; any recorded broadcast prevents the refund. Ordinary aborts retain their
+spent ordinal. A refund retains the mandatory leg's last-slot timestamp, so it
+cannot admit another new attempt in the same slot. The signer also binds window authority to the actual planned
 tokens, exact input and minimum output, so a BUY cannot borrow a safety SELL's
 after-hours exception.
 
 `execution_attempt_budget` is committed in the same PostgreSQL transaction as the
 round plan. It survives closure, failed execution, restarts and settlement, and
-resets at the next regular-session open. No new database migration is needed.
+resets counts at the next regular-session open. Optional `last_ms` timestamps
+survive a count refund and session rollover; unknown legs, invalid integers and
+future timestamps are refused. No new database migration is needed.
 Counters, bounds, parent provenance, quote requests and rejection/cost evidence
 are included in normal round logs. Recorded-port replay reconstructs them from
 the journal, including parent/child relationships, without network calls.

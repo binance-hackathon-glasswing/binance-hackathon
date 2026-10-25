@@ -6,12 +6,12 @@ from larp.integration.runtime import initial_projection
 from larp.integration.settlement import settle
 from larp.research.fixtures import changed, with_quotes
 from larp.storage.postgres import doc
-from tests.integration.test_execution_bounds import DurableBudget as _DurableBudget, unclaimed_fact
+from tests.integration import test_execution_bounds as durable
 from tests.strategy.test_execution_bounds import at
 from tests.strategy.test_mandatory_retry_spacing import LEG, SLOT
 
 
-class MandatoryRetry(_DurableBudget):
+class MandatoryRetry(durable.DurableBudget):
     test_quote_child_reuses_parent_and_replays_from_the_parent_journal = None
     test_closed_rounds_restart_and_duplicate_round_cannot_restore_attempts = None
     test_budget_survives_midnight_weekend_and_resets_at_next_open = None
@@ -42,7 +42,7 @@ class MandatoryRetry(_DurableBudget):
         return self.store.load('run').read()['projection']['round_records'][name + '/quote1']['plan']['intents'][0]
 
     def abort(self, coordinator, intent, name):
-        coordinator.observe(name + '-abort', doc(unclaimed_fact(intent, name + '/quote1', name + '-abort', self.now,
+        coordinator.observe(name + '-abort', doc(durable.unclaimed_fact(intent, name + '/quote1', name + '-abort', self.now,
             reason='PRICE_CHECK_ABORT')), settle)
         coordinator.close(name + '/quote1', self.now, 'COMPLETE')
 
