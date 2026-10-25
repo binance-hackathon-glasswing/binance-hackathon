@@ -61,6 +61,11 @@ def check_scope(values, report):
     runtime, uploader, operations, state = (values[n] for n in
                                             ('runtime.json', 'uploader.json', 'operations.json', 'initial-state.json'))
     driver = runtime['driver']
+    recovery = driver.get('allowance_recovery', False)
+    if type(recovery) is not bool or recovery != report.get('allowance_recovery', False):
+        raise ContractError('Allowance recovery preparation scope differs')
+    if recovery and not driver.get('untrusted_router_policy_sha256'):
+        raise ContractError('Allowance recovery requires pinned router policy')
     signed = report.get('execution') == 'service'
     mode = report.get('runtime_mode')
     from larp.strategy.execution_bounds import require_open_state_scope

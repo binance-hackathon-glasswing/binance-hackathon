@@ -59,6 +59,8 @@ def quote_drop_reason(error):
     named by class only, since its text may hold a provider URL or credential (IDEA-088 QV8)."""
     from larp.marketdata.web3 import Unavailable
     name = type(error).__name__
+    if isinstance(error, Unavailable) and 'DIRTY_ROUTER_ALLOWANCE:' in str(error):
+        return 'DIRTY_ROUTER_ALLOWANCE:' + str(error).split('DIRTY_ROUTER_ALLOWANCE:', 1)[1]
     if isinstance(error, (Unavailable, Blocked, ContractError)):
         return (name + ': ' + str(error))[:200]
     return name
@@ -972,11 +974,13 @@ class RoundDriver:
     signing = False
 
     def __init__(self, coordinator, work, *, ports=None, execution=None, market=None, day_roll=None,
-                 max_quote_rounds=0, max_quote_requests=2, balance_check=None, assessments=None, gas_check=None):
+                 max_quote_rounds=0, max_quote_requests=2, balance_check=None, assessments=None, gas_check=None,
+                 allowance_check=None):
         self.coordinator, self.work = coordinator, work
         self.assessments = assessments
         self.balance_check = balance_check
         self.gas_check = gas_check
+        self.allowance_check = allowance_check
         self.execution = execution or ShadowExecution(coordinator)
         self.ports = dict(ports or {})
         self.market, self.day_roll = market, day_roll
@@ -1086,6 +1090,8 @@ class RoundDriver:
             summary['balance_check'] = self.balance_check(now_ms)  # before the round, so it sees the result
         if self.gas_check is not None and ('balance_check' in summary or self.gas_check.due(now_ms)):
             summary['gas_check'] = self.gas_check(now_ms)  # at its interval, and after every reconciliation
+        if self.allowance_check is not None:
+            summary['allowance_check'] = self.allowance_check(now_ms)
         if self.day_roll is not None and self.market is not None:
             current = c.store.load(c.run_id).read()
             if self.day_roll.due(current, now_ms):

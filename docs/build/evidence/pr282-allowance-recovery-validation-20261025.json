@@ -1,0 +1,100 @@
+{
+  "base_commit": "5b5f0c89247f2a63156d7f03a24fe583c3a9c3c4",
+  "code_and_test_sha256": {
+    "docs/build/ops/rehearsal-install-rc7-20261024/checks/trading-status.sh": "082498aeb60be2f4bb51457edd9cdf533ea31b14d3c452381ef95eb610caef57",
+    "docs/build/ops/rehearsal-install-rc7-20261024/mac/chain-monitor.py": "6d05d09796efedf93f89a5061481ac0642907f6a6f0c3d6d073b2d108bd23bd4",
+    "larp/execution.py": "018458932a37e09200cccfae7061e4fa0b5e7917fa4bde2c584123be7f3662e1",
+    "larp/execution_live/service.py": "af188540806fdf5df3bff9d7cc1d4f7bccfd7ee136a06506e4ce3f1775b3c5fa",
+    "larp/execution_live/store.py": "bb2ed540fb677ffce4644230f4213fd5cec7781c1d62d028af656372c565c78b",
+    "larp/execution_live/venue.py": "c972ce2566c440a39fbce92997df8cdc063c4c90c2958b359009152d8c956aba",
+    "larp/marketdata/allowances.py": "94c8d1365ced50b5e29ac424189715226e149721e054f975bd87007a37176303",
+    "larp/marketdata/port.py": "da39e95fc862d4552a9df646e91c6ad44af85fd8a117dde547f3fc021f2133fa",
+    "larp/marketdata/quote_verifier.py": "5dad8e1d2e5dd6d8d9706008393fb079f42cffa4f3ebd3de59d68c132642a58f",
+    "larp/runtime/allowances.py": "9374ad22336ff509c1197a5ce4557547c41e7bc4a93a36ef0e56f3df0ec07981",
+    "larp/runtime/driver.py": "2677a138a416feb05302b8d42cf6a40e8b239ea7a12c23e851c45d0739533d27",
+    "larp/runtime/gate_a.py": "24e753ab3b5d669de4753cf6b768b51ef238a8b13ab6a026445cb4d72ed36ed8",
+    "larp/runtime/gate_a_check.py": "4ad38230bf0f9ce76b696676a18bace6b40c13a283d58927807ae727315f160f",
+    "larp/runtime/service.py": "0e5fed424f722bc1407fdb183b6cfc529ed83bd55149e4ed8573f6ddf4f3e573",
+    "tests/execution/test_allowance_candidate.py": "de9044bf38a7a49d84d4960ddea5edd8cb278ca8936d3b9eba4a3ca446653e52",
+    "tests/execution/test_allowance_recovery.py": "93457acb1d16aeb6917f7b90e17eba23d78b27e26d6c864a2eb15c70a0c1986c",
+    "tests/execution/test_flatten_allowance.py": "9ddd183a85bb55644485d3065bb38089db30ce7955fe026b444b01d0c32cfcc7",
+    "tests/marketdata/test_flatten_allowance.py": "703bf8ed81bbeab8a9d2d5c10cd9ae073f9bf917c08f199dca3f904f5e8a2881",
+    "tests/runtime/test_allowance_recovery.py": "1375c63e598650c6bad8a3df151e44e6e949271c58621fd819b253aad31a9023",
+    "tests/runtime/test_flatten_allowance.py": "d0db6e400718d267e12b5bae3788c5042c1ce1bb6052ffadabc87adaacbd1167",
+    "tests/runtime/test_run4_sheet.py": "532ed5c13f344cddb6043792e3bf9b6d1ab9ac390f9fb9172e3f550ba47f0712",
+    "tests/test_allowance_monitoring.py": "539cc1e0ab588f10c4021a9a7e908033248cde8f1090a2c35751485ed38cf13d",
+    "tools/dashboard/decisions-export.sh": "3bb66eb9f0237569ddce9cbbc108ebbae893519ba614597bc2e4e78e65805e25",
+    "tools/deploy/enable_allowance_recovery.py": "ed4f67ee4b52dec63cf29ccd9c41a7e4c68981f6013e738df42de49d9fd6d368",
+    "tools/deploy/prepare_shadow.py": "514bc4b7ad1e2bf992f876fda244541006ba3b90708c6b092f313e44ea6efcf5"
+  },
+  "command": "python -m pytest -q -rs -p no:cacheprovider --deselect=tests/runtime/test_worker_release.py::Sandbox --junitxml=/tmp/pr282-full-final.xml",
+  "date": "2026-10-25",
+  "deselection_reason": "Three unchanged Sandbox cases require nested bubblewrap namespaces/proc mounts unavailable on this Docker host.",
+  "environment": {
+    "network": "internal disposable Docker network; no live services or wallet",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "postgres": "14.24",
+    "postgres_image": "sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2",
+    "python": "3.12.15",
+    "source_mount": "read only",
+    "test_image": "sha256:750132bb93c250e52f14f9ea69ce517f993414f2f5060b7af58e78dcaabbb004",
+    "verified_dependency_pins": 45
+  },
+  "evidence": {
+    "junit_sha256": "8f9bca0825c60cc0aaba5487e85d2da7fe0c2e405047df3c75cb5331c3957c3d",
+    "stdout_sha256": "103fd9e0eb3ea66e2e4cf2ac4a42145e85c6d4c3f2e407e5d41c71359306ba20"
+  },
+  "github_ci": {
+    "annotation": "The job was not started because recent account payments have failed or your spending limit needs to be increased.",
+    "runtime_check": "https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/40184126677/job/121141195890",
+    "status": "NOT_STARTED_ACCOUNT_BILLING"
+  },
+  "history": {
+    "canonical_probe": "Exact original dirty SKHYB / NVDAB SELL refusal reproduced with unchanged 5b5f0c89 verifier.",
+    "final_note": "Duplicate imported fixture test collection removed; final run includes every existing suite plus dedicated new regressions.",
+    "initial_full": {
+      "failed": 2,
+      "fixes": [
+        "historical validation namespace lacked abort_pending",
+        "RC7 byte-equality fixture did not exempt intentional monitor updates"
+      ],
+      "passed": 2738,
+      "source_commit": "69039e411e617f4560e0d887c9f4b647d852aab4"
+    },
+    "red_regression_commit": "60b0d3a8"
+  },
+  "idea": "IDEA-096 AL-IMPL01",
+  "limitations": [
+    "No live AL9, signer-policy approval, host timing/gas qualification, installation, deployment or wallet action.",
+    "AL5/AL6 cleanup remains bounded by original authority; dirty expiry/revert cases require F2 under a fresh valid intent.",
+    "AL7 real candidate private bindings, fresh caps/release and full Gate A/host acceptance remain owner gates.",
+    "F1 planner reordering deferred as optional."
+  ],
+  "lock_sha256": {
+    "deploy/requirements-aws.lock": "a73e19f2b530d2b74de4ef6e6613c1f5f882060bf5d9cbe4c07a5fb5b63b18a0",
+    "deploy/requirements-runtime.lock": "b80ea81d1d104f623156e9aca31413c3bc102271ed5409506c8495e8a3aa3f6d",
+    "deploy/requirements-signer.lock": "66df91032123d584df0338bc0b5d94d2e93576ec4badbafa1e3a5e35b32ca0e2",
+    "deploy/requirements-test.lock": "f1e79653ef48cdf27ac8027614bdf36f982e6a2b1c547e63a4fdbaf5125cdadd"
+  },
+  "results": {
+    "deselected": 3,
+    "failed": 0,
+    "passed": 2705,
+    "seconds": 248.53,
+    "skipped": 8,
+    "subtests_passed": 4018
+  },
+  "schema": "Pr282AllowanceRecoveryValidation.v1",
+  "skipped": [
+    "optional private public-source fixture",
+    "external recorded market artifacts",
+    "root directory-mode check",
+    "five opt-in systemd/host runner cases"
+  ],
+  "source_commit": "1210a9f039799b8fe4120cb01b894d107620680e",
+  "strict_preflight": {
+    "changed": false,
+    "file": "larp/execution_live/untrusted_router.py",
+    "sha256": "9934f5372f406ad9b9b62e85da93421128d68fdf2722af234f358d6140b0923a"
+  }
+}
