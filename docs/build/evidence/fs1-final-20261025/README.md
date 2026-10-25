@@ -9,9 +9,9 @@ PR278-RV01 adds four explicit behavior fields below. Earlier receipts/pins in ID
 | File | SHA-256 |
 |---|---|
 | `fs1-block.json` (the profile's `s1` block; byte-identical to S2's `s2-block.json`) | `35e20c38e23657da6723e31b18f323e5f5ede778de938d73c72ff1a2c1408d03` |
-| `fs1-final.json` (file bytes; the `PROFILE_SHA` to pin) | `0401e96631ed72a6232c1ac62530636c5f6b65b30e282144d9b4df725f380908` |
-| `StrategyProfile.v1` digest of the same profile | `ac5de5720e480af5f72c2faaa9dc153100b46aa9e83354cf6b1f21b35ae8af22` |
-| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-final.json`) | `518b1e7677082dd28b0ee9bf01758b4e473901eb36ac3b7a1eee4de904a2148d` |
+| `fs1-final.json` (file bytes; the `PROFILE_SHA` to pin) | `19176e6c6537291bb41f440636f51d7f6313d2444ebf7242cc145316d840f291` |
+| `StrategyProfile.v1` digest of the same profile | `969532f583ee0015533178d4ca4bd5917c6bb6340e9e396c47e8a38db91d559f` |
+| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile fs1-final.json`) | `5b642bd3b58638f9e7e495340ee6a0bb733a32f4effe90cf187bedcda900a289` |
 | Model routing `config/intelligence/aiand-routing.fs1.json` | `9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4` |
 
 ## What it is
@@ -35,6 +35,7 @@ registry, L = 660 s / m = 30 s, initial-only gas budgets, two exit children per 
   before fills/costs, instead of starving the fifth name. Actual funding fees and self-check costs change these
   numbers. Initial-only gas remains enabled; there are no agent BNB top-ups. Fixed-price BNB risk valuation and
   the final-wallet self-check/handover remain GAP-73/74 acceptance items.
+- `activation_self_check` (IDEA-093 SC, GAP-74, F-125): before Oct 29, one BUY of about 32 USDT of SKHYB (cheapest measured round trip) between 2026-10-27T00:00Z and 2026-10-28T18:00Z, a mandatory SELL of the whole position, DONE before 2026-10-28T23:00Z; the same run then trades the scored run. Holding only the self-check does not block the later entry.
 
 The runtime still supplies no trend series: the prior/start trend state is retained. These repairs do not prove
 alpha or activate a predictive signal. See [PR278-RV01 research/review](../../../research/fs1-review-20261025.md).

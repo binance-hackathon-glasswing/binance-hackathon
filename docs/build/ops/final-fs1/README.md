@@ -12,7 +12,7 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
 
 | Item | Value |
 |---|---|
-| Strategy profile | `docs/build/evidence/fs1-final-20261025/fs1-final.json`, `PROFILE_SHA` `0401e96631ed72a6232c1ac62530636c5f6b65b30e282144d9b4df725f380908`, M3 probe `518b1e76…` |
+| Strategy profile | `docs/build/evidence/fs1-final-20261025/fs1-final.json`, `PROFILE_SHA` `19176e6c6537291bb41f440636f51d7f6313d2444ebf7242cc145316d840f291`, M3 probe `5b642bd3…` |
 | Model routing | `config/intelligence/aiand-routing.fs1.json` → `/etc/larp/model-routing.json`, `9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4` (ChatGPT `gpt-6.1-sol` first; Kimi K3 / GLM-5.3 through AIand) |
 | Router policy, CAP-02 | unchanged from run 4: UNTRUSTED `05759e90…`, CAP-02 `3241abd3…` (re-confirm at A1) |
 | Run mode / environment | `live` / FINAL (the profile is refused in any other mode) |
@@ -28,7 +28,7 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
 | F0b | account owners | reconcile the OpenAI budget (KMP-BUD01: about US$2.88 settled + US$0.34 unknown vs the file's US$2 prior spend). If `openai_pacing` changes, rebuild the routing file (new hash) and re-pin | never initialize a ledger with a stale number (AIAND_MODEL_ROUTING.md) |
 | F0s | Yao | runtime Secrets Manager entry carries `LARP_AIAND_API_KEY` (required) and `LARP_MODEL_API_KEY` (OpenAI; without it every assessment goes to the AIand reviewers, so ChatGPT is not used) | `larp/intelligence/routing.py` |
 | F0w | Isaac + Yao | confirm the already registered final wallet's 200 USDT funding (GAP-75), bind its uploader secret, and record the organiser-required **30 USDT → BNB** MetaMask swap before the first agent trade (now the activation self-check) and before Oct 29; smaller only with explicit organiser permission | F-120/F-125, GAP-73 |
-| F0a | Keith + Keegan + Yao | resolve GAP-74: the current FINAL window cannot execute the required pre-Oct-29 final-wallet self-check. Select and register a reviewed self-check/handover path; a separate new run requires zero stock balances including dust. Record real trade, decision reason and STORED trace acknowledgment. No self-check profile or run transition is implemented by this review | F-125; current PF-04 is not a complete activation plan |
+| F0a | Keith + Keegan + Yao | GAP-74 is built into FS1 (IDEA-093 SC): **one run spans the self-check and the scored run**, so no second install or version event. The profile key `activation_self_check` buys about 32 USDT of SKHYB between 2026-10-27T00:00Z and 2026-10-28T18:00Z, sells it whole, and records DONE before 2026-10-28T23:00Z; FS1 then trades as usual from Oct 29 14:00Z. Keith/Keegan accept the values; the install (P4/P5) must finish **before 2026-10-28T18:00Z** or no self-check buy is made (the run then records EXPIRED and still trades the scored run) | IDEA-093 SC, F-125 |
 | F0k | Yao | the final wallet's key on the signer (as SJ-06 K1, for the final wallet) | G-09 |
 | F0p | Yao (Keegan reviews) | **make FS1 copies of the RC7 scripts; not built yet.** The RC7 scripts are pinned to run 4: `mac/m4-prepare.py` (S2 profile `eb55d76a…`, `--runtime-mode dev`, assessor `deterministic`, no routing args, run 4's adoption text), `mac/m3-recapture-assemble.sh`, `mac/d1-create-db.sh`, `mac/setup_rehearsal_db.py`, `mac/prepare_rehearsal_db.py`, `mac/m1-*-bundle.sh` and `host/p4-init-activate-start.sh` (run 4 database/run ID/build). The FS1 copies pin `fs1-final.json` (the `PROFILE_SHA` above), `live`, `aiand_routed`, the routing pair `9b86c732…`, the F0m adoption reference, the final wallet, database and run ID, and the new RC | the steps below cannot run on the RC7 scripts unchanged; editing them by hand at install time is not a reviewed path |
 
@@ -36,18 +36,19 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
 
 | Step | Who / where | FS1 difference | Done when |
 |---|---|---|---|
-| W0 | anyone, read-only | chain monitor `--once` on the **final** wallet after funding/gas/self-check handover | 0 units of all five stocks (dust included), actual remaining USDT (about 170 before fees/self-check), actual BNB and a fresh profile valuation; reconcile funding notes and opening equity |
+| W0 | anyone, read-only | chain monitor `--once` on the **final** wallet after funding and the 30 USDT gas swap, before install | 0 units of all five stocks (dust included), actual remaining USDT (about 170 before fees/self-check), actual BNB and a fresh profile valuation; reconcile funding notes and opening equity |
 | D1 | Yao, Mac | new database (proposed `larp_final`), run ID (proposed `larp-final-fs1`) | `D1_DONE` |
 | M1 | Mac or CI | bundle from the PR278 merge; check it contains the FS1 builder and routing file | `M1_DONE` |
 | Q1 | Yao + Isaac | obtain FS1-pinned final-wallet quotes at actual gas-excluded opening sizes (about 32.3 USDT/name before fees), full-exit child sizes and small level reductions, using its 20 bp slippage and minimum-output cost checks. The existing `quote_check.py` is pinned to run 3's 8 bp/dev address and is supplementary only; an FS1-pinned path remains to be built/reviewed | exact-profile executable quotes and fee/gas evidence accepted, including cost-refused residuals |
-| M2, M3 | Yao, Mac | M3 against `fs1-final.json` (probe `518b1e76…`) and the final wallet | `numeric_status: COVERED` at FS1's sizes (38.2 USDT cap, two exit children) |
-| A1 | Isaac | approve `PROFILE_SHA` `0401e966…`, the final `signer.json`, caps/gas coverage | recorded in IDEA-093 |
+| M2, M3 | Yao, Mac | M3 against `fs1-final.json` (probe `5b642bd3…`) and the final wallet | `numeric_status: COVERED` at FS1's sizes (38.2 USDT cap, two exit children) |
+| A1 | Isaac | approve `PROFILE_SHA` `19176e6c…`, the final `signer.json`, caps/gas coverage | recorded in IDEA-093 |
 | M4 | Yao, Mac | `prepare_shadow.py prepare … --execution service --runtime-mode live --profile fs1-final.json --model-routing config/intelligence/aiand-routing.fs1.json --model-routing-sha256 9b86c732… --model-adoption-ref "<F0m>"` plus the RC7 router-policy pair, through the FS1 copy of `m4-prepare.py` (F0p; its identity checks are `live` / `aiand_routed`, not RC7's `dev` / `deterministic`) | `runtime.json` `mode` `live`, `assessor` `aiand_routed`, routing pin `9b86c732…`; `gate_a_check` PASS |
 | P2–P3 | primary | as RC7; also install `/etc/larp/model-routing.json` readable by `larp-runtime` | preflight and checks PASS |
 | B1 | primary | `model_budget init --routing-file /etc/larp/model-routing.json` with the **reconciled** prior spend (F0b), as `larp-runtime` | status shows the frozen pacing and the routing hash |
 | S1–S2 | signer | as RC7, with the final wallet key | `wallet_matches: true`, `started: true` |
 | P5 then P4 | primary | **start execution before the runtime plans its first buy** (run 4's first intent expired because P4 ran before P5); all of this before `trade_after` 2026-10-29T14:00Z | both active, 0 restarts |
 | J | anyone | `checks/trading-status.sh`, chain monitor | rounds in consecutive 15-minute slots; first BUY end to end with `tx_hash` in a round log |
+| J-SC | anyone, read-only | `checks/trading-status.sh`, chain monitor, ai-seeds spool | the F-125 self-check: a SKHYB BUY (about 32 USDT) then a mandatory SELL (`ACTIVATION_SELF_CHECK`) on the final wallet, risk state `activation_self_check: DONE` before 2026-10-28T23:00Z, both round logs with their swap `tx_hash`, a non-empty reason summary, and the uploader spool empty (delivered). If the state is EXPIRED, record why; FS1 still starts on Oct 29 14:00Z |
 
 ## During the run (no human action)
 

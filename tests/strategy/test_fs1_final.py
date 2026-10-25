@@ -196,6 +196,7 @@ def test_s4_6_differs_from_the_generators_final_s1_profile_only_where_decided():
     generated = pinned_profiles(s1=base_block, s1_decision=p['provenance']['s1']['decision_id'])['FINAL'].read()
     # The generator's FINAL signing_end (Nov 11 14:45) already equals PF-04's; its provenance still differs.
     reviewed = {'entry_cost_basis', 'run_halt_recovery_bps', 's1_reduction_cost_cap_bps', 's1_capital_basis'}
+    reviewed |= {'activation_self_check'}  # IDEA-093 SC (GAP-74): FINAL only
     decided = {'trade_after', 'new_risk_end', 'flatten_start', 'slippage_bps', 'policy_id', 's1', 'exit_gas_reserve_units', 'provenance', *reviewed}
     assert {k for k in set(p) | set(generated) if p.get(k) != generated.get(k)} == decided
     assert {k for k in p['s1'] if p['s1'][k] != generated['s1'][k]} == {'execution'}

@@ -21,12 +21,12 @@ from tests.strategy.test_s1_plan import NAMES
 OPTIONS = dict(run_halt_recovery_bps=500, s1_reduction_cost_cap_bps=50, entry_cost_basis='AUTHORIZED_MINIMUM',
                s1_capital_basis='EXCLUDE_GAS')
 SC = dict(symbol='SKHYB', buy_after='2026-10-10T00:00:00Z', buy_until='2026-10-10T20:00:00Z',
-          flat_by='2026-10-10T23:00:00Z', pay_units=5_100_000)
+          flat_by='2026-10-10T23:00:00Z', pay_units=20_000_000)
 KIT = dict(s2.EXECUTION, hours='KIT_OPEN_STATE')
 BASE = dict(OPTIONS, s1=block(execution=KIT), trade_after='2026-10-11T00:00:00Z')
 WITH = dict(BASE, activation_self_check=SC)
 DURING, AFTER_FLAT_BY, SCORED = '2026-10-10T15:00:00Z', '2026-10-10T23:30:00Z', '2026-10-11T15:00:00Z'
-HELD = {'SKHYB': 510}  # 5.1 USDT at 100 USDT per token, 4 decimals
+HELD = {'SKHYB': 2000}  # 20 USDT at 100 USDT per token, 4 decimals
 
 
 def at_time(value, profile_changes=WITH, **context):
@@ -76,7 +76,7 @@ def test_sc4_other_new_risk_gates_still_stop_the_self_check_buy():
     closed = run(with_quotes(changed(snapshot, markets=markets)))
     assert not buys(closed) and 'MARKET_CLOSED_OR_UNKNOWN' in {r['reason'] for r in closed['rejections']}
     costly = run(with_quotes(at_time(DURING), spread_bps=100))
-    assert not buys(costly) and 'ENTRY_COST_CAP' in {r['reason'] for r in costly['rejections']}
+    assert not buys(costly) and {'ENTRY_COST_CAP', 'COST_RESERVE_INSUFFICIENT'} & {r['reason'] for r in costly['rejections']}
 
 
 # --- SC-5: once held, a mandatory SELL of the whole position ---------------------------------------------------------
@@ -85,7 +85,7 @@ def test_sc5_held_self_check_name_is_sold_whole_and_nothing_is_bought():
     result = run(with_quotes(at_time(DURING, held=HELD)))
     req = requirement(result, 'SKHYB')
     assert req is not None and 'ACTIVATION_SELF_CHECK' in req['reasons']
-    assert (req['max_units'], req['remaining_sell_units']) == (0, 510)
+    assert (req['max_units'], req['remaining_sell_units']) == (0, 2000)
     sells = [i for i in result['intents'] if i['side'] == 'SELL']
     assert sells and sells[0]['symbol'] == 'SKHYB' and sells[0]['mandatory']
     assert not buys(result)
@@ -141,7 +141,7 @@ def fs1():
 def test_sc9_fs1_carries_the_self_check_and_validates():
     p = fs1()
     assert p['activation_self_check'] == dict(symbol='SKHYB', buy_after='2026-10-27T00:00:00Z',
-        buy_until='2026-10-28T18:00:00Z', flat_by='2026-10-28T23:00:00Z', pay_units=-(-p['minimum_trade_units'] * 102 // 100))
+        buy_until='2026-10-28T18:00:00Z', flat_by='2026-10-28T23:00:00Z', pay_units=32_000_000)
     assert p['provenance']['activation_self_check']['decision_id'].startswith('IDEA-093 SC')
     validate_live(p)
 
@@ -150,7 +150,7 @@ def test_sc2_validate_live_refuses_out_of_scope_or_malformed_self_checks():
     from larp.strategy import self_check
     p = fs1()
     sc = p['activation_self_check']
-    bad = [dict(sc, symbol='AAPLB'), dict(sc, buy_after=sc['buy_until']), dict(sc, flat_by=p['trade_after'][:-1] + '1Z'),
+    bad = [dict(sc, symbol='AAPLB'), dict(sc, buy_after=sc['buy_until']), dict(sc, flat_by='2026-10-29T14:00:01Z'),
            dict(sc, buy_until=sc['flat_by'], flat_by=sc['buy_until']), dict(sc, pay_units=p['minimum_trade_units'] - 1),
            dict(sc, pay_units=p['per_trade_cap_units']), dict(sc, extra=1), dict(sc, pay_units='19010169'), None]
     for value in bad:

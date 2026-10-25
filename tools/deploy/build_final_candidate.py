@@ -15,7 +15,7 @@ from pathlib import Path
 from larp.contracts import ContractError, Document
 from larp.risk.planner import exit_parts
 from larp.strategy.profiles import validate_live
-from larp.strategy.schema import ceil, fraction
+from larp.strategy.schema import ceil, floor, fraction
 from tools.deploy.build_rehearsal_candidate import fs1_review_options, gas_formulas, pinned_profiles
 
 DECISION = 'IDEA-093 FS1 (2026-10-25)'
@@ -24,6 +24,10 @@ DECISION = 'IDEA-093 FS1 (2026-10-25)'
 PF04_WINDOW = dict(trade_after='2026-10-29T14:00:00Z', new_risk_end='2026-11-09T21:00:00Z',
                    flatten_start='2026-11-10T19:00:00Z', signing_end='2026-11-11T14:45:00Z')
 SLIPPAGE_BPS = 20
+# IDEA-093 SC (GAP-74, F-125): the activation self-check before Oct 29 UTC, in the same run as the scored run.
+F125_GAS_UNITS = 30_000_000  # the organiser-directed 30 USDT -> BNB seed (F-125)
+SELF_CHECK_WINDOW = dict(buy_after='2026-10-27T00:00:00Z', buy_until='2026-10-28T18:00:00Z',
+                         flat_by='2026-10-28T23:00:00Z')
 POLICY_ID = 'larp-fs1-final-v1'
 EXIT_CHILDREN = 2
 
@@ -80,8 +84,26 @@ def build(*, s1_raw, s1_decision):
                 'post-approve requote under it (S2-F6, IDEA-090 F16)')
     p['provenance']['policy_id'] = dict(decision_id=DECISION,
         formula='FS1, the final scored-run strategy: S1 with 24/7 KIT_OPEN_STATE hours under openState, live FINAL only')
+    p['activation_self_check'] = self_check(p)
+    p['provenance']['activation_self_check'] = dict(decision_id='IDEA-093 SC (GAP-74, F-125; 2026-10-25, proposed)',
+        formula='cheapest measured round trip (spread + 2*median impact + fee, then symbol); '
+                'pay_units = an ordinary FS1 entry: floor(0.95*1/5*(expected equity - 30 USDT F-125 gas - cost reserve)) '
+                'in whole USDT, so it passes the same authorized-minimum 50 bp cost gate; '
+                'buy Oct 27 00:00 to Oct 28 18:00, flat by Oct 28 23:00 UTC')
     validate_live(p)
     return Document.from_dict(p)
+
+
+def self_check(p):
+    """One ordinary-size round trip in the cheapest measured name before Oct 29 (F-125's real final-wallet trade).
+
+    A minimum-size (about 19 USDT) leg would fail the authorized-minimum 50 bp entry-cost gate (20 bp slippage, spread
+    and about 30 bp of gas); an ordinary FS1 entry at 170 USDT cash (about 32 USDT) passes it, as scored entries do."""
+    rows = p['quote_cost_summary']['symbols']
+    symbol = min(rows, key=lambda s: (rows[s]['spread_bps'] + 2 * rows[s]['median_impact_bps'] + rows[s]['fee_bps'], s))
+    stock_capital = p['expected_equity_units'] - F125_GAS_UNITS - p['cost_reserve_units']
+    pay = floor(Fraction(19, 100) * stock_capital) // 1_000_000 * 1_000_000
+    return dict(symbol=symbol, pay_units=pay, **SELF_CHECK_WINDOW)
 
 
 def main(argv=None):

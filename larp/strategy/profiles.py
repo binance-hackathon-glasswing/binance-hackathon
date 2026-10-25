@@ -120,6 +120,8 @@ def validate_live(p):
         require_open_state_scope(p, None)  # IDEA-089 S2-1 / IDEA-093 FS1: 24/7 hours only in their decided scopes
         from .scheduled_flatten import require_scope
         require_scope(p)  # IDEA-092 S3: a scheduled sell-all only on S2's REHEARSAL, inside the buy window
+        from .self_check import require_scope as require_self_check_scope
+        require_self_check_scope(p)  # IDEA-093 SC (GAP-74): the activation self-check only on the FINAL S1 profile
         # IDEA-035/037 fix these values; provenance alone cannot adopt a new policy.
         # A separate stress budget may still tighten regime_gross_weight.
         decided_weights = {"operating_name_weight": Fraction(1, 5),

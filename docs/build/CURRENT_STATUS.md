@@ -2,7 +2,7 @@
 
 PR278-RV01 (2026-10-25): **FS1 remains open for teammate review.** Repairs cover healthy PF02 recovery,
 authorized-minimum entry cost, pending cost-gated small reductions and gas-excluded stock allocation after
-PR279/F-125's 30 USDT gas instruction. FINAL profile `0401e966…`, REHEARSAL `54802665…`.
+PR279/F-125's 30 USDT gas instruction. FINAL profile `19176e6c…`, REHEARSAL `54802665…`.
 Combined source `d7741f91` includes current integration `5b5f0c89` and PL: full suite2766 tests/4027 subtests PASS;
 5 systemd and2 non-root/origin checks separately PASS (only2 external/private fixtures remain unrun).
 Real PostgreSQL all-five construction/restart/exact replay and offline demo pass. [Review](../research/fs1-review-20261025.md) /

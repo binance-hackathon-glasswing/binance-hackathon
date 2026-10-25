@@ -14,7 +14,7 @@ from .accounting import update_risk
 from .gas import plan_top_up
 from larp.strategy import s1 as s1_plan
 from larp.strategy import execution_bounds
-from larp.strategy import scheduled_flatten
+from larp.strategy import scheduled_flatten, self_check
 
 
 def _request(symbol, side, pay_units, m, mandatory):
@@ -217,6 +217,11 @@ def plan(snapshot, proposal_or_none):
     if scheduled == "DONE":
         r["scheduled_flatten"] = "DONE"
     interim = scheduled == "PENDING"
+    # IDEA-093 SC (GAP-74): the activation self-check; BOUGHT/DONE/EXPIRED are committed with the risk state.
+    check = self_check.config(p)
+    check_phase = self_check.phase(p, r, ledger, now)
+    if self_check.recorded(check_phase) is not None:
+        r[self_check.KEY] = self_check.recorded(check_phase)
     pending_buy = {}
     reserved_cash = reserved_bnb = 0
     for reservation in ledger["reservations"].values():
@@ -299,6 +304,9 @@ def plan(snapshot, proposal_or_none):
         elif interim:
             cap = 0
             reason.append("SCHEDULED_FLATTEN")
+        elif check_phase == "SELL" and symbol == check["symbol"]:
+            cap = 0
+            reason.append(self_check.REASON)
         for requirement in c.get("reduction_constraints", []):
             if requirement["symbol"] == symbol:
                 bound = integer(requirement["max_units"])
@@ -369,6 +377,11 @@ def plan(snapshot, proposal_or_none):
             name_cap = s1["high"] * s1["weights"][symbol] * capital_scale if s1 else fraction(p["operating_name_weight"])
             desired = 0 if t.kind is TargetKind.EXIT else floor(
                 min(t.weight, name_cap) * safe_equity * 10**m["decimals"] / m["price_units"])
+            if (check_phase == "BUY" and symbol == check["symbol"]
+                    and not instant(p["trade_after"]) <= now < instant(p["new_risk_end"])):
+                # SC: before trade_after the planner itself bounds the self-check BUY to pay_units.
+                desired = min(desired, current + floor(Fraction(check["pay_units"]) * 10**m["decimals"]
+                                                       / m["price_units"]))
             if desired == current:
                 continue
             side, q = ("BUY", desired - current) if desired > current else ("SELL", current - desired)
@@ -380,7 +393,8 @@ def plan(snapshot, proposal_or_none):
                 if (gas_short or unvalued or E <= 0 or r["daily_halt"] or r["run_halt"] or terminal
                         or c.get("health", {}).get("new_spending_ok", p.get("mode") != "LIVE") is not True
                         or now.date().isoformat() != r["day"]
-                        or not instant(p["trade_after"]) <= now < instant(p["new_risk_end"])):
+                        or not (instant(p["trade_after"]) <= now < instant(p["new_risk_end"])
+                                or (check_phase == "BUY" and symbol == check["symbol"]))):
                     result["rejections"].append({"symbol": symbol, "reason": "NEW_RISK_HALTED"})
                     continue
                 if not current and count >= max_positions:
