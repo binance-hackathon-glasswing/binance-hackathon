@@ -1,5 +1,4 @@
 """IDEA-096 F4: one low-severity incident per quiet decision boundary with nonzero router allowances."""
-from larp.execution import Blocked
 from larp.marketdata.allowances import observe
 from larp.runtime.coordinator import batch_for
 from larp.storage.postgres import Conflict
@@ -11,12 +10,12 @@ class RouterAllowanceCheck:
         self.next_ms = 0
 
     def __call__(self, now_ms):
+        if now_ms < self.next_ms:
+            return 'NOT_DUE'  # before any store read: this runs on every driver cycle
         c = self.coordinator
         current = c.store.load(c.run_id)
         run = current.read()
         projection = run['projection']
-        if now_ms < self.next_ms:
-            return 'NOT_DUE'
         if (run['reservations'] or c.store.open_rounds(c.run_id)
                 or any(r.get('execution_pending') for r in projection.get('round_records', {}).values())):
             return 'DEFERRED_IN_FLIGHT'
@@ -27,7 +26,9 @@ class RouterAllowanceCheck:
             return 'CHECKED'
         try:
             value = observe(self.decoder, self.wallet)
-        except Blocked:
+        except (RuntimeError, OSError):
+            # Passive monitor: Blocked/DependencyUnavailable, an artifact write failure or a full disk must not
+            # stop the round or its exits (as InitialGasCheck's SKIPPED).
             return 'ALLOWANCE_READ_UNAVAILABLE'
         if value['reason'] == 'CLEAN':
             return 'CLEAN'
