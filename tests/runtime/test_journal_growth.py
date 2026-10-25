@@ -262,6 +262,27 @@ class TradingCycle(Growth):
         with self.assertRaises(IntegrityError):
             self.store.journal('run', after_version=2, through_version=6, full=False)
 
+    def test_sd8_a_rewritten_chain_ending_before_the_checkpoint_is_refused(self):
+        grow(self, 0, 6, audit_every=None)
+        self.store = PostgresStore(self.store._dsn)
+        self.store.verified_snapshot('run', full=False)  # this process's checkpoint, at version 6
+        with self.store.transaction() as db:
+            head = db.execute('SELECT head FROM events WHERE sequence=2').fetchone()[0]
+            for sequence in (3, 4, 5):
+                raw = bytes(db.execute('SELECT batch FROM events WHERE sequence=%s', (sequence,)).fetchone()[0])
+                changed = raw.replace(b'"SYNTHETIC"', b'"INCIDENT"')
+                self.assertNotEqual(raw, changed)
+                stored = digest(bytes.fromhex(head) + bytes.fromhex(digest(changed)))
+                db.execute('UPDATE events SET batch=%s,batch_hash=%s,event_hash=%s,previous_hash=%s,head=%s '
+                           'WHERE sequence=%s', (changed, digest(changed),
+                                                 digest(Document.from_dict(Document(changed).read()['event']).payload),
+                                                 head, stored, sequence))
+                head = stored
+        with self.assertRaises(IntegrityError):
+            self.store.journal('run', after_version=2, through_version=5, full=False)
+        with self.assertRaises(IntegrityError):
+            self.store.verify('run')
+
     def test_sd5_balance_adoption_reads_the_journal_without_a_full_verification(self):
         from larp.runtime.driver import BalanceCheck
         check = BalanceCheck.__new__(BalanceCheck)
