@@ -141,7 +141,10 @@ DRIVER_KEYS = ('execution', 'assessor', 'intelligence_mode', 'evidence_root', 'm
                'strategy_profile_file', 'strategy_profile_sha256', 'session_calendar_file', 'session_calendar_sha256',
                'issuers')
 OPTIONAL_DRIVER_INTEGERS = ('expiry_grace_ms', 'day_roll_window_ms', 'max_quote_rounds', 'max_quote_requests',
-                            'balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps')
+                            'balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps',
+                            'assessment_workers', 'continuation_rounds')
+# IDEA-093 PL: concurrent routed assessments (one job per company) and planning rounds after a settled trade.
+MAX_ASSESSMENT_WORKERS = 5
 # IDEA-055 (#36): chain-balance reconciliation. Required in dev and live; account-specific, never committed.
 # `price_jump_check_bps` is the price-jump guard's threshold (IDEA-055 PR 4); its hold lasts the maximum age.
 # The RPC is `balance_rpc_providers`, an ordered list of {url, source_id} tried in turn (PR 5), or the legacy single
@@ -251,6 +254,11 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     for key in OPTIONAL_DRIVER_INTEGERS:
         if key in d and (type(d[key]) is not int or d[key] < 0):
             raise ContractError('Invalid driver setting: ' + key)
+    from larp.runtime.driver import MAX_CONTINUATION_ROUNDS
+    if not 1 <= d.get('assessment_workers', 1) <= MAX_ASSESSMENT_WORKERS:
+        raise ContractError('assessment_workers must be in [1, %d]' % MAX_ASSESSMENT_WORKERS)
+    if not 0 <= d.get('continuation_rounds', 0) <= MAX_CONTINUATION_ROUNDS:
+        raise ContractError('continuation_rounds must be in [0, %d]' % MAX_CONTINUATION_ROUNDS)
     if d['execution'] == 'service' and 'expiry_grace_ms' not in d:
         raise ContractError('Service execution needs expiry_grace_ms')
     if d['assessor'] not in ('deterministic', 'aiand_routed'):
@@ -342,8 +350,12 @@ def build_driver(config, store, secrets, *, clock_ms=None):
         spec = _pinned_json(d['model_routing_file'], d['model_routing_sha256'], 'Model routing')
         if spec.get('openai_trial') is not None and (d['execution'] != 'shadow' or config['mode'] != 'dev'):
             raise ContractError('Unsigned trial routing requires dev/shadow runtime')
-        assessor = build_routed_assessor(spec, registry=registry, reader=reader, config=intelligence,
+        # IDEA-093 PL: one independent router per assessment slot. They share only the budget ledger file, the
+        # content-addressed model artifacts and the lock-guarded evidence reader; each owns its provider workers.
+        assessors = [build_routed_assessor(spec, registry=registry, reader=reader, config=intelligence,
             clock_ms=clock_ms, artifacts=model_artifacts, secrets=secrets, budget_root=d['model_budget_root'])
+            for _ in range(d.get('assessment_workers', 1))]
+        assessor = assessors[0]
     else:
         assessor = EvidenceAssessor(registry=registry, reader=reader,
                                     model=RuleBaselineModel(clock_ms), config=intelligence, clock_ms=clock_ms)
@@ -356,7 +368,7 @@ def build_driver(config, store, secrets, *, clock_ms=None):
                               test_rounds=mode != 'live', require_version=True)
     work = EvidenceWork(store=store, evidence_store=evidence, run_id=config['run_id'], config=intelligence,
                         issuers=list(issuers), profile_hash=profile_hash, cadence_ms=d['cadence_ms'],
-                        lifecycle_policy=lifecycle)
+                        lifecycle_policy=lifecycle, continuation_rounds=d.get('continuation_rounds', 0))
     execution = (ServiceExecution(coordinator, wallet=wallet, grace_ms=d['expiry_grace_ms'])
                  if d['execution'] == 'service' else ShadowExecution(coordinator))
     day_roll = DayRoll(coordinator, window_ms=d['day_roll_window_ms']) if d.get('day_roll_window_ms') else None
@@ -373,7 +385,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     deferred = None
     if signed_model:
         from larp.runtime.deferred_models import DeferredAssessments
-        deferred = DeferredAssessments(assessor, root=Path(d['market_artifact_root']) / 'model' / 'assessments',
+        deferred = DeferredAssessments(assessors if d['assessor'] == 'aiand_routed' else assessor,
+                                       root=Path(d['market_artifact_root']) / 'model' / 'assessments',
                                        run_id=config['run_id'], build_id=config['build_id'], profile_hash=profile_hash)
     from larp.strategy.schema import initial_gas_only
     from larp.runtime.gas import InitialGasCheck, RetiredGasCheck

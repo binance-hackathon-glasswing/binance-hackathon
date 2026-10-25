@@ -35,11 +35,12 @@ class Gate:
         self.release = {i: threading.Event() for i in ISSUERS}
         self.calls, self.audit_hook, self.threads = [], None, set()
 
-    def assess(self, req):
+    def assess(self, req, hook=None):
+        hook = hook or self.audit_hook
         issuer = req.read()['issuer_id']
         self.calls.append(issuer)
-        self.threads.add(threading.current_thread().name)
-        self.audit_hook(dict(kind='MODEL_REQUEST', stage='routine', request={'issuer': issuer}))
+        self.threads.add(threading.get_ident())
+        hook(dict(kind='MODEL_REQUEST', stage='routine', request={'issuer': issuer}))
         self.entered[issuer].set()
         if not self.release[issuer].wait(5):
             raise TimeoutError('synthetic test did not release ' + issuer)
@@ -64,8 +65,7 @@ class Member:
 
     def assess(self, req):
         self.used.append(req.read()['issuer_id'])
-        self.gate.audit_hook = self.audit_hook
-        return self.gate.assess(req)
+        return self.gate.assess(req, self.audit_hook)  # each instance writes to its own job's journal
 
 
 def queue(assessors, root, **identity):
@@ -122,6 +122,7 @@ class ParallelQueue(unittest.TestCase):
             self.assertEqual(order, ['round-A', 'round-B', 'round-C'])  # submission order
             self.assertTrue(q.submit('round-A2', request('A', job='second')))
             pool.gate.release['A'].set()
+            self.assertTrue(wait_for(lambda: not q.running('round-A2')))  # finish before the directory goes
 
     def test_pl4_a_hung_job_holds_only_its_own_slot(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -142,7 +143,9 @@ class ParallelQueue(unittest.TestCase):
             self.assertTrue(pool.gate.entered['C'].wait(2))
             pool.gate.release['C'].set()
             self.assertTrue(wait_for(lambda: (q.ready() or {}).get('round_id') == 'round-C'))
-            self.assertFalse(pool.gate.entered['A'].is_set() and pool.gate.release['A'].is_set())
+            self.assertTrue(q.running('round-A'))  # A still hangs: it held only its own slot throughout
+            pool.gate.release['A'].set()
+            self.assertTrue(wait_for(lambda: not q.running('round-A')))  # finish before the directory goes
 
     def test_pl5_restart_recovers_every_pending_journal_once(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -163,6 +166,7 @@ class ParallelQueue(unittest.TestCase):
             self.assertEqual(seen, {'round-A': 'COMPLETE', 'round-B': 'INTERRUPTED'})
             self.assertEqual(queue(Pool(3).members, tmp).round_ids(), set())
             pool.gate.release['B'].set()
+            self.assertTrue(wait_for(lambda: not q.running('round-B')))  # the original process's thread ends
 
     def test_pl6_an_empty_assessor_list_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp, self.assertRaises(ContractError):
