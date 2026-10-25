@@ -19,3 +19,15 @@ A pinned timestamp/adjustment qualification input is an installation prerequisit
 The first focused pass exposed failure backoff not surviving restart; failed attempts now persist through the same atomic cache as successful history. Required FS1 synthetic preparations/composition fixtures now supply explicit synthetic semantics and all five identities. Late captures are deferred and captures predating their claimed closes are refused.
 
 At d8e95f02:55 focused tests PASS, including actual strategy/planner SELL/BUY and real PostgreSQL replay. The first full run had2893 passed/1 failed/11 skipped/4060 subtests; the sole failure was the parallel-FS1 composition fixture omitting the new pinned input. Update that fixture without relaxing startup requirements. Prospective additional boundary: refuse extreme decimal exponents before expanding them; reject stale capture metadata. Repeat focused and full pinned checks.
+
+## TH-RV02 — saved handoff; full rerun deferred at user request (2026-10-26 SGT)
+
+PR: https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/295
+
+Source `93ea0e1fd3822fbfbbe55f1c9f6e08273bdedec8`: **73 focused tests /11 subtests /0 skips PASS**,6.13s, on Linux aarch64/Python3.12.15/PostgreSQL14.24. This includes the previously failing five-worker FS1 composition, bounded decimal inputs, actual policy/planner reductions and buys, missing-history mandatory exits, package pins, cache/backoff and exact PostgreSQL replay.
+
+The user asked to stop the suite and defer the rerun until tomorrow. The running full-suite container was stopped before completion (exit137 due requested stop); no full-suite PASS is claimed for this source. Its disposable PostgreSQL container was also stopped/removed. No test process remains from this session. The earlier d8e95f02 full result and its one fixed composition-fixture failure remain recorded in TH-RV01.
+
+**Next work, explicitly deferred:** Codex/reviewer reruns the full pinned suite on the current PR source after the user resumes; then records results and reviews PR295. Keith qualifies actual hourly OPEN timestamp and adjustment evidence; Keegan binds/reviews the exact release/runtime; Yao supplies that input, transfers the pinned file and verifies current-host history. These are tracked in INCOMPLETE_WORK TH-01 / IDEA-093 FS1. No deployment, real provider/credential access, model spend, wallet operation or economic evaluation occurred. EXP-007 remains separate.
+
+Implementation/input/transfer contract: [FS1_TOKEN_HISTORY.md](../build/FS1_TOKEN_HISTORY.md). Machine receipt: [fs1-history-20261026.json](../build/evidence/fs1-history-20261026.json).

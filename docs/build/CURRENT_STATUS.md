@@ -1,5 +1,12 @@
 # Current shared build and remaining work
 
+PR295 / IDEA-103 TH-01 (2026-10-26 SGT, under review): FS1 history producer, bounded pagination/cache,
+qualified timestamp/adjustment input and production preparation/startup wiring are implemented. Source93ea0e1f:
+73 focused tests/11 subtests PASS, including actual trend SELL/BUY plans and exact PostgreSQL replay.
+The full rerun was stopped at the user's request and deferred until they resume; no final full-suite PASS claimed.
+[Record](../ledger/IDEA-103.md) / [input and transfer contract](FS1_TOKEN_HISTORY.md).
+Actual provider/semantics qualification and exact release/host acceptance remain with TH-01's owners; no deployment.
+
 PR291 / IDEA-102 MC-RV03 (2026-10-26 SGT): mandatory S1 SELL legs now retry without a session ceiling,
 with one new attempt per leg per UTC15-minute slot. Quote children may reuse their parent's open slot; refunds
 retain spacing. Discretionary caps and all gas/window/health/signer/preflight checks remain. New runtime rounds
