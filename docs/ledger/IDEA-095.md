@@ -140,3 +140,13 @@ newly verified rows. Only rows up to `through_version` are returned. `full=True`
 | SD9 | Full suite on the fixed head: no new failures against `ecc4e0d8` in the same environment; exact counts reported. |
 
 Result states: `supported` if SD8–SD9 pass; `not supported` if SD8 fails after the fix.
+
+### PR280-RV01 results (2026-10-25; Python 3.12 from the pinned lock, PostgreSQL 16 — not the pinned 14.24 image)
+
+| # | Result |
+|---|---|
+| SD8 | **PASS.** Test committed red on `ecc4e0d8` (`385efde5`: the rewritten range was returned). With the fix (`eac6e923`) it raises `IntegrityError`, as full `verify` does. SD1–SD5 tests pass unchanged, including the untampered `through_version=5` read with the checkpoint at 6, still without a genesis verification. Journal, archive and storage tests: 73 passed |
+| SD9 | **PASS.** Same container and database server: fixed head **2688 passed, 11 skipped, 4016 subtests, 0 failed**; `ecc4e0d8` **2687 passed, 11 skipped, 4016 subtests, 0 failed**. The difference is the SD8 test. The 11 skips are environment-only (systemd runner, bubblewrap, root, opt-in fixtures) |
+
+Result state: **supported** offline. The `full=True` path still verifies and reads in two transactions, as before
+PR280; it is not changed here.
