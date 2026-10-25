@@ -135,3 +135,6 @@ runs on every one of 5 runs (5 calls, not 1). AR3: traced peak 351.7 MB against 
 bound). AR7: RSS growth 90.1 MB verifying a 42.5 MB journal whose largest row is 0.6 MB (bound 18.0 MB). AR4, AR5
 chain/tamper/foreign and AR6: `export_segment` / `restore_chain` / `segment_header` do not exist. Passing on base,
 as expected: the AR5 v1 round trip (compatibility check) and nothing else.
+- 2026-10-25 correction (Claude Code): the recorded base run at `21420648` is **10 failed, 1 passed**; AR7 fails on
+  base (RSS growth 90.2 MB) and only the AR5 v1 round trip passes. "9 failed, 2 passed" above was an earlier run whose
+  AR7 probe inherited the parent's peak-RSS mark.
