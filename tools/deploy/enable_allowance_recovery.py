@@ -33,10 +33,9 @@ def candidate(profile, execution, signing_policy, runtime, *, decision_id):
         raise ContractError('Runtime and execution identities differ')
     evidence = hashlib.sha256(Document.from_dict(dict(profile=p, execution=e, policy=s)).payload).hexdigest()
     action = 8 * e['max_gas'] * e['max_gas_price']
-    # Expected-price approval measurements supplement sizing only; the action/reserve cover signed maxima.
+    # Clean-pair sizing stays measured. The verifier adds the observed cleanup count at expected price;
+    # charging every clean entry for five hypothetical revokes can make the smallest position infeasible.
     sizing = p.get('gas_sizing_budget_units', p['gas_action_budget_units'])
-    sizing += ceil(5 * max(row['approve_gas_bnb_units'] for row in p['quote_cost_summary']['symbols'].values())
-                   * fraction([5, 4]))
     if sizing > action:
         raise ContractError('Measured recovery sizing exceeds the eight-child signed envelope')
     if p['baseline'] == 'TREND_GUARDED_VOL':
@@ -50,7 +49,8 @@ def candidate(profile, execution, signing_policy, runtime, *, decision_id):
     for name, formula in dict(
             gas_action_budget_units='8 children*max_gas*max_gas_price; <=5 other-token revokes + approve + swap '
                                     'or abort pay-token revoke; original authority only',
-            gas_sizing_budget_units='previous expected pair + ceil(5*max measured approve gas*5/4)',
+            gas_sizing_budget_units='clean-pair expected gas; verifier adds observed other-token revokes '
+                                   '*ceil(max measured approve gas*5/4); action reserves signed maxima',
             exit_gas_reserve_units=f'{positions} positions*{children} balanced exit children*gas_action_budget_units').items():
         p['provenance'][name] = dict(decision_id=decision_id, data_hash=evidence, formula=formula)
     raw = Document.from_dict(p).payload + b'\n'

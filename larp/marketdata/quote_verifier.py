@@ -71,6 +71,8 @@ class UntrustedQuoteVerifier:
         self.decoder, self.wallet = decoder, wallet.lower()
         self.action, self.sizing = action, sizing
         self.slippage_bps, self.slippage = slippage, slippage_percent(slippage)
+        self.cleanup_sizing = max((r['approve_gas_bnb_units'] * 5 + 3) // 4
+                                  for r in profile['quote_cost_summary']['symbols'].values())
         if type(allowance_recovery) is not bool:
             raise ContractError('allowance_recovery must be an explicit boolean')
         self.allowance_recovery = allowance_recovery
@@ -130,6 +132,10 @@ class UntrustedQuoteVerifier:
                              if a and t != economics.pay_token}
                     raise Blocked('DIRTY_ROUTER_ALLOWANCE:' + ','.join(sorted(dirty))) from None
                 raise
+        expected = self.sizing + (sum(s != symbols.get(economics.pay_token, 'USDT') for s in dirty)
+                                  * self.cleanup_sizing if self.allowance_recovery else 0)
+        if expected > self.action:
+            raise Blocked('observed allowance cleanup exceeds action gas budget')
         return dict(source_hash=raw['artifact_sha256'], economics=economics, payload=payload, route_valid=True,
-                    gas_basis=GAS_BASIS, gas_bnb_units=self.action, expected_gas_bnb_units=self.sizing,
+                    gas_basis=GAS_BASIS, gas_bnb_units=self.action, expected_gas_bnb_units=expected,
                     fee_units=0, fee_basis=FEE_BASIS, slippage_bps=self.slippage_bps, dirty_allowances=dirty)
