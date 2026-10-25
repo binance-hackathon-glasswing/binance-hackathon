@@ -424,7 +424,7 @@ class Coordinator:
                         local_record_hash=doc(record).digest('larp.round.v1'),
                         omitted_content='Original complete I/O retained in the durable ROUND_PLANNED record; serialization budget exceeded.')
             output=dict(status='AUDIT_CONTENT_UNSUPPORTED',errors=record['errors'],trading_blocked=True,
-                        reason_summary=round_summary(dict(record,orders=[]))[0])
+                        reason_summary=round_summary(dict(record,orders=[]))[0],decision_summaries=[])
             rationale='Deterministic serialization failure; original reasoning retained locally, not fabricated or truncated.'
         if self.test_rounds:
             inputs['example']=True

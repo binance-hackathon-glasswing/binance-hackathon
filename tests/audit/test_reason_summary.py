@@ -3,11 +3,12 @@
 import json
 import re
 import unittest
+from copy import deepcopy
 
 from larp.runtime.coordinator import Coordinator
 from larp.runtime.fixtures import FakeAssessor, FakeExecution, FakePolicy
 from larp.storage.postgres import doc
-from tests.audit.test_round_logging import ADDRESS, NOW, TX, Planned, intent, mapping_reducer
+from tests.audit.test_round_logging import ADDRESS, NOW, TX, ModelAssessor, Planned, intent, mapping_reducer
 from tests.support import DatabaseCase, request
 
 
@@ -27,6 +28,22 @@ class Rejecting:
 
 
 class Logged(DatabaseCase):
+    def test_rv2_oversize_fallback_has_empty_decision_summaries(self):
+        c = Coordinator(self.store, ModelAssessor('x' * (5 * 1024 * 1024)), FakePolicy(),
+                        Planned([intent('x')], [dict(intent_id='intent:x', asset='USDT', units=1)]),
+                        execution=FakeExecution(), run_id='run', version_id='synthetic', profile_hash='a' * 64,
+                        address=ADDRESS, clock_ms=lambda: NOW)
+        c.start('fallback', request('BUY'), NOW)
+        with self.store.transaction() as db:
+            event = json.loads(bytes(db.execute('SELECT document FROM audit_events WHERE run_id=%s',
+                                               ('run',)).fetchone()[0]).decode())
+            self.assertEqual(db.execute('SELECT count(*) FROM commands WHERE run_id=%s',
+                                        ('run',)).fetchone()[0], 0)
+        log = json.loads(event['log'])['data']
+        self.assertEqual(log['orders'], [])
+        self.assertEqual(log['output']['decision_summaries'], [])
+        self.assertIn('AUDIT_CONTENT_UNSUPPORTED', log['output']['reason_summary'])
+
     def run_round(self, planner, round_id='r', *, settle=False):
         c = Coordinator(self.store, FakeAssessor(), FakePolicy(), planner, execution=FakeExecution(), run_id='run',
                         version_id='synthetic', profile_hash='a' * 64, address=ADDRESS, clock_ms=lambda: NOW)
@@ -90,6 +107,50 @@ class Logged(DatabaseCase):
 
 
 class Phrases(unittest.TestCase):
+    def test_rv1_actions_do_not_claim_completion_or_current_drawdown(self):
+        for code in ('TERMINAL_FLATTEN', 'SCHEDULED_FLATTEN', 'ACTIVATION_SELF_CHECK'):
+            with self.subTest(code=code):
+                summary = self.one(reasons=[code])
+                self.assertIn('sell', summary)
+                self.assertNotIn('is sold', summary)
+        summary = self.one(reasons=['DEEP_DRAWDOWN'])
+        self.assertIn('latched', summary)
+        self.assertNotIn('equity at or below', summary)
+        summary = self.one(reasons=['BOUNDED_FALSIFIER'], mandatory=False)
+        self.assertIn('discretionary', summary)
+        self.assertNotIn('required', summary)
+
+    def test_rv1_abort_matches_intent_identity_in_order(self):
+        from larp.audit.reasons import round_summary
+        intents = [intent('first', reasons=['TERMINAL_FLATTEN'], side='SELL', mandatory=True),
+                   intent('second', reasons=['ACTIVATION_SELF_CHECK'], side='SELL', mandatory=True)]
+        record = dict(plan=dict(intents=intents), orders=[dict(symbol=i['symbol'], side=i['side'],
+                      amount=i['amount']) for i in intents], aborted=[
+                          dict(intent_id='intent:second', reason='QUOTE_EXPIRED')])
+        before = deepcopy(record)
+        summary, decisions = round_summary(record)
+        self.assertEqual([d['decision_id'] for d in decisions], ['decision:first', 'decision:second'])
+        self.assertNotIn('not submitted', decisions[0]['summary'])
+        self.assertIn('not submitted (QUOTE_EXPIRED)', decisions[1]['summary'])
+        self.assertEqual(summary, '2 orders: ' + ' '.join(d['summary'] for d in decisions))
+        self.assertEqual(record, before)
+        self.assertEqual(round_summary(record), (summary, decisions))
+
+    def test_rv1_gas_top_up_abort_is_explicit(self):
+        from larp.audit.reasons import round_summary
+        top = intent('gas', symbol='BNB', kind='GAS_TOP_UP')
+        summary, _ = round_summary(dict(plan=dict(intents=[top]), orders=[dict(symbol='BNB', side='BUY',
+                                  amount='10')], aborted=[dict(intent_id='intent:gas')]))
+        self.assertIn('gas top-up', summary)
+        self.assertIn('not submitted (NOT_SUBMITTED)', summary)
+
+    def test_rv3_malformed_optional_shapes_do_not_raise(self):
+        from larp.audit.reasons import UNAVAILABLE, round_summary
+        for record in (None, [], dict(plan=dict(intents=7)),
+                       dict(policy_output=dict(targets=[dict(symbol=[])]))):
+            with self.subTest(record=record):
+                self.assertEqual(round_summary(record), (UNAVAILABLE, []))
+
     def summarize(self, intent_fields, *, targets=None, clamps=(), rejections=(), errors=()):
         from larp.audit.reasons import round_summary
         intents = [dict(intent_id='intent:x', decision_id='decision:x', **intent_fields)]

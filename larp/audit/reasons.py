@@ -9,16 +9,16 @@ from fractions import Fraction
 
 # Planner `reasons` and policy target reasons (larp/risk/planner.py, larp/strategy/*).
 ORDER = {
-    'TERMINAL_FLATTEN': 'terminal flatten: every position is sold before signing ends',
-    'TERMINAL_REQUIREMENT': 'terminal flatten: every position is sold before signing ends',
-    'SCHEDULED_FLATTEN': 'scheduled flatten: every position is sold at the scheduled time',
+    'TERMINAL_FLATTEN': 'terminal flatten: sell positions before signing ends',
+    'TERMINAL_REQUIREMENT': 'terminal flatten: sell positions before signing ends',
+    'SCHEDULED_FLATTEN': 'scheduled flatten: sell positions at the scheduled time',
     'CLASS_1_EXIT': 'exit after a verified Class 1 filing red flag',
     'MANDATORY_FALSIFIER_REDUCTION': 'reduction required by a verified filing red flag',
-    'BOUNDED_FALSIFIER': 'reduction required by a verified filing red flag',
-    'ACTIVATION_SELF_CHECK': 'activation self-check: the test position is sold',
+    'BOUNDED_FALSIFIER': 'exit proposed after a verified filing red flag',
+    'ACTIVATION_SELF_CHECK': 'activation self-check: sell the test position',
     'POSITION_CAP': 'trim to the per-name position cap',
     'GROSS_OR_REGIME_CAP': 'trim to the gross exposure cap',
-    'DEEP_DRAWDOWN': 'trim after a deep drawdown (equity at or below 88% of its peak)',
+    'DEEP_DRAWDOWN': 'trim for the latched deep drawdown limit',
     'POSITION_COUNT_CAP': 'sale above the position count cap',
     'PRICE_REASSESSMENT_EXIT': 'exit after a price reassessment',
     'S1_LEVEL_CHANGE': 'trend-guard exposure level changed',
@@ -66,10 +66,11 @@ def _strings(values):
     return [v for v in values if type(v) is str and v] if type(values) is list else []
 
 
-def order_sentence(intent, *, target=None, split=False):
+def order_sentence(intent, *, target=None, split=False, abort_reason=None):
     side, amount, symbol = intent.get('side'), intent.get('amount'), intent.get('symbol')
+    ending = f'; not submitted ({abort_reason}).' if abort_reason is not None else '.'
     if intent.get('kind') == 'GAS_TOP_UP':
-        return f'{side} {amount} {symbol}, gas top-up for transaction fees.'
+        return f'{side} {amount} {symbol}, gas top-up for transaction fees' + ending
     codes = _strings(intent.get('reasons'))
     phrases = list(dict.fromkeys(ORDER.get(code, code) for code in codes)) or ['no reason code recorded']
     if len(phrases) > MAX_PHRASES:
@@ -81,7 +82,7 @@ def order_sentence(intent, *, target=None, split=False):
     if split:
         text += '; split by the per-trade cap'
     kind = 'mandatory' if intent.get('mandatory') is True else 'discretionary'
-    return f'{side} {amount} {symbol}, {kind}: {text}.'
+    return f'{side} {amount} {symbol}, {kind}: {text}' + ending
 
 
 def _hold_sentence(record, plan):
@@ -113,12 +114,16 @@ def round_summary(record):
         targets = {t.get('symbol'): t for t in output.get('targets') or [] if type(t) is dict}
         splits = {c.get('symbol') for c in plan.get('clamps') or []
                   if type(c) is dict and c.get('reason') == 'PER_TRADE_CAP'}
+        # Settlement binds non-submission to intent_id; symbol alone can identify several orders.
+        aborted = {a['intent_id']: a.get('reason') or 'NOT_SUBMITTED' for a in record.get('aborted') or []
+                   if type(a) is dict and type(a.get('intent_id')) is str}
         # `orders` is built from the intents in order; an emptied list (rejected or fallback round) has no orders.
         placed = intents if orders and len(orders) == len(intents) else []
         decisions = [dict(decision_id=i.get('decision_id'), symbol=i.get('symbol'), side=i.get('side'),
                           amount=i.get('amount'),
                           summary=order_sentence(i, target=targets.get(i.get('symbol')),
-                                                 split=i.get('symbol') in splits))
+                                                 split=i.get('symbol') in splits,
+                                                 abort_reason=aborted.get(i.get('intent_id'))))
                      for i in placed]
         if not decisions:
             return _hold_sentence(record, plan), []
