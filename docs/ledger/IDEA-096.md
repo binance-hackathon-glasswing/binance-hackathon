@@ -180,3 +180,7 @@ Remaining ownership: **Keegan** — fresh quote/caps packet, actual BNB coverage
 **Isaac** — exact signer exception/configuration and manifested candidate acceptance; **Yao/host owners** — authorized
 next-run installation and live evidence. Existing run 4 and final candidate are not silently changed. FLAT-01 stays
 open for these acceptance items; F1 is optional/deferred. PR282 stays OPEN for teammate review, unmerged.
+
+Final documentation-only follow-up: release-register/bundle checks pass **14 tests / 12 subtests** after the
+receipt/backlog/index updates. All recorded code/test hashes still match `1210a9f0`; no executable changes followed
+the full passing run. The existing PR title/body now describe implementation and the remaining review gates.
