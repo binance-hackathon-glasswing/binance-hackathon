@@ -416,3 +416,45 @@ class Configuration(unittest.TestCase):
                             build_driver(cfg, Store(), fixture.secrets)
                 finally:
                     fixture.doCleanups()
+
+    def test_pl9_fs1_live_runtime_builds_five_routed_assessors_from_the_prepared_runtime(self):
+        from larp.intelligence.model_budget import ModelBudget
+        from larp.intelligence.routing import RoutedAssessor
+        from larp.runtime import gate_a
+        from larp.runtime.service import build_driver
+        from tests.runtime.test_driver import Composition as Fixture, Store
+        from tests.strategy.test_fs1_final import PROFILE, ROUTING, live_prepared, profile
+        prepared = json.loads(live_prepared(profile())['runtime.json'])['driver']
+        fixture = Fixture(); fixture.setUp()
+        try:
+            raw = ROUTING.read_bytes()
+            spec = json.loads(raw)
+            pacing = spec['openai_pacing']
+            (fixture.root / 'routing.json').write_bytes(raw)
+            ModelBudget.initialize(fixture.root / 'openai-budget.sqlite', spec['budget_account'],
+                                   initial_spent=pacing['prior_spent_micro_usd'], total=pacing['total_micro_usd'],
+                                   reserve=0, pacing=pacing)
+            cfg = fixture.config(execution='service', intelligence_mode='live', expiry_grace_ms=5000,
+                                 assessor='aiand_routed', model_routing_file=str(fixture.root / 'routing.json'),
+                                 model_routing_sha256=hashlib.sha256(raw).hexdigest(),
+                                 model_budget_root=str(fixture.root), model_adoption_ref='SYNTHETIC IDEA-093 PL-9',
+                                 assessment_workers=prepared['assessment_workers'],
+                                 continuation_rounds=prepared['continuation_rounds'])
+            base = json.loads((gate_a.ROOT / 'config/runtime/runtime.example.json').read_bytes())['driver']
+            for key in ('balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps'):
+                cfg['driver'][key] = base[key]
+            cfg['driver']['balance_rpc_providers'] = [dict(url='https://rpc.invalid/', source_id='synthetic-rpc')]
+            (fixture.root / 'profile.json').write_bytes(PROFILE.read_bytes())
+            cfg['driver']['strategy_profile_sha256'] = gate_a.digest(PROFILE.read_bytes())
+            cfg['mode'] = 'live'
+            secrets = dict(fixture.secrets, LARP_AIAND_API_KEY='synthetic-aiand-runtime-key')
+            with patch('socket.create_connection', side_effect=AssertionError('no network')):
+                driver = build_driver(cfg, Store(), secrets)
+            driver.ports['evidence'].close()
+            pool = driver.assessments.assessors
+            self.assertEqual(len(pool), 5)
+            self.assertTrue(all(isinstance(a, RoutedAssessor) for a in pool))
+            self.assertEqual(len({id(a) for a in pool}), 5)
+            self.assertEqual(driver.work.continuation_rounds, 4)
+        finally:
+            fixture.doCleanups()
