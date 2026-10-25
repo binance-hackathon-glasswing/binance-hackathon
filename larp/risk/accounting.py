@@ -23,7 +23,13 @@ def roll_day(portfolio: Document, *, boundary, anchor_units):
     return Document.from_dict(d)
 
 
-def update_risk(portfolio: Document, *, now, equity_units):
+def update_risk(portfolio: Document, *, now, equity_units, recover_run_halt=False):
+    """PF02: caller may enable recovery only with the opted-in profile and fresh reconciled complete valuation.
+
+    Historical callers retain the latched stop. The peak, daily stop and deep cut are never reset by recovery.
+    """
+    if type(recover_run_halt) is not bool:
+        raise ContractError("Risk recovery eligibility must be a boolean")
     now = instant(now.isoformat())
     d = portfolio.read()
     r = d["risk"]
@@ -31,6 +37,8 @@ def update_risk(portfolio: Document, *, now, equity_units):
     peak = max(integer(r["peak_units"], 1), equity_units)
     r["peak_units"] = peak
     r["run_halt"] |= equity_units * 100 <= peak * 92
+    if recover_run_halt and equity_units * 100 > peak * 95:
+        r["run_halt"] = False
     r["deep_cut"] |= equity_units * 100 <= peak * 88
     if now.date().isoformat() == r["day"]:
         r["daily_halt"] |= equity_units * 100 <= integer(r["day_anchor_units"], 1) * 97

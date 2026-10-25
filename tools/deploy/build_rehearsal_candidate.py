@@ -19,6 +19,26 @@ S2_POLICY_ID = 'larp-s2-rehearsal-v1'
 # IDEA-092 S3: S2 plus a scheduled sell-all; the requested 12 noon is 12:00 SGT Sunday, inside S2's buy window.
 S3_FLATTEN_AT = '2026-10-25T04:00:00Z'
 S3_POLICY_ID = 'larp-s3-rehearsal-v1'
+# IDEA-093 FS1-R: FS1's block and slippage on the dev wallet; starts an hour after run 4's signing_end, ends before
+# Monday's NYSE open on the Oct 26 freeze day (proposed; the run owner may rebuild with other times).
+FS1R_WINDOW = dict(trade_after='2026-10-25T16:00:00Z', new_risk_end='2026-10-26T06:00:00Z',
+                  flatten_start='2026-10-26T07:00:00Z', signing_end='2026-10-26T12:00:00Z')
+FS1R_POLICY_ID = 'larp-fs1-rehearsal-v1'
+FS1_SLIPPAGE_BPS = 20
+
+
+def fs1_review_options(p):
+    """Explicit, hashed review refinements shared by FINAL and its rehearsal (IDEA-093 PR278-RV01)."""
+    p.update(run_halt_recovery_bps=500, s1_reduction_cost_cap_bps=50, entry_cost_basis='AUTHORIZED_MINIMUM',
+             s1_capital_basis='EXCLUDE_GAS')
+    p['provenance']['s1_capital_basis'] = dict(decision_id='IDEA-093 PR278-RV01-GAS; F-125 (review candidate)',
+        formula='Nominal S1 levels apply to cash plus marked stocks minus cost reserve; native gas excluded')
+    p['provenance']['entry_cost_basis'] = dict(decision_id='IDEA-093 PR278-RV01 (review candidate)',
+        formula='BUY cost reserve and 50bp entry cap use authorized minimum output plus fee and expected gas')
+    p['provenance']['run_halt_recovery_bps'] = dict(decision_id='IDEA-084 PF-02; IDEA-093 PR278-RV01',
+        formula='Clear only the 8% buy stop strictly below 5% drawdown with fresh complete reconciled valuation')
+    p['provenance']['s1_reduction_cost_cap_bps'] = dict(decision_id='IDEA-093 PR278-RV01 (review candidate)',
+        formula='Pending S1 level SELL may be below entry minimum only at authorized-minimum cost <=50bp and cost reserve')
 # IDEA-097 S4: S2 from run 4's carried-over book, already inside the terminal flatten when run 5 starts; no BUY window.
 S4_WINDOW = dict(trade_after='2026-10-25T10:00:00Z', new_risk_end='2026-10-25T10:30:00Z',
                  flatten_start='2026-10-25T10:30:00Z', signing_end='2026-10-26T20:00:00Z')
@@ -50,17 +70,55 @@ def s1_block(raw):
     return block
 
 
+def pinned_profiles(**s1):
+    """`build_live_profiles` on the pinned measured inputs, L/m and initial-only gas budgets (also IDEA-093 FS1)."""
+    def document(path):
+        return Document.from_dict(json.loads(path.read_bytes()))
+    authority = dict(seconds=660, margin=30, decision_id='IDEA-049-C LD04-V01 (Keegan, 2026-10-20)',
+        data_hash=hashlib.sha256((EVIDENCE / 'ld02-execution-packet-20261020.json').read_bytes()).hexdigest())
+    budget = dict(action_units=384000000000000, sizing_units=80004608000000,
+        decision_id='IDEA-049-C LD10-Q01 (Keegan delegation, 2026-10-21)',
+        data_hash=hashlib.sha256((EVIDENCE / 'signer-numeric-ceilings-20261021.json').read_bytes()).hexdigest())
+    return build_live_profiles(document(EVIDENCE / 'quotes-complete-20261020/quote-cost-summary.json'),
+        document(ROOT / 'config/intelligence/red_flags.v1.json'), initial_gas_only=True,
+        authority=authority, gas_budget=budget, **s1)
+
+
+# IDEA-049-C CAP-02 signed per-child ceilings (signer-numeric-ceilings-20261021.json): the recovery envelope's inputs.
+SIGNED_CHILD_GAS, SIGNED_GAS_PRICE = 1_200_000, 160_000_000
+CEILINGS = Path(__file__).resolve().parents[2] / 'docs/build/evidence/signer-numeric-ceilings-20261021.json'
+RECOVERY_DECISION = 'IDEA-098 (IDEA-096 F2/F3 recovery gas at the CAP-02 ceilings)'
+
+
+def with_recovery_gas(p):
+    """IDEA-098: PR282's eight-child recovery envelope and exit reserve at the CAP-02 signed ceilings, so the profile
+    Isaac approves already carries what `enable_allowance_recovery` would set at install (it then keeps the bytes)."""
+    from tools.deploy.enable_allowance_recovery import recovery_gas
+    expected = json.loads(CEILINGS.read_bytes())['execution_ceiling']
+    if (expected['max_gas'], expected['max_gas_price_wei']) != (SIGNED_CHILD_GAS, SIGNED_GAS_PRICE):
+        raise ContractError('CAP-02 ceilings differ from the recovery builder constants')
+    return recovery_gas(p, max_gas=SIGNED_CHILD_GAS, max_gas_price=SIGNED_GAS_PRICE, decision_id=RECOVERY_DECISION,
+                        data_hash=hashlib.sha256(CEILINGS.read_bytes()).hexdigest())
+
+
+def gas_formulas(p):
+    p['provenance']['gas_action_budget_units']['formula'] = '2*1200000 max signed child gas*160000000 max gas price; cleanup disabled'
+    p['provenance']['gas_sizing_budget_units']['formula'] = 'ceil(1000057*5/4) independently rounded child allowance at 64000000 expected gas price'
+
+
 def open_state(block):
     """IDEA-089 S2: the block sets KIT_OPEN_STATE hours (a weekend REHEARSAL test, never a final profile)."""
     return block is not None and type(block.get('execution')) is dict and block['execution'].get('hours') == 'KIT_OPEN_STATE'
 
 
-def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_at=None, carry_over=False):
+def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_at=None, fs1_rehearsal=False,
+          allowance_recovery=False, carry_over=False):
     """`exit_children=1` reproduces the historical LD10-Q01 bytes; LD10-P03 selects 2.
 
     With `s1_raw` (the exact bytes of Keith's S1 block) and `s1_decision`, the profile is TREND_GUARDED_VOL under the
     same SHADOW scope (SJ-11-RH01), and the reserve covers five positions x `exit_children`. With an S2 block,
-    `scheduled_flatten_at` makes it S3 (IDEA-092): everything sold at that time, then S2 again. `carry_over` makes it
+    `scheduled_flatten_at` makes it S3 (IDEA-092): everything sold at that time, then S2 again; `fs1_rehearsal` makes it
+    FS1-R (IDEA-093): the final FS1 block and slippage in S2's dev scope, on the FS1-R window. `carry_over` makes it
     S4 (IDEA-097): run 5 starts from run 4's exported book inside the terminal flatten, with allowance recovery gas."""
     if exit_children not in (1, 2):
         raise ValueError('exit_children must be 1 (historical Q01) or 2 (LD10-P03)')
@@ -71,25 +129,20 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
     s2 = open_state(s1)
     if scheduled_flatten_at is not None and not s2:
         raise ContractError('A scheduled flatten (S3) builds only on an S2 block (IDEA-092)')
+    if fs1_rehearsal and (not s2 or scheduled_flatten_at is not None):
+        raise ContractError('FS1-R builds only on a KIT_OPEN_STATE block, without a scheduled flatten (IDEA-093)')
+    if allowance_recovery and not fs1_rehearsal:
+        raise ContractError('Allowance recovery gas is built only for FS1-R (IDEA-098)')
     if carry_over and (not s2 or scheduled_flatten_at is not None or exit_children != 2):
         raise ContractError('A carry-over (S4) builds only on an S2 block, with two exit children and no S3 (IDEA-097)')
+    if carry_over and fs1_rehearsal:
+        raise ContractError('S4 (IDEA-097) and FS1-R (IDEA-093) are separate rehearsals')
     if s2:
         # The shared builder validates its BOUNDED_FALSIFIER profiles, which S2-1 refuses; the hours are set below,
         # once the SHADOW scope is.
         base_s1 = dict(s1, execution={k: v for k, v in s1['execution'].items() if k != 'hours'})
-    def document(path):
-        return Document.from_dict(json.loads(path.read_bytes()))
-    authority = dict(seconds=660, margin=30, decision_id='IDEA-049-C LD04-V01 (Keegan, 2026-10-20)',
-        data_hash=hashlib.sha256((EVIDENCE / 'ld02-execution-packet-20261020.json').read_bytes()).hexdigest())
-    budget = dict(action_units=384000000000000, sizing_units=80004608000000,
-        decision_id='IDEA-049-C LD10-Q01 (Keegan delegation, 2026-10-21)',
-        data_hash=hashlib.sha256((EVIDENCE / 'signer-numeric-ceilings-20261021.json').read_bytes()).hexdigest())
-    p = build_live_profiles(document(EVIDENCE / 'quotes-complete-20261020/quote-cost-summary.json'),
-        document(ROOT / 'config/intelligence/red_flags.v1.json'), initial_gas_only=True,
-        authority=authority, gas_budget=budget,
-        **({} if s1 is None else dict(s1=base_s1 if s2 else s1, s1_decision=s1_decision)))['REHEARSAL'].read()
-    p['provenance']['gas_action_budget_units']['formula'] = '2*1200000 max signed child gas*160000000 max gas price; cleanup disabled'
-    p['provenance']['gas_sizing_budget_units']['formula'] = 'ceil(1000057*5/4) independently rounded child allowance at 64000000 expected gas price'
+    p = pinned_profiles(**({} if s1 is None else dict(s1=base_s1 if s2 else s1, s1_decision=s1_decision)))['REHEARSAL'].read()
+    gas_formulas(p)
     positions = 4
     if s1 is not None:
         positions = 5
@@ -126,6 +179,18 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
             formula='Sell every held name from this time, no buys until flat, then S2 resumes from a fresh book')
         p['provenance']['policy_id'] = dict(decision_id='IDEA-092 S3 (team request, 2026-10-24)',
             formula='S2 with a scheduled sell-all; REHEARSAL-only on the dev wallet; never installed for the final run')
+    if fs1_rehearsal:
+        fs1_review_options(p)
+        p.update(FS1R_WINDOW, slippage_bps=FS1_SLIPPAGE_BPS, policy_id=FS1R_POLICY_ID)
+        for key in FS1R_WINDOW:
+            p['provenance'][key] = dict(decision_id='IDEA-093 FS1-R (2026-10-25, proposed window)',
+                formula='Off-hours dev test of FS1: buys Mon 00:00 to 14:00 SGT, flatten from 15:00, signing to 20:00 SGT')
+        p['provenance']['slippage_bps'] = dict(p['provenance']['slippage_bps'], decision_id='IDEA-093 FS1',
+            formula='20 bp (<= 50), the FS1 final value after S2-F6 (IDEA-090 F16)')
+        p['provenance']['policy_id'] = dict(decision_id='IDEA-093 FS1-R (2026-10-25)',
+            formula='REHEARSAL-only dev test of the FS1 final settings; never installed for the final run')
+    if allowance_recovery:
+        with_recovery_gas(p)
     if carry_over:
         p.update(S4_WINDOW, policy_id=S4_POLICY_ID, holdings_carry_over='RUN_EXPORT')
         for key in S4_WINDOW:
@@ -160,13 +225,18 @@ def main(argv=None):
     parser.add_argument('--s1-decision', help='decision ID for the supplied S1 block; required with --s1-config')
     parser.add_argument('--scheduled-flatten-at', nargs='?', const=S3_FLATTEN_AT,
                         help='S3 (IDEA-092): sell everything at this UTC instant, then S2 again; default ' + S3_FLATTEN_AT)
+    parser.add_argument('--fs1-rehearsal', action='store_true',
+                        help='FS1-R (IDEA-093): the FS1 block with FS1 slippage 20 bp on the FS1-R dev window')
+    parser.add_argument('--allowance-recovery', action='store_true',
+                        help='IDEA-098: FS1-R with the IDEA-096 recovery gas envelope at the CAP-02 ceilings')
     parser.add_argument('--carry-over', action='store_true',
                         help='S4 (IDEA-097): start from the previous run\'s exported book, flatten only, recovery gas')
     args = parser.parse_args(argv)
     if (args.s1_config is None) != (args.s1_decision is None):
         parser.error('--s1-config and --s1-decision must be supplied together')
     s1 = {} if args.s1_config is None else dict(s1_raw=args.s1_config.read_bytes(), s1_decision=args.s1_decision)
-    p = build(args.exit_children, **s1, scheduled_flatten_at=args.scheduled_flatten_at, carry_over=args.carry_over)
+    p = build(args.exit_children, **s1, scheduled_flatten_at=args.scheduled_flatten_at, fs1_rehearsal=args.fs1_rehearsal,
+              allowance_recovery=args.allowance_recovery, carry_over=args.carry_over)
     with args.output.open('xb') as stream:
         stream.write(p.payload + b'\n')
     print(p.digest('StrategyProfile.v1'))

@@ -69,7 +69,7 @@ def check_scope(values, report):
     signed = report.get('execution') == 'service'
     mode = report.get('runtime_mode')
     from larp.strategy.execution_bounds import require_open_state_scope
-    require_open_state_scope(values['strategy-profile.json'], mode)  # IDEA-089 S2-1
+    require_open_state_scope(values['strategy-profile.json'], mode)  # IDEA-089 S2-1 / IDEA-093 FS1
     if (mode not in ('dev', 'live') or (not signed and mode != 'dev')
             or any(v.get('mode') != mode for v in (runtime, uploader, state))
             or driver.get('execution') != ('service' if signed else 'shadow')

@@ -1,6 +1,7 @@
-"""SLM-01: one background assessor, append-only private audit, main-thread authority only.
+"""SLM-01: background assessors, append-only private audit, main-thread authority only.
 
-A hung model retains the single slot. It never blocks safety ticks or creates an
+One slot per assessor instance (IDEA-093 PL: `assessment_workers`; one assessor is the original single slot). At most
+one pending job per company. A hung model retains its own slot only. It never blocks safety ticks or creates an
 unbounded executor queue. Restart outcomes stay tied to their original request.
 """
 import hashlib
@@ -20,7 +21,11 @@ def encoded(value):
 
 class DeferredAssessments:
     def __init__(self, assessor, *, root, run_id, build_id, profile_hash):
-        self.assessor = assessor
+        # A list gives one slot per independent assessor instance (IDEA-093 PL); one assessor is the single slot.
+        self.assessors = list(assessor) if isinstance(assessor, (list, tuple)) else [assessor]
+        if not self.assessors:
+            raise ContractError('At least one assessor is required')
+        self.assessor = self.assessors[0]
         self.identity = dict(run_id=run_id, build_id=build_id, profile_hash=profile_hash)
         root = Path(root)
         if root.is_symlink():
@@ -31,7 +36,10 @@ class DeferredAssessments:
         if self.root.is_symlink():
             raise ContractError('Model journal directory cannot be a symlink')
         self._writer_lock = threading.RLock()
+        self._slot_lock = threading.Lock()
+        self._free = list(self.assessors)
         self.pending, self.active = {}, None
+        self._running, self._issuer = {}, {}  # round ID -> finished event (this process) / company
         self.finished = threading.Event()
         for path in sorted(self.root.glob('*.jsonl')):
             events = self._read(path)
@@ -43,10 +51,19 @@ class DeferredAssessments:
                 raise ContractError('Model journal identity mismatch')
             if events[-1]['kind'] != 'ACK':
                 self.pending[first['round_id']] = path
+                self._issuer[first['round_id']] = first['request'].get('issuer_id')
 
     @property
     def busy(self):
-        return bool(self.pending)
+        return len(self.pending) >= len(self.assessors)
+
+    def issuers(self):
+        """Companies with a pending (unacknowledged) job."""
+        return set(self._issuer.values())
+
+    def running(self, round_id):
+        done = self._running.get(round_id)
+        return done is not None and not done.is_set()
 
     def round_ids(self):
         return set(self.pending)
@@ -100,40 +117,48 @@ class DeferredAssessments:
 
     def submit(self, round_id, request, *, claim=None):
         self._identity(request.read())
-        if self.busy:
+        issuer = request.read().get('issuer_id')
+        if self.busy or issuer in self.issuers():
             return False
+        with self._slot_lock:
+            if not self._free:
+                return False  # every free slot's assessor is still held by a hung call
+            assessor = self._free.pop(0)
         path = self.root / (hashlib.sha256(round_id.encode()).hexdigest() + '.jsonl')
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         os.close(fd)
         self._append(path, dict(kind='REQUEST', round_id=round_id, request=request.read(),
                                 identity=self.identity, claim=claim))
         self.pending[round_id] = path
+        self._issuer[round_id] = issuer
         self.active = round_id
-        self.finished.clear()
+        done = self.finished = self._running[round_id] = threading.Event()
 
         def run():
             try:
                 hook = lambda event: self._append(path, event)
-                deferred = getattr(self.assessor, 'assess_deferred', None)
+                deferred = getattr(assessor, 'assess_deferred', None)
                 if deferred is not None:
                     # The real router must drain inner hard-timeout workers before RESULT/ACK.
                     # A returned UNAVAILABLE result alone does not prove that a provider has exited.
                     result = deferred(request, audit_hook=hook)
                 else:
-                    self.assessor.audit_hook = hook
-                    result = self.assessor.assess(request)
+                    assessor.audit_hook = hook
+                    result = assessor.assess(request)
                 self._append(path, dict(kind='RESULT', result=result.read()))
             except Exception as error:
                 # Never persist exception text: provider/OS exceptions can include credentials.
                 self._append(path, dict(kind='ERROR', error=type(error).__name__))
             finally:
-                self.finished.set()
+                with self._slot_lock:
+                    self._free.append(assessor)  # only a call that returned frees its instance
+                done.set()
         threading.Thread(target=run, name='larp-assessment', daemon=True).start()
         return True
 
     def ready(self):
-        for round_id, path in self.pending.items():
-            if round_id == self.active and not self.finished.is_set():
+        for round_id, path in self.pending.items():  # submission order within a process
+            if self.running(round_id):
                 continue
             events = self._read(path)
             first, last = events[0], events[-1]
@@ -145,9 +170,11 @@ class DeferredAssessments:
 
     def ack(self, round_id):
         path = self.pending[round_id]
-        if round_id == self.active and not self.finished.is_set():
+        if self.running(round_id):
             raise ContractError('Cannot acknowledge a running assessment')
         self._append(path, dict(kind='ACK'))
         del self.pending[round_id]
+        self._issuer.pop(round_id, None)
+        self._running.pop(round_id, None)
         if round_id == self.active:
             self.active = None

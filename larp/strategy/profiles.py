@@ -67,6 +67,8 @@ def _quote_summary(summary):
 
 def validate_live(p):
     try:
+        from .schema import review_options
+        review_options(p)
         execution_authority(p)
         initial_only = uses_initial_gas(p)
         if initial_only and any(key in p for key in TOP_UP_KEYS):
@@ -115,9 +117,11 @@ def validate_live(p):
                 or p["assessment_required"] is not False):
             raise ContractError("Live profile differs from decided v1 scope")
         from .execution_bounds import require_open_state_scope
-        require_open_state_scope(p, None)  # IDEA-089 S2-1: weekend hours only in a SHADOW REHEARSAL
+        require_open_state_scope(p, None)  # IDEA-089 S2-1 / IDEA-093 FS1: 24/7 hours only in their decided scopes
         from .scheduled_flatten import require_scope
         require_scope(p)  # IDEA-092 S3: a scheduled sell-all only on S2's REHEARSAL, inside the buy window
+        from .self_check import require_scope as require_self_check_scope
+        require_self_check_scope(p)  # IDEA-093 SC (GAP-74): the activation self-check only on the FINAL S1 profile
         from . import carry_over
         carry_over.require_scope(p)  # IDEA-097 S4: a carried-over book only on S2's REHEARSAL
         # IDEA-035/037 fix these values; provenance alone cannot adopt a new policy.

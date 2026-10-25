@@ -1,0 +1,150 @@
+{
+ "schema": "LocalCiReceipt.v1",
+ "entry": "IDEA-093",
+ "tested_commit": "d1260bc4c9153f91748f4b8065c502e02b9b1808",
+ "why_local": "GitHub Actions jobs cannot start on this account (billing/spending limit, as for runs 40085742176, 40098610551, 40100265719)",
+ "host": "macOS arm64, Docker Desktop; checkouts are clean local clones of the pushed branch head",
+ "jobs": {
+  "runtime": {
+   "image": "python:3.12.15-bookworm + bubblewrap + deploy/requirements-test.lock",
+   "postgres": "postgres:14.24-bookworm (aarch64)",
+   "steps": {
+    "pip_check": "PASS (No broken requirements found)",
+    "pytest": {
+     "result": "PASS",
+     "passed": 2675,
+     "skipped": 9,
+     "subtests_passed": 4004,
+     "failed": 0,
+     "errors": 0,
+     "seconds": 378.99,
+     "skips": [
+      "2 opt-in external/private fixtures (test_source_link_trust, test_recorded)",
+      "test_live_start: root ignores the directory mode (container runs as root)",
+      "5 test_systemd_conditions: disposable systemd runner not enabled",
+      "test_dashboard: checkout has no GitHub origin"
+     ],
+     "notes": "container run with --privileged so bubblewrap nested sandboxes work; no tests deselected"
+    },
+    "systemd_conditions": "NOT RUN (LARP_TEST_SYSTEMD=1 needs a disposable systemd runner)",
+    "offline_demo": "PASS (exit 0, 67652-byte trace)",
+    "docker_build_and_run": "PASS (deploy/Dockerfile built natively on arm64, run with --network none --read-only --cap-drop ALL; CI builds on amd64)"
+   }
+  },
+  "infrastructure": {
+   "image": "hashicorp/terraform:1.13.5 linux/amd64",
+   "deploy/aws": "fmt PASS, init -lockfile=readonly PASS, validate PASS, test 19 passed 0 failed",
+   "deploy/bootstrap": "fmt PASS, init -lockfile=readonly PASS, validate PASS, test 1 passed 0 failed"
+  },
+  "host_bundle": {
+   "build": "tools/build_release_bundle.py --arch x86_64 in python:3.12.15-bookworm linux/amd64; origin = bare mirror of the local repo whose branch head equals GitHub's (d1260bc4)",
+   "bundle": "larp-d1260bc4c915-x86_64.tar.gz",
+   "bundle_sha256": "444845f3919344a68a54de971f1c4f3a43909e92b9d7fbdc62e1f79f5f51af9b",
+   "release_json_sha256": "9a6d242cf1e1bf38912d1dab3fc5d58a0241bd860265a8278bbf93b3a48290ed",
+   "test_host_bundle": "PASS primary and signer (amazonlinux:2023 linux/amd64, release_verified true, signing_enabled false)",
+   "artifact": "not uploaded anywhere; local build only (no CI artifact exists for this commit)"
+  }
+ },
+ "not_claimed": [
+  "a GitHub Actions pass",
+  "systemd/host/release qualification",
+  "any live run, approval or installation"
+ ],
+ "s4r_rerun": {
+  "tested_commit": "db048e0d67cdd3f96250abe3fa5633454961c134",
+  "pip_check": "PASS",
+  "pytest": {
+   "passed": 2679,
+   "skipped": 9,
+   "subtests_passed": 4004,
+   "failed": 0,
+   "seconds": 359.87
+  },
+  "offline_demo": "PASS (67652-byte trace)",
+  "docker_build_and_run": "PASS",
+  "host_bundle": {
+   "bundle": "larp-db048e0d67cd-x86_64.tar.gz",
+   "bundle_sha256": "8b95a5ef5a1be212cea3983f5477075b5b640cf2ebe5c05ce99db8e192214257",
+   "test_host_bundle": "PASS primary and signer"
+  },
+  "terraform": "not rerun: no deploy/ change since the first run",
+  "systemd_conditions": "NOT RUN"
+ },
+ "fs1_rerun": {
+  "tested_commit": "c7242513fa063b59cd53e9c32a09225a48175b6c",
+  "pip_check": "PASS",
+  "pytest": {
+   "passed": 2684,
+   "skipped": 9,
+   "subtests_passed": 4004,
+   "failed": 0,
+   "seconds": 359.4
+  },
+  "offline_demo": "PASS (67652-byte trace)",
+  "docker_build_and_run": "PASS",
+  "host_bundle": {
+   "bundle": "larp-c7242513fa06-x86_64.tar.gz",
+   "bundle_sha256": "7304b7babd934c80789022677f0c0a7363b730c95403d66d8ab974c4aff56ae7",
+   "test_host_bundle": "PASS primary and signer"
+  },
+  "terraform": "not rerun: no deploy/ or workflow change since the first run",
+  "systemd_conditions": "NOT RUN",
+  "note": "paths in the first run's record (s4-*) were renamed fs1-* at c7242513"
+ },
+ "base_sync_rerun": {
+  "tested_commit": "6bb2f648c846176d48dfa3b7634e867f4211c685",
+  "pytest": {
+   "passed": 2746,
+   "skipped": 9,
+   "subtests_passed": 4016,
+   "failed": 0
+  },
+  "pip_check": "PASS",
+  "offline_demo": "PASS",
+  "docker_build_and_run": "PASS",
+  "host_bundle": {
+   "bundle_sha256": "0eefb9d98fcdd5c4bf4357707b4d977b61bef85f5571ea5832b6d399d15df42f",
+   "test_host_bundle": "PASS primary and signer"
+  }
+ },
+ "pl_rerun": {
+  "tested_commit": "d7741f916681c1f1d48b7e11c1d26d41d795baa6",
+  "pytest": {
+   "passed": 2766,
+   "skipped": 9,
+   "subtests_passed": 4027,
+   "failed": 0,
+   "seconds": 467.44
+  },
+  "pip_check": "PASS",
+  "offline_demo": "PASS (67652-byte trace)",
+  "docker_build_and_run": "PASS",
+  "host_bundle": {
+   "bundle": "larp-d7741f916681-x86_64.tar.gz",
+   "bundle_sha256": "b9b2cb664261309231d70e734ee8a73bbc8a1c38a99a0ac27006853c6728bc6b",
+   "test_host_bundle": "PASS primary and signer"
+  },
+  "terraform": "not rerun: no deploy/ change",
+  "systemd_conditions": "NOT RUN"
+ },
+ "sc_rerun": {
+  "tested_commit": "0a65e19e9e41ef1f74e4874b1b8b1abbc7d0699f",
+  "pip_check": "PASS",
+  "pytest": {
+   "passed": 2775,
+   "skipped": 9,
+   "subtests_passed": 4027,
+   "failed": 0,
+   "seconds": 486.66
+  },
+  "offline_demo": "PASS (67652-byte trace)",
+  "docker_build_and_run": "PASS",
+  "host_bundle": {
+   "bundle": "larp-0a65e19e9e41-x86_64.tar.gz",
+   "bundle_sha256": "e2b394b53ef17bb0d97ccf35b28c4155b7fa77a3298e96179c2757a79c21388d",
+   "test_host_bundle": "PASS primary and signer"
+  },
+  "terraform": "not rerun: no deploy/ change",
+  "systemd_conditions": "NOT RUN here"
+ }
+}

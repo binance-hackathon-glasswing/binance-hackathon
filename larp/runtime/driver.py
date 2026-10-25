@@ -48,6 +48,8 @@ EXPIRED_REASON = 'COMMAND_EXPIRED_UNCLAIMED'
 SOURCE = 'sec-edgar'
 MAX_ATTEMPTS = 3
 MAX_QUOTE_CHAIN = 8  # follow-up depth the work scans for an interrupted child; the driver bounds what it runs
+MAX_CONTINUATION_ROUNDS = 10  # IDEA-093 PL: planning rounds after a settled trade, per cadence slot
+MAX_QUEUE_PASSES = 5  # IDEA-093 PL: extra work lookups per tick when filling several assessment slots
 DAY_MS = 86_400_000
 STEP_ORDER = {'approve': 0, 'swap': 1}
 
@@ -758,9 +760,12 @@ class EvidenceWork:
     """
 
     def __init__(self, *, store, evidence_store, run_id, config, issuers, profile_hash, cadence_ms,
-                 lifecycle_policy=None, lease_ms=120_000):
+                 lifecycle_policy=None, lease_ms=120_000, continuation_rounds=0):
         if type(cadence_ms) is not int or cadence_ms < 60_000:
             raise ContractError('Cadence must be at least one minute')
+        if type(continuation_rounds) is not int or not 0 <= continuation_rounds <= MAX_CONTINUATION_ROUNDS:
+            raise ContractError('continuation_rounds must be an integer in [0, %d]' % MAX_CONTINUATION_ROUNDS)
+        self.continuation_rounds = continuation_rounds
         self.store, self.evidence, self.run_id, self.config = store, evidence_store, run_id, config
         self.issuers, self.profile_hash, self.cadence = list(issuers), profile_hash, cadence_ms
         self.lifecycle_policy = lifecycle_policy
@@ -828,22 +833,24 @@ class EvidenceWork:
         held = self._records(issuer, now_ms)
         return [max(held, key=lambda r: (r['available_ms'], r['revision'], r['record_id']))] if held else []
 
-    def _review(self, now_ms, epoch):
+    def _review(self, now_ms, epoch, busy=frozenset()):
         claim = self.scheduler.claim(self.run_id, epoch, 'evidence', now_ms)
         if claim is None:
             return None
         job = claim.read()['job']
         issuer = job['payload'].get('issuer_id')
+        if issuer in busy:
+            return None  # that company's job is still pending; the claim's lease ends and it is claimed again
         records = self._latest(issuer, now_ms) if issuer in self.issuers else []
         base = 'review:' + job['job_id'][len('evidence:'):]
         round_id = self.round_for(base)
         return dict(round_id=round_id, job=job, issuer_id=issuer, records=records, claim=claim,
                     resume=None if round_id is not None else self.quote_resume(base))
 
-    def _ingested(self, now_ms):
+    def _ingested(self, now_ms, busy=frozenset()):
         jobs = [j for j in self.evidence.jobs() if j.get('lane') == 'evidence'
                 and (j.get('payload') or {}).get('kind') == 'ASSESS_FILING'
-                and j['payload'].get('issuer_id') in self.issuers
+                and j['payload'].get('issuer_id') in self.issuers and j['payload'].get('issuer_id') not in busy
                 and j['due_ms'] <= now_ms < j['valid_until_ms']]
         for job in sorted(jobs, key=lambda j: (j['priority'], j['due_ms'], j['job_id'])):
             base = 'filing:' + job['job_id'][len('evidence:'):]
@@ -859,13 +866,15 @@ class EvidenceWork:
                         resume=resume)
         return None
 
-    def _cadence(self, now_ms):
+    def _cadence(self, now_ms, busy=frozenset()):
         slot = now_ms // self.cadence
         round_id = self.round_for(f'cadence:{slot}')
         resume = self.quote_resume(f'cadence:{slot}') if round_id is None else None
         if (round_id is None and resume is None) or not self.issuers:
             return None
         issuer = self.issuers[slot % len(self.issuers)]
+        if issuer in busy:
+            return None
         records = self._latest(issuer, now_ms)
         # IDEA-090 (S2-F2): a slot whose issuer has no records still plans, on the evidence already accepted and
         # with no new assessment, so trading and mandatory exits never wait for an issuer with a filing.
@@ -880,8 +889,65 @@ class EvidenceWork:
             item['planning_only'] = True
         return item
 
-    def next(self, now_ms, epoch):
-        return self._review(now_ms, epoch) or self._ingested(now_ms) or self._cadence(now_ms)
+    def next(self, now_ms, epoch, busy=frozenset()):
+        """`busy`: companies whose assessment is still pending (IDEA-093 PL); their work waits."""
+        if not busy:
+            return self._review(now_ms, epoch) or self._ingested(now_ms) or self._cadence(now_ms)
+        return self._review(now_ms, epoch, busy) or self._ingested(now_ms, busy) or self._cadence(now_ms, busy)
+
+    def _chain(self, base):
+        """The planned rounds of `base` (its planned attempt and planned quote follow-ups), or None if none planned."""
+        parent = next((f'{base}#{a}' for a in range(1, MAX_ATTEMPTS + 1) if self._done(f'{base}#{a}')), None)
+        if parent is None:
+            return None
+        chain = [parent]
+        for n in range(1, MAX_QUOTE_CHAIN + 1):
+            planned = [r for r in self.child_attempts(parent, n) if self._done(r)]
+            if not planned:
+                break
+            chain.extend(planned)
+        return chain
+
+    def _traded(self, chain):
+        return any(((self.store.event(self.run_id, 'plan:' + r) or {}).get('record', {}).get('plan') or {})
+                   .get('intents') for r in chain)
+
+    def continuation(self, now_ms, current):
+        """IDEA-093 PL (cadence path): a planning-only round as soon as the slot's last trade has settled.
+
+        In a slot whose latest round chain planned an intent, once nothing is in flight, the next tick plans
+        `cadence:{slot}:next{k}`, up to `continuation_rounds`. A chain that plans nothing ends it until the next slot.
+        Trades stay one at a time: the wallet barrier and the planner's one intent per round are unchanged."""
+        if not self.continuation_rounds or not self.issuers:
+            return None
+        records = current['projection'].get('round_records', {}).values()
+        if (current['reservations'] or self.store.open_rounds(self.run_id)
+                or any(r.get('execution_pending') for r in records)):
+            return None
+        slot = now_ms // self.cadence
+        traded = False
+        for k in range(self.continuation_rounds + 1):
+            base = f'cadence:{slot}' + (f':next{k}' if k else '')
+            chain = self._chain(base)
+            if chain is not None:
+                traded = self._traded(chain)
+                continue
+            if k == 0 or not traded:
+                return None
+            round_id = self.round_for(base)
+            resume = self.quote_resume(base) if round_id is None else None
+            if round_id is None and resume is None:
+                return None
+            issuer = self.issuers[slot % len(self.issuers)]
+            payload = dict(kind='REASSESS_ISSUER', issuer_id=issuer, reason='TRADE_CONTINUATION', slot=slot,
+                           continuation=k)
+            job = dict(job_id='evidence:' + digest('larp.runtime.cadence-job.v1', payload), lane='evidence',
+                       due_ms=slot * self.cadence, valid_until_ms=(slot + 1) * self.cadence, max_attempts=1,
+                       priority=60, calendar_id='UTC', tzdata_version='utc-only-no-tzdata', missed='expire',
+                       payload=payload)
+            return dict(round_id=round_id, job=job, issuer_id=issuer, records=[], claim=None, resume=resume,
+                        planning_only=True)
+        return None
 
     def request(self, item, current, now_ms):
         issuer = item['issuer_id']
@@ -1038,6 +1104,8 @@ class RoundDriver:
         if self.assessments is not None:
             return self._signed_cycle(now_ms, summary)
         item = self.work.next(now_ms, current['epoch'])
+        if item is None:
+            item = self.work.continuation(now_ms, current)  # IDEA-093 PL: the next leg as soon as a trade settles
         if item is not None:
             summary['round_id'] = item['round_id']
             resume = item.get('resume')
@@ -1101,18 +1169,34 @@ class RoundDriver:
         if self.execution.waiting(decided):
             return summary
         summary['closed'] += len(self.execution.settle_open(decided))
-        if not queue.busy:
+        # IDEA-093 PL: fill every free slot, one job per company; one slot (one assessor) is the original single job.
+        slots = len(getattr(queue, 'assessors', ())) or 1
+        busy, queued = set(queue.issuers()) if hasattr(queue, 'issuers') else set(), []
+        passes = 1 if slots == 1 else slots + MAX_QUEUE_PASSES  # one slot: one lookup per tick, as before
+        for _ in range(passes):
+            if queue.busy:
+                break
             current = c.store.load(c.run_id).read()
-            work = self.work.next(decided, current['epoch'])
-            if work is not None:
-                if work['round_id'] is not None and work['records']:
-                    request = self.work.request(work, current, decided)
-                    from larp.runtime.schema import assessment_request
-                    assessment_request(request, c.run_id, c.profile_hash, decided)
-                    c.store.open_round(c.run_id, work['round_id'], request, current['epoch'])
-                    queue.submit(work['round_id'], request,
-                                 claim=work['claim'].read() if work['claim'] is not None else None)
-                    summary['assessment_queued'] = work['round_id']
-                elif work['claim'] is not None:
-                    self.work.scheduler.finish(c.run_id, work['claim'])
+            work = self.work.next(decided, current['epoch'], busy=frozenset(busy)) if busy else \
+                self.work.next(decided, current['epoch'])
+            if work is None:
+                break
+            if work['round_id'] is not None and work['records']:
+                request = self.work.request(work, current, decided)
+                from larp.runtime.schema import assessment_request
+                assessment_request(request, c.run_id, c.profile_hash, decided)
+                c.store.open_round(c.run_id, work['round_id'], request, current['epoch'])
+                if not queue.submit(work['round_id'], request,
+                                    claim=work['claim'].read() if work['claim'] is not None else None):
+                    break
+                queued.append(work['round_id'])
+                busy.add(work['issuer_id'])
+            elif work['claim'] is not None:
+                self.work.scheduler.finish(c.run_id, work['claim'])
+            else:
+                break  # a cadence slot with nothing to assess only plans (IDEA-090)
+        if queued:
+            summary['assessment_queued'] = queued[0]
+            if len(queued) > 1:
+                summary['assessments_queued'] = queued
         return summary
