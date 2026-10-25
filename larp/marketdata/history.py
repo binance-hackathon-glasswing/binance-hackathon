@@ -5,7 +5,7 @@ module never infers it from a candle label and never substitutes share prices.
 """
 from copy import deepcopy
 from datetime import datetime, timezone
-import hashlib
+from decimal import Decimal, InvalidOperation
 import json
 import os
 from pathlib import Path
@@ -105,7 +105,7 @@ class SessionHistory:
                     Document.from_dict(value).digest('larp.session-history-cache.v1')):
                 return None
             return value
-        except (OSError, ValueError, KeyError, TypeError, ContractError):
+        except (OSError, ValueError, KeyError, TypeError, AttributeError, ContractError):
             return None
 
     def _save(self, value):
@@ -181,6 +181,21 @@ class SessionHistory:
                 stamp = int(row[5]) if type(row[5]) is str and row[5].isdigit() else row[5]
                 if type(stamp) is not int or stamp < 0 or stamp % HOUR_MS or (stamps and stamp <= stamps[-1]):
                     raise ContractError('Historical candle interval/ordering differs')
+                values = []
+                for n, cell in enumerate(row[:5]):
+                    if type(cell) not in (str, int, float) or len(str(cell)) > 128:
+                        raise ContractError('Malformed historical candle quantity')
+                    try:
+                        number = Decimal(str(cell))
+                    except InvalidOperation as exc:
+                        raise ContractError('Malformed historical candle quantity') from exc
+                    if not number.is_finite() or (number <= 0 if n < 4 else number < 0):
+                        raise ContractError('Invalid historical candle quantity')
+                    values.append(format(number, 'f'))
+                trades = int(row[6]) if type(row[6]) is str and row[6].isdigit() else row[6]
+                if trades is not None and (type(trades) is not int or trades < 0):
+                    raise ContractError('Invalid historical trade count')
+                row = values + [stamp, trades]  # immutable Documents use decimal strings, never JSON floats
                 if stamp in rows and rows[stamp] != row:
                     raise ContractError('Conflicting historical candle overlap')
                 rows[stamp] = row
