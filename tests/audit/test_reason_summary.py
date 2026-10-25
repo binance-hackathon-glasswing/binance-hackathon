@@ -108,6 +108,34 @@ class Logged(DatabaseCase):
 
 
 class Phrases(unittest.TestCase):
+    def test_rv6_real_planner_quote_request_is_not_no_target_change(self):
+        from larp.audit.reasons import round_summary
+        from larp.research.fixtures import snapshot
+        from larp.risk.planner import plan
+        from larp.strategy.policy import decide
+        s = snapshot()
+        planned = plan(s, decide(s, s.policy_state)).read()
+        self.assertEqual(planned['intents'], [])
+        self.assertTrue(planned['quote_requests'])
+        summary, decisions = round_summary(dict(plan=planned, orders=[], errors=[]))
+        self.assertEqual(decisions, [])
+        self.assertIn('waiting for a quote', summary)
+        self.assertIn(planned['quote_requests'][0]['symbol'], summary)
+        self.assertNotIn('no target change', summary)
+
+    def test_rv6_blocked_mandatory_reduction_names_symbol_and_status(self):
+        from larp.audit.reasons import round_summary
+        for status in ('BLOCKED_MARK', 'BLOCKED_INPUT'):
+            with self.subTest(status=status):
+                record = dict(orders=[], errors=[], plan=dict(requirements=[
+                    dict(symbol='NVDAB', remaining_sell_units=100, status=status),
+                    dict(symbol='GOOGLB', remaining_sell_units=0, status='DONE')]))
+                summary, decisions = round_summary(record)
+                self.assertEqual(decisions, [])
+                self.assertIn(f'mandatory reduction pending (NVDAB: {status})', summary)
+                self.assertNotIn('GOOGLB', summary)
+                self.assertNotIn('no target change', summary)
+
     def test_rv5_buy_cash_and_sell_token_units_are_explicit(self):
         for symbol in ('NVDAB', 'BNB'):
             with self.subTest(symbol=symbol):

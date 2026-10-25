@@ -50,6 +50,8 @@ REJECTION = {
     'EXECUTION_BLOCKED': 'execution blocked',
     'NO_POLICY_PROPOSAL': 'no policy proposal',
     'PARTIAL_VALUATION_NEW_RISK_BLOCKED': 'incomplete valuation blocks new risk',
+    'QUOTE_PENDING': 'waiting for a quote',
+    'MANDATORY_REDUCTION_PENDING': 'mandatory reduction pending',
 }
 MAX_PHRASES = 3
 UNAVAILABLE = 'Reason summary unavailable: the round record has an unexpected shape.'
@@ -99,6 +101,19 @@ def _hold_sentence(record, plan):
             for name in [rejection.get('symbol')] + _strings(rejection.get('gates')):
                 if type(name) is str and name not in names:
                     names.append(name)
+    for request in plan.get('quote_requests') or []:
+        if type(request) is dict and type(request.get('symbol')) is str:
+            names = grouped.setdefault('QUOTE_PENDING', [])
+            if request['symbol'] not in names:
+                names.append(request['symbol'])
+    for requirement in plan.get('requirements') or []:
+        if (type(requirement) is dict and type(requirement.get('symbol')) is str
+                and type(requirement.get('remaining_sell_units')) is int and requirement['remaining_sell_units'] > 0):
+            names = grouped.setdefault('MANDATORY_REDUCTION_PENDING', [])
+            status = requirement.get('status')
+            name = requirement['symbol'] + (f': {status}' if type(status) is str and status else '')
+            if name not in names:
+                names.append(name)
     if not grouped:
         return 'No order this round: no target change.'
     parts = [REJECTION.get(code, code) + (f' ({", ".join(names)})' if names else '')
