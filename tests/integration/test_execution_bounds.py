@@ -270,7 +270,7 @@ class RefundUnclaimed(DurableBudget):
         from larp.runtime.driver import ServiceExecution
         coordinator = self.coordinator()
         intent = self.child(coordinator, 'a/quote1')
-        execution = ServiceExecution(coordinator, '0x' + '1' * 40, grace_ms=0)
+        execution = ServiceExecution(coordinator, wallet='0x' + '1' * 40, grace_ms=0)
         now = intent['expires_ms']
         with patch.object(execution, '_records', return_value={execution.key(intent['intent_id'])}):
             self.assertEqual(execution.expire(now), [])
