@@ -334,3 +334,61 @@ the combined head passes: 2715 passed, 11 skipped (same environment skips), 4004
 pinned to run 4 (S2 profile `eb55d76a…`, `--runtime-mode dev`, assessor `deterministic`, `larp_rehearsal4`). The
 final install needs reviewed FS1 copies. Added as run-sheet row F0p and to the IDEA-093 line in `INCOMPLETE_WORK.md`
 (owner Yao, review Keegan).
+
+## PL: per-stock parallel assessments and trade continuation (requested 2026-10-25 SGT; pre-registered before tests or code)
+
+**Request (in chat):** "can you implement this change for each stock to be evaluated separately so they can be
+parallelised?, continue in this PR". Asked which part, the requester chose **assessments + faster trades**: assess
+every company with new evidence in parallel, start the next decision round as soon as a trade settles, and keep
+trades one at a time on the wallet.
+
+**What the code does today (checked at `6bb2f648`).**
+- Every round evaluates all five stocks in one pass (`policy.decide` loops over the universe) and the planner ranks the
+  needed legs together. That part is already per stock.
+- **Trades are serial on purpose.** One intent per round (`planner.py`), and the execution store's unique index
+  `execution_wallet_barrier` allows one non-terminal execution per wallet: nonces are wallet-wide (G-18). Unchanged.
+- **FS1's live path is the signed, AIand-routed one** (`service.build_driver`: `signed_model` → `DeferredAssessments`
+  → `RoundDriver._signed_cycle`). It already plans a safety round every runtime tick (`interval_seconds` 5), so a new
+  leg is planned seconds after the previous one settles. The earlier "about 75 minutes to build the book" in this
+  session's chat applies only to the cadence path (deterministic assessor: FS1-R and other unrouted runs), which plans
+  once per 15-minute slot.
+- **Assessments are serial.** `DeferredAssessments` runs one background job (`submit` refuses while `busy`), and the
+  routed assessor itself refuses a second concurrent call on one instance (`ROUTING_GROUP_BUSY`). Filings and reviews
+  for different companies queue behind each other.
+
+**Design.**
+- **PA (parallel assessments, signed path).** New driver setting `assessment_workers` (integer 1..5; absent = 1 =
+  today's behaviour and bytes).
+  - `service.build_driver` builds that many independent routed-assessor instances. They share only the OpenAI budget
+    ledger (one SQLite `BEGIN IMMEDIATE` transaction per admission, so concurrent workers cannot over-reserve), the
+    content-addressed artifact store (atomic `link`) and the evidence store (lock-guarded methods). Each keeps its own
+    worker ownership, so a hung provider call holds only its own slot.
+  - `DeferredAssessments` takes the list of assessors: one thread per job, at most one pending job per company,
+    `busy` when every slot is taken. Results are committed on the main thread one per tick, in submission order, with
+    their original audit (replay unchanged).
+  - `_signed_cycle` fills every free slot in a tick: it asks `EvidenceWork.next` repeatedly, skipping companies that
+    already have a pending job, and submits each item that has records. A cadence slot with no records still only
+    plans (no assessment), as today.
+  - Cost: up to five concurrent assessments only when several companies have new work; OpenAI pacing still caps
+    OpenAI spend (excess goes to the AIand reviewers); provider rate limits under concurrency are not measured.
+- **CR (continuation rounds, cadence path).** New driver setting `continuation_rounds` (integer 0..10; absent = 0 =
+  today). In a slot whose latest round chain planned at least one intent, once nothing is in flight (no reservation,
+  open round or pending execution), the driver starts a planning-only round `cadence:{slot}:next{k}` on the next tick,
+  up to `k = continuation_rounds`. A continuation that plans no intent ends the chain until the next slot. Trades stay
+  one at a time; every round is still logged.
+- **Configuration.** `runtime.example.json` and the AIand shadow example carry `assessment_workers` 5 and
+  `continuation_rounds` 4, so `gate_a.prepare` writes them into every new `runtime.json` (FS1 and FS1-R).
+- **Not changed:** planner, one-intent-per-round, wallet barrier, signer, caps, quote follow-ups, openState guard.
+
+| # | Pass when |
+|---|---|
+| PL-1 | With `assessment_workers` 1 (or absent) and `continuation_rounds` 0 (or absent), every existing driver, deferred-assessment and replay test passes unchanged |
+| PL-2 | With 5 workers and new filings for three companies, one signed-cycle tick submits three jobs, one per company, each on a distinct assessor instance; a second filing for a company with a pending job is not submitted until that job is acknowledged |
+| PL-3 | Finished results are committed one per tick in submission order with their audit; the journal replays to the same head |
+| PL-4 | A hung job holds only its own slot: other companies are still assessed, and safety rounds still plan every tick |
+| PL-5 | A restart with several pending model journals recovers each (COMPLETE or INTERRUPTED) and acknowledges each once; no round is duplicated |
+| PL-6 | `service.build_driver` builds N distinct routed assessors for `assessment_workers` N; 0, 6, a boolean or a string is refused; concurrent budget admissions from N threads never reserve more than the released allowance |
+| PL-7 | Cadence path with `continuation_rounds` 4: a five-name book that needs five buys plans them in consecutive ticks inside one slot as each settles; no continuation starts while an intent is in flight; a continuation that plans nothing ends the chain; a mandatory sell uses the same path |
+| PL-8 | Continuation rounds replay to the same head, and a restart inside a slot does not create a duplicate continuation |
+| PL-9 | The examples carry both settings (mirrored); `gate_a.prepare` writes them; FS1's live runtime builds with five routed assessors |
+| PL-10 | Full local CI replica as before, no new failures |
