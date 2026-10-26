@@ -31,3 +31,25 @@ The user asked to stop the suite and defer the rerun until tomorrow. The running
 **Next work, explicitly deferred:** Codex/reviewer reruns the full pinned suite on the current PR source after the user resumes; then records results and reviews PR295. Keith qualifies actual hourly OPEN timestamp and adjustment evidence; Keegan binds/reviews the exact release/runtime; Yao supplies that input, transfers the pinned file and verifies current-host history. These are tracked in INCOMPLETE_WORK TH-01 / IDEA-093 FS1. No deployment, real provider/credential access, model spend, wallet operation or economic evaluation occurred. EXP-007 remains separate.
 
 Implementation/input/transfer contract: [FS1_TOKEN_HISTORY.md](../build/FS1_TOKEN_HISTORY.md). Machine receipt: [fs1-history-20261026.json](../build/evidence/fs1-history-20261026.json).
+
+## PR295-RV01 — independent review criteria (2026-10-26 SGT)
+
+Incoming head `1a2bd8f0`, canonical base `ecdbc1aa`. Review scope is source integration and offline checks;
+actual provider qualification, deployment, owner acceptance and EXP-007 remain separate.
+
+Static findings: the production Web3 transport parses JSON decimal numbers as binary floats before history
+normalization, so converting those floats to strings cannot recover the original decimal. The session
+converter also multiplies Decimal prices under the ambient precision (normally 28 digits), which can round
+a close across a whole price unit. Finally, positive but inconsistent OHLC ranges are accepted as history.
+
+Prospective pass criteria, before new implementation/test execution:
+- RV1: the history-only Web3 client preserves exact JSON decimal numbers through credential-screened raw
+  artifacts and history conversion. Other transport clients keep their existing default behavior.
+- RV2: the producer's scaled closes truncate the exact decimal rational, independent of ambient Decimal
+  precision. Legacy session conversion remains the default so historical recorded-port behavior is preserved.
+- RV3: reject inconsistent high/low/open/close values; malformed or unavailable input remains bounded,
+  sanitized UNAVAILABLE data and cannot fabricate a trend window. Existing cache/pagination/cutoff cases pass.
+- RV4: actual production composition, trend-driven BUY/SELL and exact PostgreSQL replay pass; existing
+  profile hashes, strategy thresholds, risk authority and legacy preparation remain unchanged.
+- RV5: complete the deferred full suite on pinned Python3.12.15/PostgreSQL14.24 with recursive dependency
+  locks verified, exact exclusions/skips and GitHub CI availability recorded. Push code/tests before execution.
