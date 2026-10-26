@@ -93,3 +93,14 @@ not an FS1 mirror. FS1's four profiles and the S4 profile did not change.
 | S5R2-4 | FS1 FINAL and FS1-R still require history; the S2, S4 and other existing profiles still do not. The four FS1 profiles and the S4 profile rebuild byte for byte; the committed S5 file rebuilds byte for byte. |
 | S5R2-5 | Planner on the S5 profile: at Mon 22:59Z a discretionary BUY is planned; at Mon 23:00Z no BUY intent or BUY quote request; at Tue 00:00Z every held name has `TERMINAL_FLATTEN` and the intents are mandatory SELLs only. |
 | S5R2-6 | Full suite: no new failures against canonical `5e3f33df` in the same environment; exact counts reported. |
+
+**R2 addendum: opening-cash check (added 2026-10-26 SGT before the check was run).** Hand arithmetic on the S5
+profile suggests the dev wallet's run-6 closing balance (USDT 81.373047, BNB 0.024973; IDEA-097) is too small for any
+S5 buy. FS1's `s1_capital_basis` `EXCLUDE_GAS` leaves stock capital `cash − cost_reserve` ≈ 81.27 USDT, so each name's
+95 % × 1/5 target is ≈ 15.44 USDT, below `minimum_trade_units` 18.637420 USDT, and neither `S1_LEVEL_CHANGE` nor
+`S1_TOP_UP` fires. The break-even is cash ≈ 98.19 USDT (0.19 × (cash − 0.1) ≥ 18.637420). R1's "four names at about
+90 USDT" estimate is wrong for this profile.
+
+| # | Pass when |
+|---|---|
+| S5R2-7 | Planner on the S5 profile's sizing keys with a flat book inside the buy window: at cash 81.373047 USDT and BNB 0.024973 (profile BNB price) no BUY intent or BUY quote request is planned; at cash 101.373047 USDT with the same BNB, five BUY targets are planned and the first BUY quote request is at least `minimum_trade_units`. |
