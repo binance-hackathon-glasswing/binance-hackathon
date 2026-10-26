@@ -245,6 +245,28 @@ sessions, 10,000 resamples, seed 106).
 - No parameter may be changed after the data hash is recorded; a changed design is a new pre-registration. No dev-wallet
   or scored-run P&L may be used (ledger rule 5).
 
+### Backtest run record (2026-10-26 SGT, recorded before the run)
+
+- **Simulator** `tools/idea106/simulate.py`, committed at `dc8e33ac` before the snapshot existed (S6-B0), with
+  `tools/idea106/fetch.py` and `tests/strategy/test_idea106_backtest.py` (5 tests: fill and close bars end by their
+  decision time across the DST change, a later close never changes an earlier score, flat prices give the
+  hand-computed central costs for FS1-STATIC and S6, a rising outsider triggers a budgeted swap with legs
+  ≥ 18.637 USDT, a 30% crash trips the 12% cut).
+- **Snapshot**, fetched 2026-10-26 ~13:50Z by Keith's session with the dev Web3 key from `.env` (read-only GET
+  `market/candles` through the TH-01 transport; Yahoo chart API for P). Kept outside Git at
+  `~/larp-idea106/snapshot-20261026/` with 52 raw Web3 artifacts:
+  - `tokens.json` SHA-256 `61f24e23abf70b7b8110cd460d1a3069d3d052b9e1b2ab17d01ce1c555ccc05c`. First bars: NVDAB
+    2026-06-12, TSLAB 2026-06-12, MSFTB 2026-07-01, SKHYB 2026-07-14, GOOGLB 2026-07-15 (so T starts mid-July);
+    hourly gaps (hours with no bar) 5–152 per name, handled by the carry rule.
+  - `underlying.json` SHA-256 `19dd7f70814a3156a685c7b5d6373bc6fce57c9202f23394eca5896e9933dbe3`.
+- **Deviation BT-D1 (data availability, not a parameter):** the snapshot was taken while the Oct 26 US session was
+  still open, so the last completed session, **2026-10-23**, ends both T and P instead of the Oct 26 close.
+- **Implementation choices fixed here before the run** (where the criteria above leave a detail open):
+  all of a session's trades execute at its fill time, using each name's fill price (fallbacks counted);
+  swaps and swap-ins need the score of both names (a name with > 2 carried closes is skipped on both sides);
+  after the 12% cut S6 makes no swaps for the rest of the window; NYSE early closes are not modelled (16:00 ET
+  throughout); session dates come from the underlying NYSE trading days; K = 2 uses a 56% name line.
+
 ## Implementation plan (if, and only if, the gates allow)
 
 Profile settings alone cannot express S6: FS1/S1 never sells on drift or rank, has no ranking input and holds all five

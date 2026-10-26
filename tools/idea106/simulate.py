@@ -22,7 +22,7 @@ ET = ZoneInfo('America/New_York')
 HOUR_MS = 3_600_000
 WINDOW, START_EQUITY, GROSS = 10, 200.0, 0.95
 MIN_TRADE, LEG_CAP = 18.637, 38.2
-LAST_SESSION = '2026-10-26'
+LAST_SESSION = '2026-10-23'  # last completed session at snapshot time (Oct 26 was still open; deviation BT-D1)
 P_FIRST_SESSION = '2019-01-02'
 # Central per side = round-trip spread / 2 + 1 bp impact + 2 bp slippage (FS1 quote summary, IDEA-106 Economics).
 SPREAD_RT = dict(GOOGLB=3, MSFTB=17, NVDAB=4, SKHYB=2, TSLAB=5)
