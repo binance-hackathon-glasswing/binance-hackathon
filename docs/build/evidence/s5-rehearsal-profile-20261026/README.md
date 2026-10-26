@@ -1,20 +1,24 @@
-# S5: FS1's settings on the dev wallet, running to Tue Oct 27 12:00 SGT (IDEA-104 R2, 2026-10-26)
+# S5: FS1 on the dev wallet, with FS1's model calls, running to Tue Oct 27 12:00 SGT (IDEA-104 R3, 2026-10-26)
 
-A candidate `StrategyProfile.v1` for one more signed dev rehearsal. It is not approved, installed or bound to a
-`signer.json`. **FS1 stays the final strategy:** S5 is REHEARSAL-only on the dev wallet and is never installed for the
-final run. Record: [IDEA-104](../../../ledger/IDEA-104.md) (R2 replaces the R1 Monday-night window `c7938dae…`).
+A candidate `StrategyProfile.v1` for one more signed dev rehearsal. S5-SIZE01 is verified offline (source
+`2f9e886c…`: full pinned suite 2978 passed, 8 skipped, 4069 subtests), and is not installed or bound to a
+`signer.json`. [Receipt](../s5-size01-review-20261026.json). **FS1 stays the final strategy:** S5 is REHEARSAL-only on the dev wallet and is never installed for the
+final run. Record: [IDEA-104](../../../ledger/IDEA-104.md) (S5-SIZE01 replaces R3 `f371b18d…`, R2 `5a5a200a…`, R1 `c7938dae…`).
 
 | File | SHA-256 |
 |---|---|
-| `rehearsal-s5.json` (file bytes; the `PROFILE_SHA` to pin) | `5a5a200ae26c59dbfc79ba0e269fe909a749892944f16fa3e1583cfb283c8b2b` |
-| `StrategyProfile.v1` digest of the same profile | `64918e6a09d540b0d8fe3d5fd88ebc136810b0f1fadf0f87508acf8bff4ebe46` |
-| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile rehearsal-s5.json`) | `8ba1328f2423f81a84496d9fa466568b924611202d395e4b9926839f0227b06f` |
+| `rehearsal-s5.json` (file bytes; the `PROFILE_SHA` to pin) | `6dadc1961a54374f51415e2168ff8d4a917b28f90e58c9493a1b9fbd8731e80d` |
+| `StrategyProfile.v1` digest of the same profile | `d80045d446af6297e5e0c5df2f1aeb6f0467e4a402728a1a222361b8b2ae4248` |
+| M3 probe (`tools/deploy/ld10_readonly_packet.py --profile rehearsal-s5.json`) | `68e49922432f8a8e8081fbaa32b3d8bb3b5614a5ca2982b6ed5ee671262f8e17` |
 
 ## What it is
 
-`fs1-rehearsal-recovery.json` (`17ab891d…`) with a new window and `policy_id` `larp-s5-rehearsal-v1`, nothing else.
-That means FS1's `s1` block (weights 1/5, `KIT_OPEN_STATE` hours, 5 attempts per discretionary leg), 20 bp slippage,
-the four FS1 review refinements, the IDEA-096 allowance-recovery gas and the deterministic SHADOW dev scope.
+FS1 FINAL with recovery (`b8ba06e2…`) at rehearsal size: it differs only in `environment` REHEARSAL, the 100 USDT
+sizes (`expected_equity_units`, `per_trade_cap_units`, `cost_reserve_units`), the window, `policy_id`
+`larp-s5-rehearsal-v1`, no FINAL-only `activation_self_check`, and S5-only `s5_entry_lot_units` 19 USDT. So it has FS1's `s1` block, 20 bp slippage, the
+PR278-RV01 fields including gas-excluded capital, recovery gas, and **FS1's model authority** (`BOUNDED_FALSIFIER`,
+`DISCRETIONARY_EXIT`): it must be prepared with FS1's AIand/ChatGPT routing `9b86c732…`, and verified red flags exit
+or block entry as in FS1.
 
 **FS1 token history (IDEA-103, PR295).** Like FS1 FINAL and FS1-R, S5 cannot be prepared or started without a pinned
 `TokenHistoryConfig.v1` ([contract](../../FS1_TOKEN_HISTORY.md)): pass it to `prepare_shadow.py prepare
@@ -33,7 +37,10 @@ the four FS1 review refinements, the IDEA-096 allowance-recovery gas and the det
 Notes for the run owner:
 - **Fresh run.** The dev wallet is flat after run 6 (IDEA-097 S4-L1), so S5 installs as a fresh run, with no carry-over.
 - **Install time.** Installing after `trade_after` is fine: buying starts once both services run (P5 before P4).
-- **Book size.** With about 90 USDT and an 18.64 USDT minimum trade, the book may hold four names, not five [ESTIMATE].
+- **Cash.** The 19-USDT high-level opening lot replaces R3's unfundable 15.44-USDT target at the recorded 81.37
+  USDT cash. Four lots fit the 95% stock-capital ceiling; five do not. BNB remains excluded, exact quote costs
+  and all risk/cash limits still apply, and reduced levels keep normal targets. M4 checks fresh cash using the
+  selected profile. Actual holdings may differ from FS1's equal-fifth portfolio; FS1's own sizing is unchanged.
 - **Selling.** Mandatory sells are spaced one per 15-minute slot per name (IDEA-102), with no per-session cap: four
   hours of flatten is 16 slots per name.
 - **Run sheet.** [`docs/build/ops/rehearsal-install-s5-20261026/`](../../ops/rehearsal-install-s5-20261026/README.md).
@@ -47,4 +54,5 @@ python -m tools.deploy.build_rehearsal_candidate --exit-children 2 --fs1-rehears
   --output /tmp/s5-profile-check.json
 ```
 
-It prints the digest above; the output must be byte-identical to `rehearsal-s5.json`.
+The committed builder reproduces the digest above and `rehearsal-s5.json` byte for byte (SZ1). Exact quotes,
+qualified history and the new release/signer/host acceptance are still required before installation.

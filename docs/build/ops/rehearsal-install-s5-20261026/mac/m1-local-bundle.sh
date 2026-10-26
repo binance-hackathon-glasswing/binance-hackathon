@@ -24,8 +24,8 @@ git -C "$MAIN" grep -q holdings_carry_over "$BUILD" -- larp/strategy/carry_over.
 git -C "$MAIN" grep -q allowance_recovery "$BUILD" -- larp/marketdata/quote_verifier.py || { echo "BUILD lacks allowance recovery (IDEA-096)"; exit 3; }
 # Run 7 (S5, IDEA-104 R2) also needs FS1's token history (PR295, IDEA-103) required for S5, and the R2 S5 profile.
 git -C "$MAIN" grep -q larp-s5-rehearsal-v1 "$BUILD" -- larp/marketdata/history.py || { echo "BUILD lacks S5 token history (IDEA-103/104)"; exit 3; }
-[[ $(git -C "$MAIN" show "$BUILD:docs/build/evidence/s5-rehearsal-profile-20261026/rehearsal-s5.json" | shasum -a 256 | cut -c1-64) == 5a5a200a* ]] \
-  || { echo "BUILD lacks the run-7 S5 profile 5a5a200a (IDEA-104 R2)"; exit 3; }
+[[ $(git -C "$MAIN" show "$BUILD:docs/build/evidence/s5-rehearsal-profile-20261026/rehearsal-s5.json" | shasum -a 256 | cut -c1-64) == 6dadc196* ]] \
+  || { echo "BUILD lacks the run-7 S5 profile 6dadc196 (IDEA-104 R3)"; exit 3; }
 WT=$MAIN/.claude/worktrees/release-${BUILD:0:7}
 # The builder refuses a commit that is not the pushed head of its own branch name, so the release checkout is on the
 # local branch codex/system-testing-20261012 at BUILD (detach any other worktree that holds that branch first).

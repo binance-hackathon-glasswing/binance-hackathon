@@ -1,6 +1,6 @@
 """IDEA-104 R2: the run-7 (S5) run sheet pins one run, one database, the S5 profile, its probe, FS1's token history,
 allowance recovery and the declared USDT top-up consistently, and retires run 6. Static checks only; nothing runs
-against a host or the wallet."""
+against a host or the wallet. R3 adds FS1's routing and the read-only budget-ledger check."""
 import hashlib
 from pathlib import Path
 import subprocess
@@ -54,10 +54,23 @@ def test_recovery_token_history_and_top_up_reach_every_config():
     assert "'--allowance-recovery', '--token-history-config', str(TOKEN_HISTORY)" in m4
     assert "rt['driver'].get('allowance_recovery') is True" in m4 and "reviewed['allowance_recovery'] is True" in m4
     assert "== (CONFIG_FILE, hashlib.sha256(history_raw).hexdigest())" in m4
-    assert "'untrusted-router-policy.json', 'token-history.json']" in m4
+    assert "'untrusted-router-policy.json', 'token-history.json', 'model-routing.json']" in m4
     assert "changed == ['build_id', 'database_name', 'run_id']" in m4 and "startswith('1e052e26')" in m4
-    assert "state['cash_units'] >= MIN_CASH_UNITS" in m4 and 'MIN_CASH_UNITS = 98_320_000' in m4
+    assert "opening_cash_check(profile, state['cash_units'])" in m4 and 'MIN_CASH_UNITS' not in m4
     assert p3.count('token-history.json') >= 3 and 'runtime_token_history readable_by=larp-runtime' in p3
+
+
+def test_s5r3_fs1_routing_reaches_m4_p3_and_the_budget_check():
+    raw = (ROOT / 'config/intelligence/aiand-routing.fs1.json').read_bytes()
+    m4, p3, b1 = text('mac/m4-prepare.py'), text('host/p3-install-primary.sh'), text('host/b1-model-budget-check.sh')
+    assert "ROUTING_SHA = '" + hashlib.sha256(raw).hexdigest() + "'" in m4
+    assert "'--model-routing', str(ROUTING), '--model-routing-sha256', ROUTING_SHA" in m4
+    assert "('service', 'aiand_routed', 'live')" in m4 and "'deterministic'" not in m4
+    assert "'token-history.json', 'model-routing.json']" in m4
+    assert p3.count('model-routing.json') >= 4 and 'runtime_model_routing readable_by=larp-runtime' in p3
+    import json
+    assert "mode=ro" in b1 and json.loads(raw)['budget_account'] in b1 and 'model_budget init' in b1
+    assert 'B1_DONE' in b1
 
 
 def test_synthetic_history_is_refused_by_m4_guard():

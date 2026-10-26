@@ -25,17 +25,20 @@ wt = main / '.claude/worktrees' / ('release-' + BUILD[:7])
 private = here / 'private'
 py = os.environ['LARP_PY']
 RUN, DB = 'larp-dev-rehearsal-20261026-s5', 'larp_rehearsal7'
-# IDEA-104 R2: the S5 REHEARSAL profile (FS1-R with recovery, window to Tue Oct 27 12:00 SGT, FS1 token history).
+# IDEA-104 R3: the S5 REHEARSAL profile (FS1 at rehearsal size: FS1 model authority, recovery, token history,
+# window to Tue Oct 27 12:00 SGT).
 PROFILE = wt / 'docs/build/evidence/s5-rehearsal-profile-20261026/rehearsal-s5.json'
-PROFILE_SHA = '5a5a200ae26c59dbfc79ba0e269fe909a749892944f16fa3e1583cfb283c8b2b'
+PROFILE_SHA = '6dadc1961a54374f51415e2168ff8d4a917b28f90e58c9493a1b9fbd8731e80d'
+# IDEA-104 R3: FS1's reviewed AIand/ChatGPT routing (IDEA-093), as FS1 installs it.
+ROUTING = wt / 'config/intelligence/aiand-routing.fs1.json'
+ROUTING_SHA = '9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4'
 TOKEN_HISTORY = Path(os.environ['TOKEN_HISTORY'])
-# S5R2-7: below about 98.31 USDT of cash the S5 planner buys nothing (EXCLUDE_GAS, 1/5 weights, 18.64 USDT minimum).
-MIN_CASH_UNITS = 98_320_000
+# S5-SIZE01: fresh cash must fund the selected profile's opening lot within its existing caps.
 POLICY = wt / 'docs/build/evidence/untrusted-router-policy-ld03-20261020.json'
 POLICY_SHA = '05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5'
 # The S5 scope is the team's IDEA-104 decision; M4 refuses to prepare without that record.
 SCOPE = os.environ.get('SCOPE_CONFIRMATION', '').strip()
-ADOPTION = 'IDEA-104 S5 FS1 dev rehearsal; S2-1 scope; recovery on; FS1 token history; confirmed ' + SCOPE
+ADOPTION = 'IDEA-104 S5 FS1 dev rehearsal; FS1 v1 scope and routing; recovery; token history; confirmed ' + SCOPE
 release = here / 'bundle/x' / BUNDLE
 digest = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
@@ -51,12 +54,14 @@ require(SCOPE != '' and len(ADOPTION) <= 200, 'SCOPE_CONFIRMATION (the record of
 # IDEA-103: the qualified history input, validated by the release's own parser. A synthetic test value is refused.
 sys.path.insert(0, str(wt))
 from larp.marketdata.history import CONFIG_FILE, MAX_CONFIG_BYTES, configuration as history_configuration
+from larp.strategy.rehearsal_sizing import opening_cash_check
 history_raw = TOKEN_HISTORY.read_bytes()
 require(len(history_raw) <= MAX_CONFIG_BYTES, 'token history file too large')
 history = history_configuration(json.loads(history_raw))
 require(len(set(history['timestamp_evidence_sha256'])) > 1
         and not history['token_adjustment_version'].upper().startswith('SYNTHETIC'), 'token history input is synthetic')
 require(digest(PROFILE) == PROFILE_SHA and digest(POLICY) == POLICY_SHA, 'profile or router policy hash differs')
+require(digest(ROUTING) == ROUTING_SHA, 'FS1 routing file differs from 9b86c732')
 require(digest(release / 'release-manifest.json') == env['MANIFEST_SHA256'], 'bundle manifest differs from build.env')
 assembly = json.loads((private / f'assembly-{STAMP}.json').read_text().strip().splitlines()[-1])
 signer = private / f'signer-{STAMP}' / 'signer.json'
@@ -110,6 +115,7 @@ call([py, str(here / 'mac/prepare_rehearsal_db.py'), str(wt), 'prepare', '--terr
       '--rds-ca-sha256', env['CA_SHA256'], '--sec-contact', contact, '--balance-rpc-config', str(rpc),
       '--execution', 'service', '--runtime-mode', 'dev', '--model-adoption-ref', ADOPTION,
       '--untrusted-router-policy-file', '/etc/larp/untrusted-router-policy.json', '--untrusted-router-policy-sha256', POLICY_SHA,
+      '--model-routing', str(ROUTING), '--model-routing-sha256', ROUTING_SHA,
       '--allowance-recovery', '--token-history-config', str(TOKEN_HISTORY), '--out', str(out)])
 # gate_a_check reads only prepare's own files, so it runs before the extra host files are added (SJ-06 J3).
 q = json.loads(call([py, '-m', 'larp.runtime.gate_a_check', '--prepared', str(out), '--ci-manifest', str(release / 'release-manifest.json'),
@@ -118,7 +124,9 @@ q = json.loads(call([py, '-m', 'larp.runtime.gate_a_check', '--prepared', str(ou
 require(all(v == 'PASS' for v in q['checks'].values()) and q['local_ready'] is True, 'package check failed')
 rt = json.loads((out / 'runtime.json').read_text())
 require((rt['run_id'], rt['build_id'], rt['mode'], rt['database_name']) == (RUN, BUILD, 'dev', DB), 'runtime identity differs')
-require((rt['driver']['execution'], rt['driver']['assessor'], rt['driver']['intelligence_mode']) == ('service', 'deterministic', 'live'), 'runtime scope is not service/deterministic/live')
+require((rt['driver']['execution'], rt['driver']['assessor'], rt['driver']['intelligence_mode']) == ('service', 'aiand_routed', 'live'), 'runtime scope is not service/aiand_routed/live')
+require((rt['driver'].get('model_routing_file'), rt['driver'].get('model_routing_sha256')) == ('/etc/larp/model-routing.json', ROUTING_SHA)
+        and (out / 'model-routing.json').read_bytes() == ROUTING.read_bytes(), 'runtime model routing pin missing or differs')
 require(rt['driver']['strategy_profile_sha256'] == PROFILE_SHA, 'runtime profile pin differs')
 require(rt['driver'].get('allowance_recovery') is True, 'runtime allowance recovery is not on (IDEA-096)')
 # IDEA-103: the runtime pins the packaged history bytes at the fixed host path.
@@ -127,9 +135,9 @@ require((rt['driver'].get('token_history_file'), rt['driver'].get('token_history
 require((out / 'token-history.json').read_bytes() == history_raw, 'packaged token-history.json differs from TOKEN_HISTORY')
 state = json.loads((out / 'initial-state.json').read_text())
 require(not any(p['units'] for p in state['positions'].values()), 'the dev wallet holds stock: S5 is a fresh run')
-require(state['cash_units'] >= MIN_CASH_UNITS, 'cash below about 98.32 USDT: S5 would buy nothing (S5R2-7); top up (B0)')
+size_check = opening_cash_check(profile, state['cash_units'])
 print(json.dumps(dict(opening_equity_units=state['opening_equity_units'], cash_units=state['cash_units'],
-                      token_history_sha256=hashlib.sha256(history_raw).hexdigest())))
+                      token_history_sha256=hashlib.sha256(history_raw).hexdigest(), **size_check)))
 # S2-10: without this pair the runtime wires no quote verifier and the run behaves exactly like run 3.
 require((rt['driver'].get('untrusted_router_policy_file'), rt['driver'].get('untrusted_router_policy_sha256'))
         == ('/etc/larp/untrusted-router-policy.json', POLICY_SHA), 'runtime router policy pair missing or differs (S2-10)')
@@ -155,7 +163,7 @@ require(execution['strategy_profile_sha256'] == PROFILE_SHA and execution['datab
 (out / 'registration-evidence.json').write_text(json.dumps(dict(
     schema='RegistrationEvidence.v1', build_id=BUILD, repository='https://github.com/binance-hackathon-glasswing/binance-hackathon',
     evidence_ref=('Existing team registration (GAP-41/F-113, issued ai-seeds secret) unchanged; no new organiser registration. '
-                  f'Build {BUILD}: canonical with FS1 (IDEA-093/098), FS1 token history (IDEA-103) and S5 (IDEA-104 R2); '
+                  f'Build {BUILD}: canonical with FS1 (IDEA-093/098), FS1 token history (IDEA-103) and S5 (IDEA-104 R3, FS1 routing); '
                   f'bundle provenance {env["MIRROR_RUN"]}. Dev signed rehearsal {RUN} on S5 profile '
                   f'{PROFILE_SHA[:8]}, database {DB}, fresh book on the dev wallet.'))) + '\n')
 call([py, '-m', 'larp.runtime.preflight', '--bind', str(release / 'release-manifest.json'), '--root', str(release / 'release'),
@@ -167,7 +175,7 @@ call([py, '-m', 'larp.signer.service', 'check', '--config', str(out / 'signer.js
       '--root', str(release / 'release')], cwd=release / 'release')
 names = ['release.json', 'runtime.json', 'uploader.json', 'operations.json', 'execution.json', 'signer.json',
          'strategy-profile.json', 'session-calendar.json', 'initial-state.json', 'evidence.env',
-         'registration-evidence.json', 'untrusted-router-policy.json', 'token-history.json']
+         'registration-evidence.json', 'untrusted-router-policy.json', 'token-history.json', 'model-routing.json']
 hashes = {n: digest(out / n) for n in names}
 prefix = 'releases/rehearsal-' + out.name[8:].lower() + '/'
 t = json.loads(tf.read_text()); bucket = t['artifact_bucket']['value'] if isinstance(t['artifact_bucket'], dict) else t['artifact_bucket']

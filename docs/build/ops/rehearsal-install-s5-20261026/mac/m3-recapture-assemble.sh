@@ -1,9 +1,9 @@
 #!/bin/bash
 # M3 (Mac, Yao): pre-install recapture and signer.json assembly for run 7 on S5 (IDEA-104 R2).
-# Read-only on primary: the LD10 probe for the S5 profile 5a5a200a... (sha256 8ba1328f..., regenerated here from the
+# Read-only on primary: the LD10 probe for the S5 profile 6dadc196... (sha256 68e49922..., regenerated here from the
 # release checkout) reads run 6's /etc/larp/runtime.json and /opt/larp/current, so run this BEFORE r1/p2 change
-# primary, and only after the USDT top-up (B0: S5 buys nothing below about 98.3 USDT cash; the exit reserve is
-# 0.01536 BNB with allowance recovery).
+# primary, after S5-SIZE01 source validation (B0; no top-up). The exit reserve is
+# 0.01536 BNB with allowance recovery.
 # Capture -> review -> assemble back to back (quotes older than 300 s are refused). Prints no private value.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"; source "$HERE/build.env"
@@ -11,9 +11,9 @@ MAIN=/Users/songyaozhu/binance-hackathon
 WT=$MAIN/.claude/worktrees/release-${BUILD:0:7}
 PY=${LARP_PY:?set LARP_PY to a Python 3.12 venv built from requirements.lock}
 OLD_BINDINGS=${OLD_BINDINGS:?set OLD_BINDINGS to run 6 bindings (rehearsal-install-s4b-20261026/private/bindings-7fc9f60.json)}
-# B0 (IDEA-104 S5R2-8): the exact USDT top-up in micro-USDT since run 6 ended; the review accepts exactly this surplus.
+# Historical S5R2-8 exact-surplus accounting; no funding transfer is planned (TOPUP defaults to zero).
 TOPUP=${TOPUP:-0}; [[ $TOPUP =~ ^[0-9]+$ ]] || { echo "TOPUP must be whole micro-USDT"; exit 3; }
-PROBE_SHA=8ba1328f2423f81a84496d9fa466568b924611202d395e4b9926839f0227b06f
+PROBE_SHA=68e49922432f8a8e8081fbaa32b3d8bb3b5614a5ca2982b6ed5ee671262f8e17
 PROFILE=docs/build/evidence/s5-rehearsal-profile-20261026/rehearsal-s5.json
 [[ -d $WT ]] || git -C "$MAIN" worktree add --detach "$WT" "$BUILD" >/dev/null
 [[ $(git -C "$WT" rev-parse HEAD) == "$BUILD" && -z $(git -C "$WT" status --porcelain) ]] || { echo "release checkout not clean $BUILD"; exit 3; }

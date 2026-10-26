@@ -145,3 +145,250 @@ exercised; FS1's `activation_self_check` is FINAL-only; sizes are 1/5 of about 1
 **Remaining:** Yao: B0 top-up (≥ 98.32 USDT, about +20 USDT recommended) and the TH input with Keith's actual
 timestamp-evidence hash; team: merge PR294 so the build contains R2; Isaac: A1 (profile, probe, signer hash);
 Keegan: review S5R2-8, the sheet and the input; Yao: install; then the live checks in the sheet's J section.
+
+## R3: FS1's model calls and authority, and the dev wallet as it is (2026-10-26 SGT, pre-registered before tests or code)
+
+**Requests (in chat, 2026-10-26):** "well i cant add more usdt so use whatever is inside" and "yes turn on the FS1's
+aland/chatgpt model calls like FS1, s5 is meant to mirror FS1".
+
+**Design.**
+- **Models as in FS1.** S5 takes FS1 FINAL's evidence authority: `evidence_mode` `BOUNDED_FALSIFIER`,
+  `falsifier_authority` `DISCRETIONARY_EXIT` (statements stay `SHADOW`, `red_flag_authority` RF1 4.02 / RF2 1.05, 2.06
+  as before). A verified Class 1 finding then forces a mandatory SELL, and a verified Class 2 finding blocks buys, as in
+  FS1. Signed preparation then needs the reviewed routing, because the deterministic-rehearsal path covers SHADOW
+  profiles only. M4 passes `config/intelligence/aiand-routing.fs1.json` (`9b86c732…`); the runtime assessor is
+  `aiand_routed` with FS1's five assessment workers. `require_open_state_scope` gains a third, narrow scope: a
+  REHEARSAL with `policy_id` `larp-s5-rehearsal-v1`, FS1's v1 authority, in a `dev` run. S2's and FS1's scopes are
+  unchanged.
+- **Wallet as it is (no top-up).** S5 counts BNB in stock capital (no `s1_capital_basis` key; FS1 keeps
+  `EXCLUDE_GAS`). At run 6's closing balance (81.373047 USDT, BNB 0.024973 at the profile's 722.15 USDT/BNB), equity is
+  about 99.4 USDT, so each 1/5 target at 95 % is about 18.87 USDT, just above the 18.637 USDT minimum. Cash allows at
+  most four buys of about 19 USDT.
+- The R2 top-up guard in M4 is replaced with an equity guard; `--accept-usdt-surplus-units` stays available but
+  unused (`TOPUP` 0).
+
+| # | Pass when |
+|---|---|
+| S5R3-1 | The rebuilt S5 passes `validate_live`. Against `fs1-final-recovery.json` (`b8ba06e2…`) its non-provenance keys differ only in `environment`, `cost_reserve_units`, `expected_equity_units`, `per_trade_cap_units`, the four window keys, `policy_id`, `activation_self_check` (absent) and `s1_capital_basis` (absent). Its `s1` block equals FS1's. |
+| S5R3-2 | `require_open_state_scope` accepts S5 in `dev` and `None`; refuses it in `live`, `offline` and `''`; refuses a REHEARSAL with another `policy_id` (FS1-R, S2) and FS1's authority; refuses S5 with SHADOW statements changed. Every existing S2-1/FS1 scope test passes unchanged. |
+| S5R3-3 | Signed dev preparation of S5 without routing is refused. With the FS1 routing file and an adoption reference it packages `model-routing.json`, pins `9b86c732…`, sets assessor `aiand_routed` and keeps the token-history pin; `gate_a_check` scope and inputs pass; the built runtime has five `RoutedAssessor`s and a `SessionHistory`. |
+| S5R3-4 | Planner on the S5 profile at run 6's closing balance in the buy window: the first round plans one BUY intent of at least `minimum_trade_units`; with three names already held at about 19 USDT each and the matching remaining cash, a fourth BUY is still planned. |
+| S5R3-5 | Planner at Mon 22:59Z BUY, Mon 23:00Z no BUY, Tue 00:00Z `TERMINAL_FLATTEN` mandatory SELLs only (S5R2-5 on the R3 profile). The FS1 profiles and S4 still rebuild byte for byte. |
+| S5R3-6 | Full suite: no new failures against canonical `81ee30a1` in the same environment; exact counts reported. |
+
+**R3 amendment (2026-10-26 SGT, before any R3 test ran).** User, in chat: "s5 should not count BNB as capital and i
+think the real token history file is already in FS1 just take from there and finally all approvals from all parties
+are given so just ahead". So S5 keeps FS1's `s1_capital_basis` `EXCLUDE_GAS`; the BNB-counting design above is
+withdrawn. Replacements:
+- S5R3-1: the allowed differences from FS1 FINAL lose `s1_capital_basis` (S5 keeps `EXCLUDE_GAS`).
+- S5R3-4: at run 6's closing balance S5 plans no BUY (S5R2-7 still holds); at 101.373047 USDT it plans one.
+- Token history: no `TokenHistoryConfig.v1` with real evidence exists in the repository, the private
+  `deploy/activation/` folder or any local checkout (searched 2026-10-26). FS1 has none either; TH-01 is open. M4
+  keeps refusing a synthetic file.
+- Approvals: recorded as relayed by the user ("all approvals from all parties are given"); no named record or hash
+  was given.
+
+## R3 results (2026-10-26)
+
+Commits: `ca253e7b` (criteria), the R3 amendment, red tests (3 failed on base), `3af0f670` (builder, scope, profile,
+sheet). Profile `rehearsal-s5.json` `f371b18d…` (digest `63c35391…`, M3 probe `90344caa…`).
+
+| # | Result |
+|---|---|
+| S5R3-1 | **PASS.** `validate_live` passes; against FS1 FINAL `b8ba06e2…` the non-provenance differences are exactly `environment`, `cost_reserve_units`, `expected_equity_units`, `per_trade_cap_units`, the four window keys, `policy_id` and the absent `activation_self_check`. `s1`, red-flag authority and `EXCLUDE_GAS` equal FS1's. |
+| S5R3-2 | **PASS.** S5 accepted in `dev`/`None`; refused in `live`, `offline`, `''`; FS1-R and S2 with FS1's authority, S5 with other statement authority, SHADOW evidence or FINAL environment refused. S2-1/FS1 tests unchanged. |
+| S5R3-3 | **PASS.** Deterministic signed preparation refused; with FS1 routing: `model-routing.json` packaged, `9b86c732…` pinned, `aiand_routed`, token history pinned, `gate_a_check` PASS; the dev runtime has five `RoutedAssessor`s and a `SessionHistory`; startup without history refused. |
+| S5R3-4 | **PASS (amended).** Run 6's closing balance: no BUY; +20 USDT: one BUY ≥ minimum. |
+| S5R3-5 | **PASS.** Window behaviour unchanged; FS1 and S4 profiles byte for byte. |
+| S5R3-6 | **PASS.** `larp-test:pr282` / PostgreSQL 14.24: branch 2924 passed / 12 skipped / 4069 subtests / 3 failed; canonical `81ee30a1` 2919 / 12 / 4069 / the same 3 (git metadata unavailable in the container). |
+
+**Blocked before install (2026-10-26):** (1) at 81.37 USDT with gas excluded S5 buys nothing; the user cannot add
+USDT, so either S5 runs as a no-trade pipeline rehearsal or its sizing changes (decision open). (2) No real
+`TokenHistoryConfig.v1` exists (TH-01); M4 refuses a synthetic one. Approvals relayed as given.
+
+## PR296-RV01 — review and independent FS1 preparation (2026-10-26, criteria before execution)
+
+Review head: `f89ec87389d0e20b5725e1a4c67961d602db5704`; base: `81ee30a1696c54ff22deed9ced3ce6aa26538b07`.
+User requested review/fixes and comparison with FS1, including standalone FS1 operation. No push, merge,
+installation, provider calls, wallet operations or strategy-value changes are authorized by this review.
+
+Pass criteria (synthetic inputs, no registered credentials):
+- RV1: direct runtime startup rejects deterministic signed FS1/S5 configurations as preparation already does;
+  historical scoped deterministic rehearsals continue to pass.
+- RV2: S5 initializes/activates before signer/execution startup, then starts runtime only after execution is
+  healthy. The runtime-start step never disables execution; a missing/restarting executor refuses runtime startup.
+- RV3: a dedicated offline FS1 preparer accepts an explicitly named final wallet, fresh chain capture, database,
+  adoption record and pinned history/routing, producing live FINAL inputs with no previous run/signing config.
+  Wrong wallet, missing history/adoption and a rehearsal profile refuse; profile/routing bytes stay unchanged.
+- RV4: FS1 constructs five routed assessors and session history from a clean evidence/budget directory and
+  independent initial state; no S5 files or state are read. Existing self-check, five-buy/restart/replay and
+  terminal-flatten regressions pass. Quote/assembly coverage uses fresh FINAL inputs, never a dev-run rebinding.
+- RV5: compare every non-provenance S5/FS1 profile field; run focused regressions then the full offline suite
+  in the available Python 3.12.15/PostgreSQL 14.24 environment, recording skips and any environment failures.
+
+Implementation/validation results follow below after execution. Real history semantics, final funding/gas,
+model-budget reconciliation, exact signer/profile/release approvals and host qualification remain owner gates.
+
+### PR296-RV01 findings and S5/FS1 comparison
+
+- **RV-F1 (P1):** `build_driver` accepted deterministic signed FS1 FINAL and S5 directly, although preparation
+  and package qualification refused that scope. Two direct-start regressions both failed on the reviewed head
+  (no ContractError). Runtime now applies the same scoped deterministic-rehearsal restriction as preparation.
+- **RV-F2 (P1):** the run-7 P4 script started runtime while execution was disabled; run 4 already demonstrated
+  that this can expire the first intent. P4 now initializes/activates and starts evidence/delivery only. After S2
+  and P5, P6 checks execution is active with zero restarts before starting runtime. Initialization refuses active
+  or transitioning services. The FINAL scripts use the same ordering and independent FINAL identities.
+- **RV-F3 (P2):** the run-7 sheet still instructed a USDT transfer despite the R3 amendment saying the user
+  cannot top up. The transfer recommendation is withdrawn; current sizing/capital/minimums and the cash refusal
+  remain unchanged. B0 records the remaining sizing/no-trade decision. This review does not adopt either option.
+- **RV-G1 (standalone gap):** the FINAL folder contained only a plan relying on run-4-pinned preparation/start
+  scripts; the rehearsal caps tool selects a development policy and rebinds a source ledger. `prepare_fs1.py`
+  now prepares fresh FINAL inputs with explicit wallet/database/adoption and exact profile/routing/history pins,
+  and independently assembles fresh FINAL caps inputs. Wallet-specific ai-seeds/nonce directories avoid reusing
+  development ownership markers. No S5 state, old signer, run-6 bindings or completed rehearsal is needed.
+
+The committed S5 `f371b18d…` and FS1 FINAL recovery `b8ba06e2…` differ in **exactly ten non-provenance fields**:
+
+| Field | S5 | FS1 FINAL |
+|---|---|---|
+| `environment` | REHEARSAL (`dev` run) | FINAL (`live` run) |
+| `policy_id` | `larp-s5-rehearsal-v1` | `larp-fs1-final-v1` |
+| `expected_equity_units` | 100 USDT | 200 USDT |
+| `per_trade_cap_units` | 19.10 USDT | 38.20 USDT |
+| `cost_reserve_units` | 0.10 USDT | 0.20 USDT |
+| `trade_after` | Oct 26 06:00Z | Oct 29 14:00Z |
+| `new_risk_end` | Oct 26 23:00Z | Nov 9 21:00Z |
+| `flatten_start` | Oct 27 00:00Z | Nov 10 19:00Z |
+| `signing_end` | Oct 27 04:00Z | Nov 11 14:45Z |
+| `activation_self_check` | absent | 32 USDT SKHYB, Oct 27–28, same run as scored trading |
+
+Every other non-provenance profile field matches: S1 block, equal fifth weights, 20 bp slippage, discretionary
+attempt cap, evidence/falsifier authority, gas-excluded stock capital and recovery gas/reserve. Routing is the
+same `9b86c732…`; both use five assessment workers and pinned session history. With 170 USDT cash and the 0.20
+reserve, FS1's nominal high target is 32.262 USDT/name before fills/costs. The S5 81.37 USDT cash shortfall does
+not propagate into the fresh FINAL wallet. All four existing FS1 profile files and the routing file remain unchanged.
+
+### PR296-RV01 compatibility correction after the first full run
+
+The first pinned Python3.12.15/PG14.24 full run completed: 2958 passed, 8 skipped, 4069 subtests passed,
+4 failed (504.08 s). Two review regressions were corrected: the startup restriction now applies only to
+history-required FS1/S5 profiles, preserving the pre-existing LV-01 equal-weight deterministic path, and the
+FINAL run sheet again explains generic `--allowance-recovery`. Two worker-isolation failures required Docker
+namespace permissions for nested bubblewrap; they do not concern FS1 decisions or numeric assembly. Final
+validation below supersedes this intermediate run; no single green full-suite result is claimed from it.
+
+### PR296-RV01 final results (2026-10-26)
+
+**PASS, local synthetic source validation.** Final full run on Python 3.12.15 / PostgreSQL 14.24:
+**2962 passed, 8 skipped, 4069 subtests passed, 0 failures**, 492.96 s. Nested bubblewrap ran with container-local
+SYS_ADMIN, unconfined seccomp and unmasked system paths; a direct diagnostic established that Docker's masked
+`/proc` caused the earlier worker failures. No production worker code was changed. Network was isolated in the
+disposable database's namespace, with no external credentials supplied. The database/container were removed.
+
+| Criterion | Evidence |
+|---|---|
+| RV1 | Both direct deterministic FS1/S5 startup regressions pass; existing LV-01 equal-weight and scoped historical deterministic rehearsals pass. |
+| RV2 | Actual S5 and FINAL shell steps execute against synthetic service stubs: P4 initializes/activates without planning, active/transitioning states refuse initialization, P6 refuses missing/restarting execution and starts runtime only after a healthy executor. Shell syntax passes. |
+| RV3 | Standalone CLI and API prepare fresh FINAL inputs and wallet-specific ownership directories. Wrong wallet/database, missing history/adoption and substituting the S5 profile refuse. Package scope/input checks pass with exact unchanged profile/routing bytes. |
+| RV4 | Fresh FINAL numeric coverage is COVERED and the real signer assembler succeeds without a previous run; mismatched holdings and stale quotes refuse. Clean runtime builds five RoutedAssessors and SessionHistory. Real PostgreSQL self-check BUY → restart → SELL → DONE, all-five construction across restarts, exact replay and allowance-recovery flatten tests pass. |
+| RV5 | Exactly ten non-provenance differences recorded above; all six existing FS1/S5 profile/routing file hashes unchanged. Full suite green as reported. |
+
+Eight explicit skips: two external/private source/response fixtures; one directory-mode test because root ignores
+permissions; five real-systemd tests because that runner was not enabled. No hosted systemd/host or live-provider
+qualification is claimed. The final source/test files all predate the full run's startup and are pinned by hashes
+in [the receipt](../build/evidence/pr296-review-20261026.json).
+
+PR296 was refreshed after verification: still OPEN at the reviewed head `f89ec873…`, base `81ee30a1…`.
+No workflow runs existed for that head at the API check. Fixes remain **local and uncommitted** on
+`codex/pr296-fs1-standalone-review-20261026`; nothing was pushed, merged, posted, installed or run live. The unrelated
+untracked `.idea/` and Conda requirements file were preserved. This is not a completed Git handoff.
+
+Remaining owners: Keith supplies actual qualified history and the S5 sizing/no-trade decision; Keith/Keegan accept
+final profile/model decisions and reconcile the shared account budget; Isaac accepts exact final signer/gas/caps;
+Yao supplies final-wallet captures/quotes, exact bundle/database/release binding and host qualification. The
+existing TH-01, GAP-73/74/75, IDEA-093, IDEA-098 and IDEA-104 backlog entries retain those live gates. No S5 run is
+a prerequisite of the new standalone FS1 source path.
+
+### PR296-RV01 publication authorization (2026-10-26)
+
+User requested "push to the latest PR" after reviewing the local result. PR296 remains the latest PR, OPEN at
+`f89ec87389d0e20b5725e1a4c67961d602db5704`; the fetched canonical base remains `81ee30a1…`.
+Commit the verified source/tests/docs and push by ordinary fast-forward to
+`claude/s5-r3-fs1-models-20261026`. Preserve unrelated untracked files. No merge, host installation or live execution
+is requested. The source hashes and prior test results in the receipt are unchanged; only publication metadata
+and current-status wording changed after validation.
+
+## S5-SIZE01 — cash-funded rehearsal opening lots (2026-10-26; criteria before implementation/execution)
+
+User request: "ok resolve the sizing mismatch" after the S5 evaluation. No funding transfer, BNB inclusion,
+FS1 change, merge or installation is requested. This work prepares a reviewable local change; publication of
+the new decision code requires permission before execution (AGENTS.md and SKILL.md §0.3).
+
+The 18.637420 USDT entry minimum is derived from measured costs and stays unchanged. S5 alone opts into
+`s5_entry_lot_units=19000000`. At the high exposure level, each target is the larger of its ordinary equal-fifth
+target and 19 USDT, provided the lot fits the existing 30% allocation-weight cap times the high level, the hard
+name line and gas-excluded stock capital. At lower exposure levels the ordinary targets apply. This is a
+rehearsal sizing exception, not an exact equal-weight portfolio: the existing deterministic planner chooses
+among all five names, with total stock exposure/cash/gas and exact quote costs still limiting fills. At recorded
+cash 81.373047, stock capital after the 0.10 reserve is 81.273047 and its 95% ceiling is 77.209394 USDT;
+four 19 USDT lots fit, five do not. Existing 19.10 USDT per-trade cap and 0.10 cost reserve stay unchanged.
+Targets for held names retain the same floor at the high level so a filled opening lot cannot immediately
+produce a sell back to the unfundable equal-fifth target. Trend/limiter reductions and all mandatory sales retain
+priority. No performance/P&L input is used to choose the lot.
+
+Acceptance criteria:
+- SZ1: validate/rebuild S5 with exactly one additional non-provenance difference from R3: the 19 USDT lot.
+  FS1's four profiles, S4 and model routing retain their exact bytes; other profiles reject the opt-in.
+- SZ2: on the recorded cash/BNB balances, policy and independent planner admit a 19 USDT opening BUY with
+  executable synthetic quotes. Settle four serialized buys, preserving policy state across reconstruction;
+  there is no immediate discretionary sell-back and no fifth BUY beyond the 95% stock-capital ceiling.
+- SZ3: BNB price/balance changes cannot enlarge the stock target. Insufficient stock capital, bad quote costs,
+  lower trend/limiter levels, loss/health halts and the terminal window cannot be bypassed by the lot.
+  A forged oversized policy target is independently clamped to the bounded lot/ordinary name cap.
+- SZ4: M4 replaces the stale 98.32-USDT constant with a check derived from the exact selected profile and fresh
+  flat-book cash. Profile/probe pins and run-7 instructions agree; history and model gates remain required.
+- SZ5: run focused sizing/policy/planner/preparation/shell regressions and the full pinned offline suite after
+  the changed code has been committed and pushed. Record actual results, skips and limitations; no live claim.
+
+Implementation prepared locally: `s5_entry_lot_units`, bounded policy/planner targets, aggregate opening-capacity
+selection (largest gap then symbol, independent of BNB valuation), fresh-cash preparation check and regression
+tests. Profile `6dadc1961a54374f51415e2168ff8d4a917b28f90e58c9493a1b9fbd8731e80d`, digest
+`d80045d446af6297e5e0c5df2f1aeb6f0467e4a402728a1a222361b8b2ae4248`, probe
+`68e49922432f8a8e8081fbaa32b3d8bb3b5614a5ca2982b6ed5ee671262f8e17`. Exactly one new
+non-provenance profile key versus R3. Static syntax/pin/diff checks pass; FS1/S4/routing bytes match HEAD.
+The changed production code has not been executed: permission to commit/push and then run SZ1–SZ5 is pending.
+The original R3 no-entry result and prior full-suite receipt remain historical evidence, not validation of this change.
+
+Publication authorization (2026-10-26): user answered "yes" to committing/pushing this prepared S5 change to
+PR296 and running focused/full offline validation. Ordinary fast-forward publication only; no merge or installation.
+
+First focused run after publication (`338beeb7`, native Python 3.12.14): 109 passed, 39 subtests passed,
+one new serial-settlement test failed. Its legacy four-decimal token fixture rounded a 19-USDT minimum output
+by whole cents, exceeding the unchanged cost reserve with measured gas. The test now uses production-style
+18-decimal token quantities; no cost gate or decision code was loosened. Rerun follows publication of this correction.
+
+### S5-SIZE01 final validation (2026-10-26)
+
+**Supported offline.** Source `2f9e886c25b4ceba0eb35bd23dd5543952d23865` was committed/pushed before execution.
+Native Python 3.12.14 focused run: **110 passed, 39 subtests passed, zero failures/skips** (9.47 s).
+Full Linux/aarch64 run on Python **3.12.15** and PostgreSQL **14.24**: **2978 passed, 8 skipped, 4069 subtests
+passed, zero failures** (677.99 s). The eight skips are two external/private fixtures, one root-permission test and
+five opt-in systemd tests. Receipt: [S5-SIZE01](../build/evidence/s5-size01-review-20261026.json).
+
+| Criterion | Result |
+|---|---|
+| SZ1 | PASS: committed profile rebuilds byte for byte; only new non-provenance key versus R3 is `s5_entry_lot_units`. Existing FS1/S4 profiles and routing retain their exact bytes; other scopes/bad values refuse. |
+| SZ2 | PASS: four serialized 19-USDT synthetic BUYs with policy reconstruction fit the recorded cash; filled names do not immediately sell back; no fifth BUY/quote is planned. These are synthetic finalized settlements, not real fills. |
+| SZ3 | PASS: BNB changes, including zero marked BNB, do not change cash targets or invalidate aggregate proposal weights; bad costs, insufficient cash, lower levels, loss/health gates and mandatory terminal sales retain their checks. Forged overweight policy input is independently bounded. |
+| SZ4 | PASS: M4 uses the profile-derived fresh-cash check, which reports four possible opening lots at recorded cash; profile/probe pins and shell tests agree. Routing and history remain required. |
+| SZ5 | PASS: focused and full pinned offline runs above; final receipt pins every changed source/test/script hash. |
+
+The runner had external networking disabled and shared only the disposable PostgreSQL namespace; the repository
+`.env` was hidden. Nested bubblewrap tests used container-local SYS_ADMIN with unconfined seccomp/system paths,
+as in PR296-RV01. The runner and database were removed. No production credentials, provider/model calls, wallet
+operations, host install or merge were performed.
+
+GitHub run `40287198787` did not start jobs: its runtime annotation says recent account payments failed or the
+spending limit needs increasing. Hosted CI is **unavailable**, not a tested code failure. Real TH-01 history,
+fresh hosted inputs and exact profile/probe/signer/release acceptance, host qualification and installation remain
+with the existing owners. The cash sizing implementation is complete; no funding transfer or FS1 change is needed.

@@ -2,9 +2,10 @@
 
 How to install **FS1**, the final strategy, for the scored run on the **final wallet**, in `live` mode, with
 AIand/ChatGPT routing. This is a plan for the owners, not a record: no host, wallet, key, secret, model or budget action
-has been taken. It reuses the RC7 sheet's scripts and order
-([`../rehearsal-install-rc7-20261024/`](../rehearsal-install-rc7-20261024/README.md)); the rows below say only what
-differs for FS1. Times are UTC (SGT = UTC+8). Organiser rules that bind every step: no manual trading or human action on
+has been taken. PR296-RV01 supplies independent offline preparation and FINAL primary install/start scripts below;
+shared bundle provisioning and signer installation still use the generic steps from
+[`../rehearsal-install-rc7-20261024/`](../rehearsal-install-rc7-20261024/README.md).
+Times are UTC (SGT = UTC+8). Organiser rules that bind every step: no manual trading or human action on
 the agent once the run starts (F-114, F-117); automatic restarts only (F-124); one round log per round with every swap's
 `tx_hash` (F-99, F-100).
 
@@ -20,6 +21,53 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
 | Window (PF-04) | first buy 2026-10-29T14:00Z; new risk ends 2026-11-09T21:00Z; flatten from 2026-11-10T19:00Z; signing ends 2026-11-11T14:45Z; flat by 15:00Z |
 | Build | a new RC from the merge of PR278 (it must contain `tools/deploy/build_final_candidate.py` and `aiand-routing.fs1.json`) |
 
+## Standalone preparation (PR296-RV01)
+
+FS1 does **not** need S5 to have run, bought, flattened or produced a signer. From the reviewed release checkout,
+use `python -m tools.deploy.prepare_fs1` with an explicitly selected **final** wallet and a fresh read-only
+`prepare_shadow.py capture` on that wallet. No S5 package, run-6 bindings, old signer or development ledger is read.
+The fresh wallet must hold zero stock (including dust), have no in-flight nonce, and have reconciled chain/API
+balances. Qualified history and the F0m adoption reference are required; neither is invented by this tool.
+
+```bash
+python -m tools.deploy.prepare_fs1 \
+  --terraform-output "$TF_OUTPUT" --wallet "$FINAL_WALLET" \
+  --capture "$FINAL_CAPTURE" --token-history-config "$TOKEN_HISTORY" \
+  --balance-rpc-config "$RPC_CONFIG" --rds-ca-sha256 "$CA_SHA256" \
+  --sec-contact "$SEC_CONTACT" --build-id "$BUILD" \
+  --model-adoption-ref "$MODEL_ADOPTION_REF" --out deploy/activation/fs1-prepared
+```
+
+This freezes `live` / FINAL, `larp-final-fs1` / `larp_final`, recovery profile `b8ba06e2…`, routing `9b86c732…`,
+router policy `05759e90…`, five assessment workers, history pin, fresh initial state and final-wallet-specific
+`ai_seeds_dir`/`nonce_dir` (development ownership markers are not reused). It performs no provider
+calls, uploads, signing, service starts or database operations. Create/grant the empty `larp_final` database first
+using the existing database provisioning procedure with that explicit target; no existing run is rebound.
+Recovery is always enabled here; the equivalent generic preparation requires an explicit `--allowance-recovery`.
+
+For Q1/M3, supply **fresh FINAL** `GateBCapsInputs.v1` (see `larp.execution_live.caps_review`): exact profile bytes,
+the prepared `initial-state.json`, explicit final execution/IAM/CA/router bindings, the final CAP-02 signing policy
+with recovery enabled, and current final-wallet quote artifacts at the selected sizes. Use the actual final wallet
+in every quote. Do not run `review_rehearsal_caps.py` or the installed-dev-run LD10 probe for this path. Re-run the
+command above within the capture's five-minute validity, with a new `--out`, plus
+`--caps-inputs "$FINAL_CAPS_INPUTS" --services-out "$PRIVATE_FINAL_SERVICES"` (a new private directory outside Git).
+`final_services` compares the entire fresh initial state and every run/build/wallet/database/CA binding, then runs
+the real numeric reviewer and signer assembler. Missing/expired quotes or insufficient caps/gas refuse assembly.
+It writes `execution.json`, `signer.json`, the assembly report and router policy; no approval is granted.
+
+Check the original prepared directory with `larp.runtime.gate_a_check` **before** adding service files. After A1,
+use `larp.runtime.preflight --bind` with the CI manifest, release root, registration evidence, prepared operations
+and runtime configs, and **all three** service configs (uploader, execution, signer). Both hosts install these
+same bound manifest bytes. FINAL scripts are [P3](host/p3-install-primary.sh),
+[P4](host/p4-init-activate-start.sh), [P5](host/p5-start-execution.sh), and [P6](host/p6-start-runtime.sh).
+P4 initializes/activates and starts evidence/delivery only; then S2 starts the signer, P5 starts execution, and
+P6 starts runtime after checking execution is active with zero restarts. Never run the old RC7 P4 here.
+
+Source tests verify independent preparation, fresh FINAL numeric COVERED and signer assembly, clean routed
+runtime construction, and the actual shell startup steps against synthetic services. Actual history semantics,
+fresh final-wallet quotes, budget reconciliation, owner approvals, bundle/release binding and host qualification
+are still required; an offline preparation is not an install receipt.
+
 ## Before the install (decisions and inputs; nothing here is done)
 
 | # | Who | What | Why |
@@ -29,9 +77,9 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
 | F0b | account owners | reconcile the OpenAI budget (KMP-BUD01: about US$2.88 settled + US$0.34 unknown vs the file's US$2 prior spend). If `openai_pacing` changes, rebuild the routing file (new hash) and re-pin | never initialize a ledger with a stale number (AIAND_MODEL_ROUTING.md) |
 | F0s | Yao | runtime Secrets Manager entry carries `LARP_AIAND_API_KEY` (required) and `LARP_MODEL_API_KEY` (OpenAI; without it every assessment goes to the AIand reviewers, so ChatGPT is not used) | `larp/intelligence/routing.py` |
 | F0w | Isaac + Yao | confirm the already registered final wallet's 200 USDT funding (GAP-75), bind its uploader secret, and record the organiser-required **30 USDT → BNB** MetaMask swap before the first agent trade (now the activation self-check) and before Oct 29; smaller only with explicit organiser permission | F-120/F-125, GAP-73 |
-| F0a | Keith + Keegan + Yao | GAP-74 is built into FS1 (IDEA-093 SC): **one run spans the self-check and the scored run**, so no second install or version event. The profile key `activation_self_check` buys about 32 USDT of SKHYB between 2026-10-27T00:00Z and 2026-10-28T18:00Z, sells it whole, and records DONE before 2026-10-28T23:00Z; FS1 then trades as usual from Oct 29 14:00Z. Keith/Keegan accept the values; the install (P4/P5) must finish **before 2026-10-28T18:00Z** or no self-check buy is made (the run then records EXPIRED and still trades the scored run) | IDEA-093 SC, F-125 |
+| F0a | Keith + Keegan + Yao | GAP-74 is built into FS1 (IDEA-093 SC): **one run spans the self-check and the scored run**, so no second install or version event. The profile key `activation_self_check` buys about 32 USDT of SKHYB between 2026-10-27T00:00Z and 2026-10-28T18:00Z, sells it whole, and records DONE before 2026-10-28T23:00Z; FS1 then trades as usual from Oct 29 14:00Z. Keith/Keegan accept the values; the install (P4/S2/P5/P6) must finish **before 2026-10-28T18:00Z** or no self-check buy is made (the run then records EXPIRED and still trades the scored run) | IDEA-093 SC, F-125 |
 | F0k | Yao | the final wallet's key on the signer (as SJ-06 K1, for the final wallet) | G-09 |
-| F0p | Yao (Keegan reviews) | **make FS1 copies of the RC7 scripts; not built yet.** The RC7 scripts are pinned to run 4: `mac/m4-prepare.py` (S2 profile `eb55d76a…`, `--runtime-mode dev`, assessor `deterministic`, no routing args, run 4's adoption text), `mac/m3-recapture-assemble.sh`, `mac/d1-create-db.sh`, `mac/setup_rehearsal_db.py`, `mac/prepare_rehearsal_db.py`, `mac/m1-*-bundle.sh` and `host/p4-init-activate-start.sh` (run 4 database/run ID/build). The FS1 copies pin `fs1-final-recovery.json` (the `PROFILE_SHA` above), `live`, `aiand_routed`, the routing pair `9b86c732…`, the F0m adoption reference, the final wallet, database and run ID, and the new RC | the steps below cannot run on the RC7 scripts unchanged; editing them by hand at install time is not a reviewed path |
+| F0p | Yao (Keegan reviews) | Use the standalone preparer and FINAL P3/P4/P5/P6 above. Select the exact CI bundle and provision the explicit final database; supply fresh FINAL capture/caps inputs and bind the approved services to one registered release. These source paths replace run-4-pinned M4/P3/P4 and S5/old-signer dependencies; current-host and final-input qualification is still required | no hand-editing a dev run's config into FINAL |
 | F0d | Yao (Keegan reviews) | IDEA-100 DB1/DB2 on the database, **outside any run**: `terraform apply` of `deploy/aws` (five `database-*` alarms, four parameters); confirm each alarm with an SNS test publish; reboot the RDS instance once so `shared_preload_libraries` loads; as admin, `CREATE EXTENSION pg_stat_statements`; then `checks/db-top-queries.sh` (run-5 sheet; copy it with F0p) prints rows | IDEA-100: the 1 GB instance stalled on 2026-10-25; the reboot must not interrupt a run |
 
 ## Order (differences from the RC7 sheet)
@@ -42,13 +90,13 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
 | D1 | Yao, Mac | new database (proposed `larp_final`), run ID (proposed `larp-final-fs1`) | `D1_DONE` |
 | M1 | Mac or CI | bundle from the PR278 merge; check it contains the FS1 builder and routing file | `M1_DONE` |
 | Q1 | Yao + Isaac | obtain FS1-pinned final-wallet quotes at actual gas-excluded opening sizes (about 32.3 USDT/name before fees), full-exit child sizes and small level reductions, using its 20 bp slippage and minimum-output cost checks. The existing `quote_check.py` is pinned to run 3's 8 bp/dev address and is supplementary only; an FS1-pinned path remains to be built/reviewed | exact-profile executable quotes and fee/gas evidence accepted, including cost-refused residuals |
-| M2, M3 | Yao, Mac | Regenerate and hash `ld10_readonly_packet.py --profile fs1-final-recovery.json` for the final wallet; the old `5b642bd3…` probe is cleanup-off comparison evidence only. The F0p FINAL-specific assembly must use `mode=live`, `environment=FINAL`, final-wallet bindings/policy and `allowance_recovery=true` for execution and signer. `review_rehearsal_caps.py` currently hard-codes dev/REHEARSAL and the development policy, so it cannot supply this FINAL packet unchanged | fresh pinned probe and full `numeric_status: COVERED` at FS1 sizes (38.2 USDT cap, two exit children), eight-child action gas and actual BNB; final signer assembly complete before A1 |
+| M2, M3 | Yao, Mac | Standalone preparation and `--caps-inputs` above: fresh final-wallet capture, FINAL quote artifacts, exact prepared initial state and final policy/bindings. No installed dev runtime or retired source ledger is required. The historical `5b642bd3…` probe is comparison evidence only | `numeric_status: COVERED` at FS1 sizes (38.2 USDT cap, two exit children), eight-child action gas and actual BNB; final signer assembly complete before A1 |
 | A1 | Isaac | approve `PROFILE_SHA` `b8ba06e2…` (recovery profile, IDEA-098), the final `signer.json` with `signing_policy.allowance_recovery: true` (zero-only revokes, IDEA-096/LD06), and caps/gas coverage: the eight-child envelope 0.001536 BNB per action and the 0.01536 BNB exit reserve against the final wallet's actual BNB (GAP-73) | recorded in IDEA-093 and IDEA-098 |
-| M4 | Yao, Mac | `prepare_shadow.py prepare … --execution service --runtime-mode live --profile fs1-final-recovery.json --allowance-recovery --model-routing config/intelligence/aiand-routing.fs1.json --model-routing-sha256 9b86c732… --model-adoption-ref "<F0m>" --token-history-config <qualified-config-path>` (the latter is the actual qualified file described in F0) plus the RC7 router-policy pair, through the FS1 copy of `m4-prepare.py` (F0p; its identity checks are `live` / `aiand_routed`, not RC7's `dev` / `deterministic`); then `python -m tools.deploy.enable_allowance_recovery --profile fs1-final-recovery.json --execution-config … --signing-policy … --runtime … --decision-id "<A1 ref>" --output-dir …` emits `execution-config.json`, standalone `signing-policy.json`, `runtime.json` and `profile.json`, and must leave the profile bytes unchanged (IDEA-098 RC3). It does not edit or assemble `signer.json`; use the final M3 inputs and emitted signing-policy source to regenerate the signer assembly, then verify it is exactly the A1-approved signer. Rebuild/re-pin any changed prepared-config report and release-manifest hashes before `gate_a_check`; return to A1 for approval if final signer bytes differ | `runtime.json` `mode` `live`, `assessor` `aiand_routed`, routing pin `9b86c732…`, `allowance_recovery` true in all three files; profile SHA still `b8ba06e2…`; `gate_a_check` PASS |
+| M4 | Yao, Mac | Run `tools.deploy.prepare_fs1` as documented above, with fresh FINAL `--caps-inputs` and `--services-out`; check the original prepared package, approve exact service bytes at A1, then bind operations/runtime/uploader/execution/signer and registration evidence to one release. The older `enable_allowance_recovery` tool remains an independent RC3 regression path; no opt-in rewrite is needed here because FS1 recovery is already pinned | `live` / `aiand_routed`, routing `9b86c732…`, recovery true in all three services, profile `b8ba06e2…`; local package checks PASS and both hosts use the same manifest |
 | P2–P3 | primary | as RC7; also install the packaged `/etc/larp/model-routing.json` and `/etc/larp/token-history.json` root-owned and readable by `larp-runtime` | preflight and checks PASS |
 | B1 | primary | `model_budget init --routing-file /etc/larp/model-routing.json` with the **reconciled** prior spend (F0b), as `larp-runtime` | status shows the frozen pacing and the routing hash |
 | S1–S2 | signer | as RC7, with the final wallet key | `wallet_matches: true`, `started: true` |
-| P5 then P4 | primary | **start execution before the runtime plans its first buy** (run 4's first intent expired because P4 ran before P5); all of this before `trade_after` 2026-10-29T14:00Z | both active, 0 restarts |
+| P4 → S2 → P5 → P6 | primary, signer, primary | Use this folder's scripts: initialize/activate without planning, start signer, start execution, then start runtime only after execution is healthy. Complete before the self-check buy cutoff 2026-10-28T18:00Z | both active, 0 restarts; `P6_DONE` |
 | J | anyone | `checks/trading-status.sh`, chain monitor | rounds in consecutive 15-minute slots; first BUY end to end with `tx_hash` in a round log |
 | J-SC | anyone, read-only | `checks/trading-status.sh`, chain monitor, ai-seeds spool | the F-125 self-check: a SKHYB BUY (about 32 USDT) then a mandatory SELL (`ACTIVATION_SELF_CHECK`) on the final wallet, risk state `activation_self_check: DONE` before 2026-10-28T23:00Z, both round logs with their swap `tx_hash`, a non-empty reason summary, and the uploader spool empty (delivered). If the state is EXPIRED, record why; FS1 still starts on Oct 29 14:00Z |
 
@@ -63,6 +111,7 @@ the agent once the run starts (F-114, F-117); automatic restarts only (F-124); o
 - Expected behaviour: the book is built in the first sessions after Oct 29 14:00Z and held; trades after that only on
   verified red flags (AIand/ChatGPT assessment + verifier), qualified basket trend changes, loss-ladder cuts, and the terminal flatten from Nov 10 19:00Z.
 
-PR283-RV01: recovery gas/profile selection does not complete F0p, Q1 or FINAL M3 automation. These remain
-explicit owner tasks before installation. A standalone policy file or numeric COVERED result grants no signer
-approval; the exact assembled signer, prepared package and manifested outputs must all agree.
+PR296-RV01 adds standalone source preparation and FINAL numeric assembly to the PR283-RV01 recovery work.
+Fresh Q1 inputs, exact bundle/database/release qualification and host installation remain explicit owner tasks.
+A standalone policy file or numeric COVERED result grants no signer approval; the exact assembled signer,
+prepared package and manifested outputs must all agree.

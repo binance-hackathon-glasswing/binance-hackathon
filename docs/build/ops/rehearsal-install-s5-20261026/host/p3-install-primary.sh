@@ -5,7 +5,7 @@ BUCKET=$1; PREFIX=$2; shift 2
 declare -A want; for kv in "$@"; do want[${kv%%=*}]=${kv#*=}; done
 for n in release.json runtime.json uploader.json operations.json execution.json strategy-profile.json \
          session-calendar.json initial-state.json evidence.env registration-evidence.json untrusted-router-policy.json \
-         token-history.json; do
+         token-history.json model-routing.json; do
   [[ -n ${want[$n]:-} ]] || { echo "missing hash for $n"; exit 3; }
   [[ ! -e /etc/larp/$n ]] || { echo "/etc/larp/$n exists; not overwriting"; exit 3; }
 done
@@ -21,12 +21,12 @@ install -m 0640 -o root -g larp-uploader "$W/uploader.json" /etc/larp/uploader.j
 install -m 0640 -o root -g larp-archive "$W/operations.json" /etc/larp/operations.json
 install -m 0640 -o root -g larp-execution "$W/execution.json" /etc/larp/execution.json
 for n in release.json strategy-profile.json session-calendar.json initial-state.json evidence.env \
-         registration-evidence.json untrusted-router-policy.json token-history.json; do
+         registration-evidence.json untrusted-router-policy.json token-history.json model-routing.json; do
   install -m 0644 -o root -g root "$W/$n" "/etc/larp/$n"
 done
 (cd /etc/larp && sha256sum release.json runtime.json uploader.json operations.json execution.json strategy-profile.json \
   session-calendar.json initial-state.json evidence.env registration-evidence.json untrusted-router-policy.json \
-  token-history.json rds-ca.pem)
+  token-history.json model-routing.json rds-ca.pem)
 cd /opt/larp/current
 P=".venv/bin/python"; export PYTHONDONTWRITEBYTECODE=1
 $P -m larp.runtime.preflight --manifest /etc/larp/release.json --root /opt/larp/current --profile host \
@@ -55,6 +55,14 @@ if path != "/etc/larp/token-history.json" or not sha:
 if hashlib.sha256(open(path, "rb").read()).hexdigest() != sha:
     sys.exit("token history differs from runtime.json pin")
 print("runtime_token_history readable_by=larp-runtime sha256=" + sha[:8])' /etc/larp/runtime.json
+# IDEA-104 R3: FS1 routing, readable by larp-runtime at its pin (FS1 sheet P2-P3).
+runuser -u larp-runtime -g larp-runtime -G larp-evidence -- $P -I -c 'import hashlib, json, sys
+d = json.load(open(sys.argv[1]))["driver"]
+if d.get("assessor") != "aiand_routed" or d.get("model_routing_file") != "/etc/larp/model-routing.json":
+    sys.exit("runtime.json is not the routed S5 runtime (IDEA-104 R3)")
+if hashlib.sha256(open(d["model_routing_file"], "rb").read()).hexdigest() != d["model_routing_sha256"]:
+    sys.exit("model routing differs from runtime.json pin")
+print("runtime_model_routing readable_by=larp-runtime sha256=" + d["model_routing_sha256"][:8])' /etc/larp/runtime.json
 install -d -m 0700 /root/rehearsal-evidence
 R=/root/rehearsal-evidence/routes-primary-$(date -u +%Y%m%dT%H%M%SZ).json
 # The report goes to the file only (it names every destination host, including the database endpoint).

@@ -59,6 +59,13 @@ def review_options(p):
         if key in p and (p.get("baseline") != "TREND_GUARDED_VOL"
                          or type(p[key]) is not int or p[key] != decided):
             raise ContractError(key + " requires S1 and the exact PR278-RV01 value " + str(decided))
+    if 's5_entry_lot_units' in p:
+        if (p.get('baseline') != 'TREND_GUARDED_VOL' or p.get('environment') != 'REHEARSAL'
+                or p.get('policy_id') != 'larp-s5-rehearsal-v1' or p.get('s1_capital_basis') != 'EXCLUDE_GAS'
+                or type(p['s5_entry_lot_units']) is not int or p['s5_entry_lot_units'] != 19_000_000
+                or not p['minimum_trade_units'] <= p['s5_entry_lot_units']
+                <= p['per_trade_cap_units'] - p['cost_reserve_units']):
+            raise ContractError('S5 opening lot requires the gas-excluded S5 REHEARSAL and bounded 19 USDT')
 
 
 def stock_capital_scale(p, ledger, total_equity):

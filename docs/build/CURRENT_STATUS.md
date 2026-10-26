@@ -1,11 +1,29 @@
 # Current shared build and remaining work
 
-IDEA-104 S5 R2 (2026-10-26 SGT, PR294, not merged or installed): S5, the FS1 mirror rehearsal on the dev wallet,
-now runs to Tue Oct 27 12:00 SGT (development testing extended to Oct 28, F-126). It requires FS1's pinned token
-history like FS1 FINAL/FS1-R, with profile `5a5a200a…` and probe `8ba1328f…`. It buys nothing below about 98.3 USDT of
-cash (the dev wallet holds 81.37), so the run-7 sheet starts with a top-up, and M3 declares it
-(`--accept-usdt-surplus-units`). [Record](../ledger/IDEA-104.md) / [run sheet](ops/rehearsal-install-s5-20261026/README.md).
-FS1 profiles unchanged.
+S5-SIZE01 (2026-10-26 SGT, source `2f9e886c…`, **supported offline; not installed**): S5 adds scoped 19-USDT
+high-level opening lots under its existing allocation/name/gross/cash limits. At recorded 81.37-USDT cash,
+four lots fit and a fifth is refused; BNB exclusion, measured minimum, exact cost gates and FS1 are unchanged.
+Profile `6dadc196…`, probe `68e49922…`; M4 checks fresh cash from the selected profile. Focused: **110 passed /
+39 subtests**. Full pinned Python3.12.15/PG14.24: **2978 passed, 8 skipped, 4069 subtests, zero failures**.
+[Receipt](evidence/s5-size01-review-20261026.json) / [record](../ledger/IDEA-104.md#s5-size01-final-validation-2026-10-26).
+Cash sizing implementation is complete; TH-01 and exact profile/probe/signer/release/host acceptance remain.
+GitHub CI did not start due billing/spending limits. Earlier receipts below apply only to their recorded source.
+No merge, installation or live profitability claim.
+
+PR296-RV01 (2026-10-26 SGT, review follow-up; publication authorized by the user): FS1/S5 direct startup now enforces routed
+assessment outside the scoped historical rehearsal; run-7 and FINAL startup initialize/activate before signer
+and execution, then start runtime only after execution is healthy. The standalone
+`tools/deploy/prepare_fs1.py` prepares fresh FINAL wallet/database/history/routing inputs and independently
+assembles FINAL caps/signers, without any prior S5 run or signer. Final-wallet nonce/ai-seeds directories are
+separate. Existing profiles/routing are unchanged. S5's withdrawn USDT top-up instructions are removed; its
+cash/history blockers remain. [Comparison, findings and validation](../ledger/IDEA-104.md#pr296-rv01--review-and-independent-fs1-preparation-2026-10-26-criteria-before-execution) /
+[standalone FS1 run sheet](ops/final-fs1/README.md). Final pinned Python3.12.15/PG14.24: **2962 passed, 8 skipped, 4069 subtests, zero failures** ([receipt](evidence/pr296-review-20261026.json)). Publication targets PR296 only; no merge, install or live qualification.
+
+IDEA-104 S5 R3 (2026-10-26 SGT; R2 merged as PR294 `81ee30a1`, R3 not merged or installed): S5 is FS1 FINAL at
+rehearsal size on the dev wallet, to Tue Oct 27 12:00 SGT, with FS1's AIand/ChatGPT routing `9b86c732…`, model
+authority and token history; profile `f371b18d…`, probe `90344caa…`. Blocked: it buys nothing at the dev wallet's
+81.37 USDT (gas excluded), and no real token-history file exists (TH-01). [Record](../ledger/IDEA-104.md) /
+[run sheet](ops/rehearsal-install-s5-20261026/README.md). FS1 profiles unchanged.
 
 PR295 / IDEA-103 PR295-RV01 (2026-10-26 SGT): FS1 history producer, bounded pagination/cache,
 qualified timestamp/adjustment input and production preparation/startup wiring reviewed. Fixed exact JSON/close

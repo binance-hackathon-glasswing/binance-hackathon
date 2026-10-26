@@ -19,7 +19,7 @@ CADENCE_MS = 900_000  # IDEA-102: one new mandatory attempt per UTC quarter-hour
 
 HOURS = ('NYSE_SESSION', 'KIT_OPEN_STATE')
 SCOPE = ('KIT_OPEN_STATE hours need a dev REHEARSAL with SHADOW evidence and falsifiers (IDEA-089 S2-1) '
-         'or a live FINAL with the decided v1 scope (IDEA-093 FS1)')
+         'or a live FINAL with the decided v1 scope (IDEA-093 FS1), or S5 with that scope in a dev run (IDEA-104 R3)')
 
 
 def parameters(value):
@@ -51,15 +51,19 @@ def require_open_state_scope(profile, mode):
     - S2-1 (IDEA-089): a REHEARSAL with SHADOW evidence and falsifiers, in a `dev` run.
     - FS1 (IDEA-093, F-119 "Orders can be placed 24/7"): a FINAL with the decided v1 scope (BOUNDED_FALSIFIER
       evidence, DISCRETIONARY_EXIT falsifiers, SHADOW statements), in a `live` run. The `openState` check (F-95)
-      and the profile window still apply."""
+      and the profile window still apply.
+    - S5 (IDEA-104 R3): the S5 REHEARSAL with FS1's v1 scope, in a `dev` run."""
     if not open_state_hours(profile):
         return
     rehearsal = (profile.get('environment') == 'REHEARSAL' and profile.get('evidence_mode') == 'SHADOW'
                  and profile.get('falsifier_authority') == 'SHADOW' and mode in (None, 'dev'))
-    final = (profile.get('environment') == 'FINAL' and profile.get('evidence_mode') == 'BOUNDED_FALSIFIER'
-             and profile.get('falsifier_authority') == 'DISCRETIONARY_EXIT'
-             and profile.get('statement_authority') == 'SHADOW' and mode in (None, 'live'))
-    if not (rehearsal or final):
+    v1 = (profile.get('evidence_mode') == 'BOUNDED_FALSIFIER' and profile.get('falsifier_authority') == 'DISCRETIONARY_EXIT'
+          and profile.get('statement_authority') == 'SHADOW')
+    final = profile.get('environment') == 'FINAL' and v1 and mode in (None, 'live')
+    # IDEA-104 R3: S5 mirrors FS1 on the dev wallet, so only S5's REHEARSAL takes FS1's v1 scope, in a dev run.
+    s5 = (profile.get('environment') == 'REHEARSAL' and profile.get('policy_id') == 'larp-s5-rehearsal-v1' and v1
+          and mode in (None, 'dev'))
+    if not (rehearsal or final or s5):
         raise ContractError(SCOPE)
 
 
