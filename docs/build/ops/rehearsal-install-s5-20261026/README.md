@@ -13,8 +13,8 @@ assessments, verified red flags exit or block entry.
 **Status:** S5-SIZE01 sizing source `2f9e886c…` passed focused 110 tests/39 subtests and the full pinned suite
 (2978 passed, 8 skipped, 4069 subtests); [receipt](../../evidence/s5-size01-review-20261026.json). Not installed.
 The earlier relayed approval concerned R3; record acceptance of the new exact profile/probe/signer hashes before
-installation. Nothing in this folder has touched a host or the wallet. **A qualified token-history file is still
-missing (TH).** The user cannot top up. No transfer is planned. FS1 does not depend on S5 proceeding.
+installation. Nothing in this folder has touched a host or the wallet. **TH-CONFIG01 supplies the verified-evidence history config
+[here](../../evidence/th01-live-20261026/token-history.json), SHA-256 `5e572570…`; copy its exact bytes at TH.** The user cannot top up. No transfer is planned. FS1 does not depend on S5 proceeding.
 
 | Window (profile) | UTC | SGT |
 |---|---|---|
@@ -65,7 +65,7 @@ cp -R docs/build/ops/rehearsal-install-s5-20261026 deploy/activation/ && cd depl
 | Step | Who / where | Command | Done when |
 |---|---|---|---|
 | B0 | team | Use verified S5-SIZE01 source and the new profile/probe pins, then M4's fresh-cash check; the recorded 81.37 USDT supports up to four 19-USDT lots under the stock-capital ceiling | verified source and fresh sizing check; no transfer step |
-| TH | Keith (evidence), Yao | write the qualified `TokenHistoryConfig.v1` to `private/token-history.json`: `timestamp_kind` `OPEN`, `timestamp_evidence_sha256` = SHA-256 of the actual hourly OPEN timestamp evidence, and the adjustment version ([contract](../../FS1_TOKEN_HISTORY.md)) | the file parses; no synthetic value (M4 refuses one) |
+| TH | Keith (evidence), Yao | copy the generated [TH-CONFIG01 config](../../evidence/th01-live-20261026/token-history.json) byte for byte to `private/token-history.json` (SHA-256 `5e572570…`; OPEN evidence `cc8371bd…`, raw token prices with no local adjustment) ([contract](../../FS1_TOKEN_HISTORY.md)) | the file parses; no synthetic value (M4 refuses one) |
 | F0s | Yao | runtime Secrets Manager entry carries `LARP_AIAND_API_KEY` (required) and `LARP_MODEL_API_KEY` (OpenAI), as FS1 sheet F0s | both keys present (names only checked) |
 | — | team | merge the IDEA-104 R3 PR into canonical, so BUILD contains it | canonical head contains `6dadc196…` |
 | D1 | Yao, Mac | `LARP_PY=<venv> D1_OUT=<repo>/deploy/activation/rehearsal-db-run7 bash mac/d1-create-db.sh` (any time) | `S5-D1` result, `D1_DONE` |

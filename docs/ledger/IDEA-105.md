@@ -194,3 +194,34 @@ config hash; Keegan accepts its exact release binding; Yao transfers it and qual
 history/trend. S5 and FS1 are not yet deployment-ready: fresh wallet/caps/signer/release/model-account/host acceptance
 remains, with FINAL funding/BNB valuation/RPC and activation self-check gates. No host, wallet, paid model or
 provider action occurred during review. EXP-007's economic evaluation remains separate.
+
+## TH-CONFIG01 — generate the existing raw-price convention (2026-10-26 SGT)
+
+User asked whether we can generate the config ourselves. Yes: source inspection of
+`marketdata/history.py`, `strategy/sessions.py`, `strategy/features.py` and `strategy/s1.py` shows that
+`token_adjustment_version` is a provenance/cache-consistency label. Its text does not select a transformation:
+the converter uses the provider's raw token close, scales it exactly to integer units, and copies the label to
+the series/bars. Consumers require consistent labels; no token/share conversion or local split/dividend
+adjustment is applied. Waiting for Keith to name that existing behavior was an unnecessary ownership bottleneck.
+
+Selected descriptive identifier: `BINANCE_WEB3_RAW_TOKEN_NO_LOCAL_ADJUSTMENT_V1`. This names our actual processing,
+not a claim that the provider's historical prices are split/dividend-adjusted or economically validated.
+Keith's original timestamp qualification evidence remains unchanged. No strategy threshold, price conversion,
+profile or trading authority changes.
+
+Before generation, pass criteria: use the already pushed source-verifying config command on committed evidence
+`cc8371bd…`, with no network/credentials; output must pass `history.configuration()`, retain the exact evidence
+hash and selected label, and reproduce byte for byte on a second generation. Save its exact public bytes and hash,
+update the live backlog to remove this completed generation step while keeping input/release/host acceptance open.
+
+TH-CONFIG01 results: PASS. The pushed generator replayed the committed evidence and all raw source bindings
+with network access disabled, then validated the output through `history.configuration()`. A second independent
+generation reproduced the exact bytes, as did comparison with the saved public artifact:
+`docs/build/evidence/th01-live-20261026/token-history.json`, SHA-256
+`5e572570bc24fb2ca7b692dccf71f67a37c5fac3d75330e4558634cf45417be9`.
+Evidence hash remains `cc8371bd235eb4db284367fbf0267890d3c6a87bafca60ca2573f0b9d64b3fa6`.
+No code, transformation, thresholds, strategy profile or routing changed, so the prior source tests are retained;
+verification here is actual generation, source validation and deterministic reproduction rather than another suite.
+The live backlog and S5 transfer sheet now point to these exact bytes. Remaining: Keegan accepts the resulting
+input/release binding; Yao prepares/transfers the file and checks the current-host history. Other signer/release/
+model/host gates stay open. No provider, model, wallet or host action was performed.

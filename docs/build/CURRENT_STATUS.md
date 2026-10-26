@@ -1,5 +1,14 @@
 # Current shared build and remaining work
 
+TH-CONFIG01 (2026-10-26 SGT): [actual token-history.json](evidence/th01-live-20261026/token-history.json)
+generated and reproduced byte for byte from Keith's verified live evidence;
+SHA-256 `5e572570bc24fb2ca7b692dccf71f67a37c5fac3d75330e4558634cf45417be9`.
+`BINANCE_WEB3_RAW_TOKEN_NO_LOCAL_ADJUSTMENT_V1` describes the converter's existing
+raw-price treatment; the string is provenance/cache metadata, not an adjustment
+algorithm. Generation and naming no longer block S5/FS1 preparation. Exact
+release binding/owner and current-host checks remain; no deployment occurred.
+This supersedes the generation/naming prerequisites in earlier dated receipts.
+
 PR297-RV01 (2026-10-26 SGT): Keith's committed TH-01 evidence `cc8371bd…`
 independently replays as the identical five-name PASS, with all442 raw artifacts
 verified. Config generation now verifies source hashes, request identity, rows
