@@ -1,0 +1,56 @@
+{
+  "schema": "S6ExperimentDesign.v0",
+  "mode": "EXPERIMENTAL_DO_NOT_DEPLOY",
+  "environment": "EXPERIMENTAL",
+  "deploy_status": "NOT_APPROVED",
+  "ledger": "IDEA-106",
+  "notice": "Experimental research design for an offline backtest only. Not a StrategyProfile.v1. Must not be installed, used to build a FINAL or REHEARSAL profile, prepared, started or run on any wallet or in dev/live mode without the written team approval required by docs/ledger/IDEA-106.md.",
+  "baseline": "S6_RANK_ROTATION",
+  "values_origin": "PRE_REGISTERED_FOR_OFFLINE_BACKTEST",
+  "symbols": ["GOOGLB", "MSFTB", "NVDAB", "SKHYB", "TSLAB"],
+  "s6": {
+    "held_names": 3,
+    "gross_weight": [19, 20],
+    "name_weight": [19, 60],
+    "weight_cap": [1, 3],
+    "hard_name_weight": [2, 5],
+    "top_up_band": [1, 20],
+    "lookback_sessions": 10,
+    "score": "LOG_RETURN_SESSION_CLOSE",
+    "session_close": "LAST_1H_TOKEN_BAR_ENDING_AT_OR_BEFORE_NYSE_CLOSE",
+    "max_carried_closes": 2,
+    "swap_margin_bps": 150,
+    "max_swaps_per_session": 1,
+    "max_swaps_per_run": 6,
+    "rotation_hours": "US_REGULAR_SESSION",
+    "rotation_delay_seconds": 1800,
+    "mandatory_hours": "KIT_OPEN_STATE",
+    "rotation_sell_requires_buy_permitted": true,
+    "model_veto": "SWAP_IN_ONLY_VERIFIED_ADVERSE",
+    "model_view_authority": "SHADOW"
+  },
+  "ladder": {
+    "daily_loss_buy_block_bps": 300,
+    "drawdown_buy_block_bps": 800,
+    "drawdown_recovery_bps": 500,
+    "deep_cut_bps": 1200,
+    "deep_cut_gross_weight": [2, 5]
+  },
+  "sizes_usdt_units": {
+    "expected_equity_units": 200000000,
+    "minimum_trade_units": 18637420,
+    "per_trade_cap_units": 38200000
+  },
+  "backtest": {
+    "criteria": "IDEA-106 S6-B0..S6-B8",
+    "window_sessions": 10,
+    "bootstrap": {"block_sessions": 10, "resamples": 10000, "seed": 106, "interval": [90, 100]},
+    "costs": {
+      "central": {"per_side": "spread_bps/2 + 1 impact + 2 slippage", "gas_usdt_per_pair": "0.058"},
+      "team_convention": {"per_side_bps": 25, "gas_usdt_per_pair": "0.03"},
+      "stress": {"per_side_bps": 50, "gas_usdt_per_pair": "0.03"},
+      "gas_cap_price": {"per_side": "spread_bps/2 + 1 impact + 2 slippage", "gas_usdt_per_pair": "0.277"}
+    },
+    "cost_source_profile_sha256": "19176e6c6537291bb41f440636f51d7f6313d2444ebf7242cc145316d840f291"
+  }
+}
