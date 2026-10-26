@@ -53,3 +53,31 @@ Prospective pass criteria, before new implementation/test execution:
   profile hashes, strategy thresholds, risk authority and legacy preparation remain unchanged.
 - RV5: complete the deferred full suite on pinned Python3.12.15/PostgreSQL14.24 with recursive dependency
   locks verified, exact exclusions/skips and GitHub CI availability recorded. Push code/tests before execution.
+
+### PR295-RV01 results and merge decision
+
+**RV1–RV5 PASS offline**, pushed source `ba6f0d94`. The history client alone now parses JSON decimal
+numbers as their original decimal strings, retaining credential-screened raw response evidence. Its session
+conversion uses exact rational scaling, so even a price just below a whole scaled unit cannot round up under
+the ambient Decimal context. Default Web3 clients and legacy converter callers keep their prior behavior.
+History also rejects positive but inconsistent OHLC ranges. The redundant scope check was removed without
+changing profile hashes, strategy thresholds, trading authority or the stated missing-history policy.
+
+Focused transport/history/cache/session/preparation/composition/strategy/PostgreSQL replay checks:
+**112 tests /20 subtests PASS, zero skips**, 8.21s. The exact-price regression uses mocked HTTP JSON,
+screened raw artifacts, the real MarketPort and SessionHistory, and Decimal precision six; all five series
+retain the correct integer close. Actual trend-driven SELL/BUY and recorded-port replay remain covered.
+
+Deferred full verification is now complete: **2901 passed, 4060 subtests passed, 8 skipped, 3 deselected,
+0 failed**, 307.97s, pinned Linux aarch64/Python **3.12.15**, PostgreSQL **14.24**. All53 applicable recursive
+requirement lines (44 unique distributions) match their locks; `pip check` passes. The eight skips are the
+optional private source fixture, external market artifacts, root directory-mode behavior and five systemd
+cases. Three unchanged nested-bubblewrap tests are explicitly excluded because this Docker host cannot
+supply their namespace/proc mounts. No Linux sandbox/systemd/host qualification is claimed.
+GitHub check `121379203073` did not start because account payments/spending limits block jobs.
+[Review receipt](../build/evidence/pr295-review-20261026.json).
+
+Merge PR295 into canonical under the user's review/fix/merge authorization. This completes the deferred
+source verification, not deployment or economic evaluation. TH-01 stays open: Keith qualifies actual hourly
+OPEN timestamp/adjustment evidence; Keegan reviews and binds the real input and exact release; Yao transfers
+the pinned file and records current-host five-name history/trend qualification. EXP-007 remains separate.

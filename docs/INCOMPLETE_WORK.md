@@ -48,7 +48,7 @@ PR139 source-acquisition history and PR172 funding preflight are retained by con
 
 ## Trading and model decisions
 
-- [ ] TH-01 / IDEA-103 — Keith: qualify the actual Web3 hourly OPEN timestamp and raw-token adjustment evidence; Keegan: review/bind that input and the exact FS1 release; Yao: prepare with `--token-history-config`, transfer the pinned `token-history.json`, and record current-host five-name history/trend qualification. Production wiring, bounded cached pagination, session conversion and replay are implemented in PR295; actual provider/host acceptance and the unchanged EXP-007 economic evaluation remain. [Input and transfer contract](build/FS1_TOKEN_HISTORY.md).
+- [ ] TH-01 / IDEA-103 — Keith: qualify the actual Web3 hourly OPEN timestamp and raw-token adjustment evidence; Keegan: review/bind that input and the exact FS1 release; Yao: prepare with `--token-history-config`, transfer the pinned `token-history.json`, and record current-host five-name history/trend qualification. Production wiring, bounded cached pagination, exact session conversion and replay reviewed in PR295-RV01 (pinned 2901 tests/4060 subtests PASS; deferred full suite complete); actual provider/host acceptance and the unchanged EXP-007 economic evaluation remain. [Input and transfer contract](build/FS1_TOKEN_HISTORY.md).
 
 PF-01: [IDEA084](ledger/IDEA-084.md) records Isaac's delegated policy choices on Oct 21 SGT. Superseded proposal wording below does not reopen those choices; measurement, implementation, review and actual qualification remain.
 

@@ -56,8 +56,11 @@ No build, installation, provider access or activation is performed by this PR.
 - Missing/no-trade intervals remain missing. No forward fill, gap bridging or
   guessed close. All five series must have the required window; a stale older
   window cannot masquerade as the latest expected session.
-- Numeric source prices become exact decimal strings before immutable-document
-  encoding; trade counts, hourly alignment, identity, source hashes and source
+- The history transport parses numeric JSON prices directly as decimal strings,
+  preserving the source lexeme before any binary-float conversion. Session closes
+  use exact rational scaling and integer truncation, independent of Decimal context
+  precision; legacy transport/converter callers retain their defaults. Inconsistent
+  OHLC ranges are rejected. Trade counts, hourly alignment, identity, source hashes and source
   availability are checked. A capture cannot predate the closes it contains.
 - Raw fetches finishing after a round's fixed cutoff are cached but not supplied
   to that decision. They become eligible on a later decision once all source
@@ -84,3 +87,7 @@ planning continues. This PR does not add an entry halt for missing history:
 a cold start may retain the configured UP default until a complete window is
 available. It does not establish that the guard improves returns or drawdown;
 EXP-007 and exact provider/release/host qualification remain separate.
+
+PR295-RV01 source review (2026-10-26 SGT): pinned Python3.12.15/PG14.24,
+2901 tests/4060 subtests PASS; 8 skips/3 nested-sandbox exclusions. Full rerun
+deferred in TH-RV02 is complete. [Receipt](evidence/pr295-review-20261026.json).
