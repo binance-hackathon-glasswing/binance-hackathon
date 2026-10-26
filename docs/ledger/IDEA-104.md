@@ -391,6 +391,7 @@ operations, host install or merge were performed.
 GitHub run `40287198787` did not start jobs: its runtime annotation says recent account payments failed or the
 spending limit needs increasing. Hosted CI is **unavailable**, not a tested code failure. Real TH-01 history,
 fresh hosted inputs and exact profile/probe/signer/release acceptance, host qualification and installation remain
+with the existing owners. The cash sizing implementation is complete; no funding transfer or FS1 change is needed.
 
 ## S5-DEPLOY01 — authorized run-7 deployment (2026-10-26 SGT)
 
@@ -441,4 +442,22 @@ to Isaac/Keegan. The prior approved signing policy/caps are unchanged; no policy
 B1 read-only PASS: existing account `larp-openai-2026`,50,000,000microUSD total,3,217,536microUSD charges retained.
 No ledger reset/init or private invoice reconciliation is claimed. Private results are under
 `deploy/activation/rehearsal-install-s5-20261026/` in the original checkout.
-with the existing owners. The cash sizing implementation is complete; no funding transfer or FS1 change is needed.
+
+### S5-DEPLOY01 startup refusal / preserving transition criteria
+
+P3, P4, signer provisioning/check/routes/S1b/key-match/S2 and execution P5 passed. P6 refused with START_REFUSED;
+runtime is stopped, so no new planning/trade was made. Actual read-only diagnosis: the budget's base pacing
+matches FS1 exactly, but its trial binding remains `larp-unsigned-v3-20261018`, expired end_ms1792627200000.
+Trial stopped=false/reason empty; global account latch=false/reason empty. Historical104 SETTLED/2,880,356microUSD
+and three UNKNOWN/337,180microUSD remain. This is the preserving-migration gap previously recorded in IDEA-066.
+
+Before implementing/running a migration: require exact expected ledger/routing hashes, existing private file,
+no live trial/model workers, an expired trial, no RESERVED charges, no trial/global safety stop or clock rollback,
+unchanged account/total/reserve/initial charge and identical base pacing. Refuse any mismatch atomically.
+Make an exact private pre-migration backup, archive rather than discard trial policy/dispatch attribution, preserve
+every charge/state/amount/request identity, account/switch/clock row, and record source/target hashes. Only retire
+the expired trial binding for the explicitly selected non-trial S5 routing. Old trial-aware workers must refuse
+afterward; current ModelBudget must load without replenishing spent credit or clearing UNKNOWN.
+Code/tests must be committed/pushed before execution. Verify negative cases and atomic preservation against
+synthetic ledgers, plus existing budget/trial/routing checks, before applying to the stopped host runtime.
+No runtime release/profile/routing bytes are changed by this administrative transition.
