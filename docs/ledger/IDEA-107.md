@@ -15,9 +15,10 @@
 
 - Date / author: 2026-10-26 SGT / requested in a Claude Code session on Keith's machine; design, arithmetic, code and
   record by Claude Code. Strategy owner for review: Keith.
-- Status: **pre-registered 2026-10-26** (criteria committed before any simulator code exists and before the snapshot
-  is read for this idea). Not adopted, not implemented in the runtime, not approved. Predictive edge:
-  **NOT_ESTABLISHED**.
+- Status: **backtest run 2026-10-26: NOT SUPPORTED** (P: S7 − FS1-STATIC −0.16 pp per window, 90% interval
+  [−0.27, −0.04] wholly below zero; both chronological halves negative; T +0.21 pp [−0.04, +0.68], confirmatory-only).
+  Criteria were committed before any simulator code existed. Not adopted, not implemented in the runtime, not
+  approved. Predictive edge: **NOT_ESTABLISHED**.
 - Base: `744430e5` (tip of `claude/s6-experimental-active-strategy-20261026`: IDEA-106 S6 and EXP-007 with their
   simulators). Branch `claude/s7-experimental-strategy-20261026`.
 - Related: IDEA-093 (FS1), IDEA-106 (S6, its simulator and snapshot), EXP-007, EXP-008, IDEA-063 (quote costs),
@@ -263,3 +264,80 @@ In order; each step recorded here with its evidence:
   as IDEA-106; break-even gas by 20 bisection steps; the cost cases, TILT-AVG, the split and the years are computed on
   P only (their gates are P gates); T reports central costs and the T variants; NO-SKHY-SIGNAL runs on P only.
 - **Deviations:** none.
+- 2026-10-26 correction (Claude Code, before the run): the numpy version in the run record is **2.4.6**, not 2.4.4
+  (typo; checked with `numpy.__version__` in the same interpreter). Nothing else changes.
+
+## Backtest result (2026-10-26 SGT): NOT SUPPORTED
+
+Run at `1d195d33` (simulator and tests unchanged since `6ceb91f1`) on the snapshot above, hashes checked by the
+simulator; report `~/larp-idea106/idea107-report-6ceb91f1.json` (SHA-256 `579ce9c1…00d60`, outside Git),
+reproducible with `python -m tools.idea107.simulate --data ~/larp-idea106/snapshot-20261026` (≈ 16 s). Simulated at
+candle and close prices, not realised fills (ledger rule 4). Mean net return per 10-session window, 200 USDT start,
+central costs unless stated; intervals are the pre-registered moving-block bootstrap 90% (seed 107).
+
+**P (decisive: underlying daily closes).** 1,964 sessions 2019-01-02 → 2026-10-23; **1,934 overlapping windows**
+(first build 2019-02-01), 194 non-overlapping; P1 978 windows, P2 947.
+
+| Arm | Mean | Median | Share > 0 | Mean max DD | Median max DD | DD ≥ 8% | DD ≥ 12% | Legs | Cost (USDT) |
+|---|---|---|---|---|---|---|---|---|---|
+| S7 | **+0.85%** | +1.02% | 59% | 4.20% | 3.23% | 12.0% | 3.3% | 13.13 | 1.00 |
+| FS1-STATIC | **+1.01%** | +1.28% | 61% | 4.05% | 3.21% | 11.3% | 2.5% | 12.84 | 0.98 |
+| TILT-AVG (30 books) | +1.00% | | | | | | | | |
+
+- **S7 − FS1-STATIC: −0.16 pp [−0.27, −0.04]**; S7 ahead in 49% of windows (46% of non-overlapping). S7's own mean
+  [+0.33, +1.40].
+- **Split:** P1 (2019–2022) −0.12 pp [−0.28, +0.03]; P2 (2023–2026) −0.21 pp [−0.38, −0.03]. Both negative.
+- **Selection vs structure:** S7 − TILT-AVG −0.15 pp [−0.26, −0.03]. The tilted shape itself cost almost nothing
+  (TILT-AVG ≈ FS1, −0.01 pp); the loss is the ranking: the residual-reversal picks did worse than random tilts.
+- **Costs (S7 − FS1):** central −0.16, team convention −0.16, stress −0.15, gas at cap −0.18 pp. Break-even gas:
+  none (S7 trails at 0 USDT per pair).
+- **By year:** 2019 +0.06, 2020 −0.36, 2021 −0.20, 2022 +0.04, 2023 −0.10, 2024 −0.36, 2025 −0.27, 2026 −0.06 pp
+  (2 of 8 positive).
+- Incremental cost vs FS1: **0.009% of equity** (+0.29 legs per window), well below the ex-ante 0.03–0.075%: the
+  ex-ante table assumed five flatten legs for FS1, but a 38 USDT position that has risen above the 38.2 USDT cap needs
+  two legs at the flatten, while S7's zeroed name needs none. Cost is not why S7 lost.
+- Reported only (S7-shape variants vs FS1, P): MIRROR (tilt toward the two strongest) **+0.10**; RAW −0.22; F10 −0.20;
+  F20 −0.21; TILT1 −0.11; NO-SKHY-SIGNAL −0.13 pp. Every reversal variant is negative on P; the momentum mirror is the
+  only positive one. MIRROR is not a candidate (unregistered, chosen after seeing it, and S6's top-3 momentum was ≈ 0
+  on the same P).
+
+**T (confirmatory-only: token 1-hour bars).** 72 sessions 2026-07-15 → 2026-10-23; 42 windows (first build
+2026-08-13), 5 non-overlapping; fill fallbacks 5 next-bar, 3 session-close.
+
+| Arm | Mean | Median | Share > 0 | Mean max DD | Median max DD | DD ≥ 8% | DD ≥ 12% | Legs |
+|---|---|---|---|---|---|---|---|---|
+| S7 | +0.09% | +1.41% | 71% | 4.34% | 3.44% | 14.3% | 0% | 12.93 |
+| FS1-STATIC | −0.12% | +0.94% | 67% | 4.33% | 3.50% | 14.3% | 0% | 12.55 |
+
+- S7 − FS1-STATIC +0.21 pp [−0.04, +0.68]; ahead in 67% of windows (4 of 5 non-overlapping). Reported only: MIRROR
+  −0.19, RAW +0.29, F10 −0.06, F20 +0.58, TILT1 +0.06 pp. This matches REV3's sign on the same sample and, as
+  pre-registered, is **not** evidence for S7: it is the sample in which the reversal family was already seen to do well.
+
+| Gate | Result | Why |
+|---|---|---|
+| S7-G0 | PASS | criteria (`084444fe`) and simulator + 10 tests (`6ceb91f1`) committed before the run; hashes verified |
+| S7-G1 | FAIL | P mean −0.16 pp, 90% interval [−0.27, −0.04] wholly below zero (S7's own lower bound +0.33 passes) |
+| S7-G2 | FAIL | P1 −0.12, P2 −0.21 pp |
+| S7-G3 | FAIL | S7 − TILT-AVG −0.15 pp [−0.26, −0.03] |
+| S7-G4 | FAIL | team −0.16, stress −0.15 pp; break-even gas 0 < 0.116 |
+| S7-G5 | PASS | P: DD ≥ 8% 12.0 vs 11.3% (+0.7 ≤ 3 pp), ≥ 12% 3.3 vs 2.5% (+0.8 ≤ 2 pp), median 3.23 vs 3.21% (1.01×); T: 14.3 vs 14.3%, 0 vs 0%, 3.44 vs 3.50% |
+| S7-G6 | PASS | T upper bound +0.68 ≥ 0 (confirmatory only) |
+| S7-G7 | FAIL | 2 of 8 years positive (need 5) |
+| S7-G8 | PASS | smallest discretionary leg 18.69 USDT on P (a top-up), 28.5 on T; legs +0.29 / +0.38 per window; incremental cost 0.009% / 0.012% |
+
+**Outcome: NOT SUPPORTED** (two independent triggers: P's 90% upper bound of S7 − FS1-STATIC is −0.04 pp < 0, and the
+P1 and P2 means are both negative). Per the decision rule S7 is not adopted and stays experimental; no parameter is
+changed after the fact. FS1 is unchanged.
+
+**Reading (not part of the rule).** Over 2019–2026 these five names showed mild short-horizon relative *persistence*
+at the build (MIRROR +0.10, S7 −0.16 pp per window), while the Jul–Oct 2026 token sample showed reversal (S7 +0.21,
+REV3 +0.76). The sign of 1–4-week cross-sectional predictability among five correlated mega-caps is not stable across
+regimes, so neither direction is a safe selection rule for a single 10-session run. The economic size is small either
+way (±0.2 pp per window ≈ ±0.4 USDT at 200 USDT), against a per-window SD of about 5.5–5.8 pp. Spending selection at the
+build is cheap, as designed, but there is no reliable signal to spend it on.
+
+**Caveats.** P is a research-only proxy (Yahoo, unlicensed for labels, D-09): split-adjusted underlying closes, not
+tokens; SK hynix's KRX close is ~13 h older than the US closes (NO-SKHY-SIGNAL −0.13 pp shows the result does not
+depend on it). P had already been used by S6 and EXP-008 (disclosed above). Overlapping windows make intervals
+optimistic (194 independent P windows, 5 on T). Daily P fills at the close, not open + 30 min. No red flags, model
+view or fee netting (#119) replayed. Independent review of the simulator and this result is still open.
