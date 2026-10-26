@@ -7,6 +7,7 @@ Web3 candle timestamps are explicitly declared as interval OPEN timestamps.
 
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from zoneinfo import ZoneInfo
 
 from larp.contracts import ContractError, Document
@@ -20,12 +21,13 @@ def _hash(value):
 
 
 def token_sessions(capture: Document, calendar: Document, *, cutoff, price_scale=1_000_000,
-                   allow_calendar_close=False):
+                   allow_calendar_close=False, exact_prices=False):
     """TokenCandles.v1 + USRegularSessions.v1 -> PriceSeries.v1.
 
     Raw rows: [open, high, low, close, volume, timestamp_ms, tradeCount]. Missing
     trade intervals are missing data. A bar crossing 16:00 cannot stand for a
     16:00 close. Short (e.g. 13:00) calendar sessions stay missing under B3.
+    Live history opts into exact rational scaling; legacy callers retain Decimal scaling.
     """
     d, cal = capture.read(), calendar.read()
     cutoff = instant(cutoff.isoformat())
@@ -54,9 +56,15 @@ def token_sessions(capture: Document, calendar: Document, *, cutoff, price_scale
         opened = instant("1970-01-01T00:00:00Z") + timedelta(milliseconds=ts)
         closed = opened + timedelta(seconds=step)
         try:
-            close = Decimal(str(raw[3])) * price_scale
-            if not close.is_finite() or close <= 0:
-                raise ValueError("nonpositive or nonrepresentable price")
+            if exact_prices:
+                price = Decimal(str(raw[3]))
+                if not price.is_finite() or price <= 0:
+                    raise ValueError("nonpositive or nonrepresentable price")
+                close = Fraction(price) * price_scale
+            else:
+                close = Decimal(str(raw[3])) * price_scale
+                if not close.is_finite() or close <= 0:
+                    raise ValueError("nonpositive or nonrepresentable price")
         except (InvalidOperation, ValueError) as exc:
             continue  # no fill-forward or fabricated close
         try:

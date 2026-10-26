@@ -209,6 +209,9 @@ class SessionHistory:
                     if len(number.as_tuple().digits) > 64 or abs(number.as_tuple().exponent) > 64:
                         raise ContractError('Historical candle precision outside bounded representation')
                     values.append(format(number, 'f'))
+                opened, high, low, closed = map(Decimal, values[:4])
+                if high < max(opened, closed) or low > min(opened, closed) or high < low:
+                    raise ContractError('Inconsistent historical OHLC range')
                 trades = int(row[6]) if type(row[6]) is str and row[6].isdigit() else row[6]
                 if trades is not None and (type(trades) is not int or trades < 0):
                     raise ContractError('Invalid historical trade count')
@@ -236,7 +239,7 @@ class SessionHistory:
         cal = Document.from_dict(dict(self.calendar, sessions=[s for s in self.calendar['sessions']
             if window[0][0] <= s['session_index'] <= window[-1][0]]))
         result = token_sessions(capture, cal, cutoff=instant(_iso(max(now_ms, acquired))),
-                                allow_calendar_close=True).read()
+                                allow_calendar_close=True, exact_prices=True).read()
         result.update(available_at=_iso(acquired), timestamp_evidence_hash=self.semantics['timestamp_evidence_sha256'],
                       source_hashes=hashes, history_status='READY')
         if [b['session_index'] for b in result['bars']] != [s[0] for s in window]:

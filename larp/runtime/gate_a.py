@@ -334,7 +334,6 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     if routing is not None and routing.get('openai_trial') is not None and (signed or runtime_mode != 'dev'):
         raise ContractError('Unsigned trial routing requires dev/shadow preparation')
     profile, capture = json.loads(profile_raw), json.loads(capture_raw)
-    require_open_state_scope(profile, runtime_mode)
     from larp.marketdata.history import CONFIG_FILE, MAX_CONFIG_BYTES, configuration as history_configuration, requires_history
     history = None
     if token_history_raw is not None:

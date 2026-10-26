@@ -2,6 +2,7 @@
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import json
+from decimal import localcontext
 
 import pytest
 
@@ -67,6 +68,49 @@ def test_all_five_series_use_only_completed_session_closes(tmp_path):
         assert [b['close_units'] for b in series['bars']] == [100_500_000]*5
         assert all(instant(b['available_at']) <= instant('2026-10-23T20:20:00Z') for b in series['bars'])
     assert len(port.calls) == 5
+
+
+def test_exact_json_prices_reach_history_without_float_or_decimal_rounding(tmp_path, monkeypatch):
+    import base64
+    from larp.marketdata import web3
+    from larp.marketdata.port import MarketPort
+    price = '123.456789999999999999999999999999'
+    wire = json.dumps(dict(code=0, data=rows(prices=(price,)*6))).replace('"'+price+'"', price).encode()
+
+    class Response:
+        code = 200
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self, limit): return wire
+
+    class Opener:
+        def open(self, request, timeout): return Response()
+
+    monkeypatch.setattr(web3, 'utc', lambda: '2026-10-23T20:19:59Z')
+    client = web3.Web3Client('synthetic-key', 'synthetic-secret', opener=Opener(),
+                            artifacts=web3.Artifacts(tmp_path/'raw'), exact_decimals=True)
+    port = MarketPort(client, '0x'+'1'*40)
+    with localcontext() as ctx:
+        ctx.prec = 6
+        result = reader(tmp_path/'cache', port)(NOW)
+    assert all(s['quality']=='VALID' for s in result.values())
+    assert all(b['close_units']==123456789 for s in result.values() for b in s['bars'])
+    artifacts = [json.loads(p.read_bytes()) for p in (tmp_path/'raw').glob('*.json')]
+    assert len(artifacts)==5
+    assert all(a['response']['data'][0][3]==price for a in artifacts)
+    assert all(base64.b64decode(a['response_body_base64'])==wire for a in artifacts)
+    legacy = web3.Web3Client('synthetic-key', 'synthetic-secret', opener=Opener(),
+                            artifacts=web3.Artifacts(tmp_path/'legacy'))
+    assert type(legacy.request('GET','market/candles',{})['response']['data'][0][3]) is float
+
+
+@pytest.mark.parametrize('replacement', [(0,'101'), (1,'99'), (2,'101'), (3,'101')])
+def test_inconsistent_ohlc_ranges_do_not_supply_trend_prices(tmp_path, replacement):
+    port = Port()
+    column, value = replacement
+    port.source[5][column] = value
+    result = reader(tmp_path, port)(NOW)
+    assert all(s['quality']=='UNAVAILABLE' for s in result.values())
 
 
 def test_cached_session_survives_restart_and_refreshes_after_next_close_delay(tmp_path):

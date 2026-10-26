@@ -463,5 +463,6 @@ class Configuration(unittest.TestCase):
             self.assertTrue(all(isinstance(a, RoutedAssessor) for a in pool))
             self.assertEqual(len({id(a) for a in pool}), 5)
             self.assertEqual(driver.work.continuation_rounds, 4)
+            self.assertTrue(driver.coordinator.context_builder.series.port.client.exact_decimals)
         finally:
             fixture.doCleanups()

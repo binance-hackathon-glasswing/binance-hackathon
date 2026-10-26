@@ -345,7 +345,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     history = None
     if history_config is not None:
         history_root = Path(d['market_artifact_root']) / 'history'
-        history_client = Web3Client(key, secret, artifacts=Artifacts(history_root / 'raw'), timeout=5)
+        history_client = Web3Client(key, secret, artifacts=Artifacts(history_root / 'raw'), timeout=5,
+                                   exact_decimals=True)
         history = SessionHistory(MarketPort(history_client, wallet), profile=profile,
             calendar=calendar_document, calendar_sha256=d['session_calendar_sha256'], issuers=issuer_map,
             semantics=history_config, root=history_root)
