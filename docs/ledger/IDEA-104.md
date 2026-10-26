@@ -391,4 +391,25 @@ operations, host install or merge were performed.
 GitHub run `40287198787` did not start jobs: its runtime annotation says recent account payments failed or the
 spending limit needs increasing. Hosted CI is **unavailable**, not a tested code failure. Real TH-01 history,
 fresh hosted inputs and exact profile/probe/signer/release acceptance, host qualification and installation remain
+
+## S5-DEPLOY01 — authorized run-7 deployment (2026-10-26 SGT)
+
+User request: "ok can merge and lets deploy s5" after TH-CONFIG01. PR298 merged at `c997df2c`.
+Selected build: canonical `c997df2c19cf1c0d17b18b83b5bb0d38015879fc`; S5-SIZE01 profile `6dadc196…`,
+probe `68e49922…`, history input `5e572570…`, routing `9b86c732…`. Use the existing S5 sheet and its
+local-bundle route, as requested in the S2 comparison; record actual source/checks without claiming hosted CI.
+The user authorizes operator deployment of this selected S5 scope; do not attribute any new statement to Isaac
+or Keegan. No profile/window changes, funding transfers, manual wallet transactions or FINAL activation.
+
+Before execution, acceptance: preserve run6 history/accounting and verify current state before retirement;
+new run `larp-dev-rehearsal-20261026-s5` / DB `larp_rehearsal7`; local bundle integrity/reference comparison;
+fresh M3 numeric COVERED/chain reconciliation and exact signer identity-only difference; explicit selected
+history/routing/profile pins and valid model-budget/credential-name checks; both-role preflight and signer-key
+match; initialize before signer/execution/runtime (P4/S2/P5/P6); verify active units, five-token history/status,
+reason summaries and trace delivery. Record live J checks honestly, with no inferred fill or profitability PASS.
+Readiness flags remain tied to actual results. Keep signer provisioning temporary and remove uploaded config
+packages after installation. Stop at an actual refusal and preserve its evidence; do not bypass safety checks.
+
+Initial AWS identity check refused because the `larp` login expired. User asked to run `aws login --profile larp`;
+local preparation continues while authentication is pending. No host change has occurred at this point.
 with the existing owners. The cash sizing implementation is complete; no funding transfer or FS1 change is needed.
