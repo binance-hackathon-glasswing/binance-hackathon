@@ -43,6 +43,12 @@ def fs1_review_options(p):
 S4_WINDOW = dict(trade_after='2026-10-25T10:00:00Z', new_risk_end='2026-10-25T10:30:00Z',
                  flatten_start='2026-10-25T10:30:00Z', signing_end='2026-10-26T20:00:00Z')
 S4_POLICY_ID = 'larp-s4-rehearsal-v1'
+# IDEA-104 S5 (R2): FS1-R (FS1's block, 20 bp, review refinements, recovery gas) running to Tue Oct 27 12:00 SGT:
+# buys from Mon 14:00 to Tue 07:00 SGT, flatten from Tue 08:00 SGT, signing to Tue 12:00 SGT (Oct 27 04:00 UTC, inside
+# the development time extended to Oct 28, F-126). FS1 itself is unchanged.
+S5_WINDOW = dict(trade_after='2026-10-26T06:00:00Z', new_risk_end='2026-10-26T23:00:00Z',
+                 flatten_start='2026-10-27T00:00:00Z', signing_end='2026-10-27T04:00:00Z')
+S5_POLICY_ID = 'larp-s5-rehearsal-v1'
 # IDEA-096 AL-IMPL01 (tools/deploy/enable_allowance_recovery.py): eight signed children per intent at the configured
 # execution envelope (max_gas 1200000 x max_gas_price 160000000), so S4 runs with allowance recovery on.
 RECOVERY_MAX_GAS, RECOVERY_MAX_GAS_PRICE, RECOVERY_CHILDREN = 1200000, 160000000, 8
@@ -112,14 +118,15 @@ def open_state(block):
 
 
 def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_at=None, fs1_rehearsal=False,
-          allowance_recovery=False, carry_over=False):
+          allowance_recovery=False, carry_over=False, s5=False):
     """`exit_children=1` reproduces the historical LD10-Q01 bytes; LD10-P03 selects 2.
 
     With `s1_raw` (the exact bytes of Keith's S1 block) and `s1_decision`, the profile is TREND_GUARDED_VOL under the
     same SHADOW scope (SJ-11-RH01), and the reserve covers five positions x `exit_children`. With an S2 block,
     `scheduled_flatten_at` makes it S3 (IDEA-092): everything sold at that time, then S2 again; `fs1_rehearsal` makes it
     FS1-R (IDEA-093): the final FS1 block and slippage in S2's dev scope, on the FS1-R window. `carry_over` makes it
-    S4 (IDEA-097): run 5 starts from run 4's exported book inside the terminal flatten, with allowance recovery gas."""
+    S4 (IDEA-097): run 5 starts from run 4's exported book inside the terminal flatten, with allowance recovery gas.
+    `s5` makes FS1-R with recovery into S5 (IDEA-104): the same profile on a window ending Tue Oct 27 12:00 SGT."""
     if exit_children not in (1, 2):
         raise ValueError('exit_children must be 1 (historical Q01) or 2 (LD10-P03)')
     if (s1_raw is None) != (s1_decision is None) or (
@@ -137,6 +144,8 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
         raise ContractError('A carry-over (S4) builds only on an S2 block, with two exit children and no S3 (IDEA-097)')
     if carry_over and fs1_rehearsal:
         raise ContractError('S4 (IDEA-097) and FS1-R (IDEA-093) are separate rehearsals')
+    if s5 and not (fs1_rehearsal and allowance_recovery):
+        raise ContractError('S5 (IDEA-104) builds only on FS1-R with allowance recovery')
     if s2:
         # The shared builder validates its BOUNDED_FALSIFIER profiles, which S2-1 refuses; the hours are set below,
         # once the SHADOW scope is.
@@ -191,6 +200,15 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
             formula='REHEARSAL-only dev test of the FS1 final settings; never installed for the final run')
     if allowance_recovery:
         with_recovery_gas(p)
+    if s5:
+        p.update(S5_WINDOW, policy_id=S5_POLICY_ID)
+        for key in S5_WINDOW:
+            p['provenance'][key] = dict(decision_id='IDEA-104 S5 R2 (team request, 2026-10-26)',
+                formula='Dev test of FS1: buys from Mon 14:00 SGT to Tue 07:00 SGT, flatten from Tue 08:00 SGT, signing '
+                        'to Tue 12:00 SGT (Oct 27 04:00 UTC, inside the development time extended to Oct 28, F-126)')
+        p['provenance']['policy_id'] = dict(decision_id='IDEA-104 S5 R2 (team request, 2026-10-26)',
+            formula='FS1-R with recovery and FS1 token history, selling everything from Tue 08:00 SGT; REHEARSAL-only '
+                    'on the dev wallet; never installed for the final run (FS1 stays the final strategy)')
     if carry_over:
         p.update(S4_WINDOW, policy_id=S4_POLICY_ID, holdings_carry_over='RUN_EXPORT')
         for key in S4_WINDOW:
@@ -229,6 +247,8 @@ def main(argv=None):
                         help='FS1-R (IDEA-093): the FS1 block with FS1 slippage 20 bp on the FS1-R dev window')
     parser.add_argument('--allowance-recovery', action='store_true',
                         help='IDEA-098: FS1-R with the IDEA-096 recovery gas envelope at the CAP-02 ceilings')
+    parser.add_argument('--s5', action='store_true',
+                        help='S5 (IDEA-104): FS1-R with recovery on a window ending Tue Oct 27 12:00 SGT')
     parser.add_argument('--carry-over', action='store_true',
                         help='S4 (IDEA-097): start from the previous run\'s exported book, flatten only, recovery gas')
     args = parser.parse_args(argv)
@@ -236,7 +256,7 @@ def main(argv=None):
         parser.error('--s1-config and --s1-decision must be supplied together')
     s1 = {} if args.s1_config is None else dict(s1_raw=args.s1_config.read_bytes(), s1_decision=args.s1_decision)
     p = build(args.exit_children, **s1, scheduled_flatten_at=args.scheduled_flatten_at, fs1_rehearsal=args.fs1_rehearsal,
-              allowance_recovery=args.allowance_recovery, carry_over=args.carry_over)
+              allowance_recovery=args.allowance_recovery, carry_over=args.carry_over, s5=args.s5)
     with args.output.open('xb') as stream:
         stream.write(p.payload + b'\n')
     print(p.digest('StrategyProfile.v1'))

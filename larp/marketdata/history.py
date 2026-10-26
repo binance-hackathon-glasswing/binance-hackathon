@@ -29,7 +29,8 @@ MAX_CAPTURE_LAG_MS = 60_000  # ten bounded five-second requests, plus transport 
 
 def requires_history(profile):
     return (profile.get('baseline') == 'TREND_GUARDED_VOL'
-            and profile.get('policy_id') in ('larp-fs1-final-v1', 'larp-fs1-rehearsal-v1'))
+            and profile.get('policy_id') in ('larp-fs1-final-v1', 'larp-fs1-rehearsal-v1',
+                                             'larp-s5-rehearsal-v1'))  # IDEA-104 R2: S5 mirrors FS1-R
 
 
 def configuration(value):

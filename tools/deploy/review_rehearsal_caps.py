@@ -77,23 +77,27 @@ def held(reservations):
     return bool(reservations)
 
 
-def chain_start(holdings, portfolio, usdt_deficit):
+def chain_start(holdings, portfolio, usdt_deficit, usdt_surplus=0):
     """SJ-04-A1: a new run's holdings are the finalized chain values. Stocks must match the source ledger;
-    USDT may fall short by exactly the declared seed debit; BNB may only exceed it."""
+    USDT may fall short by exactly the declared seed debit, or exceed it by exactly a declared top-up (IDEA-104
+    S5R2-8), never both; BNB may only exceed it."""
     assets = holdings['assets']
     require(set(assets) == {'USDT', 'BNB', *portfolio['positions']})
     require(all(assets[s]['cls'] == 'MATCH' and assets[s]['chain'] == portfolio['positions'][s]['units']
                 for s in portfolio['positions']))
     usdt, bnb = assets['USDT'], assets['BNB']
     require(usdt['ledger'] == portfolio['cash_units'] and bnb['ledger'] == portfolio['bnb_units'])
-    require(usdt['ledger'] - usdt['chain'] == usdt_deficit and usdt['cls'] == ('DEFICIT' if usdt_deficit else 'MATCH'))
+    require(not (usdt_deficit and usdt_surplus))
+    require(usdt['chain'] - usdt['ledger'] == usdt_surplus - usdt_deficit
+            and usdt['cls'] == ('DEFICIT' if usdt_deficit else 'SURPLUS' if usdt_surplus else 'MATCH'))
     require(bnb['chain'] >= bnb['ledger'] and bnb['cls'] in ('MATCH', 'SURPLUS'))
     # compare_balances' overall status must agree with these classes (never SKIPPED).
-    require(holdings['status'] == ('DEFICIT' if usdt_deficit else 'SURPLUS_ONLY' if bnb['cls'] == 'SURPLUS' else 'MATCH'))
+    require(holdings['status'] == ('DEFICIT' if usdt_deficit else 'SURPLUS_ONLY'
+                                   if usdt_surplus or bnb['cls'] == 'SURPLUS' else 'MATCH'))
     return dict(portfolio, cash_units=usdt['chain'], bnb_units=bnb['chain'])
 
 
-def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0, profile=DEFAULT_PROFILE,
+def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0, usdt_surplus=0, profile=DEFAULT_PROFILE,
             allowance_recovery=False):
     if bindings is not None:
         outside_checkout(output)
@@ -106,6 +110,7 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
     require(packet['configs_unchanged'])
     require(packet['holdings']['status'] == 'MATCH' or bindings is not None)
     require(type(usdt_deficit) is int and usdt_deficit >= 0 and (bindings is not None or usdt_deficit == 0))
+    require(type(usdt_surplus) is int and usdt_surplus >= 0 and (bindings is not None or usdt_surplus == 0))
     require(packet['holdings']['latest_nonce'] == packet['holdings']['pending_nonce'])
     require(not held(packet['in_flight']['reservations']) and not packet['in_flight']['execution_pending'])
     # IDEA-097 S4: with IDEA-096 allowance recovery opted in, the new run clears a leftover allowance itself.
@@ -122,7 +127,7 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
         # The new signed run has no ledger yet: it starts from the finalized chain holdings, checked
         # against the source ledger (chain_start), nonce, allowances and nothing in flight. The source stays recorded.
         run_id = bindings['run_id']
-        portfolio = dict(chain_start(packet['holdings'], portfolio, usdt_deficit), run_id=run_id)
+        portfolio = dict(chain_start(packet['holdings'], portfolio, usdt_deficit, usdt_surplus), run_id=run_id)
     config = dict(schema='ExecutionService.v1', run_id=run_id, build_id=build_id,
         mode='dev', wallet_address=private['wallet'], interval_seconds=1, database_dsn_file='/etc/larp/execution-dsn',
         router=policy['allowed_spenders'][0], token_decimals=private['token_decimals'],
@@ -164,18 +169,20 @@ def collect(packet, output, build_id, *, bindings=None, now=None, usdt_deficit=0
         holdings = packet['holdings']
         pin('portfolio-rebinding.json', dict(source_run_id=packet['identity']['run_id'], run_id=run_id,
             source_portfolio_sha256=Document.from_dict(private['portfolio']).digest('PortfolioState.v1'),
-            accepted_usdt_deficit_units=usdt_deficit, status=holdings['status'], assets=holdings['assets'],
+            accepted_usdt_deficit_units=usdt_deficit, accepted_usdt_surplus_units=usdt_surplus,
+            status=holdings['status'], assets=holdings['assets'],
             block=holdings['block'], observation_sha256=holdings['observation_sha256']))
     return inputs, result, now
 
 
-def assemble_hosted(packet, output, bindings, signer_out, *, now=None, usdt_deficit=0, profile=DEFAULT_PROFILE,
-                    allowance_recovery=False):
+def assemble_hosted(packet, output, bindings, signer_out, *, now=None, usdt_deficit=0, usdt_surplus=0,
+                    profile=DEFAULT_PROFILE, allowance_recovery=False):
     """SJ-04: review and assemble on one clock; a refusal writes no candidate and echoes nothing private."""
     from larp.signer.assembly import assemble, write_new
     outside_checkout(signer_out)
     inputs, result, now = collect(packet, output, bindings['build_id'], bindings=bindings, now=now,
-                                  usdt_deficit=usdt_deficit, profile=profile, allowance_recovery=allowance_recovery)
+                                  usdt_deficit=usdt_deficit, usdt_surplus=usdt_surplus, profile=profile,
+                                  allowance_recovery=allowance_recovery)
     if result['numeric_status'] != 'COVERED':
         return result, now, None
     files = assemble(inputs, now=now, base_dir=output)
@@ -193,6 +200,9 @@ def main(argv=None):
     parser.add_argument('--signer-out', type=Path, help='new private directory outside the checkout')
     parser.add_argument('--accept-usdt-deficit-units', type=int, default=0,
                         help='hosted only: exact micro-USDT the chain may hold below the source ledger (SJ-04-A1)')
+    parser.add_argument('--accept-usdt-surplus-units', type=int, default=0,
+                        help='hosted only: exact micro-USDT the chain may hold above the source ledger, a declared '
+                             'dev-wallet top-up (IDEA-104 S5R2-8); never together with a deficit')
     parser.add_argument('--profile', type=Path, default=DEFAULT_PROFILE,
                         help='the selected profile the probe carried; its SHA-256 must equal selected_profile_sha256 '
                              '(default: the reviewed equal-weight profile)')
@@ -201,8 +211,9 @@ def main(argv=None):
                              'a leftover router allowance is then accepted for the new run to clear')
     args = parser.parse_args(argv)
     if args.bindings is None:
-        if args.build_id is None or args.signer_out is not None or args.accept_usdt_deficit_units:
-            parser.error('--build-id is required; --signer-out and a USDT deficit need --bindings')
+        if (args.build_id is None or args.signer_out is not None or args.accept_usdt_deficit_units
+                or args.accept_usdt_surplus_units):
+            parser.error('--build-id is required; --signer-out and a USDT deficit or surplus need --bindings')
         _, result, now = collect(read_packet(args.packet.read_bytes()), args.output_dir, args.build_id,
                                  profile=args.profile, allowance_recovery=args.allowance_recovery)
         print(json.dumps(dict(numeric_status=result['numeric_status'], blockers=result['blockers'],
@@ -214,6 +225,7 @@ def main(argv=None):
         packet = read_packet(args.packet.read_bytes())
         result, now, signer_sha256 = assemble_hosted(packet, args.output_dir, json.loads(args.bindings.read_bytes()),
                                                      args.signer_out, usdt_deficit=args.accept_usdt_deficit_units,
+                                                     usdt_surplus=args.accept_usdt_surplus_units,
                                                      profile=args.profile,
                                                      allowance_recovery=args.allowance_recovery)
     except (*ERRORS, AssertionError, zlib.error):
