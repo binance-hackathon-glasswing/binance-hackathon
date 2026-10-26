@@ -1,11 +1,13 @@
 # S5-DEPLOY01: bounded read-only post-start evidence; no model/provider/signing calls or secret output.
 set -euo pipefail
 cd /opt/larp/current
-runuser -u larp-execution -- env PYTHONDONTWRITEBYTECODE=1 .venv/bin/python - <<'PY'
+# Runtime config belongs to larp-runtime; pass only these public pins to the execution-role reader.
+PUBLIC_RUNTIME=$(python3 -I -c 'import json; c=json.load(open("/etc/larp/runtime.json")); print(json.dumps({k:c[k] for k in ("run_id","database_name","build_id")} | {"driver":{k:c["driver"][k] for k in ("assessor","token_history_sha256")}}))')
+runuser -u larp-execution -- env PYTHONDONTWRITEBYTECODE=1 .venv/bin/python - "$PUBLIC_RUNTIME" <<'PY'
 from collections import Counter
 from contextlib import contextmanager
 from pathlib import Path
-import hashlib, json
+import json, sys
 from larp.audit.delivery import delivery_status
 from larp.runtime.database import IamPostgresStore, rds_client
 
@@ -33,7 +35,7 @@ def summaries(value, series, models):
             summaries(item, series, models)
 
 c = json.loads(Path('/etc/larp/execution.json').read_bytes())
-runtime = json.loads(Path('/etc/larp/runtime.json').read_bytes())
+runtime = json.loads(sys.argv[1])
 assert c['run_id'] == runtime['run_id'] == 'larp-dev-rehearsal-20261026-s5'
 assert c['database_name'] == runtime['database_name'] == 'larp_rehearsal7'
 s = RO(c, rds_client(c['region']))
