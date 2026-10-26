@@ -600,3 +600,17 @@ and in the PR body asked to keep PR278 open for teammate review; this request su
 **Not a review of the whole diff** (4,355 lines across RV01, PL, SC, PR283). It relies on those recorded reviews.
 **Not approval:** merging to canonical installs or approves nothing. Every owner gate in the run sheet and in the
 IDEA-093 / FLAT-01 lines of `INCOMPLETE_WORK.md` remains open.
+
+## PR296-RV01 standalone FS1 source path (2026-10-26, local/uncommitted)
+
+The latest S5 PR review adds independent FINAL preparation and numeric/signer assembly in
+`tools/deploy/prepare_fs1.py`, final-wallet-specific nonce/ai-seeds directories, and FINAL P3/P4/P5/P6 source scripts.
+FS1 needs no S5 run, source ledger, old signer or run-6 bindings. Exact FS1 profile/routing bytes are unchanged.
+The [run sheet](../build/ops/final-fs1/README.md) supplies the fresh final-wallet/caps contract and manifest-binding
+order; [IDEA-104 PR296-RV01](IDEA-104.md#pr296-rv01--review-and-independent-fs1-preparation-2026-10-26-criteria-before-execution)
+records findings, exact comparison, criteria and validation. Actual history semantics, quotes/gas, final funding,
+model budget/adoption, exact release/signing approval and host qualification remain with the existing owners.
+No install, version event, model request, transaction or policy-value change occurred.
+
+- 2026-10-26 publication follow-up: user authorized committing/pushing the standalone FS1 review fixes to
+  PR296; scope and expected remote head are recorded in IDEA-104 PR296-RV01. No merge or installation.

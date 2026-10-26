@@ -286,6 +286,12 @@ def build_driver(config, store, secrets, *, clock_ms=None):
         raise ContractError('A dev or live run needs a LIVE strategy profile')
     from larp.strategy.execution_bounds import require_open_state_scope
     require_open_state_scope(profile, mode)  # IDEA-089 S2-1 / IDEA-093 FS1: 24/7 hours only in their decided scopes
+    from larp.marketdata.history import requires_history
+    if (requires_history(profile) and d['execution'] == 'service' and mode in ('dev', 'live')
+            and d['assessor'] == 'deterministic'):
+        from larp.runtime.gate_a import scoped_rehearsal
+        if not scoped_rehearsal(profile, mode):
+            raise ContractError('Deterministic signed scope is limited to the scoped rehearsal')
     if signed_model and mode in ('dev', 'live'):
         from larp.strategy.profiles import validate_live
         validate_live(profile)

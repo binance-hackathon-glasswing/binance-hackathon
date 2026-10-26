@@ -1,5 +1,14 @@
 # Current shared build and remaining work
 
+PR296-RV01 (2026-10-26 SGT, review follow-up; publication authorized by the user): FS1/S5 direct startup now enforces routed
+assessment outside the scoped historical rehearsal; run-7 and FINAL startup initialize/activate before signer
+and execution, then start runtime only after execution is healthy. The standalone
+`tools/deploy/prepare_fs1.py` prepares fresh FINAL wallet/database/history/routing inputs and independently
+assembles FINAL caps/signers, without any prior S5 run or signer. Final-wallet nonce/ai-seeds directories are
+separate. Existing profiles/routing are unchanged. S5's withdrawn USDT top-up instructions are removed; its
+cash/history blockers remain. [Comparison, findings and validation](../ledger/IDEA-104.md#pr296-rv01--review-and-independent-fs1-preparation-2026-10-26-criteria-before-execution) /
+[standalone FS1 run sheet](ops/final-fs1/README.md). Final pinned Python3.12.15/PG14.24: **2962 passed, 8 skipped, 4069 subtests, zero failures** ([receipt](evidence/pr296-review-20261026.json)). Publication targets PR296 only; no merge, install or live qualification.
+
 IDEA-104 S5 R3 (2026-10-26 SGT; R2 merged as PR294 `81ee30a1`, R3 not merged or installed): S5 is FS1 FINAL at
 rehearsal size on the dev wallet, to Tue Oct 27 12:00 SGT, with FS1's AIand/ChatGPT routing `9b86c732…`, model
 authority and token history; profile `f371b18d…`, probe `90344caa…`. Blocked: it buys nothing at the dev wallet's

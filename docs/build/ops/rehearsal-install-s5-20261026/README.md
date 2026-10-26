@@ -11,8 +11,10 @@ assessments, verified red flags exit or block entry.
 **FS1 stays the final strategy;** S5 is never installed for the final run.
 
 **Status:** approvals relayed by the user on 2026-10-26 ("all approvals from all parties are given"); not built or run.
-Nothing in this folder has touched a host or the wallet. **Two inputs are missing: enough USDT (B0) and a real
-token-history file (TH).**
+Nothing in this folder has touched a host or the wallet. **Blocked: the current cash cannot fund an S5 entry
+(B0), and a qualified token-history file is missing (TH).** The R3 amendment records that the user cannot top up.
+The earlier transfer instructions are withdrawn; this sheet cannot proceed until the team records a reviewed
+sizing change or a separately implemented no-trade rehearsal path. FS1 does not depend on S5 proceeding.
 
 | Window (profile) | UTC | SGT |
 |---|---|---|
@@ -29,8 +31,9 @@ token-history file (TH).**
   `token-history.json` and checks that `larp-runtime` can read it at the pinned hash. Without it, preparation and
   startup refuse (S5R2-3).
 - **Opening cash (S5R2-7):** at run 6's closing 81.37 USDT, S5 buys nothing: each 1/5 target (gas excluded) is
-  below the 18.64 USDT minimum trade. The first buy needs about 98.31 USDT of cash. B0 tops the wallet up. M3 then
-  declares the exact top-up with `--accept-usdt-surplus-units` (S5R2-8), and M4 refuses below 98.32 USDT.
+  below the 18.64 USDT minimum trade. The first buy needs about 98.31 USDT of cash; M4 refuses below 98.32 USDT.
+  The user cannot top up (R3 amendment). B0 is a blocking decision, not a transfer instruction. M3 retains historical
+  exact-surplus accounting support but defaults to `TOPUP=0`.
 - **FS1 routing (R3):** M4 passes `--model-routing` `aiand-routing.fs1.json` / `9b86c732…` and requires assessor
   `aiand_routed`; P3 installs `model-routing.json` and checks it is readable at its pin; B1 checks the shared OpenAI
   budget ledger read-only. S5's model spend counts against FS1's US$50 paced budget.
@@ -57,7 +60,7 @@ cp -R docs/build/ops/rehearsal-install-s5-20261026 deploy/activation/ && cd depl
 
 | Step | Who / where | Command | Done when |
 |---|---|---|---|
-| B0 | Yao (wallet owner, dev phase) | Transfer USDT into the dev wallet so it holds **at least 98.32 USDT; about 101.4 USDT (+20) recommended**, for headroom through all five buys. Record the exact amount in micro-USDT as `TOPUP` | chain monitor `--once`: USDT ≥ 98.32, every stock 0, BNB ≥ 0.01536 plus headroom (0.024973 after run 6) |
+| B0 — BLOCKED | team | Current 81.37 USDT is below this profile's 98.32 USDT cash guard. The user cannot top up. Decide and implement a separately reviewed sizing change or no-trade rehearsal path before continuing; this review changes neither sizing nor the guard | a recorded decision and verified replacement path; no transfer step |
 | TH | Keith (evidence), Yao | write the qualified `TokenHistoryConfig.v1` to `private/token-history.json`: `timestamp_kind` `OPEN`, `timestamp_evidence_sha256` = SHA-256 of the actual hourly OPEN timestamp evidence, and the adjustment version ([contract](../../FS1_TOKEN_HISTORY.md)) | the file parses; no synthetic value (M4 refuses one) |
 | F0s | Yao | runtime Secrets Manager entry carries `LARP_AIAND_API_KEY` (required) and `LARP_MODEL_API_KEY` (OpenAI), as FS1 sheet F0s | both keys present (names only checked) |
 | — | team | merge the IDEA-104 R3 PR into canonical, so BUILD contains it | canonical head contains `f371b18d…` |
@@ -78,17 +81,17 @@ cp -R docs/build/ops/rehearsal-install-s5-20261026 deploy/activation/ && cd depl
 | R1s | signer | `python3.12 -I ssm_run.py --signer host/r1-retire-signer.sh` | `larp-signer` inactive and disabled, key file still `600 root:root`, `R1S_DONE` |
 | P2s | signer | `python3.12 -I ssm_run.py --signer host/p2-provision.sh signer @artifact_bucket $BUNDLE $BUNDLE_SHA256 $PROVISION_SHA256` | `P2_DONE` |
 | S1, S1b | signer | the S1 command M4 printed, with `--signer`; then `--signer host/s1b-credential-mode-test.sh` | signer `check` UNTRUSTED `05759e90…`, routes PASS, `S1_DONE`; `key_loader: PASS`, `S1B_DONE` |
-| **P4 → S2 → P5** | primary, signer, primary | **back to back** (buying is already open): `python3.12 -I ssm_run.py host/p4-init-activate-start.sh "<reviewer>" "<IDEA-104 approval ref>"`; `--signer host/s2-key-check-start-signer.sh`; `host/p5-start-execution.sh` | `P4_DONE`; `wallet_matches: true`, `started: true`, `S2_DONE`; `larp-execution active restarts=0`, `P5_DONE` |
+| **P4 → S2 → P5 → P6** | primary, signer, primary | `python3.12 -I ssm_run.py host/p4-init-activate-start.sh "<reviewer>" "<IDEA-104 approval ref>"` initializes/activates without starting runtime; `--signer host/s2-key-check-start-signer.sh`; `host/p5-start-execution.sh`; finally `host/p6-start-runtime.sh` starts planning only after execution is healthy | `P4_DONE`; `wallet_matches: true`, `started: true`, `S2_DONE`; `larp-execution active restarts=0`, `P5_DONE`; `P6_DONE` |
 | C1 | signer | `python3.12 -I ssm_run.py --signer checks/signer-status.sh` (before T2) | active, 0 restarts, no refusal after the start line |
 | T2, M9 | Yao, Mac | Terraform `enable_signer_provisioning = false`; `bash mac/m9-cleanup-s3-package.sh <prefix from M4>` | plan destroys only the 8; `M9_DONE` |
 | J | anyone, read-only | `checks/trading-status.sh`, `mac/chain-monitor.py`, `checks/db-top-queries.sh` | see below |
 
-M3's caps review command passes the declared top-up. Before M3, set `TOPUP` to the exact B0 amount in micro-USDT (for
-example `TOPUP=20000000`). Leave it unset (0) only if the wallet already matches run 6's ledger, but then S5 cannot buy.
+M3 defaults to `TOPUP=0`: no top-up is planned. Its exact-surplus option is retained for historical accounting;
+it is not a funding instruction. At the recorded 81.37 USDT balance M4 refuses, so B0 remains blocking.
 
 ## What run 7 must show (IDEA-104 S5, the FS1 pipeline on the dev wallet)
 
-- **Buys (Mon 14:00 → Tue 07:00 SGT):** the first round after P5 buys. Names are bought one wallet trade at a time
+- **Buys (Mon 14:00 → Tue 07:00 SGT):** the first round after P6 buys. Names are bought one wallet trade at a time
   (serial; IDEA-093 CL-01), up to five, each about 19 USDT at the per-trade cap, with a post-approve swap. Rounds run in
   consecutive 15-minute slots.
 - **Models:** each round's assessments come from ChatGPT `gpt-6.1-sol` first, with Kimi K3 / GLM-5.3 through AIand as

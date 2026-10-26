@@ -135,7 +135,7 @@ require((rt['driver'].get('token_history_file'), rt['driver'].get('token_history
 require((out / 'token-history.json').read_bytes() == history_raw, 'packaged token-history.json differs from TOKEN_HISTORY')
 state = json.loads((out / 'initial-state.json').read_text())
 require(not any(p['units'] for p in state['positions'].values()), 'the dev wallet holds stock: S5 is a fresh run')
-require(state['cash_units'] >= MIN_CASH_UNITS, 'cash below about 98.32 USDT: S5 would buy nothing (S5R2-7); top up (B0)')
+require(state['cash_units'] >= MIN_CASH_UNITS, 'cash below about 98.32 USDT: S5 would buy nothing (S5R2-7); reviewed sizing/no-trade decision required (B0)')
 print(json.dumps(dict(opening_equity_units=state['opening_equity_units'], cash_units=state['cash_units'],
                       token_history_sha256=hashlib.sha256(history_raw).hexdigest())))
 # S2-10: without this pair the runtime wires no quote verifier and the run behaves exactly like run 3.
