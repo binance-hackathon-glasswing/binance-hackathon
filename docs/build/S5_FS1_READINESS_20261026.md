@@ -17,8 +17,9 @@ FS1 can be prepared independently of S5.
   replays from its hash-named raw artifact using the production MarketPort;
   all442 artifacts verify (440 candle responses, two metadata responses).
   No provider request was made during review. Original evidence bytes and TS4
-  trade-count calculation are preserved. The raw-token adjustment version is
-  still a separate qualification choice; a placeholder is not an accepted input.
+  trade-count calculation are preserved. TH-CONFIG01 now supplies the actual
+  config with a descriptive label for existing raw-token/no-local-adjustment
+  processing; no further naming decision is needed. Release binding remains.
 - Nine regressions fail on original `35aab2dc` and pass with the repair:
   absent/modified raw files, edited candle rows/availability/request identity/
   metadata, poll-start versus response-time confusion, repeated observation
@@ -39,7 +40,7 @@ FS1 can be prepared independently of S5.
 
 | Input / decision | Owner | Required evidence |
 |---|---|---|
-| Actual `TokenHistoryConfig.v1` | Keith; Keegan reviews | Choose the qualified raw-token adjustment version; generate config from the committed live evidence using `tools.th01_candle_timestamps config`; record exact config SHA-256 and accept its history/release binding. No accepted config exists in the reviewed evidence. |
+| Bind generated `TokenHistoryConfig.v1` | Keegan; Yao transfers | TH-CONFIG01 supplies [token-history.json](evidence/th01-live-20261026/token-history.json), SHA-256 `5e572570bc24fb2ca7b692dccf71f67a37c5fac3d75330e4558634cf45417be9`, generated/reproduced from the committed verified evidence. Use its exact bytes in preparation and accept the resulting release binding. Generation/naming is complete. |
 | Exact release and configuration | Keegan; Yao prepares | New canonical build containing PR295/296/297, verified bundle/manifest, explicit run/database/wallet/RPC/CA bindings, reviewed operations and service configs. Historical RC4 or offline test results do not qualify these exact bytes. |
 | Current chain/caps/signer | Isaac; Keegan/Yao supply inputs | Fresh reconciled balances, nonce, allowances and request-bound quotes at selected sizes; actual BNB/action/full-exit coverage; accept exact profile/probe/signer/release hashes before installation. |
 | Model/account adoption | Team, account owners | Actual FS1 routing adoption reference, reconciled shared OpenAI ledger/prior spend and provider keys/rights. S5 consumes that same account budget. |

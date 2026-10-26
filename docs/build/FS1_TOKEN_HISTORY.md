@@ -28,13 +28,20 @@ TH-01 timestamp evidence is now available in the
 [committed live packet](evidence/th01-live-20261026/): PR297-RV01 independently
 reproduces the five-name PASS and verifies all442 raw artifacts. Its evidence
 SHA-256 is `cc8371bd235eb4db284367fbf0267890d3c6a87bafca60ca2573f0b9d64b3fa6`.
-Keith still chooses the qualified raw-token adjustment version. With that value
-in `ADJUSTMENT_VERSION`, generate the config into a new private output path:
+TH-CONFIG01 generates [the actual config](evidence/th01-live-20261026/token-history.json),
+SHA-256 `5e572570bc24fb2ca7b692dccf71f67a37c5fac3d75330e4558634cf45417be9`.
+Its label `BINANCE_WEB3_RAW_TOKEN_NO_LOCAL_ADJUSTMENT_V1` names existing processing:
+raw provider token prices, exactly scaled, without local split/dividend or token/share
+adjustment. The label is copied into series/bar provenance and the cache binding;
+it does not select a price transformation or certify the provider's corporate-action
+treatment. No additional naming decision from Keith is needed. Copy these exact bytes
+for deployment, or reproduce into a new path with:
 
 ```bash
 python -m tools.th01_candle_timestamps config \
   --evidence docs/build/evidence/th01-live-20261026/timestamp-evidence.json \
-  --adjustment-version "$ADJUSTMENT_VERSION" --out-file "$TOKEN_HISTORY_OUTPUT"
+  --adjustment-version BINANCE_WEB3_RAW_TOKEN_NO_LOCAL_ADJUSTMENT_V1 \
+  --out-file "$TOKEN_HISTORY_OUTPUT"
 ```
 
 Keep `raw/` beside the evidence file: config generation now verifies its hashes,
