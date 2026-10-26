@@ -51,6 +51,7 @@ with s.transaction() as db:
         data = json.loads(event['log'])['data']
         summaries(data['input'], series, models)
         logs.append(dict(round_id=rid, reason_summary_present=bool(data['output'].get('reason_summary')),
+                         reason_summary=data['output'].get('reason_summary'),
                          orders=len(data['orders']), swap_hashes=[x['tx_hash'] for x in data['orders'] if x.get('tx_hash')]))
     delivery = delivery_status(db, c['run_id'])
     result = dict(run_id=c['run_id'], build_id=runtime['build_id'], quarantined=q,
