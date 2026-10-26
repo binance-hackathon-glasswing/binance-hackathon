@@ -263,3 +263,39 @@ In order; each step recorded here with its evidence:
 7. A dev-wallet REHEARSAL showing the tilted build and a restart that keeps the targets, balance check MATCH.
 8. **Explicit written approval from the team (Keith, Keegan, Isaac, Yao) recorded in this entry**, naming the exact
    build SHA, profile hash, wallet, mode and window. Not possible for the Oct 29 – Nov 12 run once FS1 is frozen.
+
+### Backtest run record (2026-10-26 SGT, recorded before the run)
+
+- **Criteria** committed at `df6b8df6`, before any S8 code existed.
+- **Simulator** `tools/idea108/simulate.py` (SHA-256 `ddeed657fd3bfbb527efe7037efc70ccedf2d6925c8640641efeb044590876d8`)
+  and tests `tests/strategy/test_idea108_backtest.py` (SHA-256
+  `7efa06573667ed01e6bf85d5f1e1fdcdd48ee3e720705e8c5613d5b7fd5d9097`) committed at `40fe1373`, before any S8 run.
+  Reused, unchanged: `tools/idea106/simulate.py` (`3155b9da…e99f`) and `tools/idea107/simulate.py` (`f1d54b6b…459bd`).
+- **Tests (S8-G0):** 28 pass (Python 3.14.6, numpy 2.4.6, pytest 9.0.3, `~/anaconda3/bin/python`, offline): a planted
+  move is detected as the quarter's announcement day and the incomplete last quarter is never used; the announcer set
+  is unchanged when every close from the decision session on is changed; a quarter ending on or after the decision is
+  not used; the shift window is build-exclusive and flatten-inclusive (WIDE and PLACEBO shifts too); SKHYB is never an
+  announcer unless WITH_SKHY; coverage needs every predictable name's year-ago quarters; each T fill bar ends after the
+  signal close; the target table for m = 0..4 (and ALL_M) sums to 95%, stays ≤ 30% and has no leg below 18.637 USDT;
+  flat prices give the hand-computed cost and leg count for FS1-STATIC and four S8 announcer sets under central, team
+  and stress costs (FS1 central 0.8118 USDT; NVDAB m = 1 adds 0.108–0.142 USDT as in Economics); the equal path
+  reproduces IDEA-106's FS1-STATIC; S8 with no announcer is FS1 exactly; the decision rule maps every state; a
+  snapshot with another hash is refused. IDEA-106 and IDEA-107 tests: 15 pass. Whole `tests/strategy`: 452 passed,
+  1 failed for an environment reason (`eth_abi` not installed; `larp/execution_live/router.py`), as recorded in
+  IDEA-107, unrelated to this change.
+- **Snapshot** `~/larp-idea106/snapshot-20261026/`, hashes re-verified 2026-10-26 before use and checked again by the
+  simulator at start: `tokens.json` `61f24e23abf70b7b8110cd460d1a3069d3d052b9e1b2ab17d01ce1c555ccc05c`,
+  `underlying.json` `19dd7f70814a3156a685c7b5d6373bc6fce57c9202f23394eca5896e9933dbe3`. Not modified. Cutoff 2026-10-23
+  (`LAST_SESSION`).
+- **Command:** `~/anaconda3/bin/python -m tools.idea108.simulate --data ~/larp-idea106/snapshot-20261026 --out
+  ~/larp-idea108/report-40fe1373.json` (report outside Git).
+- **Implementation choices fixed here before the run** (details the criteria leave open): bootstrap = IDEA-106
+  `block_bootstrap` (blocks of 10 consecutive windows, 10,000 resamples), seed 108, also for the P1/P2, tilt-window and
+  mechanism intervals (reported); calendar year = build session's year; legs and cost count every leg including ladder
+  cuts and the flatten; "discretionary leg" = build, top-up and hard-line legs (IDEA-106/107); break-even gas by 20
+  bisection steps; residuals use all five names' returns and skip a day on which any close is missing; the
+  aligned-closes reader is IDEA-106's `proxy_market` alignment started at the first data row (2018-06-01); P window
+  starts are s ≥ 1 with build ≥ 2019-01-02 and coverage; T window starts are every s ≥ 1; PLACEBO uses whatever
+  announcement days exist at the +409-day shift (no extra coverage filter); costs, controls, variants, years and the
+  mechanism diagnostic are reported for P and T, gates use P except G5, G6 and G8 (as pre-registered).
+- **Deviations:** none.
