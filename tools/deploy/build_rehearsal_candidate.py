@@ -209,6 +209,12 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
         p['provenance']['policy_id'] = dict(decision_id='IDEA-104 S5 R2 (team request, 2026-10-26)',
             formula='FS1-R with recovery and FS1 token history, selling everything from Tue 08:00 SGT; REHEARSAL-only '
                     'on the dev wallet; never installed for the final run (FS1 stays the final strategy)')
+        # IDEA-104 R3: FS1 FINAL's evidence authority, so AIand/ChatGPT findings act on S5 as they do on FS1.
+        p.update(evidence_mode='BOUNDED_FALSIFIER', falsifier_authority='DISCRETIONARY_EXIT')
+        for key in ('evidence_mode', 'falsifier_authority'):
+            p['provenance'][key] = dict(decision_id='IDEA-104 S5 R3 (team request, 2026-10-26)',
+                formula='FS1 FINAL v1 scope: routed AIand/ChatGPT assessment, verified red flags exit or block entry; '
+                        'needs reviewed routing (no deterministic signing)')
     if carry_over:
         p.update(S4_WINDOW, policy_id=S4_POLICY_ID, holdings_carry_over='RUN_EXPORT')
         for key in S4_WINDOW:

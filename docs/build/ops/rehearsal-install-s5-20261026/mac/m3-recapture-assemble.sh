@@ -1,6 +1,6 @@
 #!/bin/bash
 # M3 (Mac, Yao): pre-install recapture and signer.json assembly for run 7 on S5 (IDEA-104 R2).
-# Read-only on primary: the LD10 probe for the S5 profile 5a5a200a... (sha256 8ba1328f..., regenerated here from the
+# Read-only on primary: the LD10 probe for the S5 profile f371b18d... (sha256 90344caa..., regenerated here from the
 # release checkout) reads run 6's /etc/larp/runtime.json and /opt/larp/current, so run this BEFORE r1/p2 change
 # primary, and only after the USDT top-up (B0: S5 buys nothing below about 98.3 USDT cash; the exit reserve is
 # 0.01536 BNB with allowance recovery).
@@ -13,7 +13,7 @@ PY=${LARP_PY:?set LARP_PY to a Python 3.12 venv built from requirements.lock}
 OLD_BINDINGS=${OLD_BINDINGS:?set OLD_BINDINGS to run 6 bindings (rehearsal-install-s4b-20261026/private/bindings-7fc9f60.json)}
 # B0 (IDEA-104 S5R2-8): the exact USDT top-up in micro-USDT since run 6 ended; the review accepts exactly this surplus.
 TOPUP=${TOPUP:-0}; [[ $TOPUP =~ ^[0-9]+$ ]] || { echo "TOPUP must be whole micro-USDT"; exit 3; }
-PROBE_SHA=8ba1328f2423f81a84496d9fa466568b924611202d395e4b9926839f0227b06f
+PROBE_SHA=90344caae70b2c17d7197d75cbf01e2b9e2dfa85885534dae5f4f32b22051e9d
 PROFILE=docs/build/evidence/s5-rehearsal-profile-20261026/rehearsal-s5.json
 [[ -d $WT ]] || git -C "$MAIN" worktree add --detach "$WT" "$BUILD" >/dev/null
 [[ $(git -C "$WT" rev-parse HEAD) == "$BUILD" && -z $(git -C "$WT" status --porcelain) ]] || { echo "release checkout not clean $BUILD"; exit 3; }

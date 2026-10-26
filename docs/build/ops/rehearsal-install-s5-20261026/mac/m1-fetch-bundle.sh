@@ -20,8 +20,8 @@ git -C /Users/songyaozhu/binance-hackathon grep -q holdings_carry_over "$BUILD" 
 git -C /Users/songyaozhu/binance-hackathon grep -q allowance_recovery "$BUILD" -- larp/marketdata/quote_verifier.py || { echo "BUILD lacks allowance recovery (IDEA-096)"; exit 3; }
 # Run 7 (S5, IDEA-104 R2) also needs FS1's token history (PR295, IDEA-103) required for S5, and the R2 S5 profile.
 git -C /Users/songyaozhu/binance-hackathon grep -q larp-s5-rehearsal-v1 "$BUILD" -- larp/marketdata/history.py || { echo "BUILD lacks S5 token history (IDEA-103/104)"; exit 3; }
-[[ $(git -C /Users/songyaozhu/binance-hackathon show "$BUILD:docs/build/evidence/s5-rehearsal-profile-20261026/rehearsal-s5.json" | shasum -a 256 | cut -c1-64) == 5a5a200a* ]] \
-  || { echo "BUILD lacks the run-7 S5 profile 5a5a200a (IDEA-104 R2)"; exit 3; }
+[[ $(git -C /Users/songyaozhu/binance-hackathon show "$BUILD:docs/build/evidence/s5-rehearsal-profile-20261026/rehearsal-s5.json" | shasum -a 256 | cut -c1-64) == f371b18d* ]] \
+  || { echo "BUILD lacks the run-7 S5 profile f371b18d (IDEA-104 R3)"; exit 3; }
 [[ $(gh run view "$RUN" -R "$REPO" --json headSha -q .headSha) == "$BUILD" ]] || { echo "run is for another commit"; exit 3; }
 [[ $(gh run view "$RUN" -R "$REPO" --json conclusion -q .conclusion) == success ]] || { echo "run did not succeed"; exit 3; }
 gh run view "$RUN" -R "$REPO" --json jobs -q '.jobs[] | .name + " " + .conclusion'
