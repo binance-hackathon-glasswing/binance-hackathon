@@ -177,3 +177,31 @@ the plan above, checked against the code at `c997df2c`:
 - Questions still worth sending: is the final-wallet self-check expected before the 10:00Z pause (F-125 says
   "before Oct 29")? May the uploader keep delivering already-written logs during the pause? Is a new `AI_SEEDS_SECRET`
   issued for the final wallet (Q-35)?
+
+## Implementation of fixes 1 and 2 (pass criteria pre-registered 2026-10-26, before any code change)
+
+Requested by the user on 2026-10-26. Base: canonical `c997df2c` (this branch's code is identical). Environment:
+Python 3.12.3 and PostgreSQL 16.15 on Linux x86_64 (the pinned 3.12.15/14.24 image cannot run here; IDEA-095 used
+the same substitute). Baseline: the full suite on the unchanged tree at `7f9e6353`, recorded before the fixes.
+
+**Fix 1 changed after reading the code.** Option A (widen `DAY_ROLL_MS`) would break IDEA-049-D #31 acceptance 2
+(WR-T3b): a run that missed midnight must never re-anchor its daily loss from a post-midnight mark, because that
+would forgive the losses since midnight and clear `daily_halt`. The fix keeps that rule and narrows the late roll
+to the case where it cannot apply: a run holding **no stock units and no reservations**. Its equity is cash plus BNB
+at the ledger's fixed `bnb_price_units` (`larp/strategy/schema.py` `equity`), so no market mark can change the
+anchor, and a late roll gives exactly the anchor a midnight roll would have. This covers the F-127 pause (the wallet
+is flat after the self-check) and any flat day; a run that holds stock keeps today's behaviour.
+
+| ID | Pass when |
+|---|---|
+| DR-1 | A flat run (zero stock units, no reservations) whose day was not rolled at midnight rolls on its first cycle with usable market observations, at any time that UTC day (e.g. 02:00Z after the F-127 restart): one `DAY_ROLLED` for that day, `anchor_units` = cash + BNB at the ledger price, the event carries `late_flat: true`, and the planner no longer rejects BUYs as `NEW_RISK_HALTED` for the day reason. |
+| DR-2 | A run holding any stock unit, or with any reservation, is unchanged: `OUTSIDE_WINDOW`, no event, risk state unchanged. WR-T1..WR-T6 and every existing day-roll test pass unmodified. |
+| DR-3 | An in-window roll's event is byte-for-byte what it was (no `late_flat` key). |
+| DR-4 | Price-jump holds still defer; missing observations still return `MARKET_UNAVAILABLE`; a late flat roll never rolls without observations. |
+| DR-5 | Replay of a journal containing a late flat roll is exact; still at most one `DAY_ROLLED` per day; `DAY_ROLL_MS` and `gate_a_check` unchanged. |
+| EX-1 | Runtime, execution, signer and uploader: a transient `OSError` raised while the service is built or its configuration is loaded (`ConnectionError`, `TimeoutError`, a `requests` connection error, a generic `OSError` such as EIO) ends with exit 1 (systemd restarts it), not exit 4. |
+| EX-2 | `ContractError`, `ValueError`, `FileNotFoundError`, `PermissionError`, `IsADirectoryError` and `NotADirectoryError` still exit 4 (a restart cannot cure them). |
+| EX-3 | No other exit path changes; `init`/`activate`/`check` commands are unchanged. |
+| RG-1 | Full suite after the fixes: no test that passed at the baseline fails or errors; skip set unchanged; the new tests pass. |
+| RG-2 | FS1-focused suites (FS1 preparation/recovery/self-check, daily anchor window, round driver service, Gate A, execution boundaries, signer, audit delivery, halts, replay) pass. |
+| RG-3 | Second round, aimed at the live run: an end-to-end PostgreSQL scenario of the F-127 schedule (flat after the self-check → stopped before midnight → restarted 02:00Z → day rolled → BUY admitted at `trade_after`), plus a second full-suite run to expose order-dependent or flaky failures. Any failure found is recorded here with its cause, whether or not it is caused by these fixes. |
