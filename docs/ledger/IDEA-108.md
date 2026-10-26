@@ -133,3 +133,47 @@ journald (R-06) to the Object Lock archive and confirm the hashes before any tea
 Strategy choice and parameters (decided in IDEA-084/IDEA-093), the correctness of the signer and router decoder
 (IDEA-070/IDEA-088 and their reviews), and anything that needs a live measurement (restart time, host memory, real
 gas). Those are marked *verify* above.
+
+## Addendum 2026-10-26 (after F-127, the organisers' activation schedule)
+
+The organisers set the activation timetable (F-127): code changes end and the project is **paused at
+2026-10-28T10:00Z**; it is **restarted at 2026-10-29T02:00Z**, which starts the scored phase. Three consequences for
+the plan above, checked against the code at `c997df2c`:
+
+1. **The pause makes FR-11 certain on day one.** A run's risk day is its opening capture's date
+   (`larp/runtime/gate_a.py:249`), and the planner refuses every BUY while today's day is not rolled
+   (`larp/risk/planner.py:400`, `NEW_RISK_HALTED`). The roll only happens within `DAY_ROLL_MS = 300_000` (5 min) of
+   00:00Z (`gate_a.py:25`; `driver.py:469`). A runtime stopped from Oct 28 10:00Z and restarted Oct 29 02:00Z misses
+   the Oct 29 roll, so FS1 makes **no buy during the whole of Oct 29 UTC**. The first buy moves from Oct 29 14:00Z to
+   about Oct 30 00:05Z, and the first scored day has no trade. Options, to decide before 2026-10-28T10:00Z:
+   - **(A) Recommended:** widen `DAY_ROLL_MS` to cover the restart, e.g. 4 h (`14_400_000`). One constant, used by
+     the run assembly and checked by `gate_a_check.py:78`; `DayRoll` already accepts any window shorter than a day.
+     Normal days are unchanged (the first cycle after midnight still rolls within seconds); a run that was down at
+     midnight rolls at its first cycle with complete marks, up to 4 h late, which also covers FR-12's restart pause.
+     Needs updated tests, a new release and re-assembly before the freeze. Owner: Keegan; Keith accepts the
+     anchor-timing semantics.
+   - (B) S-03's late-roll code: the same effect, more change.
+   - (C) Accept a day without new risk and record the reason.
+2. **Order of the activation steps.** The F-125 self-check trade needs BNB, so the 30 USDT → BNB swap happens
+   **before** the self-check, not at the pause (F-120). The self-check must then be bought, sold and **logged and
+   ACKed** before the 10:00Z pause. The Oct 28 logs' upload deadline is 02:00Z Oct 29 (F-101), the same minute as
+   the restart. If the uploader is stopped with a full spool, the self-check fills are flagged "fill without log",
+   and DELIVERY_DEADLINE pauses buys after the restart until they are delivered.
+3. **Revised dated plan (replaces S-01's dates):**
+
+| UTC | Step | Done when |
+|---|---|---|
+| now → Oct 27 | Confirm 200 USDT (GAP-75); 30 USDT → BNB MetaMask swap on the final wallet (F-120/F-125); ask for the final-wallet secret (Q-35) | W0 recorded |
+| 2026-10-27T12:00Z | Internal code freeze, including option A if adopted | release commit pushed |
+| 2026-10-27T22:00Z | Install P4 → S2 → P5 → P6 on the final wallet (latest 2026-10-28T02:00Z, to leave 8 h for the self-check) | `P6_DONE` |
+| by 2026-10-28T09:30Z | Self-check BUY and SELL done, wallet flat, both logs ACKed by the real receiver, zero PERMANENT chunks, no ABNORMAL or HALT (S-10, S-11, S-12) | J-SC recorded |
+| 2026-10-28T10:00Z | Pause: stop runtime, then execution and signer; stop the uploader last, only with an empty spool. Remove dev wallet bindings (F-127; G-09) | all units inactive; spool empty |
+| 2026-10-29T02:00Z | Restart in the run sheet's order (signer, execution, runtime after execution is healthy); this is the organiser-instructed start, after which only automatic restarts (F-124) | `DAY_ROLLED` for 2026-10-29 if option A; first scored round logged |
+| 2026-10-29T14:00Z | FS1's first buy (PF-04 `trade_after`) | first BUY with `tx_hash` in a round log |
+
+- Note: `trade_after` stays at 14:00Z, so FS1 holds cash for the first 12 scored hours. Moving it to the restart is a
+  profile change (new hash and A1 re-approval) and a strategy decision for Keith (PF-04); it is not recommended this
+  late.
+- Questions still worth sending: is the final-wallet self-check expected before the 10:00Z pause (F-125 says
+  "before Oct 29")? May the uploader keep delivering already-written logs during the pause? Is a new `AI_SEEDS_SECRET`
+  issued for the final wallet (Q-35)?
