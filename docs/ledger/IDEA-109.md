@@ -255,3 +255,22 @@ for FS1 preparation.
   because branch `claude/s8-earnings-tilt-backtest-20261026` uses IDEA-108 for its S8 backtest. Content is unchanged.
   Commit messages on this branch written before the rename (`ed230df8`, `b6a6ae9c`, `3b7a4828`, `22a36a41` and the
   earlier docs commits) still say IDEA-108; they refer to this entry.
+
+## Mirror CI of fixes 1 and 2 (2026-10-26)
+
+[Keegan4-larp-ci-mirror run 40372184190](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/40372184190),
+workflow `runtime.yml` dispatched on `claude/nice-faraday-gxbe5h` at `53b79b4f` (same branch name and SHA; the code
+equals `7c771be5` except the ID text in comments):
+
+| Job | Result |
+|---|---|
+| runtime (Python 3.12.15, PostgreSQL 14.24, bubblewrap) | **PASS**: 3021 passed, 7 skipped, 4114 subtests; real systemd 5 passed; offline demo PASS; Docker build and read-only run PASS |
+| infrastructure (deploy/aws), infrastructure (deploy/bootstrap) | **PASS** |
+| host-bundle | **FAIL, infrastructure**: `build_release_bundle.py` succeeded; `actions/upload-artifact` failed with "Artifact storage quota has been hit"; the following `test_host_bundle.sh` step was skipped |
+
+The host-bundle failure is the mirror account's Actions artifact storage, not this change: the same error ended the
+host-bundle job of the canonical push run 40063882235 (`e68fcb87`, 2026-10-24). Until storage is freed and GitHub
+recalculates usage (6–12 h), **no mirror run can upload a release bundle**, including the FS1 release build that
+PC-DEC01 makes the release of record. Old artifacts cited in receipts (e.g. 12352993133, kept otherwise only in a local
+scratch path per IDEA-083) must not be deleted without the release owner's decision. The bundle install test
+(`tools/test_host_bundle.sh`, needs Docker) was not run here.
