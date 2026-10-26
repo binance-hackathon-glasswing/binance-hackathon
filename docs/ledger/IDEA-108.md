@@ -205,3 +205,48 @@ is flat after the self-check) and any flat day; a run that holds stock keeps tod
 | RG-1 | Full suite after the fixes: no test that passed at the baseline fails or errors; skip set unchanged; the new tests pass. |
 | RG-2 | FS1-focused suites (FS1 preparation/recovery/self-check, daily anchor window, round driver service, Gate A, execution boundaries, signer, audit delivery, halts, replay) pass. |
 | RG-3 | Second round, aimed at the live run: an end-to-end PostgreSQL scenario of the F-127 schedule (flat after the self-check → stopped before midnight → restarted 02:00Z → day rolled → BUY admitted at `trade_after`), plus a second full-suite run to expose order-dependent or flaky failures. Any failure found is recorded here with its cause, whether or not it is caused by these fixes. |
+
+## Results of fixes 1 and 2 (2026-10-26, Claude Code; criteria above were committed at `ed230df8` before any code)
+
+Code: `b6a6ae9c` (fixes and tests), `3b7a4828` (RG-3 scenario). Environment: Linux x86_64, Python 3.12.3, PostgreSQL
+16.15 (not the pinned 3.12.15/14.24 image, which this container cannot run; no Docker, systemd or bubblewrap).
+Nothing was deployed and no live port, wallet or provider was touched.
+
+**What changed.**
+- F1, `larp/runtime/driver.py` `DayRoll`: `flat(current)` is true when the run holds no stock units and has no
+  reservations. A due roll past the window proceeds only for a flat run and journals `late_flat: true`; every other
+  path (holding run, deferred price-jump roll, missing observations, marks) is unchanged. `DAY_ROLL_MS` and
+  `gate_a_check` are unchanged, so no profile, runtime configuration or Gate A hash changes.
+- F2, new `larp/runtime/exits.py` `refuses_start`: runtime (`service.main`, release check and `build_driver`),
+  execution (`main`, release check and `build_execution`), signer (`load_config`, `router_decoder`) and uploader
+  (`load_config`) keep exit 4 for `ContractError`, `ValueError` and the file errors, and re-raise any other
+  `OSError`, which their existing outer handlers turn into exit 1. `init_run` (a manual command) is unchanged.
+
+| ID | Result | Evidence |
+|---|---|---|
+| DR-1 | PASS | `test_dr1_flat_run_paused_across_midnight_rolls_at_restart` (crash 14 h before midnight, price halved, restart +2 h: one `DAY_ROLLED`, anchor = cash + BNB at the ledger price, `late_flat`), `test_dr1_late_flat_roll_lets_entries_plan` (BUY intents, no `NEW_RISK_HALTED`) |
+| DR-2 | PASS | `test_dr2_holding_run_still_refuses_a_late_roll`, `test_dr2_a_reservation_or_a_held_unit_is_not_flat`; WR-T1..WR-T6 unmodified and passing |
+| DR-3 | PASS | `test_dr3_in_window_roll_event_is_unchanged` (exact key set) |
+| DR-4 | PASS | `test_dr4_late_flat_roll_needs_observations` (`MARKET_UNAVAILABLE`, no event) |
+| DR-5 | PASS | exact replay in DR-1 and RG-3; one roll per day asserted; `DAY_ROLL_MS` unchanged |
+| EX-1 | PASS | runtime and execution exit-code loops extended (`ConnectionResetError`, `TimeoutError`, `requests` `ConnectionError`, EIO → 1); signer `test_f2_…` at both patch points; uploader `test_f2_…`; `test_startup_exits` |
+| EX-2 | PASS | the same tests: `FileNotFoundError`, `PermissionError`, `ContractError` → 4; existing refusal tests (including #59/WR17's `NotADirectoryError`) unchanged |
+| EX-3 | PASS | no other exit path changed; full suite unchanged |
+| Red check | PASS | on the unfixed tree `7f9e6353`: every DR-1 and transient EX case fails (exit 4 / `OUTSIDE_WINDOW`), every unchanged-behaviour case passes |
+| RG-1 | PASS | full suite, base `7f9e6353`: 3005 passed, 11 skipped, 0 failed, 4069 subtests. Fixed `3b7a4828`: **3017 passed, 11 skipped, 0 failed, 4114 subtests**; per-test comparison: the only differences are the 12 new tests (all pass); identical skip set |
+| RG-2 | PASS | 21 FS1-critical files (FS1 standalone/recovery/self-check/final, S5 flatten, daily anchor, round driver service, Gate A, supervision, driver, balance adoption, flatten allowance, execution loop, signer, uploader, startup exits): 320 passed, 238 subtests, three consecutive runs, identical |
+| RG-3 | PASS | `tests/runtime/test_fs1_pause_restart_pg.py`: FS1 self-check BUY/SELL/DONE → paused flat across midnight → restart +2 h → `late_flat` roll → the first scored plan builds the book (BUY quote request and attempts, no `NEW_RISK_HALTED`); exact replay. Control without the roll: `NEW_RISK_HALTED`. On `7f9e6353` the scenario fails with `OUTSIDE_WINDOW` and the control passes. Second full run with the 400+ test files in **reverse order**: 3017 passed, 11 skipped, 4114 subtests, zero outcome changes against the forward run (no order dependence or flakiness found) |
+
+**Not run here (environment), unchanged by these fixes and identical on the base:** the 11 skipped tests (real
+systemd ×5 including `test_r13_*` restart conditions, bubblewrap sandbox ×3, non-root permission ×1, opt-in external
+data ×2) and the offline demo `python -m larp.runtime.demo`, whose isolated worker needs bubblewrap (it stops with
+`KeyError: 'entry'` on both trees here). Run them in mirror CI or on a host before the release is accepted.
+
+**Other bugs found during the second round:** none in product code. One test-fixture limit was found and handled in
+RG-3: the shared synthetic FS1 fixture has a single session, so a scored-time plan after its next open
+(2026-10-11T13:30Z) is `EXECUTION_WINDOW_CLOSED`; RG-3 plans at 03:00Z inside that session instead.
+
+**Remaining before the 2026-10-28T10:00Z cutoff:** Keegan reviews and merges; Keith accepts F1's anchor semantics
+(a flat run anchors at cash + BNB at the ledger price whenever it rolls); the exact release is rebuilt from the merge
+and qualified (pinned image or mirror CI, including the systemd/sandbox cases); Isaac and Yao accept the exact release
+for FS1 preparation.
