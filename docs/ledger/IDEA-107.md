@@ -264,7 +264,7 @@ In order; each step recorded here with its evidence:
   as IDEA-106; break-even gas by 20 bisection steps; the cost cases, TILT-AVG, the split and the years are computed on
   P only (their gates are P gates); T reports central costs and the T variants; NO-SKHY-SIGNAL runs on P only.
 - **Deviations:** none.
-- 2026-10-26 correction (Claude Code, before the run): the numpy version in the run record is **2.4.6**, not 2.4.4
+- 2026-10-26 correction (Claude Code; noticed before the run, recorded with the results): the numpy version in the run record is **2.4.6**, not 2.4.4
   (typo; checked with `numpy.__version__` in the same interpreter). Nothing else changes.
 
 ## Backtest result (2026-10-26 SGT): NOT SUPPORTED
