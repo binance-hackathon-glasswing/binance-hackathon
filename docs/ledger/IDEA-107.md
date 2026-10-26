@@ -234,3 +234,32 @@ In order; each step recorded here with its evidence:
 6. A dev-wallet REHEARSAL showing the tilted build and a restart that keeps the targets, balance check MATCH.
 7. **Explicit written approval from the team (Keith, Keegan, Isaac, Yao) recorded in this entry**, naming the exact
    build SHA, profile hash, wallet, mode and window. Not possible for the Oct 29 – Nov 12 run once FS1 is frozen.
+
+### Backtest run record (2026-10-26 SGT, recorded before the run)
+
+- **Criteria** committed at `084444fe`, before any S7 code existed.
+- **Simulator** `tools/idea107/simulate.py` (SHA-256 `f1d54b6b…459bd`) and tests
+  `tests/strategy/test_idea107_backtest.py` (SHA-256 `ff1ffcb3…94443`) committed at `6ceb91f1`, before any S7 run.
+  10 tests pass (Python 3.14.6, numpy 2.4.4, offline): the build's signal is unchanged when its own and every later close
+  change and moves when close s − 1 changes; each fill bar ends after the signal close; the residual σ-scaled z is
+  hand-computed; short history and carried closes make names ineligible; the ranking assigns 28.5/28.5/19/19/0 (ties by
+  name, one unranked name at 19%, < 3 ranked → equal weight), MIRROR and TILT1 shapes, 30 TILT-AVG books; flat prices
+  give the hand-computed central and team-convention costs for S7 (12 legs, smallest 28.5 USDT) and FS1-STATIC (10 legs,
+  0.8118 USDT); the equal-weight path reproduces IDEA-106's FS1-STATIC bit for bit (central and stress); a 30% crash
+  trips the 12% cut; the decision rule maps every NOT SUPPORTED trigger; a snapshot with another hash is refused.
+  The same session ran IDEA-106's 5 and EXP-007's 10 tests (pass). The whole `tests/strategy` folder: 424 passed,
+  1 failed for an environment reason (`eth_abi` not installed in this interpreter; `larp/execution_live/router.py`),
+  unrelated to this change.
+- **Snapshot** `~/larp-idea106/snapshot-20261026/`, hashes re-verified 2026-10-26 before use and checked again by the
+  simulator at start: `tokens.json` `61f24e23abf70b7b8110cd460d1a3069d3d052b9e1b2ab17d01ce1c555ccc05c`,
+  `underlying.json` `19dd7f70814a3156a685c7b5d6373bc6fce57c9202f23394eca5896e9933dbe3`. Not modified. Cutoff 2026-10-23
+  (IDEA-106 BT-D1, `LAST_SESSION`).
+- **Command:** `python -m tools.idea107.simulate --data ~/larp-idea106/snapshot-20261026`; report kept outside Git at
+  `~/larp-idea106/idea107-report-6ceb91f1.json`.
+- **Implementation choices fixed here before the run** (details the criteria leave open): bootstrap = IDEA-106
+  `block_bootstrap` (blocks of 10 consecutive windows, 10,000 resamples) with seed 107, also used for the P1/P2
+  intervals (reported); calendar year = the build session's year; legs and cost per window count every leg including
+  ladder cuts and the flatten; "discretionary leg" = build, top-up and hard-line legs (not the flatten or the 12% cut),
+  as IDEA-106; break-even gas by 20 bisection steps; the cost cases, TILT-AVG, the split and the years are computed on
+  P only (their gates are P gates); T reports central costs and the T variants; NO-SKHY-SIGNAL runs on P only.
+- **Deviations:** none.
