@@ -65,3 +65,41 @@ Tool criteria:
 in each `PriceSeries.v1`). The probe records `tokenToShareRatio` at start and end as context only; choosing the
 version string stays with Keith. The probe establishes the label convention only; it does not validate the trend
 guard's economics (EXP-007) or approve any release, host or profile.
+
+## Amendment TS-A1 (2026-10-26, before any live run; offline tests only)
+
+Writing the tool against the real transport showed two cases the synthetic market did not produce:
+- `available_at` is the probe host's clock. A host a few seconds behind the provider would see the current minute's
+  row "in the future" and fail TS1 falsely. TS1 now allows **30 s** of clock lead. An end-labelled hourly bar in
+  progress still leads by 5–55 minutes in every TS2 poll, so TS1 still catches it. The host clock must be
+  NTP-synchronised; a clock that is minutes off yields FAIL, not PASS.
+- A row with a null trade count would have been treated as malformed (FAIL). TS4 now compares prices only when
+  either side has no trade count; it never guesses a count.
+
+No threshold, window or verdict rule changed. Offline: 20 focused tests (`tests/marketdata/test_th01_candle_timestamps.py`),
+including one through the real `Web3Client`/`MarketPort` with a fake HTTP opener (exact decimal strings, raw artifacts,
+only `market/candles` and `market/rwa/tokens` requested).
+
+## How to run (Keith)
+
+From an up-to-date checkout of canonical containing this tool, on a machine with the Web3 key in `.env`
+(`BINANCE_API_KEY`, `BINANCE_SECRET_KEY`) and a synchronised clock:
+
+```bash
+python -m tools.th01_candle_timestamps probe --out ~/larp-th01/run-$(date -u +%Y%m%dT%H%MZ)
+```
+
+Start at about :40 past the hour, preferably in the US session (21:30–04:00 SGT until Nov 1). It prints its end time
+and stops by itself: 0 PASS, 3 INCONCLUSIVE (rerun), 4 FAIL. It never writes into an existing directory. On PASS,
+choose the `token_adjustment_version` and write the config (or pass `--adjustment-version` to the probe):
+
+```bash
+python -m tools.th01_candle_timestamps config --evidence ~/larp-th01/<run>/timestamp-evidence.json \
+  --adjustment-version '<Keith's version>' --out-file ~/larp-th01/<run>/token-history.json
+```
+
+The `config` step re-assesses the stored polls, refuses anything that does not re-assess as the stored PASS, and
+validates with the runtime's own `configuration()`. Record here the verdict, `timestamp_evidence_sha256`, the config
+hash and where the evidence is kept. Then Keegan reviews the binding (TH-01) and the file goes to
+`prepare_shadow.py prepare --token-history-config` / `prepare_fs1.py --token-history-config`.
+The evidence holds public market data and artifact hashes only; credentials never enter it.
