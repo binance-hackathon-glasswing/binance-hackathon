@@ -177,7 +177,7 @@ class UploaderCommand(DatabaseCase):
         self.assertEqual(self.store.metrics('live-run').read()['audit_pending'], 0)
 
     def test_f2_transient_start_errors_exit_1_and_file_errors_still_refuse(self):
-        # IDEA-108 EX-1/EX-2: a transient OSError while the configuration is checked lets systemd restart.
+        # IDEA-109 EX-1/EX-2: a transient OSError while the configuration is checked lets systemd restart.
         for error, code in ((ConnectionResetError('reset'), 1), (TimeoutError('timeout'), 1),
                             (OSError(errno.EIO, 'io'), 1), (FileNotFoundError('pinned'), 4),
                             (PermissionError('pinned'), 4)):

@@ -1,4 +1,4 @@
-# IDEA-108 — Final-run failure analysis and safeguards (activation Oct 27–29, scored run Oct 29 – Nov 12)
+# IDEA-109 — Final-run failure analysis and safeguards (activation Oct 27–29, scored run Oct 29 – Nov 12)
 
 - Date / author: 2026-10-26 SGT / drafted with Claude Code at the user's request
 - Status: open (analysis complete; every safeguard below is recommended, not decided)
@@ -250,3 +250,8 @@ RG-3: the shared synthetic FS1 fixture has a single session, so a scored-time pl
 (a flat run anchors at cash + BNB at the ledger price whenever it rolls); the exact release is rebuilt from the merge
 and qualified (pinned image or mirror CI, including the systemd/sandbox cases); Isaac and Yao accept the exact release
 for FS1 preparation.
+
+- 2026-10-26 correction (Claude Code, at the user's request): renumbered from IDEA-108 to IDEA-109 before merge,
+  because branch `claude/s8-earnings-tilt-backtest-20261026` uses IDEA-108 for its S8 backtest. Content is unchanged.
+  Commit messages on this branch written before the rename (`ed230df8`, `b6a6ae9c`, `3b7a4828`, `22a36a41` and the
+  earlier docs commits) still say IDEA-108; they refer to this entry.

@@ -242,7 +242,7 @@ class DailyAnchorWindow(ServiceHarness):
                     self.assertFalse(self.risk()['daily_halt'])
                     self.stable_latches(before)
 
-    # IDEA-108 F1 (DR-1..DR-5): a flat run rolls after the window; a run holding stock still never does (#31).
+    # IDEA-109 F1 (DR-1..DR-5): a flat run rolls after the window; a run holding stock still never does (#31).
 
     def flat_anchor(self):
         # Zero stock units: equity is cash plus BNB at the ledger's own price, whatever the marks say.

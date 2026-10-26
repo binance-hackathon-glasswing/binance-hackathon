@@ -1,4 +1,4 @@
-"""IDEA-108 RG-3: the F-127 activation schedule on real PostgreSQL with the FS1 self-check profile.
+"""IDEA-109 RG-3: the F-127 activation schedule on real PostgreSQL with the FS1 self-check profile.
 
 Self-check BUY, SELL and DONE; the project is paused across midnight; it restarts two hours after midnight (as on
 2026-10-29T02:00Z); the day rolls late because the run is flat; the scored run's first plan after `trade_after`

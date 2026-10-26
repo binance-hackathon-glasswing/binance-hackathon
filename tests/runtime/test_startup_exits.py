@@ -1,4 +1,4 @@
-"""IDEA-108 F2 (EX-1/EX-2): which start-up errors refuse for good (exit 4) and which are transient (exit 1)."""
+"""IDEA-109 F2 (EX-1/EX-2): which start-up errors refuse for good (exit 4) and which are transient (exit 1)."""
 import errno
 import json
 import socket

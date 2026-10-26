@@ -235,7 +235,7 @@ def load_config(args, *, with_manifest=False):
             raise ContractError('Configured build differs from the verified release')
     except (ContractError, ValueError, OSError) as refused:
         if not refuses_start(refused):
-            raise  # transient: exit 1, systemd restarts (IDEA-108 F2)
+            raise  # transient: exit 1, systemd restarts (IDEA-109 F2)
         raise StartRefused(type(refused).__name__) from None
     return (config, document) if with_manifest else config
 
@@ -260,7 +260,7 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
             decoder = router_decoder(config, policy)
         except (ContractError, OSError, ValueError) as refused:
             if not refuses_start(refused):
-                raise  # transient: exit 1, systemd restarts (IDEA-108 F2)
+                raise  # transient: exit 1, systemd restarts (IDEA-109 F2)
             raise StartRefused('router evidence refused') from None
         if args.command == 'check':
             print(json.dumps(dict(configuration_valid=True, signing_enabled=False, **_decoder_identity(decoder),

@@ -454,7 +454,7 @@ class Composition(unittest.TestCase):
         options = ['run', '--config', str(self.root / 'runtime.json'), '--manifest', str(self.root / 'manifest.json'),
                    '--root', str(self.root)]
         manifest = dict(build_id='a' * 40, runtime_config_sha256=hashlib.sha256(raw).hexdigest())
-        # IDEA-108 EX-1/EX-2: a transient OSError exits 1 (systemd restarts); a file error still refuses.
+        # IDEA-109 EX-1/EX-2: a transient OSError exits 1 (systemd restarts); a file error still refuses.
         for error, code in ((ContractError('refused'), EXIT_REFUSED), (NotIntegrated('later'), EXIT_NOT_INTEGRATED),
                             (ConnectionResetError('reset'), 1), (TimeoutError('timeout'), 1), (requests.exceptions.ConnectionError('dns'), 1), (OSError(errno.EIO, 'io'), 1), (FileNotFoundError('pinned'), EXIT_REFUSED), (PermissionError('pinned'), EXIT_REFUSED)):
             with self.subTest(code=code), patch('larp.runtime.preflight.verify_release', return_value=manifest), \

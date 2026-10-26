@@ -545,7 +545,7 @@ def main(argv=None):
                 raise ContractError('Configured build differs from the verified release')
         except (ContractError, ValueError, OSError) as refused:
             if not refuses_start(refused):
-                raise  # transient: exit 1, systemd restarts (IDEA-108 F2)
+                raise  # transient: exit 1, systemd restarts (IDEA-109 F2)
             raise StartRefused(type(refused).__name__) from None
         if args.command == 'check':
             print(json.dumps(dict(configuration_valid=True, signing_enabled=False)))
@@ -569,7 +569,7 @@ def main(argv=None):
             return EXIT_NOT_INTEGRATED
         except (ContractError, ValueError, OSError) as refused:
             if not refuses_start(refused):
-                raise  # transient: exit 1, systemd restarts (IDEA-108 F2)
+                raise  # transient: exit 1, systemd restarts (IDEA-109 F2)
             raise StartRefused(type(refused).__name__) from None  # restarting the same inputs cannot cure it
         def start_check():
             check_live_start(mode=c.get('mode', 'offline'), ports=getattr(driver, 'ports', {}), secrets=secrets,

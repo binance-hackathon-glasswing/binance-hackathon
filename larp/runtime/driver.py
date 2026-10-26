@@ -447,7 +447,7 @@ class DayRoll:
     A price-jump hold inside the window defers the roll; the deferred day then rolls on the first cycle after the hold
     clears or expires, even past the window (IDEA-055 R2). The deferred day is journaled so a process restart cannot lose it.
 
-    A flat run (no stock units, nothing reserved) also rolls past the window, with `late_flat` on its event (IDEA-108
+    A flat run (no stock units, nothing reserved) also rolls past the window, with `late_flat` on its event (IDEA-109
     F1, the F-127 pause across midnight). Its equity is cash plus BNB at the ledger's own price, so no mark taken after
     midnight can move the anchor; a run holding stock still never re-anchors from a post-midnight mark (#31, WR-T3b)."""
 

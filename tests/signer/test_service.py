@@ -427,7 +427,7 @@ class SignerCommand(CommandCase):
         self.assertEqual((code, json.loads(out)['reason']), (4, 'KEY_REFUSED'))
 
     def test_f2_transient_start_errors_exit_1_and_file_errors_still_refuse(self):
-        # IDEA-108 EX-1/EX-2: `RestartPreventExitStatus=2 3 4` never restarts a refusal, and no person may (F-124).
+        # IDEA-109 EX-1/EX-2: `RestartPreventExitStatus=2 3 4` never restarts a refusal, and no person may (F-124).
         self.unquarantine()
         for target in ('larp.signer.service.router_decoder', 'larp.runtime.preflight.verify_release'):
             for error, code in ((ConnectionResetError('reset'), 1), (TimeoutError('timeout'), 1),

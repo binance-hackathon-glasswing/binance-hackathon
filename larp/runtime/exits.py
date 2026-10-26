@@ -1,4 +1,4 @@
-"""Which start-up errors refuse a start for good and which are transient (IDEA-108 F2). No runtime imports: the
+"""Which start-up errors refuse a start for good and which are transient (IDEA-109 F2). No runtime imports: the
 signer host loads this module too.
 
 The units stop restarting on exit 4 (`RestartPreventExitStatus=2 3 4`), and during the scored run no person may start
