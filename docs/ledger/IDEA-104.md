@@ -52,3 +52,44 @@ check exercises the planner on the S5 window and needs no builder change), `0eb5
 
 Result state: **supported** offline. M3 probe for the profile: `9f2dde00…`. Not done: an S5 run sheet, Isaac's
 approval of the profile and `signer.json`, the install (Yao), and the live run.
+
+## R2: S5 runs until Tue Oct 27 12:00 SGT and takes FS1's token-history input (2026-10-26 SGT, pre-registered before tests or code)
+
+**Request (in chat, 2026-10-26 11:45 SGT):** "we are now going to deply s5, check the profile and make sure it runs until
+tuesday 1200 sgt in addition make sure that all the new fs1 details are reflected in s5, s5 is our fs1 mirror run as
+reherasl since we are given extra time to test and refine our pipeline until the 28th and then we have to freeze and
+deploy our fs1". The development time is extended to Oct 28 (F-126, relayed by the user); S5-2's "before
+2026-10-27T00:00Z" bound came from F-125's Oct 26 end and is replaced below.
+
+**Check of the R1 profile.** Its `trade_after` (Mon 04:00 SGT) has passed, and its flatten (Mon 21:00 SGT) and
+`signing_end` (Tue 04:00 SGT) end the run eight hours before Tue 12:00 SGT. Since R1 was built, canonical gained one FS1
+change: PR295 / IDEA-103 makes FS1 FINAL and FS1-R preparation and startup require a pinned `TokenHistoryConfig.v1`
+(`larp/marketdata/history.py` `requires_history`, keyed on their two `policy_id`s). S5's `policy_id`
+`larp-s5-rehearsal-v1` is not in that list, so the R1 S5 would start **without** the live trend-history callback:
+not an FS1 mirror. FS1's four profiles and the S4 profile did not change.
+
+**Design.**
+- New window (one constant in `tools/deploy/build_rehearsal_candidate.py`):
+
+  | Key | UTC | Singapore |
+  |---|---|---|
+  | `trade_after` | Mon Oct 26 06:00 | Mon Oct 26 14:00 |
+  | `new_risk_end` | Mon Oct 26 23:00 | Tue Oct 27 07:00 |
+  | `flatten_start` | Tue Oct 27 00:00 | Tue Oct 27 08:00 |
+  | `signing_end` | Tue Oct 27 04:00 | **Tue Oct 27 12:00** |
+
+  Four hours of flatten is 16 mandatory-sell slots per name at IDEA-102's 15-minute spacing. An install after
+  `trade_after` simply starts buying at install (execution P5 before runtime P4, as every run sheet).
+- `requires_history` also covers `larp-s5-rehearsal-v1`, so S5 needs the same pinned `token-history.json` as FS1.
+  No other profile's behaviour changes.
+- Everything else in S5 stays FS1-R with recovery (`17ab891d…`): FS1's `s1` block, 20 bp, the four PR278-RV01 fields,
+  recovery gas, deterministic SHADOW dev scope.
+
+| # | Pass when |
+|---|---|
+| S5R2-1 | The rebuilt S5 passes `validate_live` and differs from `fs1-rehearsal-recovery.json` only in the four window keys, `policy_id` and those keys' provenance (S5-1, unchanged). |
+| S5R2-2 | The window is the four instants above, strictly ordered; `signing_end` is 2026-10-27T04:00Z (Tue 12:00 SGT) and before 2026-10-28T00:00Z. |
+| S5R2-3 | S5 requires token history: signed dev preparation without `token_history_raw` is refused; with it, `token-history.json` is packaged, `driver.token_history_sha256` pins it, `gate_a_check` scope/inputs pass, and the built runtime's `series` is a `SessionHistory`. A runtime config without the history pair is refused at startup. |
+| S5R2-4 | FS1 FINAL and FS1-R still require history; the S2, S4 and other existing profiles still do not. The four FS1 profiles and the S4 profile rebuild byte for byte; the committed S5 file rebuilds byte for byte. |
+| S5R2-5 | Planner on the S5 profile: at Mon 22:59Z a discretionary BUY is planned; at Mon 23:00Z no BUY intent or BUY quote request; at Tue 00:00Z every held name has `TERMINAL_FLATTEN` and the intents are mandatory SELLs only. |
+| S5R2-6 | Full suite: no new failures against canonical `5e3f33df` in the same environment; exact counts reported. |
