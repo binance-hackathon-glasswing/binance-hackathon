@@ -167,7 +167,7 @@ def test_s2i4_execution_start_refuses_outside_dev():
         fixture.doCleanups()
 
 
-def build_runtime(raw, *, mode='dev', **driver):
+def build_runtime(raw, *, mode='dev', history=True, **driver):
     """tests/strategy/test_s1_rehearsal.py build_runtime with a run mode and extra driver settings."""
     from tests.runtime.test_driver import Composition, Store
     from larp.runtime.service import build_driver
@@ -181,7 +181,8 @@ def build_runtime(raw, *, mode='dev', **driver):
         cfg['driver'].update(driver)
         (fixture.root / 'profile.json').write_bytes(raw)
         cfg['driver']['strategy_profile_sha256'] = gate_a.digest(raw)
-        if json.loads(raw).get('policy_id') == 'larp-fs1-rehearsal-v1':
+        from larp.marketdata.history import requires_history
+        if history and requires_history(json.loads(raw)):
             from tests.marketdata.test_session_history import SEMANTICS
             from tests.runtime.test_gate_a import captured
             history_raw = json.dumps(SEMANTICS).encode()

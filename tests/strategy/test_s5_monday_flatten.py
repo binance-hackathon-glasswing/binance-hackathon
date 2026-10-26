@@ -1,4 +1,5 @@
-"""IDEA-104 S5-1..S5-5: FS1's settings on the dev wallet with a Monday-night (SGT) sell-all. Synthetic ports only."""
+"""IDEA-104 S5-1..S5-5 and R2 S5R2-1..S5R2-5: FS1's settings on the dev wallet, running to Tue Oct 27 12:00 SGT with
+FS1's pinned token-history input. Synthetic ports only."""
 import hashlib
 import json
 from pathlib import Path
@@ -19,7 +20,7 @@ FS1_BLOCK = EVIDENCE / 'fs1-final-20261025/fs1-block.json'
 FS1R = EVIDENCE / 'fs1-rehearsal-20261025/fs1-rehearsal-recovery.json'
 S5 = EVIDENCE / 's5-rehearsal-profile-20261026/rehearsal-s5.json'
 WINDOW = ('trade_after', 'new_risk_end', 'flatten_start', 'signing_end')
-S5_WINDOW = ['2026-10-25T20:00:00Z', '2026-10-26T12:00:00Z', '2026-10-26T13:00:00Z', '2026-10-26T20:00:00Z']
+S5_WINDOW = ['2026-10-26T06:00:00Z', '2026-10-26T23:00:00Z', '2026-10-27T00:00:00Z', '2026-10-27T04:00:00Z']
 DECISION = ("IDEA-104 S5 (2026-10-26): the FS1 final block (S2's block: IDEA-084 PF-01 values; weights 1/5, start UP, "
             "legs 3, expiry 3, deterministic limiter; hours KIT_OPEN_STATE, 5 attempts per leg) on the dev wallet, "
             "selling everything from Monday 21:00 SGT")
@@ -57,16 +58,17 @@ def test_s5_1_differs_from_fs1_r_recovery_only_in_the_window_and_policy():
     assert s5['policy_id'] == 'larp-s5-rehearsal-v1'
 
 
-def test_s5_2_the_monday_night_window():
+def test_s5r2_2_the_window_ends_tuesday_12_sgt():
     s5 = build().read()
     assert [s5[k] for k in WINDOW] == S5_WINDOW
     times = [milliseconds(v) for v in S5_WINDOW]
     assert times == sorted(times) and len(set(times)) == 4
-    assert times[-1] < milliseconds('2026-10-27T00:00:00Z')  # inside the development phase (F-125)
+    assert s5['signing_end'] == '2026-10-27T04:00:00Z'  # Tue Oct 27 12:00 SGT
+    assert times[-1] < milliseconds('2026-10-28T00:00:00Z')  # inside the extended development time (F-126)
 
 
 @pytest.mark.parametrize('options', [dict(fs1_rehearsal=False), dict(allowance_recovery=False),
-                                     dict(carry_over=True), dict(scheduled_flatten_at='2026-10-26T13:00:00Z')])
+                                     dict(carry_over=True), dict(scheduled_flatten_at='2026-10-27T00:00:00Z')])
 def test_s5_3_builder_refusals(options):
     with pytest.raises(ContractError):
         build(**options)
@@ -78,35 +80,61 @@ def test_s5_4_committed_profile_rebuilds_and_fs1_is_unchanged():
         assert hashlib.sha256((EVIDENCE / name).read_bytes()).hexdigest() == sha, name
 
 
+def test_s5r2_4_s5_and_fs1_require_history_and_other_profiles_do_not():
+    from larp.marketdata.history import requires_history
+    required = {name: requires_history(json.loads((EVIDENCE / name).read_bytes())) for name in UNCHANGED}
+    assert all(required.values()), required
+    assert requires_history(json.loads(S5.read_bytes()))
+    for name in ('s2-rehearsal-profile-20261024/rehearsal-s2-deterministic.json',
+                 's3-rehearsal-profile-20261024/rehearsal-s3-deterministic.json',
+                 's4-rehearsal-profile-20261025/rehearsal-s4-deterministic.json',
+                 's1-rehearsal-profile-20261023/rehearsal-s1-deterministic.json',
+                 'rehearsal-exit-split-20261021/rehearsal-deterministic.json'):
+        assert not requires_history(json.loads((EVIDENCE / name).read_bytes())), name
+
+
 def round_at(value, held=None):
-    """A round at `value` on the S5 window, inside one synthetic session that spans Monday 13:00Z."""
+    """A round at `value` on the S5 window, inside one synthetic session that spans Mon 22:59Z to Tue 00:00Z."""
     session = at(value).context.read()['session_index']
     changes = dict(s1=block(execution=dict(s2.EXECUTION, hours='KIT_OPEN_STATE')),
                    **dict(zip(WINDOW, S5_WINDOW)))
     return run(with_quotes(at(value, held=held, profile_changes=changes, risk=dict(day=value[:10]),
-        execution_session=dict(index=session, open_ms=milliseconds('2026-10-23T13:30:00Z'),
-                               close_ms=milliseconds('2026-10-23T20:00:00Z'),
-                               next_open_ms=milliseconds('2026-10-26T13:30:00Z')))))
+        execution_session=dict(index=session, open_ms=milliseconds('2026-10-26T13:30:00Z'),
+                               close_ms=milliseconds('2026-10-26T20:00:00Z'),
+                               next_open_ms=milliseconds('2026-10-27T13:30:00Z')))))
 
 
-def test_s5_5_buys_until_20_sgt_and_sells_everything_from_21_sgt():
-    before = round_at('2026-10-26T11:59:00Z')
+def test_s5r2_5_buys_until_tue_07_sgt_and_sells_everything_from_08_sgt():
+    before = round_at('2026-10-26T22:59:00Z')
     assert [(i['side'], i['mandatory']) for i in before['intents']] == [('BUY', False)], before['rejections']
-    stopped = round_at('2026-10-26T12:00:00Z')
+    stopped = round_at('2026-10-26T23:00:00Z')
     assert not [i for i in stopped['intents'] if i['side'] == 'BUY']
     assert not [q for q in stopped['quote_requests'] if q['side'] == 'BUY']
-    flatten = round_at('2026-10-26T13:00:00Z', held=dict(NVDAB=AT_95, SKHYB=AT_95))
+    flatten = round_at('2026-10-27T00:00:00Z', held=dict(NVDAB=AT_95, SKHYB=AT_95))
     assert {r['symbol']: r['reasons'] for r in flatten['requirements']} == {
         'NVDAB': ['TERMINAL_FLATTEN'], 'SKHYB': ['TERMINAL_FLATTEN']}
     assert flatten['intents'] and all((i['side'], i['mandatory']) == ('SELL', True) for i in flatten['intents'])
 
 
-def test_s5_1_signed_dev_preparation_gate_check_and_runtime_build():
+def test_s5r2_3_signed_dev_preparation_pins_token_history_and_the_runtime_uses_it():
+    from larp.marketdata.history import CONFIG_FILE, SessionHistory
     from larp.runtime import gate_a_check
     from tests.strategy import test_s1_rehearsal as rh
     raw = S5.read_bytes()
     files = rh.prepared(json.loads(raw), **s2.POLICY)
     values = {n: json.loads(item) for n, item in files.items() if n.endswith('.json')}
+    driver = values['runtime.json']['driver']
+    assert driver['token_history_file'] == CONFIG_FILE
+    assert driver['token_history_sha256'] == hashlib.sha256(files['token-history.json']).hexdigest()
     gate_a_check.check_scope(values, values['preparation-report.json'])
     gate_a_check.check_inputs(files, values)
-    s2.build_runtime(raw)
+    runtime = s2.build_runtime(raw)
+    assert isinstance(runtime.coordinator.context_builder.series, SessionHistory)
+
+
+def test_s5r2_3_preparation_and_startup_refuse_s5_without_token_history():
+    from tests.strategy import test_s1_rehearsal as rh
+    with pytest.raises(ContractError, match='token history'):
+        rh.prepared(json.loads(S5.read_bytes()), token_history_raw=None, **s2.POLICY)
+    with pytest.raises(ContractError, match='token history'):
+        s2.build_runtime(S5.read_bytes(), history=False)
