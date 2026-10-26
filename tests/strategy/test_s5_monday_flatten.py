@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from larp.contracts import ContractError
+from larp.contracts import ContractError, TargetKind
 from larp.research.fixtures import with_quotes
+from larp.strategy.policy import decide
 from larp.strategy.profiles import validate_live
 from tests.strategy import test_s2_weekend as s2
 from tests.strategy.test_execution_bounds import at, milliseconds, run
@@ -138,3 +139,45 @@ def test_s5r2_3_preparation_and_startup_refuse_s5_without_token_history():
         rh.prepared(json.loads(S5.read_bytes()), token_history_raw=None, **s2.POLICY)
     with pytest.raises(ContractError, match='token history'):
         s2.build_runtime(S5.read_bytes(), history=False)
+
+
+# S5R2-7: the run-6 closing balance of the dev wallet (IDEA-097), BNB at the S5 profile's fixed price.
+RUN6_BNB = 24_973_000_000_000_000
+SIZING = ('s1_capital_basis', 'cost_reserve_units', 'minimum_trade_units', 'per_trade_cap_units', 'entry_cost_basis',
+          's1_reduction_cost_cap_bps', 'slippage_bps')
+
+
+def flat_book_round(cash_units):
+    """A flat-book round at Mon 16:00Z, inside the S5 buy window, with S5's sizing keys and the given cash."""
+    from larp.research.fixtures import changed
+    p = json.loads(S5.read_bytes())
+    value = '2026-10-26T16:00:00Z'
+    session = at(value).context.read()['session_index']
+    changes = dict(s1=block(execution=dict(s2.EXECUTION, hours='KIT_OPEN_STATE')),
+                   **dict(zip(WINDOW, S5_WINDOW)), **{k: p[k] for k in SIZING})
+    s = at(value, profile_changes=changes, risk=dict(day=value[:10]),
+           execution_session=dict(index=session, open_ms=milliseconds('2026-10-26T13:30:00Z'),
+                                  close_ms=milliseconds('2026-10-26T20:00:00Z'),
+                                  next_open_ms=milliseconds('2026-10-27T13:30:00Z')))
+    portfolio = s.context.read()['portfolio']
+    bnb_price = p['quote_cost_summary']['bnb_price_units']
+    equity = cash_units + RUN6_BNB * bnb_price // 10**18
+    portfolio.update(cash_units=cash_units, bnb_units=RUN6_BNB, bnb_price_units=bnb_price, bnb_decimals=18,
+                     opening_equity_units=equity)
+    portfolio['risk'].update(day_anchor_units=equity, peak_units=equity)
+    s = changed(s, portfolio=portfolio)
+    targets = [t for t in decide(s, s.policy_state).targets if t.kind is TargetKind.TARGET_WEIGHT]
+    return targets, run(with_quotes(s))
+
+
+def test_s5r2_7_run6_closing_cash_buys_nothing_and_about_101_usdt_buys():
+    p = json.loads(S5.read_bytes())
+    targets, short = flat_book_round(81_373_047)
+    assert not targets
+    assert not [i for i in short['intents'] if i['side'] == 'BUY'], short['intents']
+    assert not [q for q in short['quote_requests'] if q['side'] == 'BUY'], short['quote_requests']
+    targets, funded = flat_book_round(101_373_047)
+    assert sorted(t.symbol for t in targets) == ['GOOGLB', 'MSFTB', 'NVDAB', 'SKHYB', 'TSLAB']
+    # Quotes are supplied, so the first buy is planned as an intent (one wallet trade at a time).
+    buys = [i for i in funded['intents'] if i['side'] == 'BUY']
+    assert len(buys) == 1 and int(buys[0]['cash_units']) >= p['minimum_trade_units'], funded['intents']
