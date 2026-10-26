@@ -225,3 +225,88 @@ def test_ts5_production_port_uses_the_history_transport(tmp_path):
     port = th.production_port(dict(BINANCE_API_KEY='k' * 16, BINANCE_SECRET_KEY='s' * 16), tmp_path / 'raw')
     assert port.client.exact_decimals is True and port.client.timeout == 5
     assert port.client.artifacts.root == (tmp_path / 'raw').resolve()
+
+
+def test_ts1_tolerates_a_slightly_slow_host_clock_but_not_an_hour_ahead_label():
+    record = collected()[0]
+    for poll in record['polls']:
+        for entry in poll['symbols'].values():
+            for bar in ('1h', '1m'):
+                entry[bar]['available_at'] = iso(ms(entry[bar]['available_at']) - 20_000)
+    assert th.assess(record)['verdict'] == 'PASS'
+    late = collected(mode='end_live')[0]
+    for poll in late['polls']:
+        for entry in poll['symbols'].values():
+            for bar in ('1h', '1m'):
+                entry[bar]['available_at'] = iso(ms(entry[bar]['available_at']) + 20_000)
+    assert th.assess(late)['verdict'] == 'FAIL'
+
+
+def test_ts4_missing_trade_counts_compare_prices_only():
+    record = collected()[0]
+    for poll in record['polls']:
+        for entry in poll['symbols'].values():
+            for bar in ('1h', '1m'):
+                for row in entry[bar]['rows']:
+                    row[6] = None
+    result = th.assess(record)
+    assert result['verdict'] == 'PASS'
+    assert all(v['ts4'] == dict(open_match=True, end_match=False) for v in result['symbols'].values())
+
+
+def test_ts5_end_to_end_through_the_real_history_transport(tmp_path, capsys, monkeypatch):
+    """Web3Client (exact decimals, credential screening, artifacts) and MarketPort parse the provider envelope."""
+    from urllib.parse import parse_qs, urlparse
+    import larp.marketdata.web3 as web3
+    from larp.marketdata.port import MarketPort
+    clock = Clock('2026-10-26T13:40:00Z')
+    market = Market(clock)
+    monkeypatch.setattr(web3.time, 'sleep', lambda seconds: None)
+    monkeypatch.setattr(web3, 'utc', lambda: iso(clock()))  # the client stamps available_at with its own clock
+    endpoints = []
+
+    class Response:
+        def __init__(self, raw):
+            self.raw, self.code = raw, 200
+
+        def read(self, n):
+            return self.raw
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    class Opener:
+        def open(self, request, timeout):
+            url = urlparse(request.full_url)
+            endpoint = url.path.removeprefix('/build/api/v1/dex/')
+            query = {k: v[0] for k, v in parse_qs(url.query).items()}
+            endpoints.append((request.get_method(), endpoint))
+            if endpoint == 'market/candles':
+                symbol = next(s for s, t in TOKENS.items() if t == query['tokenContractAddress'])
+                rows = market.bars(symbol, clock(), MIN if query['bar'] == '1m' else HOUR)[-int(query['limit']):]
+                # Numbers as the provider sends them: JSON numbers, which exact_decimals keeps as decimal strings.
+                body = '{"code":0,"msg":"success","data":[%s]}' % ','.join(
+                    '[%s,%s,%s,%s,%s,"%d",%d]' % (*r[:5], r[5], r[6]) for r in rows)
+            else:
+                body = json.dumps(dict(code=0, msg='success', data=[dict(
+                    tokenContractAddress=t, tokenSymbol=s, binanceChainId='56', decimals=18,
+                    tokenToShareRatio='1.0', tokenPrice='100', statusInfo=dict(openState=True)) for s, t in TOKENS.items()]))
+            return Response(body.encode())
+
+    def factory(out):
+        client = web3.Web3Client('k' * 16, 's' * 16, artifacts=web3.Artifacts(out / 'raw'), opener=Opener(),
+                                 timeout=5, exact_decimals=True)
+        return MarketPort(client, th.UNUSED_WALLET)
+    code = th.main(['probe', '--out', str(tmp_path / 'probe'), '--adjustment-version', 'v'], port_factory=factory,
+                   clock=clock, sleep=clock.sleep)
+    assert code == 0, capsys.readouterr().out
+    assert set(endpoints) == {('GET', 'market/candles'), ('GET', 'market/rwa/tokens')}
+    evidence = json.loads((tmp_path / 'probe' / 'timestamp-evidence.json').read_bytes())
+    row = evidence['record']['polls'][0]['symbols']['NVDAB']['1h']['rows'][-1]
+    assert all(type(v) is str for v in row[:5])  # exact decimal lexemes, never floats
+    hashes = {p['symbols']['NVDAB']['1h']['content_hash'] for p in evidence['record']['polls']}
+    assert all((tmp_path / 'probe' / 'raw' / (h + '.json')).is_file() for h in hashes)
+    assert evidence['record']['metadata_start']['NVDAB']['tokenToShareRatio'] == '1.0'
