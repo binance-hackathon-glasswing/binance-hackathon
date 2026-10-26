@@ -24,6 +24,25 @@ new organiser requirement. Keith owns the actual candle/session/adjustment
 qualification; Keegan reviews its release/runtime binding. Existing private
 captures are not copied into Git by this work.
 
+TH-01 timestamp evidence is now available in the
+[committed live packet](evidence/th01-live-20261026/): PR297-RV01 independently
+reproduces the five-name PASS and verifies all442 raw artifacts. Its evidence
+SHA-256 is `cc8371bd235eb4db284367fbf0267890d3c6a87bafca60ca2573f0b9d64b3fa6`.
+Keith still chooses the qualified raw-token adjustment version. With that value
+in `ADJUSTMENT_VERSION`, generate the config into a new private output path:
+
+```bash
+python -m tools.th01_candle_timestamps config \
+  --evidence docs/build/evidence/th01-live-20261026/timestamp-evidence.json \
+  --adjustment-version "$ADJUSTMENT_VERSION" --out-file "$TOKEN_HISTORY_OUTPUT"
+```
+
+Keep `raw/` beside the evidence file: config generation now verifies its hashes,
+request identities, parsed rows and availability before writing anything.
+Record the printed config hash and obtain its release binding acceptance; a
+placeholder adjustment version is not qualification. This establishes timestamp
+semantics, not corporate-action behavior or current-host trend availability.
+
 Pass that file's actual path through `prepare_shadow.py prepare`'s
 `--token-history-config` option, alongside the existing FS1 profile, routing,
 router policy, balance providers and adoption reference. Preparation packages

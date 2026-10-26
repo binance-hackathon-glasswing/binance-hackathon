@@ -160,3 +160,37 @@ observations by response availability rather than poll-start time, and reject mi
 These enforce the existing observation/source contract; preserve the original live evidence and TS4 calculation.
 Run probe/history/preparation/S5/FS1 focused checks and the pinned Python3.12.15/PostgreSQL14.24 full suite;
 record skips and deployment prerequisites separately. Code is committed/pushed before any execution.
+
+### PR297-RV01 results and merge disposition
+
+Repair source `df01d9cb` is committed/pushed before execution. The config step now verifies the raw artifact
+hashes and exact request/candle/metadata/availability bindings through an artifact-only production MarketPort.
+Observation windows use response availability, TS2/TS3 require distinct response times, and TS1 checks minute
+alignment. Nine new regressions all fail on original `35aab2dc`; all30 probe tests pass with the repair.
+
+Keith then committed the unchanged capture at `84f0fd47`. Independent offline replay returns the identical
+stored **PASS on all five tokens**, preserves evidence hash `cc8371bd235eb4db284367fbf0267890d3c6a87bafca60ca2573f0b9d64b3fa6`,
+and verifies all442 raw artifacts, including their exact HTTP-body hashes and parsed-response consistency.
+The five token/share ratios are unchanged between start/end; this is context, not qualification of historical
+corporate-action behavior. No placeholder adjustment version was adopted or production config generated.
+
+Verification: **201 focused tests PASS** (history, strategy, PostgreSQL replay, S5/FS1 preparation/recovery/startup);
+clean full Linux aarch64/Python3.12.15/PostgreSQL14.24 **3005 passed /4069 subtests /8 skips /3 deselected /
+zero failures**,295.47s. All53 applicable recursive lock lines/44 distributions match; `pip check` passes.
+The three deselected sandbox tests pass separately in the existing bubblewrap-enabled image, whose offline
+PostgreSQL runtime demo also passes. All37 S5/FS1 install shell/Python scripts parse.
+The eight full-suite skips are the two optional private/external fixtures, root permission behavior and five
+opt-in systemd tests. First full-run mount errors (three tests could not write ignored scratch files) are retained
+in the receipt; isolated scratch tmpfs fixes the environment, and all three plus the full rerun pass.
+GitHub40311935172 executed no jobs because billing/spending limits blocked startup. No CI/release/host PASS is inferred.
+
+Under the user's explicit review/fix/merge request, merge PR297 into canonical with the local verification and
+GitHub startup limitation recorded. Runtime, strategy, profile and routing files are unchanged by this PR.
+[Machine receipt](../build/evidence/pr297-review-20261026.json) /
+[S5 and FS1 deployment readiness/owners](../build/S5_FS1_READINESS_20261026.md).
+
+**TH-01 remains partial:** Keith chooses the qualified raw-token adjustment version and generates/records the
+config hash; Keegan accepts its exact release binding; Yao transfers it and qualifies current-host five-token
+history/trend. S5 and FS1 are not yet deployment-ready: fresh wallet/caps/signer/release/model-account/host acceptance
+remains, with FINAL funding/BNB valuation/RPC and activation self-check gates. No host, wallet, paid model or
+provider action occurred during review. EXP-007's economic evaluation remains separate.
