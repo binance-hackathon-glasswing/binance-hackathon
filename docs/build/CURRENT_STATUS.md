@@ -1,11 +1,10 @@
 # Current shared build and remaining work
 
-IDEA-104 S5 R2 (2026-10-26 SGT, PR294, not merged or installed): S5, the FS1 mirror rehearsal on the dev wallet,
-now runs to Tue Oct 27 12:00 SGT (development testing extended to Oct 28, F-126). It requires FS1's pinned token
-history like FS1 FINAL/FS1-R, with profile `5a5a200a…` and probe `8ba1328f…`. It buys nothing below about 98.3 USDT of
-cash (the dev wallet holds 81.37), so the run-7 sheet starts with a top-up, and M3 declares it
-(`--accept-usdt-surplus-units`). [Record](../ledger/IDEA-104.md) / [run sheet](ops/rehearsal-install-s5-20261026/README.md).
-FS1 profiles unchanged.
+IDEA-104 S5 R3 (2026-10-26 SGT; R2 merged as PR294 `81ee30a1`, R3 not merged or installed): S5 is FS1 FINAL at
+rehearsal size on the dev wallet, to Tue Oct 27 12:00 SGT, with FS1's AIand/ChatGPT routing `9b86c732…`, model
+authority and token history; profile `f371b18d…`, probe `90344caa…`. Blocked: it buys nothing at the dev wallet's
+81.37 USDT (gas excluded), and no real token-history file exists (TH-01). [Record](../ledger/IDEA-104.md) /
+[run sheet](ops/rehearsal-install-s5-20261026/README.md). FS1 profiles unchanged.
 
 PR295 / IDEA-103 PR295-RV01 (2026-10-26 SGT): FS1 history producer, bounded pagination/cache,
 qualified timestamp/adjustment input and production preparation/startup wiring reviewed. Fixed exact JSON/close

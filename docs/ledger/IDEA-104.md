@@ -187,3 +187,21 @@ withdrawn. Replacements:
   keeps refusing a synthetic file.
 - Approvals: recorded as relayed by the user ("all approvals from all parties are given"); no named record or hash
   was given.
+
+## R3 results (2026-10-26)
+
+Commits: `ca253e7b` (criteria), the R3 amendment, red tests (3 failed on base), `3af0f670` (builder, scope, profile,
+sheet). Profile `rehearsal-s5.json` `f371b18d…` (digest `63c35391…`, M3 probe `90344caa…`).
+
+| # | Result |
+|---|---|
+| S5R3-1 | **PASS.** `validate_live` passes; against FS1 FINAL `b8ba06e2…` the non-provenance differences are exactly `environment`, `cost_reserve_units`, `expected_equity_units`, `per_trade_cap_units`, the four window keys, `policy_id` and the absent `activation_self_check`. `s1`, red-flag authority and `EXCLUDE_GAS` equal FS1's. |
+| S5R3-2 | **PASS.** S5 accepted in `dev`/`None`; refused in `live`, `offline`, `''`; FS1-R and S2 with FS1's authority, S5 with other statement authority, SHADOW evidence or FINAL environment refused. S2-1/FS1 tests unchanged. |
+| S5R3-3 | **PASS.** Deterministic signed preparation refused; with FS1 routing: `model-routing.json` packaged, `9b86c732…` pinned, `aiand_routed`, token history pinned, `gate_a_check` PASS; the dev runtime has five `RoutedAssessor`s and a `SessionHistory`; startup without history refused. |
+| S5R3-4 | **PASS (amended).** Run 6's closing balance: no BUY; +20 USDT: one BUY ≥ minimum. |
+| S5R3-5 | **PASS.** Window behaviour unchanged; FS1 and S4 profiles byte for byte. |
+| S5R3-6 | **PASS.** `larp-test:pr282` / PostgreSQL 14.24: branch 2924 passed / 12 skipped / 4069 subtests / 3 failed; canonical `81ee30a1` 2919 / 12 / 4069 / the same 3 (git metadata unavailable in the container). |
+
+**Blocked before install (2026-10-26):** (1) at 81.37 USDT with gas excluded S5 buys nothing; the user cannot add
+USDT, so either S5 runs as a no-trade pipeline rehearsal or its sizing changes (decision open). (2) No real
+`TokenHistoryConfig.v1` exists (TH-01); M4 refuses a synthetic one. Approvals relayed as given.
