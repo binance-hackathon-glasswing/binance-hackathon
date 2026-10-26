@@ -1,5 +1,6 @@
 """IDEA-047 U01: the uploader service delivers committed round logs with the audit secret only."""
 from contextlib import redirect_stdout
+import errno
 import io
 import json
 from pathlib import Path
@@ -174,6 +175,15 @@ class UploaderCommand(DatabaseCase):
         code, out = self.run_main('run', args)
         self.assertEqual(code, 0, out)
         self.assertEqual(self.store.metrics('live-run').read()['audit_pending'], 0)
+
+    def test_f2_transient_start_errors_exit_1_and_file_errors_still_refuse(self):
+        # IDEA-108 EX-1/EX-2: a transient OSError while the configuration is checked lets systemd restart.
+        for error, code in ((ConnectionResetError('reset'), 1), (TimeoutError('timeout'), 1),
+                            (OSError(errno.EIO, 'io'), 1), (FileNotFoundError('pinned'), 4),
+                            (PermissionError('pinned'), 4)):
+            with self.subTest(error=type(error).__name__), \
+                    patch('larp.runtime.preflight.verify_release', side_effect=error):
+                self.assertEqual(self.run_main('run', self.args())[0], code)
 
     def test_u01_refusals_exit_4_without_secrets(self):
         cases = {

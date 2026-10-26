@@ -7,6 +7,7 @@ from larp.contracts import Document
 from larp.integration.runtime import initial_projection
 from larp.research.fixtures import snapshot
 from larp.runtime.coordinator import batch_for
+from larp.runtime.driver import DayRoll
 from larp.runtime.service import Service
 from larp.runtime.supervision import Guard
 from larp.strategy.schema import equity, market_view
@@ -240,3 +241,70 @@ class DailyAnchorWindow(ServiceHarness):
                     self.assertFalse([q for q in result['quote_requests'] if q['symbol'] == 'BNB'])
                     self.assertFalse(self.risk()['daily_halt'])
                     self.stable_latches(before)
+
+    # IDEA-108 F1 (DR-1..DR-5): a flat run rolls after the window; a run holding stock still never does (#31).
+
+    def flat_anchor(self):
+        # Zero stock units: equity is cash plus BNB at the ledger's own price, whatever the marks say.
+        return int(equity(self.store.load(RUN).read()['projection']['portfolio'], {}))
+
+    def test_dr1_flat_run_paused_across_midnight_rolls_at_restart(self):
+        driver = self.prepare(flat=True, daily_halt=False)
+        before = self.risk()
+        boundary = midnight(before['day'])
+        anchor = self.flat_anchor()
+        crashed = self.crash(driver, boundary - 14 * 3_600_000)  # F-127: stopped Oct 28 10:00Z
+        self.feed.price = 50_000_000  # a large post-midnight move cannot reach a flat anchor
+        self.w.clock.now = boundary + 2 * 3_600_000  # restarted Oct 29 02:00Z
+        restarted = self.driver()
+        self.assertEqual(self.service(restarted).run(max_cycles=1), 0)
+        [event] = self.events('DAY_ROLLED')
+        self.assertEqual((event['day'], event['anchor_units'], event['late_flat']),
+                         (date_of(boundary), anchor, True))
+        self.assertEqual(event['boundary'], datetime.fromtimestamp(boundary / 1000, timezone.utc).isoformat())
+        self.assertEqual((self.risk()['day'], self.risk()['day_anchor_units']), (date_of(boundary), anchor))
+        self.assertEqual(self.events('INCIDENT')[0]['incident']['previous_sessions'], [crashed])
+        self.stable_latches(before)
+        # DR-5: at most one roll per day, and the journal replays exactly.
+        self.assertNotIn('day_roll', self.tick(restarted, boundary + 5 * 3_600_000))
+        self.assertEqual(len(self.events('DAY_ROLLED')), 1)
+        self.replay(restarted)
+
+    def test_dr1_late_flat_roll_lets_entries_plan(self):
+        driver = self.prepare(rounds=True, flat=True, daily_halt=False)
+        summary = self.tick(driver, midnight(self.risk()['day']) + 2 * 3_600_000)
+        self.assertEqual(summary['day_roll'], 'ROLLED')
+        plan = self.plan_for(summary)
+        self.assertTrue([i for i in plan['intents'] if i['side'] == 'BUY'], plan)
+        self.assertNotIn('NEW_RISK_HALTED', {r['reason'] for r in plan['rejections']})
+
+    def test_dr2_holding_run_still_refuses_a_late_roll(self):
+        driver = self.prepare(daily_halt=False)
+        before = self.risk()
+        self.assertFalse(DayRoll.flat(self.store.load(RUN).read()))
+        self.assertEqual(self.tick(driver, midnight(before['day']) + 2 * 3_600_000)['day_roll'], 'OUTSIDE_WINDOW')
+        self.assertEqual((self.risk(), self.events('DAY_ROLLED')), (before, []))
+
+    def test_dr2_a_reservation_or_a_held_unit_is_not_flat(self):
+        self.prepare(flat=True)
+        current = self.store.load(RUN).read()
+        self.assertTrue(DayRoll.flat(current))
+        self.assertFalse(DayRoll.flat(dict(current, reservations=[dict(intent_id='i', asset='USDT', units=1)])))
+        held = deepcopy(current)
+        next(iter(held['projection']['portfolio']['positions'].values()))['units'] = 1
+        self.assertFalse(DayRoll.flat(held))
+
+    def test_dr3_in_window_roll_event_is_unchanged(self):
+        driver = self.prepare(flat=True, daily_halt=False)
+        self.assertEqual(self.tick(driver, midnight(self.risk()['day']) + 60 * SECOND)['day_roll'], 'ROLLED')
+        [event] = self.events('DAY_ROLLED')
+        self.assertEqual(set(event), {'kind', 'day', 'boundary', 'anchor_units', 'decided_ms', 'marks'})
+
+    def test_dr4_late_flat_roll_needs_observations(self):
+        driver = self.prepare(flat=True, daily_halt=False)
+        before = self.risk()
+        now = midnight(before['day']) + 2 * 3_600_000
+        self.w.clock.now = now
+        self.assertEqual(driver.day_roll(now, None), 'MARKET_UNAVAILABLE')
+        self.assertEqual((self.risk(), self.events('DAY_ROLLED')), (before, []))
+

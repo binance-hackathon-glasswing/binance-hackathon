@@ -23,6 +23,7 @@ import time
 
 from larp.contracts import ContractError, Document
 from larp.runtime import faults
+from larp.runtime.exits import refuses_start
 
 EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED = 2, 3, 4
 SCHEMA = 'ExecutionService.v1'
@@ -218,6 +219,8 @@ def main(argv=None):
             if manifest['build_id'] != config['build_id']:
                 raise ContractError('Configured build differs from the verified release')
         except (ContractError, ValueError, OSError) as refused:
+            if not refuses_start(refused):
+                raise  # transient: exit 1, systemd restarts (IDEA-108 F2)
             raise StartRefused(type(refused).__name__) from None
         if args.command == 'check':
             print(json.dumps(dict(configuration_valid=True, signing_enabled=False)))
@@ -249,6 +252,8 @@ def main(argv=None):
             print(json.dumps(dict(started=False, reason='NOT_INTEGRATED', detail=str(gate), signing_enabled=False)))
             return EXIT_NOT_INTEGRATED
         except (ContractError, ValueError, OSError) as refused:
+            if not refuses_start(refused):
+                raise  # transient: exit 1, systemd restarts (IDEA-108 F2)
             raise StartRefused(type(refused).__name__) from None
         stopping = []
         signal.signal(signal.SIGTERM, lambda *a: stopping.append(True))

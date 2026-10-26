@@ -1,6 +1,7 @@
 """IDEA-047 S01-S05: signing requests through the database and the signer host service (real PostgreSQL)."""
 from contextlib import redirect_stdout
 from dataclasses import replace
+import errno
 import importlib.util
 import io
 import json
@@ -10,6 +11,7 @@ import tempfile
 import traceback
 from unittest.mock import patch
 
+from larp.contracts import ContractError
 from larp.execution import Blocked, Conflict, Executor, Payload
 from larp.execution_live import signing
 from larp.execution_live.signing import RemoteSigner, request_document
@@ -423,6 +425,16 @@ class SignerCommand(CommandCase):
         self.key.write_text(Account.create().key.hex())  # a key for another wallet
         code, out = self.main('run', self.write())
         self.assertEqual((code, json.loads(out)['reason']), (4, 'KEY_REFUSED'))
+
+    def test_f2_transient_start_errors_exit_1_and_file_errors_still_refuse(self):
+        # IDEA-108 EX-1/EX-2: `RestartPreventExitStatus=2 3 4` never restarts a refusal, and no person may (F-124).
+        self.unquarantine()
+        for target in ('larp.signer.service.router_decoder', 'larp.runtime.preflight.verify_release'):
+            for error, code in ((ConnectionResetError('reset'), 1), (TimeoutError('timeout'), 1),
+                                (OSError(errno.EIO, 'io'), 1), (FileNotFoundError('pinned'), 4),
+                                (PermissionError('pinned'), 4), (ContractError('refused'), 4)):
+                with self.subTest(target=target, error=type(error).__name__), patch(target, side_effect=error):
+                    self.assertEqual(self.main('run', self.write(), max_cycles=1)[0], code)
 
     def test_s05_systemd_credential_directory(self):
         config = {k: v for k, v in self.config.items() if k != 'key_file'} | dict(key_credential='wallet.key')

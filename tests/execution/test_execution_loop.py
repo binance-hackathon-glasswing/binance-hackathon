@@ -3,12 +3,15 @@
 No network: the composed clients are constructed, never called. The broadcast boundary is exercised with fakes.
 """
 
+import errno
 import hashlib
 import json
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+
+import requests
 
 from larp.contracts import ContractError
 from larp.execution import Blocked, Signed
@@ -76,8 +79,10 @@ class Composition(unittest.TestCase):
 
         run = dict(mode='dev', wallet_id=WALLET, quarantined=False, projection=doc(dict(
             registered_version=dict(build_id='a' * 40, manifest_sha256=hashlib.sha256(b'{}').hexdigest()))).payload)
+        # IDEA-108 EX-1/EX-2: a transient OSError exits 1 (systemd restarts); a file error still refuses.
         for error, code in ((NotIntegrated('EXECUTOR_CAPABILITY_GATE'), EXIT_NOT_INTEGRATED),
-                            (ContractError('refused'), EXIT_REFUSED)):
+                            (ContractError('refused'), EXIT_REFUSED),
+                            (ConnectionResetError('reset'), 1), (TimeoutError('timeout'), 1), (requests.exceptions.ConnectionError('dns'), 1), (OSError(errno.EIO, 'io'), 1), (FileNotFoundError('pinned'), EXIT_REFUSED), (PermissionError('pinned'), EXIT_REFUSED)):
             with self.subTest(code=code), \
                     patch('larp.runtime.preflight.verify_release', return_value=dict(build_id='a' * 40)), \
                     patch('larp.runtime.preflight.verify_service_config'), \

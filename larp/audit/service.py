@@ -20,6 +20,7 @@ import signal
 import time
 
 from larp.contracts import ContractError, Document
+from larp.runtime.exits import refuses_start
 
 EXIT_REFUSED = 4
 SCHEMA = 'UploaderService.v1'
@@ -140,6 +141,8 @@ def load_config(args):
         if manifest['build_id'] != config['build_id']:
             raise ContractError('Configured build differs from the verified release')
     except (ContractError, ValueError, OSError) as refused:
+        if not refuses_start(refused):
+            raise  # transient: exit 1, systemd restarts (IDEA-108 F2)
         raise StartRefused(type(refused).__name__) from None
     return config
 
