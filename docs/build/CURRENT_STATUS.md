@@ -1,13 +1,14 @@
 # Current shared build and remaining work
 
-S5-SIZE01 (2026-10-26 SGT, **local implementation; tests/publication pending**): S5 adds scoped 19-USDT high-level
-opening lots under its existing allocation/name/gross/cash limits, resolving the source of the recorded
-81.37-USDT cash mismatch without counting BNB, reducing the measured minimum or changing FS1. Profile
-`6dadc196…`, probe `68e49922…`; M4 checks fresh cash from the selected profile. At the recorded balance four
-lots fit the 95% stock-capital ceiling; exact quotes may still refuse. New code must be committed and pushed
-before execution under AGENTS.md; SZ1–SZ5 validation, exact-profile/signer acceptance and TH-01 remain.
-[Criteria and scope](../ledger/IDEA-104.md#s5-size01--cash-funded-rehearsal-opening-lots-2026-10-26-criteria-before-implementationexecution).
-Earlier receipts below apply only to their recorded source, not this sizing change. No deployment.
+S5-SIZE01 (2026-10-26 SGT, source `2f9e886c…`, **supported offline; not installed**): S5 adds scoped 19-USDT
+high-level opening lots under its existing allocation/name/gross/cash limits. At recorded 81.37-USDT cash,
+four lots fit and a fifth is refused; BNB exclusion, measured minimum, exact cost gates and FS1 are unchanged.
+Profile `6dadc196…`, probe `68e49922…`; M4 checks fresh cash from the selected profile. Focused: **110 passed /
+39 subtests**. Full pinned Python3.12.15/PG14.24: **2978 passed, 8 skipped, 4069 subtests, zero failures**.
+[Receipt](evidence/s5-size01-review-20261026.json) / [record](../ledger/IDEA-104.md#s5-size01-final-validation-2026-10-26).
+Cash sizing implementation is complete; TH-01 and exact profile/probe/signer/release/host acceptance remain.
+GitHub CI did not start due billing/spending limits. Earlier receipts below apply only to their recorded source.
+No merge, installation or live profitability claim.
 
 PR296-RV01 (2026-10-26 SGT, review follow-up; publication authorized by the user): FS1/S5 direct startup now enforces routed
 assessment outside the scoped historical rehearsal; run-7 and FINAL startup initialize/activate before signer

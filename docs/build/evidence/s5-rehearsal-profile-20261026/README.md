@@ -1,8 +1,8 @@
 # S5: FS1 on the dev wallet, with FS1's model calls, running to Tue Oct 27 12:00 SGT (IDEA-104 R3, 2026-10-26)
 
-A candidate `StrategyProfile.v1` for one more signed dev rehearsal. S5-SIZE01 is local, not yet executed or verified,
-and is not installed or bound to a
-`signer.json`. **FS1 stays the final strategy:** S5 is REHEARSAL-only on the dev wallet and is never installed for the
+A candidate `StrategyProfile.v1` for one more signed dev rehearsal. S5-SIZE01 is verified offline (source
+`2f9e886c…`: full pinned suite 2978 passed, 8 skipped, 4069 subtests), and is not installed or bound to a
+`signer.json`. [Receipt](../s5-size01-review-20261026.json). **FS1 stays the final strategy:** S5 is REHEARSAL-only on the dev wallet and is never installed for the
 final run. Record: [IDEA-104](../../../ledger/IDEA-104.md) (S5-SIZE01 replaces R3 `f371b18d…`, R2 `5a5a200a…`, R1 `c7938dae…`).
 
 | File | SHA-256 |
@@ -54,5 +54,5 @@ python -m tools.deploy.build_rehearsal_candidate --exit-children 2 --fs1-rehears
   --output /tmp/s5-profile-check.json
 ```
 
-After the source is committed and pushed, it must print the digest above and reproduce `rehearsal-s5.json`
-byte for byte. Pins were regenerated as data; running the changed builder/tests is still pending.
+The committed builder reproduces the digest above and `rehearsal-s5.json` byte for byte (SZ1). Exact quotes,
+qualified history and the new release/signer/host acceptance are still required before installation.

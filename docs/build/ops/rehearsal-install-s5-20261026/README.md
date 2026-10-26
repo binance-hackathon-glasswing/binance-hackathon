@@ -10,7 +10,8 @@ authority**: AIand/ChatGPT routing `config/intelligence/aiand-routing.fs1.json` 
 assessments, verified red flags exit or block entry.
 **FS1 stays the final strategy;** S5 is never installed for the final run.
 
-**Status:** S5-SIZE01 sizing implementation is local and awaits commit/publication and execution of its tests.
+**Status:** S5-SIZE01 sizing source `2f9e886c…` passed focused 110 tests/39 subtests and the full pinned suite
+(2978 passed, 8 skipped, 4069 subtests); [receipt](../../evidence/s5-size01-review-20261026.json). Not installed.
 The earlier relayed approval concerned R3; record acceptance of the new exact profile/probe/signer hashes before
 installation. Nothing in this folder has touched a host or the wallet. **A qualified token-history file is still
 missing (TH).** The user cannot top up. No transfer is planned. FS1 does not depend on S5 proceeding.
@@ -63,7 +64,7 @@ cp -R docs/build/ops/rehearsal-install-s5-20261026 deploy/activation/ && cd depl
 
 | Step | Who / where | Command | Done when |
 |---|---|---|---|
-| B0 | team | Verify S5-SIZE01 tests and the new profile/probe pins, then use M4's fresh-cash check; the recorded 81.37 USDT supports up to four 19-USDT lots under the stock-capital ceiling | verified source and fresh sizing check; no transfer step |
+| B0 | team | Use verified S5-SIZE01 source and the new profile/probe pins, then M4's fresh-cash check; the recorded 81.37 USDT supports up to four 19-USDT lots under the stock-capital ceiling | verified source and fresh sizing check; no transfer step |
 | TH | Keith (evidence), Yao | write the qualified `TokenHistoryConfig.v1` to `private/token-history.json`: `timestamp_kind` `OPEN`, `timestamp_evidence_sha256` = SHA-256 of the actual hourly OPEN timestamp evidence, and the adjustment version ([contract](../../FS1_TOKEN_HISTORY.md)) | the file parses; no synthetic value (M4 refuses one) |
 | F0s | Yao | runtime Secrets Manager entry carries `LARP_AIAND_API_KEY` (required) and `LARP_MODEL_API_KEY` (OpenAI), as FS1 sheet F0s | both keys present (names only checked) |
 | — | team | merge the IDEA-104 R3 PR into canonical, so BUILD contains it | canonical head contains `6dadc196…` |

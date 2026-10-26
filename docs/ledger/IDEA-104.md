@@ -366,3 +366,29 @@ First focused run after publication (`338beeb7`, native Python 3.12.14): 109 pas
 one new serial-settlement test failed. Its legacy four-decimal token fixture rounded a 19-USDT minimum output
 by whole cents, exceeding the unchanged cost reserve with measured gas. The test now uses production-style
 18-decimal token quantities; no cost gate or decision code was loosened. Rerun follows publication of this correction.
+
+### S5-SIZE01 final validation (2026-10-26)
+
+**Supported offline.** Source `2f9e886c25b4ceba0eb35bd23dd5543952d23865` was committed/pushed before execution.
+Native Python 3.12.14 focused run: **110 passed, 39 subtests passed, zero failures/skips** (9.47 s).
+Full Linux/aarch64 run on Python **3.12.15** and PostgreSQL **14.24**: **2978 passed, 8 skipped, 4069 subtests
+passed, zero failures** (677.99 s). The eight skips are two external/private fixtures, one root-permission test and
+five opt-in systemd tests. Receipt: [S5-SIZE01](../build/evidence/s5-size01-review-20261026.json).
+
+| Criterion | Result |
+|---|---|
+| SZ1 | PASS: committed profile rebuilds byte for byte; only new non-provenance key versus R3 is `s5_entry_lot_units`. Existing FS1/S4 profiles and routing retain their exact bytes; other scopes/bad values refuse. |
+| SZ2 | PASS: four serialized 19-USDT synthetic BUYs with policy reconstruction fit the recorded cash; filled names do not immediately sell back; no fifth BUY/quote is planned. These are synthetic finalized settlements, not real fills. |
+| SZ3 | PASS: BNB changes, including zero marked BNB, do not change cash targets or invalidate aggregate proposal weights; bad costs, insufficient cash, lower levels, loss/health gates and mandatory terminal sales retain their checks. Forged overweight policy input is independently bounded. |
+| SZ4 | PASS: M4 uses the profile-derived fresh-cash check, which reports four possible opening lots at recorded cash; profile/probe pins and shell tests agree. Routing and history remain required. |
+| SZ5 | PASS: focused and full pinned offline runs above; final receipt pins every changed source/test/script hash. |
+
+The runner had external networking disabled and shared only the disposable PostgreSQL namespace; the repository
+`.env` was hidden. Nested bubblewrap tests used container-local SYS_ADMIN with unconfined seccomp/system paths,
+as in PR296-RV01. The runner and database were removed. No production credentials, provider/model calls, wallet
+operations, host install or merge were performed.
+
+GitHub run `40287198787` did not start jobs: its runtime annotation says recent account payments failed or the
+spending limit needs increasing. Hosted CI is **unavailable**, not a tested code failure. Real TH-01 history,
+fresh hosted inputs and exact profile/probe/signer/release acceptance, host qualification and installation remain
+with the existing owners. The cash sizing implementation is complete; no funding transfer or FS1 change is needed.
