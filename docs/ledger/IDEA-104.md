@@ -461,3 +461,10 @@ afterward; current ModelBudget must load without replenishing spent credit or cl
 Code/tests must be committed/pushed before execution. Verify negative cases and atomic preservation against
 synthetic ledgers, plus existing budget/trial/routing checks, before applying to the stopped host runtime.
 No runtime release/profile/routing bytes are changed by this administrative transition.
+
+Transition verification:84 tests/288 subtests PASS offline (migration preservation/refusals plus existing
+trial caps, assessment budget and routing). The operation requires an expired unlatched trial and no reserved
+requests, rejects changed pacing/account/hash/attribution or safety/clock stops, saves the exact original bytes,
+retains all trial rows under archived table names, and preserves every charge/switch/account/clock field.
+The deployed release remains byte-identical to `c997df2c`; only an explicitly versioned administrative helper
+will perform this configuration-state transition. Host wrapper must refuse any other runtime-user process.

@@ -68,6 +68,11 @@ def retire(path, routing_raw, *, expected_sha256, routing_sha256, backup_dir, no
             f.write(raw)
             f.flush()
             os.fsync(f.fileno())
+        directory_fd = os.open(backup_dir, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
         db.execute('ALTER TABLE trial RENAME TO retired_trial')
         db.execute('ALTER TABLE trial_charges RENAME TO retired_trial_charges')
         db.execute('UPDATE pacing SET policy=? WHERE id=1', (_policy_bytes(p),))
