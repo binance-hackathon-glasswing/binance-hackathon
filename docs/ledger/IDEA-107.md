@@ -341,3 +341,12 @@ tokens; SK hynix's KRX close is ~13 h older than the US closes (NO-SKHY-SIGNAL �
 depend on it). P had already been used by S6 and EXP-008 (disclosed above). Overlapping windows make intervals
 optimistic (194 independent P windows, 5 on T). Daily P fills at the close, not open + 30 min. No red flags, model
 view or fee netting (#119) replayed. Independent review of the simulator and this result is still open.
+
+## Provenance (2026-10-26)
+
+The work was done on a local branch stacked on `744430e5` (IDEA-106 + EXP-007). For its own PR it was moved by
+cherry-pick (`-x`, author dates and order preserved) onto PR 299's head `fa006e30`. S7's simulator and tests import
+`tools/idea106/simulate.py`, so this branch carries IDEA-106 and does not need EXP-007. Original → new commits:
+criteria `084444fe` → `37606fa6`; simulator + tests `6ceb91f1` → `e6ba876a`; run record `1d195d33` → `34587e59`;
+results `e9abff3a` → `899f0046`; correction `d0f242cb` → `83bd0443`. `tools/idea107/simulate.py` and
+`tests/strategy/test_idea107_backtest.py` are byte-identical to the originals (the SHA-256 values above still hold).
