@@ -3,8 +3,8 @@
 - Date / author: 2026-10-26 SGT / Claude Code, asked by the user: "Can you create S5 that is fs1 but it sells all on
   monday night, leave FS1 as our final trading strategy". Owners: Yao (install, run), Isaac (profile/signer
   approval), Keegan (review); Keith (strategy values: unchanged from FS1).
-- Status: **open — pre-registered (criteria S5-1..S5-6 committed before any test or code, `8ee6420a`); supported offline
-  2026-10-26 (results below). Approval, run sheet and install remain.**
+- Status: **open. R1 (Monday-night window) superseded by R2 (to Tue Oct 27 12:00 SGT, FS1 token history), supported
+  offline 2026-10-26 (results at the end). Top-up (B0), the qualified history input, approval and install remain.**
 - Related: IDEA-093 (FS1, FS1-R), IDEA-098 (FS1 recovery profiles), IDEA-096 (allowance recovery), IDEA-097 (S4 run 5/6,
   dev wallet flat after run 6), IDEA-102 (mandatory sell spacing), F-125 (development ends Mon Oct 26 UTC).
 
@@ -113,3 +113,35 @@ any USDT surplus. Add the mirror image: `--accept-usdt-surplus-units N`, an exac
 | # | Pass when |
 |---|---|
 | S5R2-8 | Hosted review with `usdt_surplus=N`: accepted only when chain USDT − ledger USDT is exactly N, USDT is classed `SURPLUS` and the packet status is `SURPLUS_ONLY`; the new run starts from the chain cash; `portfolio-rebinding.json` records `accepted_usdt_surplus_units` N. Refused: an undeclared surplus, a surplus off by one unit, a declared surplus with a matching chain, a negative or non-integer value, a surplus and a deficit together, and numeric-only mode with a surplus. Every existing deficit/BNB/stock test passes unchanged. |
+
+## R2 results (2026-10-26; Python 3.12 from the pinned lock, macOS for focused runs; full suite in `larp-test:pr282` /
+PostgreSQL 14.24)
+
+Commits: `a4a822df` (S5R2-1..6 criteria), `c480667e` (tests, red on the merged base: 4 failed), `e5426786` (window,
+`requires_history`, profile), `dbbbd2d3` / `d7b629e8` (S5R2-7 criterion, test), `68e082c9` / `ece4c2f7` / `5751a449`
+(S5R2-8 criterion, red tests, code), `6b9cadb8` (run-7 sheet and its static tests).
+
+| # | Result |
+|---|---|
+| S5R2-1 | **PASS.** `rehearsal-s5.json` `5a5a200a…` (digest `64918e6a…`, M3 probe `8ba1328f…`) passes `validate_live` and differs from `fs1-rehearsal-recovery.json` only in the window keys, `policy_id` and their provenance (S5-1 unchanged). The `--s1-decision` text now says "from Tuesday Oct 27 08:00 SGT". The R1 profile still reproduces probe `9f2dde00…`, so the probe method is unchanged. |
+| S5R2-2 | **PASS.** 2026-10-26T06:00Z / 23:00Z / 2026-10-27T00:00Z / 04:00Z, strictly ordered; `signing_end` Tue 12:00 SGT, before Oct 28. |
+| S5R2-3 | **PASS.** Signed dev preparation packages `token-history.json` and pins it at `/etc/larp/token-history.json`; `gate_a_check` scope and inputs pass; the runtime's `series` is a `SessionHistory`. Without the input, preparation and startup refuse. |
+| S5R2-4 | **PASS.** FS1 FINAL (both) and FS1-R (both) still require history; S1, S2, S3, S4 and the equal-weight rehearsal do not. FS1 profiles keep `19176e6c…`, `b8ba06e2…`, `54802665…`, `17ab891d…`; S5 rebuilds byte for byte. The rehearsal test helpers now key on `requires_history`, not one `policy_id`. |
+| S5R2-5 | **PASS.** Mon 22:59Z one discretionary BUY; Mon 23:00Z no BUY intent or request; Tue 00:00Z NVDAB/SKHYB `TERMINAL_FLATTEN`, mandatory SELLs only. |
+| S5R2-6 | **PASS.** Full suite in `larp-test:pr282` (Python 3.12.15) with PostgreSQL 14.24: branch **2919 passed, 12 skipped, 4069 subtests, 3 failed**; canonical `5e3f33df` in the same setup: 2897 passed, 12 skipped, 4060 subtests, the same 3 failed. The 3 (`test_deploy_presetup` ignored-directory, `test_final_review_d` credential scan, `test_gate_a` GA15b) call `git check-ignore`/`git ls-files`, which cannot read the worktree's git metadata inside the container: environment-only. +22 tests are the new S5, top-up and run-7 sheet tests. |
+| S5R2-7 | **PASS (finding confirmed).** At 81.373047 USDT / BNB 0.024973, no BUY target, intent or request. At 101.373047 USDT, five BUY targets and one 19.0 USDT BUY intent (serial). Bisection: the first buy needs about **98.31 USDT** of cash (98 310 912 units at 1 000-unit resolution). R1's "four names at about 90 USDT" was wrong. With quotes supplied, the planner returns the first buy as an intent, so the test checks the intent rather than a quote request. |
+| S5R2-8 | **PASS.** `--accept-usdt-surplus-units N` accepts exactly N with USDT `SURPLUS` and status `SURPLUS_ONLY`, starts the run from chain cash and records `accepted_usdt_surplus_units`. It refuses an undeclared surplus, ±1 unit, a declared surplus on a matching chain, negative, float and boolean values, a surplus together with a deficit, a status mismatch, and numeric-only mode. All existing hosted-assembly tests pass unchanged. |
+
+**Run-7 sheet:** `build/ops/rehearsal-install-s5-20261026/`, adapted from the run-5 sheet. It retires run 6; has no X1
+step; M4 takes the qualified `TOKEN_HISTORY`, refuses synthetic history, held stock and cash below 98.32 USDT, and
+expects a signer diff of exactly `build_id`/`database_name`/`run_id` against run 6's `1e052e26…`; P3 installs and
+checks `token-history.json`; M3 declares the B0 top-up. `tests/runtime/test_run7_sheet.py` pins it statically.
+Not run against any host.
+
+**Not mirrored (by design or out of scope):** S5 keeps the deterministic assessor in the SHADOW dev scope (S2-1
+`KIT_OPEN_STATE` rule), so the AIand/ChatGPT routing, `model_budget` and parallel model assessments of FS1 FINAL are not
+exercised; FS1's `activation_self_check` is FINAL-only; sizes are 1/5 of about 100 USDT, not 170 USDT.
+
+**Remaining:** Yao: B0 top-up (≥ 98.32 USDT, about +20 USDT recommended) and the TH input with Keith's actual
+timestamp-evidence hash; team: merge PR294 so the build contains R2; Isaac: A1 (profile, probe, signer hash);
+Keegan: review S5R2-8, the sheet and the input; Yao: install; then the live checks in the sheet's J section.
