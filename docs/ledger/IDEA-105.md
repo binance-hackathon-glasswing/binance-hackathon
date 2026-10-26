@@ -103,3 +103,12 @@ validates with the runtime's own `configuration()`. Record here the verdict, `ti
 hash and where the evidence is kept. Then Keegan reviews the binding (TH-01) and the file goes to
 `prepare_shadow.py prepare --token-history-config` / `prepare_fs1.py --token-history-config`.
 The evidence holds public market data and artifact hashes only; credentials never enter it.
+
+## Offline results (2026-10-26)
+
+**TS5–TS7 PASS offline; TS1–TS4 untested on the real provider (Keith's run).** Source `5abbba6f` (pushed before
+execution). Focused: 20 passed. Full suite on Python 3.12 / PostgreSQL 16 (not the pinned 14.24 image):
+**2995 passed, 11 skipped, 4069 subtests passed, 0 failed** (850.84 s), against 2975 passed / 11 skipped on canonical
+`d4f7a6e0` in the same environment: the difference is exactly the 20 new tests. No live provider was called and no
+credentials were used. GitHub CI is billing-blocked. Remaining: Keith's live run and verdict (TH-01), his adjustment
+version, Keegan's review of the binding.
