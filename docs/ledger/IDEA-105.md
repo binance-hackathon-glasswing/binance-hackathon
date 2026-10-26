@@ -112,3 +112,34 @@ execution). Focused: 20 passed. Full suite on Python 3.12 / PostgreSQL 16 (not t
 `d4f7a6e0` in the same environment: the difference is exactly the 20 new tests. No live provider was called and no
 credentials were used. GitHub CI is billing-blocked. Remaining: Keith's live run and verdict (TH-01), his adjustment
 version, Keegan's review of the binding.
+
+## Live run 1 (2026-10-26, Keith's machine)
+
+**PASS: OPEN labels supported on the real provider, 5 of 5 names, no contradiction.** Source `1ea20471` (PR 297
+head, containing canonical `d4f7a6e0`), run with Keith's `.env` from an isolated checkout. Polled 09:31–10:15 UTC
+across the 10:00 UTC boundary (H = 09:00), in the Asian session rather than the preferred US session. Exit 0.
+
+- Verdict: **PASS**, `names_ok` GOOGLB, MSFTB, NVDAB, SKHYB, TSLAB. TS1, TS2 and TS3 true on all five; no
+  contradictions.
+- `timestamp_evidence_sha256` = `cc8371bd235eb4db284367fbf0267890d3c6a87bafca60ca2573f0b9d64b3fa6`.
+- Evidence: Keith's machine, `~/larp-th01/run-20261026T0931Z/` (`timestamp-evidence.json` plus 442 raw artifacts,
+  14 MB). Not committed: it is a run artifact, it holds public market data and artifact hashes only, and neither
+  credential value appears anywhere in it (checked).
+- TS4 (reported only): `open_match` true on MSFTB only; `end_match` false on all five. Post-run diagnosis (not a
+  criteria change): for **all five** names the first open, max high, min low, last close **and summed volume** of the
+  OPEN-window minute rows equal the hourly row exactly. Only the trade count differs: the hourly count is below the
+  sum of minute counts (GOOGLB 48 vs 74, NVDAB 186 vs 215, SKHYB 186 vs 293, TSLAB 303 vs 463; MSFTB 5 vs 5), so
+  the provider's trade count is not additive across bars. That is the "aggregates differently" case the pre-registered
+  rule reports without failing; it supports OPEN rather than weakening it. The TS4 code is deliberately unchanged:
+  `config` requires the stored assessment to re-assess identically, so changing it would invalidate this evidence.
+  If a future rerun is needed, a criteria amendment written before that run could drop trade count from TS4.
+- `config` dry run on this evidence with a placeholder version accepted it (re-assessed as the stored PASS, validated
+  by `configuration()`); the placeholder file was deleted. No `token-history.json` exists yet.
+- Tool fix found by this run: the documented `--out ~/larp-th01/run-…` failed on a first run
+  (`TH01_PROBE_REFUSED` / `FileNotFoundError`) because only the leaf directory was created. The probe now creates
+  missing parents; the run directory itself must still be new (TS5). Regression test
+  `test_ts5_missing_parent_directory_is_created` fails on `1ea20471` and passes with the fix (21 focused passed,
+  Python 3.12).
+
+Remaining (TH-01): Keith chooses `token_adjustment_version` and runs the `config` step above on this evidence;
+Keegan reviews the binding before the file goes to `prepare_shadow.py` / `prepare_fs1.py --token-history-config`.
