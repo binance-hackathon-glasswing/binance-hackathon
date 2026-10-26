@@ -23,7 +23,7 @@ WINDOW = ('trade_after', 'new_risk_end', 'flatten_start', 'signing_end')
 S5_WINDOW = ['2026-10-26T06:00:00Z', '2026-10-26T23:00:00Z', '2026-10-27T00:00:00Z', '2026-10-27T04:00:00Z']
 DECISION = ("IDEA-104 S5 (2026-10-26): the FS1 final block (S2's block: IDEA-084 PF-01 values; weights 1/5, start UP, "
             "legs 3, expiry 3, deterministic limiter; hours KIT_OPEN_STATE, 5 attempts per leg) on the dev wallet, "
-            "selling everything from Monday 21:00 SGT")
+            "selling everything from Tuesday Oct 27 08:00 SGT")
 # Profiles that S5 must leave byte for byte (file SHA-256).
 UNCHANGED = {
     'fs1-final-20261025/fs1-final.json': '19176e6c6537291bb41f440636f51d7f6313d2444ebf7242cc145316d840f291',
