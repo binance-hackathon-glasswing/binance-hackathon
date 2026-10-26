@@ -394,3 +394,12 @@ this basket is NOT_ESTABLISHED.**
 
 - 2026-10-26 note (Claude Code, with the results): the Economics table's "+0.108..0.142 USDT" for m = 1 is correct for
   a flat market (tested); in moving markets the flatten-leg effect in caveat 2 offsets it. The criteria are unchanged.
+
+## Provenance (2026-10-26)
+
+The work was done on a local branch stacked on `d0f242cb` (IDEA-106, EXP-007 and IDEA-107 originals). For its own PR
+it was moved by cherry-pick (`-x`, author dates and order preserved) onto PR 301's head `37bff3c3`, because S8's
+simulator and tests import `tools/idea106` and `tools/idea107`; it does not need EXP-007. Original → new commits:
+criteria `df6b8df6` → `8154702c`; simulator + tests `40fe1373` → `8d5a1f2b`; run record `16ba8aa3` → `0416335d`;
+results `dd36599d` → `511ec802`. `tools/idea108/simulate.py` and `tests/strategy/test_idea108_backtest.py` are
+byte-identical to the originals, and an independent rerun reproduced `report-40fe1373.json` byte for byte.
