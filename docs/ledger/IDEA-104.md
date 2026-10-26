@@ -175,3 +175,15 @@ aland/chatgpt model calls like FS1, s5 is meant to mirror FS1".
 | S5R3-4 | Planner on the S5 profile at run 6's closing balance in the buy window: the first round plans one BUY intent of at least `minimum_trade_units`; with three names already held at about 19 USDT each and the matching remaining cash, a fourth BUY is still planned. |
 | S5R3-5 | Planner at Mon 22:59Z BUY, Mon 23:00Z no BUY, Tue 00:00Z `TERMINAL_FLATTEN` mandatory SELLs only (S5R2-5 on the R3 profile). The FS1 profiles and S4 still rebuild byte for byte. |
 | S5R3-6 | Full suite: no new failures against canonical `81ee30a1` in the same environment; exact counts reported. |
+
+**R3 amendment (2026-10-26 SGT, before any R3 test ran).** User, in chat: "s5 should not count BNB as capital and i
+think the real token history file is already in FS1 just take from there and finally all approvals from all parties
+are given so just ahead". So S5 keeps FS1's `s1_capital_basis` `EXCLUDE_GAS`; the BNB-counting design above is
+withdrawn. Replacements:
+- S5R3-1: the allowed differences from FS1 FINAL lose `s1_capital_basis` (S5 keeps `EXCLUDE_GAS`).
+- S5R3-4: at run 6's closing balance S5 plans no BUY (S5R2-7 still holds); at 101.373047 USDT it plans one.
+- Token history: no `TokenHistoryConfig.v1` with real evidence exists in the repository, the private
+  `deploy/activation/` folder or any local checkout (searched 2026-10-26). FS1 has none either; TH-01 is open. M4
+  keeps refusing a synthetic file.
+- Approvals: recorded as relayed by the user ("all approvals from all parties are given"); no named record or hash
+  was given.
