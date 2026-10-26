@@ -122,9 +122,14 @@ across the 10:00 UTC boundary (H = 09:00), in the Asian session rather than the 
 - Verdict: **PASS**, `names_ok` GOOGLB, MSFTB, NVDAB, SKHYB, TSLAB. TS1, TS2 and TS3 true on all five; no
   contradictions.
 - `timestamp_evidence_sha256` = `cc8371bd235eb4db284367fbf0267890d3c6a87bafca60ca2573f0b9d64b3fa6`.
-- Evidence: Keith's machine, `~/larp-th01/run-20261026T0931Z/` (`timestamp-evidence.json` plus 442 raw artifacts,
-  14 MB). Not committed: it is a run artifact, it holds public market data and artifact hashes only, and neither
-  credential value appears anywhere in it (checked).
+- Evidence: committed byte for byte (at the user's request) as
+  [`docs/build/evidence/th01-live-20261026/`](../build/evidence/th01-live-20261026/): `timestamp-evidence.json`
+  (4.1 MB) plus the 442 raw Web3 artifacts in `raw/` (14 MB) that PR297-RV01's `verify_sources` replays; a local
+  `.gitattributes` marks every file `-text` so the hashes hold. The original is on Keith's machine in
+  `~/larp-th01/run-20261026T0931Z/`. Contents are public market data only: GET `market/candles` (440) and
+  `market/rwa/tokens` (2) responses, whose only addresses are the public token contracts; neither credential value
+  appears anywhere (checked). At `df01d9cb` (PR297-RV01 code) `config` on the committed copy, with a placeholder
+  version written outside the repo and deleted, re-assessed PASS and verified every source artifact.
 - TS4 (reported only): `open_match` true on MSFTB only; `end_match` false on all five. Post-run diagnosis (not a
   criteria change): for **all five** names the first open, max high, min low, last close **and summed volume** of the
   OPEN-window minute rows equal the hourly row exactly. Only the trade count differs: the hourly count is below the
