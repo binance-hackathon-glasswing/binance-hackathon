@@ -468,3 +468,50 @@ requests, rejects changed pacing/account/hash/attribution or safety/clock stops,
 retains all trial rows under archived table names, and preserves every charge/switch/account/clock field.
 The deployed release remains byte-identical to `c997df2c`; only an explicitly versioned administrative helper
 will perform this configuration-state transition. Host wrapper must refuse any other runtime-user process.
+
+## S5-OBS01 — run 7 makes no entries while the trend guard is DOWN (2026-10-26, live observation)
+
+Read-only observation, not an experiment: no code, profile, host or wallet change. Sources: the team's SSM
+`primary-status`/`trading-status`/`signer-status` outputs of 12:10–12:17Z (read back with `ssm:GetCommandInvocation`)
+and read-only Session Manager queries run by the user (in a Claude session) on the primary between about 12:40Z and 13:00Z
+(`SET TRANSACTION READ ONLY`, as `larp-execution`). Code citations are to the deployed build `c997df2c`.
+
+Observed state of `larp-dev-rehearsal-20261026-s5` (mode `dev`, build `c997df2c`):
+- `larp-execution` active since 11:58:16Z, `larp-runtime` since 12:09:02Z, both `NRestarts=0`; evidence/uploader
+  active; run not quarantined; archive health `healthy: true`. The journal holds only start-up JSON lines.
+- 205 rounds planned and closed by about 13:00Z, all `safety:` ticks about every 13 s; last decision 9 s before the
+  query. Event kinds: only VERSION_REGISTERED, RUN_ACTIVATED, BALANCE_CHECKED, ROUND_PLANNED, ROUND_CLOSED (no model
+  assessment events). Jobs: five `evidence` jobs, all `EXPIRED`.
+- 0 intents, 0 planner rejections, 0 execution records, 0 signing requests, 0 signatures, router allowances 0.
+- Every policy target in the last 40 rounds: `KEEP_QUANTITY / LOW_TURNOVER_HOLD` for all five names.
+- Policy state: `s1.trend_state` **DOWN** (`trend_evaluated_session` 203), limiter `NORMAL`.
+- Markets: all five `basis_verified`, `token_open` and `underlying_open` true; measured round trip 2–9 bp.
+- Signer at 12:10Z: `larp-signer` active, `signing_enabled: true`, `swap_decoder: "UNTRUSTED"` (DEV-23). SSM shows
+  the signer `ConnectionLost` since 12:10Z; its health after that was not checked.
+
+**Cause (from code; consistent with every observation above).** With trend DOWN the S1 level is
+min(mid 60%, limiter high 95%) = 60% (`s1.level_fraction`). Each name's target is 60% × 1/5 × stock capital
+81.273047 ≈ **9.75 USDT**, below `minimum_trade_units` **18.637420 USDT**. So the gap never reaches one step,
+and the policy emits `LOW_TURNOVER_HOLD` (a hold, not a rejection; `policy.py` S1 branch). The S5-SIZE01 lot
+does not apply: `rehearsal_sizing.name_target` returns the ordinary target unless the level is the high level,
+as S5-SIZE01 specified ("At lower exposure levels the ordinary targets apply"). The S5-SIZE01 cash check
+(`opening_cash_check`) and SZ2 tested the high level only. So **S5 cannot enter at the mid or low level on
+this wallet.** The trend signal is the five-name equal-weight basket's last close over its 5-session mean, minus
+one; below −100 bp is DOWN (`s1.evaluate_trend`). The two `S1_LEVEL_CHANGE` reasons seen at 12:17Z are probably
+the switch from `trend_start_state` UP to the evaluated DOWN [inference; not traced].
+
+Not the cause: market data/basis, quote cost, `trade_after` (06:00Z; KIT_OPEN_STATE hours), `assessment_required`
+(false in S5) and `minimum_remaining_sessions` (0). The expired evidence jobs are Friday Oct 23's
+`S1_SESSION_CLOSE` reviews (due 20:15Z, valid to Sat 20:15Z, `missed='expire'`): the run started on Monday, after
+their validity. That is a start-time effect, not a weekend rule. In a continuous run, Friday's review runs on
+Friday evening and covers the weekend (IDEA-093 "Weekend attempts").
+
+Consequence for run 7: the trend is re-evaluated after Monday's close, at about **20:15Z** (04:15 SGT). If it turns
+UP, 19-USDT lots are possible until `new_risk_end` 23:00Z, before the 00:00Z flatten. If it stays DOWN, run 7
+makes no trade and does not exercise the post-approve swap or sell that S5 was meant to test. No profile or
+window change is proposed here; any change needs a new profile hash and the existing owners' approval.
+
+FS1 implication [our arithmetic, not run]: at 170 USDT cash (GAP-73) and a 0.20 reserve, the FINAL mid-level
+target is 0.6 × 1/5 × 169.8 ≈ 20.38 USDT. That is above the 18.637 USDT minimum, so FS1 can still enter in a
+downtrend, by about 1.7 USDT before costs. Lower funding (fees, the self-check) narrows that margin. At the
+limiter `SEVERE` level (30%) the target is about 10.19 USDT, so FS1 makes no new entries there.
