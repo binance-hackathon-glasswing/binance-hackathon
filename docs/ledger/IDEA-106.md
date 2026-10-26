@@ -12,8 +12,9 @@
 
 - Date / author: 2026-10-26 SGT / requested in a Claude Code session on Keith's machine; design, arithmetic and record by
   Claude Code. Strategy owner for review: Keith.
-- Status: **open — design and pre-registered backtest criteria only.** No backtest, data fetch, model call, profile,
-  runtime change, wallet, host or deploy action was taken. Predictive edge: **NOT_ESTABLISHED** (as for FS1).
+- Status: **backtest run 2026-10-26: NOT SUPPORTED** (S6 trails FS1-STATIC on token history, 90% interval wholly
+  below zero; S6-B4 median drawdown also fails). S6 is not adopted; FS1 is unchanged. No model call, profile, runtime
+  change, wallet, host or deploy action was taken. Predictive edge: **NOT_ESTABLISHED** (as for FS1).
 - Base: canonical `codex/system-testing-20261012` at `c997df2c` (PR298 merged).
 - Related: IDEA-093 (FS1), IDEA-104 (S5), IDEA-105/IDEA-103 (TH-01 token history), IDEA-091 (strategy alternatives
   research), EXP-007, EXP-008, IDEA-063 (quote costs), IDEA-084 PF-01/PF-02/PF-04, IDEA-034 (a losing arm is never
@@ -266,6 +267,62 @@ sessions, 10,000 resamples, seed 106).
   swaps and swap-ins need the score of both names (a name with > 2 carried closes is skipped on both sides);
   after the 12% cut S6 makes no swaps for the rest of the window; NYSE early closes are not modelled (16:00 ET
   throughout); session dates come from the underlying NYSE trading days; K = 2 uses a 56% name line.
+
+## Backtest result (2026-10-26 SGT): NOT SUPPORTED
+
+Run at `e2aadff5` (simulator from `dc8e33ac` plus BT-D1's cutoff constant) on the snapshot recorded above; report
+`~/larp-idea106/report-e2aadff5.json` (outside Git, reproducible from the snapshot with
+`python -m tools.idea106.simulate --data ~/larp-idea106/snapshot-20261026`). Mean net return per 10-session window,
+200 USDT start, central costs unless stated; intervals are the pre-registered moving-block bootstrap 90%.
+
+**T (primary: kit 1-hour token bars).** 72 sessions 2026-07-15 → 2026-10-23; 52 overlapping windows (first
+2026-07-30), 5 non-overlapping. Fill fallbacks: 5 next-bar, 3 session-close of 360 name-session fills.
+
+| Arm | Mean | Median | Share > 0 | Mean max DD | Median max DD | DD ≥ 8% | DD ≥ 12% | Swaps | Cost (USDT) |
+|---|---|---|---|---|---|---|---|---|---|
+| S6 | **−1.00%** | −1.34% | 25% | 5.39% | 5.62% | 1.9% | 0% | 2.73 | 1.76 |
+| FS1-STATIC | **+0.49%** | +1.05% | 71% | 4.31% | 3.53% | 11.5% | 0% | 0 | 0.96 |
+| CONC3 (mean of 10 static 3-books) | +0.47% | | | | | | | | |
+
+- S6 − FS1-STATIC: **−1.49 pp** [−2.39, −0.96]; S6 ahead in 23% of windows. S6's own mean: [−1.74, −0.31].
+- S6 − CONC3: −1.47 pp [−2.41, −0.92]: concentration alone cost nothing (CONC3 ≈ FS1); the loss is the selection.
+- Cost cases (S6 − FS1): central −1.49, team convention −1.67, stress −2.10, gas at cap −2.63 pp. Break-even
+  per-side cost: none (S6 trails even at 0 bp).
+- Swaps: 142 in all; the swapped-in name beat the swapped-out name by **−1.88 pp less than** its cost + 50 bp on
+  average, i.e. the 10-session leader tended to fall behind (reversal, not momentum, over this sample).
+- Incremental cost vs FS1: 0.40% of equity; smallest discretionary leg 28.4 USDT.
+- Leave one name out (S6 − FS1 on the other four): GOOGLB −1.15, MSFTB −0.74, NVDAB −0.04, SKHYB −1.02,
+  TSLAB −0.00 pp; S6 ahead in 1 of the 6 windows spaced 10 sessions apart.
+
+**P (secondary: underlying daily closes, 2019-01-17 → 2026-10-23, 1,944 windows).** S6 +1.04% vs FS1-STATIC +1.01%;
+difference +0.03 pp [−0.20, +0.25]; S6 mean max DD 4.54% vs 4.05%. No detectable difference over seven years:
+the extra swaps roughly paid for themselves and no more.
+
+| Gate | Result | Why |
+|---|---|---|
+| S6-B0 | PASS | simulator committed before the snapshot; 5 point-in-time / cost tests pass |
+| S6-B1 | FAIL | mean −1.49 pp, upper bound −0.96 < 0; S6's own upper bound −0.31 < 0 |
+| S6-B2 | FAIL | −1.47 pp vs CONC3 |
+| S6-B3 | FAIL | −1.67 pp at the team convention; no positive break-even |
+| S6-B4 | FAIL | median max DD 5.62% > 1.5 × 3.53% = 5.30% (the 8%/12% shares pass) |
+| S6-B5 | PASS | 2.73 swaps, +0.40% cost, min leg 28.4 USDT |
+| S6-B6 | FAIL | ahead in 17% of non-overlapping windows; leave-one-out positive in 0 of 5 |
+| S6-B7 | FAIL | mean swap excess −1.88 pp |
+| S6-B8 | PASS | P upper bound +0.25 ≥ 0 |
+
+**Outcome: NOT SUPPORTED** (three independent triggers: T's 90% upper bound < 0, S6's own upper bound < 0, B4
+fails). Per the decision rule S6 is not adopted and stays experimental; no parameter is changed after the fact.
+
+**Reported variants (cannot change the outcome; T, S6 − FS1):** K = 2 −2.45 pp (mean DD 7.04%); L = 5 −1.63; L = 20
+−0.51 (42 windows); margin 0 −1.26; no swap budget −1.49; **REV3 (hold the three weakest) +0.76 pp**, mean DD 4.32%.
+REV3 is the falsification mirror, not a candidate: it was not pre-registered as a strategy, it is one 3-month regime
+with 5 independent windows, and adopting it now would be choosing the best of seven arms after seeing them. Any
+reversal design needs its own pre-registration and data it has not seen (e.g. sessions after 2026-10-23).
+
+**Caveats.** One regime (Jul–Oct 2026); 5 non-overlapping windows, so intervals from overlapping windows are
+optimistic; simulated at candle prices, not fills (ledger rule 4); red flags and the model veto are not replayed;
+quote fee netting (#119) still unverified, which would only widen S6's cost gap. Independent review of the
+simulator and this result is still open.
 
 ## Implementation plan (if, and only if, the gates allow)
 
