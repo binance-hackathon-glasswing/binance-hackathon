@@ -56,7 +56,7 @@ def test_recovery_token_history_and_top_up_reach_every_config():
     assert "== (CONFIG_FILE, hashlib.sha256(history_raw).hexdigest())" in m4
     assert "'untrusted-router-policy.json', 'token-history.json', 'model-routing.json']" in m4
     assert "changed == ['build_id', 'database_name', 'run_id']" in m4 and "startswith('1e052e26')" in m4
-    assert "state['cash_units'] >= MIN_CASH_UNITS" in m4 and 'MIN_CASH_UNITS = 98_320_000' in m4
+    assert "opening_cash_check(profile, state['cash_units'])" in m4 and 'MIN_CASH_UNITS' not in m4
     assert p3.count('token-history.json') >= 3 and 'runtime_token_history readable_by=larp-runtime' in p3
 
 

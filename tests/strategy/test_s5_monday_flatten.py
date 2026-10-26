@@ -35,7 +35,7 @@ UNCHANGED = {
 }
 # S5R3-1: the only non-provenance keys in which S5 may differ from FS1 FINAL (with recovery).
 FS1_DIFFERENCES = sorted(('environment', 'cost_reserve_units', 'expected_equity_units', 'per_trade_cap_units', *WINDOW,
-                          'policy_id', 'activation_self_check'))
+                          'policy_id', 'activation_self_check', 's5_entry_lot_units'))
 
 
 def build(**options):
@@ -123,7 +123,8 @@ def round_at(value, held=None, *, cash_units=None, bnb_units=None, sizing=False)
     changes = dict(s1=block(execution=dict(s2.EXECUTION, hours='KIT_OPEN_STATE')), **dict(zip(WINDOW, S5_WINDOW)))
     if sizing:
         changes.update({k: p[k] for k in ('cost_reserve_units', 'minimum_trade_units', 'per_trade_cap_units',
-                                          'entry_cost_basis', 's1_reduction_cost_cap_bps', 'slippage_bps')})
+                                          'entry_cost_basis', 's1_reduction_cost_cap_bps', 'slippage_bps',
+                                          's5_entry_lot_units', 'policy_id', 'environment')})
         changes['s1_capital_basis'] = p['s1_capital_basis']
     s = at(value, held=held, profile_changes=changes, risk=dict(day=value[:10]),
            execution_session=dict(index=session, open_ms=milliseconds('2026-10-26T13:30:00Z'),
@@ -157,12 +158,11 @@ def test_s5r3_5_buys_until_tue_07_sgt_and_sells_everything_from_08_sgt():
 RUN6_CASH, RUN6_BNB = 81_373_047, 24_973_000_000_000_000
 
 
-def test_s5r3_4_gas_excluded_capital_needs_about_98_usdt_of_cash():
+def test_s5_size01_recorded_cash_funds_an_opening_lot_without_counting_gas():
     p = json.loads(S5.read_bytes())
     s, short = round_at('2026-10-26T16:00:00Z', cash_units=RUN6_CASH, bnb_units=RUN6_BNB, sizing=True)
-    assert not [t for t in decide(s, s.policy_state).targets if t.kind is TargetKind.TARGET_WEIGHT]
-    assert not [i for i in short['intents'] if i['side'] == 'BUY'], short['intents']
-    assert not [q for q in short['quote_requests'] if q['side'] == 'BUY'], short['quote_requests']
+    assert [t for t in decide(s, s.policy_state).targets if t.kind is TargetKind.TARGET_WEIGHT]
+    assert [(i['side'], i['cash_units']) for i in short['intents']] == [('BUY', 19_000_000)]
     _, funded = round_at('2026-10-26T16:00:00Z', cash_units=RUN6_CASH + 20_000_000, bnb_units=RUN6_BNB, sizing=True)
     buys = [i for i in funded['intents'] if i['side'] == 'BUY']
     assert len(buys) == 1 and int(buys[0]['cash_units']) >= p['minimum_trade_units'], funded['intents']

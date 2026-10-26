@@ -28,13 +28,12 @@ RUN, DB = 'larp-dev-rehearsal-20261026-s5', 'larp_rehearsal7'
 # IDEA-104 R3: the S5 REHEARSAL profile (FS1 at rehearsal size: FS1 model authority, recovery, token history,
 # window to Tue Oct 27 12:00 SGT).
 PROFILE = wt / 'docs/build/evidence/s5-rehearsal-profile-20261026/rehearsal-s5.json'
-PROFILE_SHA = 'f371b18dd44e4da4ab96a86a8c2d491cde6d799168ca53f6ae93d1358be65c5b'
+PROFILE_SHA = '6dadc1961a54374f51415e2168ff8d4a917b28f90e58c9493a1b9fbd8731e80d'
 # IDEA-104 R3: FS1's reviewed AIand/ChatGPT routing (IDEA-093), as FS1 installs it.
 ROUTING = wt / 'config/intelligence/aiand-routing.fs1.json'
 ROUTING_SHA = '9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4'
 TOKEN_HISTORY = Path(os.environ['TOKEN_HISTORY'])
-# S5R2-7: below about 98.31 USDT of cash the S5 planner buys nothing (EXCLUDE_GAS, 1/5 weights, 18.64 USDT minimum).
-MIN_CASH_UNITS = 98_320_000
+# S5-SIZE01: fresh cash must fund the selected profile's opening lot within its existing caps.
 POLICY = wt / 'docs/build/evidence/untrusted-router-policy-ld03-20261020.json'
 POLICY_SHA = '05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5'
 # The S5 scope is the team's IDEA-104 decision; M4 refuses to prepare without that record.
@@ -55,6 +54,7 @@ require(SCOPE != '' and len(ADOPTION) <= 200, 'SCOPE_CONFIRMATION (the record of
 # IDEA-103: the qualified history input, validated by the release's own parser. A synthetic test value is refused.
 sys.path.insert(0, str(wt))
 from larp.marketdata.history import CONFIG_FILE, MAX_CONFIG_BYTES, configuration as history_configuration
+from larp.strategy.rehearsal_sizing import opening_cash_check
 history_raw = TOKEN_HISTORY.read_bytes()
 require(len(history_raw) <= MAX_CONFIG_BYTES, 'token history file too large')
 history = history_configuration(json.loads(history_raw))
@@ -135,9 +135,9 @@ require((rt['driver'].get('token_history_file'), rt['driver'].get('token_history
 require((out / 'token-history.json').read_bytes() == history_raw, 'packaged token-history.json differs from TOKEN_HISTORY')
 state = json.loads((out / 'initial-state.json').read_text())
 require(not any(p['units'] for p in state['positions'].values()), 'the dev wallet holds stock: S5 is a fresh run')
-require(state['cash_units'] >= MIN_CASH_UNITS, 'cash below about 98.32 USDT: S5 would buy nothing (S5R2-7); reviewed sizing/no-trade decision required (B0)')
+size_check = opening_cash_check(profile, state['cash_units'])
 print(json.dumps(dict(opening_equity_units=state['opening_equity_units'], cash_units=state['cash_units'],
-                      token_history_sha256=hashlib.sha256(history_raw).hexdigest())))
+                      token_history_sha256=hashlib.sha256(history_raw).hexdigest(), **size_check)))
 # S2-10: without this pair the runtime wires no quote verifier and the run behaves exactly like run 3.
 require((rt['driver'].get('untrusted_router_policy_file'), rt['driver'].get('untrusted_router_policy_sha256'))
         == ('/etc/larp/untrusted-router-policy.json', POLICY_SHA), 'runtime router policy pair missing or differs (S2-10)')

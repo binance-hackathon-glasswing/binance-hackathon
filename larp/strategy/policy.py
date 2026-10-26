@@ -15,6 +15,7 @@ from .features import declared_weight, features
 from .schema import fraction, instant, integer, markets, profile, ratio, value, equity, stock_capital_scale
 from . import s1 as s1_plan
 from . import scheduled_flatten, self_check
+from .rehearsal_sizing import name_target as rehearsal_name_target
 from .predicates import predicate_records, update_blocks, update_directive_blocks
 
 
@@ -197,6 +198,10 @@ def decide(snapshot, state):
             if due and fresh_review:
                 last_review = session
             want = s1["level"] * s1["cfg"]["weights"][symbol] * s1['capital_scale']
+            want = rehearsal_name_target(p, s1['cfg'], want,
+                level=s1['level'] * s1['capital_scale'], capital_scale=s1['capital_scale'],
+                safe_equity=max(0, E - p['cost_reserve_units']),
+                enabled=not ledger.get('risk', {}).get('deep_cut', False))
             gap = want * (E - p["cost_reserve_units"]) - value(units, m)
             gates = (symbol not in blocked and window_open and (p.get("mode") != "LIVE" or type(m.get("measured_roundtrip_bps")) is int)
                      and (not p["assessment_required"] or fresh_review)
@@ -293,6 +298,24 @@ def decide(snapshot, state):
         else:
             targets.append(Target(symbol, TargetKind.KEEP_QUANTITY, "NO_PORTFOLIO_CAPACITY"))
     if s1 is not None:
+        if 's5_entry_lot_units' in p:
+            # Opening lots must form a valid proposal even if gas has little/no marked value:
+            # five 19-USDT targets cannot be proposed against an 81-USDT cash-only wallet.
+            safe = max(0, E - p['cost_reserve_units'])
+            capacity = max(Fraction(0), s1['level'] * s1['capital_scale'] * safe
+                - sum((value(ledger['positions'][s]['units'], market[s]) for s in held), Fraction(0)))
+            openings = []
+            for index, target in enumerate(targets):
+                if target.kind is TargetKind.TARGET_WEIGHT:
+                    gap = target.weight * safe - value(ledger['positions'][target.symbol]['units'], market[target.symbol])
+                    if gap > 0:
+                        openings.append((-gap, target.symbol, index))
+            for negative_gap, symbol, index in sorted(openings):
+                gap = -negative_gap
+                if gap <= capacity:
+                    capacity -= gap
+                else:
+                    targets[index] = Target(symbol, TargetKind.KEEP_QUANTITY, 'NO_PORTFOLIO_CAPACITY')
         # Names this round did not reach (blocked, unmarked) keep their place in the rebalance.
         s1["pending"] = sorted(s1["pending"] | (s1["rebalance"] - s1["seen"]))
     following = replace(state, version=state.version + 1, data=Document.from_dict({**data,

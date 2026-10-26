@@ -1,20 +1,19 @@
-# Run 7 run sheet: S5, the FS1 mirror rehearsal on the dev wallet, to Tue Oct 27 12:00 SGT (IDEA-104 R2)
+# Run 7 run sheet: S5, FS1 rehearsal with cash-funded opening lots, to Tue Oct 27 12:00 SGT (IDEA-104 S5-SIZE01)
 
 Retire run 6 (`larp-dev-rehearsal-20261026-s4b`, build `7fc9f60`, `larp_rehearsal6`; flat since 2026-10-25 17:21Z) and
-install run 7 (`larp-dev-rehearsal-20261026-s5`, database `larp_rehearsal7`) on the **S5 profile `f371b18d…`** (IDEA-104
-R3) with a **new build** from canonical that contains FS1's token history (PR295) and S5 R3.
+install run 7 (`larp-dev-rehearsal-20261026-s5`, database `larp_rehearsal7`) on the **S5 profile `6dadc196…`** (IDEA-104
+S5-SIZE01) with a **new build** from canonical that contains FS1's token history (PR295), S5 R3 and S5-SIZE01.
 
-S5 is FS1 FINAL with recovery (`b8ba06e2…`) at rehearsal size on a shorter window: FS1's `s1` block, 20 bp, the
+S5 is FS1 FINAL with recovery (`b8ba06e2…`) at rehearsal size on a shorter window, plus an S5-only opening-lot rule: FS1's `s1` block, 20 bp, the
 PR278-RV01 fields (gas-excluded capital included), recovery gas, FS1's pinned token history, and **FS1's model calls and
 authority**: AIand/ChatGPT routing `config/intelligence/aiand-routing.fs1.json` (`9b86c732…`), five parallel
 assessments, verified red flags exit or block entry.
 **FS1 stays the final strategy;** S5 is never installed for the final run.
 
-**Status:** approvals relayed by the user on 2026-10-26 ("all approvals from all parties are given"); not built or run.
-Nothing in this folder has touched a host or the wallet. **Blocked: the current cash cannot fund an S5 entry
-(B0), and a qualified token-history file is missing (TH).** The R3 amendment records that the user cannot top up.
-The earlier transfer instructions are withdrawn; this sheet cannot proceed until the team records a reviewed
-sizing change or a separately implemented no-trade rehearsal path. FS1 does not depend on S5 proceeding.
+**Status:** S5-SIZE01 sizing implementation is local and awaits commit/publication and execution of its tests.
+The earlier relayed approval concerned R3; record acceptance of the new exact profile/probe/signer hashes before
+installation. Nothing in this folder has touched a host or the wallet. **A qualified token-history file is still
+missing (TH).** The user cannot top up. No transfer is planned. FS1 does not depend on S5 proceeding.
 
 | Window (profile) | UTC | SGT |
 |---|---|---|
@@ -30,17 +29,21 @@ sizing change or a separately implemented no-trade rehearsal path. FS1 does not 
   release's parser, refuses a synthetic value, passes `--token-history-config` and checks the runtime pin. P3 installs
   `token-history.json` and checks that `larp-runtime` can read it at the pinned hash. Without it, preparation and
   startup refuse (S5R2-3).
-- **Opening cash (S5R2-7):** at run 6's closing 81.37 USDT, S5 buys nothing: each 1/5 target (gas excluded) is
-  below the 18.64 USDT minimum trade. The first buy needs about 98.31 USDT of cash; M4 refuses below 98.32 USDT.
-  The user cannot top up (R3 amendment). B0 is a blocking decision, not a transfer instruction. M3 retains historical
-  exact-surplus accounting support but defaults to `TOPUP=0`.
+- **Opening lots (S5-SIZE01):** the original 15.44 USDT targets at 81.37 USDT cash were below the measured
+  18.64 USDT minimum. S5 now raises high-level targets to at least 19 USDT only when that fits the existing
+  allocation-weight and hard-name caps. Held names retain that high-level target; reduced levels use ordinary
+  targets. All five names remain eligible; the unchanged deterministic planner chooses entries. At the recorded
+  cash balance, at most four opening lots fit the 95% stock-capital ceiling; the fifth remains cash-limited.
+  The minimum, 19.10 per-trade cap, cost reserve, quote-cost gates, gas exclusion and risk controls stay unchanged.
+  Exact quotes may still refuse an entry. M4 checks fresh cash against this profile's rule, rather than 98.32 USDT.
+  S5's actual weights can differ from FS1's equal-fifth targets. M3 defaults to `TOPUP=0`.
 - **FS1 routing (R3):** M4 passes `--model-routing` `aiand-routing.fs1.json` / `9b86c732…` and requires assessor
   `aiand_routed`; P3 installs `model-routing.json` and checks it is readable at its pin; B1 checks the shared OpenAI
   budget ledger read-only. S5's model spend counts against FS1's US$50 paced budget.
-- **M3:** S5 profile and probe `90344caa…`; bindings from run 6 (`larp_rehearsal6`) to run 7 (`larp_rehearsal7`).
+- **M3:** S5 profile and probe `68e49922…`; bindings from run 6 (`larp_rehearsal6`) to run 7 (`larp_rehearsal7`).
 - **M4:** the signer diff against run 6's `1e052e26…` must be exactly `build_id`, `database_name` and `run_id`.
   Recovery stays on.
-- **M1:** requires `larp-s5-rehearsal-v1` in `larp/marketdata/history.py` and the S5 profile `f371b18d…` at BUILD.
+- **M1:** requires `larp-s5-rehearsal-v1` in `larp/marketdata/history.py` and the S5 profile `6dadc196…` at BUILD.
 - **R1p/R1s** retire run 6. **D1, P4** and `prepare_rehearsal_db.py` name run 7 and `larp_rehearsal7`. Migrations and
   `roles.sql` are unchanged since RC4 `d03bbb1` (D1 checks).
 - **Q1** is supplementary: `quote_check.py` is pinned to run 3's 8 bp (FS1 sheet Q1 note). M3's caps review at the
@@ -60,21 +63,21 @@ cp -R docs/build/ops/rehearsal-install-s5-20261026 deploy/activation/ && cd depl
 
 | Step | Who / where | Command | Done when |
 |---|---|---|---|
-| B0 — BLOCKED | team | Current 81.37 USDT is below this profile's 98.32 USDT cash guard. The user cannot top up. Decide and implement a separately reviewed sizing change or no-trade rehearsal path before continuing; this review changes neither sizing nor the guard | a recorded decision and verified replacement path; no transfer step |
+| B0 | team | Verify S5-SIZE01 tests and the new profile/probe pins, then use M4's fresh-cash check; the recorded 81.37 USDT supports up to four 19-USDT lots under the stock-capital ceiling | verified source and fresh sizing check; no transfer step |
 | TH | Keith (evidence), Yao | write the qualified `TokenHistoryConfig.v1` to `private/token-history.json`: `timestamp_kind` `OPEN`, `timestamp_evidence_sha256` = SHA-256 of the actual hourly OPEN timestamp evidence, and the adjustment version ([contract](../../FS1_TOKEN_HISTORY.md)) | the file parses; no synthetic value (M4 refuses one) |
 | F0s | Yao | runtime Secrets Manager entry carries `LARP_AIAND_API_KEY` (required) and `LARP_MODEL_API_KEY` (OpenAI), as FS1 sheet F0s | both keys present (names only checked) |
-| — | team | merge the IDEA-104 R3 PR into canonical, so BUILD contains it | canonical head contains `f371b18d…` |
+| — | team | merge the IDEA-104 R3 PR into canonical, so BUILD contains it | canonical head contains `6dadc196…` |
 | D1 | Yao, Mac | `LARP_PY=<venv> D1_OUT=<repo>/deploy/activation/rehearsal-db-run7 bash mac/d1-create-db.sh` (any time) | `S5-D1` result, `D1_DONE` |
 | M1-local | Mac | `PY=<venv>/bin/python RC4=<CI RC4 bundle dir larp-d03bbb16cf51-x86_64> bash mac/m1-local-bundle.sh` (BUILD = canonical after the merge) | S5, history and recovery checks pass; integrity checks pass; `M1_DONE` |
 | (M1) | Mac | `[BUILD=<sha>] bash mac/m1-fetch-bundle.sh <run id>`, if a mirror run is made | digest match, `build.env`, `M1_DONE` |
 | Q1 | Yao, Mac | `LARP_PY=<venv>/bin/python bash mac/q1-quote-check.sh` (supplementary) | ten lines `VERIFIED_EXECUTABLE`; `Q1_DONE` |
 | M2 | Yao, Mac | `bash mac/m2-upload-bundle.sh` | `M2_DONE` |
-| M3 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_BINDINGS=$OLD/private/bindings-7fc9f60.json bash mac/m3-recapture-assemble.sh` (run 6 idle, after B0). It passes `--accept-usdt-surplus-units ${TOPUP:-0}` | probe `90344caa…`; `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`; note the stamp and the signer hash |
-| A1 | Isaac, Keegan (relayed as given, 2026-10-26) | record in IDEA-104 the `signer.json` hash M3 printed next to the relayed approval of profile `f371b18d…` and probe `90344caa…` | recorded in IDEA-104 |
+| M3 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_BINDINGS=$OLD/private/bindings-7fc9f60.json bash mac/m3-recapture-assemble.sh` (run 6 idle, after B0). It passes `--accept-usdt-surplus-units ${TOPUP:-0}` | probe `68e49922…`; `ASSEMBLED_REQUIRES_APPROVAL`, `numeric_status: COVERED`; note the stamp and the signer hash |
+| A1 | Isaac, Keegan | record in IDEA-104 acceptance of the new exact profile `6dadc196…`, probe `68e49922…` and `signer.json` hash M3 printed; R3's prior relayed approval is historical | recorded in IDEA-104 |
 | R1p | primary | `python3.12 -I ssm_run.py host/r1-retire-primary.sh` (after M3 and A1) | every run-6 unit inactive and disabled, configs in `/etc/larp-history/7fc9f60-larp-dev-rehearsal-20261026-s4b/`, `R1P_DONE` |
 | F0d (optional) | Yao (Keegan reviews) | FS1 sheet F0d (IDEA-100 DB1/DB2) here, while no run is active: `terraform apply` of `deploy/aws`, SNS test, one RDS reboot, `CREATE EXTENSION pg_stat_statements`. Only if it can finish well before P4; otherwise leave it to the gap after S5 | `checks/db-top-queries.sh` prints rows |
 | P2 | primary | `python3.12 -I ssm_run.py host/p2-provision.sh primary @artifact_bucket $BUNDLE $BUNDLE_SHA256 $PROVISION_SHA256` | `P2_DONE` |
-| M4 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_SIGNER=$OLD/private/signer-<run-6 M3 stamp>/signer.json TOKEN_HISTORY=$PWD/private/token-history.json SCOPE_CONFIRMATION="IDEA-104 R2 (<who>, 2026-10-26)" /opt/homebrew/bin/python3.12 -I mac/m4-prepare.py <M3 stamp>` | signer diff is exactly identity; runtime `aiand_routed` with routing `9b86c732…`; runtime and execution pin `f371b18d…` with recovery on; runtime pins `token-history.json`; flat book, cash ≥ 98.32 USDT; checks pass; prints P3 and S1 |
+| M4 | Yao, Mac | `LARP_PY=<venv>/bin/python OLD_SIGNER=$OLD/private/signer-<run-6 M3 stamp>/signer.json TOKEN_HISTORY=$PWD/private/token-history.json SCOPE_CONFIRMATION="IDEA-104 S5-SIZE01 (<who>, 2026-10-26)" /opt/homebrew/bin/python3.12 -I mac/m4-prepare.py <M3 stamp>` | signer diff is exactly identity; runtime `aiand_routed` with routing `9b86c732…`; runtime and execution pin `6dadc196…` with recovery on; runtime pins `token-history.json`; flat book, profile-derived cash sizing passes; prints P3 and S1 |
 | P3 | primary | the P3 command M4 printed | preflight, checks, router policy, token history and model routing readable, routes PASS, `P3_DONE` |
 | B1 | primary | `python3.12 -I ssm_run.py host/b1-model-budget-check.sh` (read-only) | account `larp-openai-2026`, `B1_DONE`; if absent, the owner runs the `model_budget init` in its header with the reconciled prior spend |
 | T1 | Yao, Mac | Terraform `enable_signer_provisioning = true` | plan adds only the 8 IDEA-080 resources; signer SSM `Online` (reboot the signer if commands stay `Delayed`) |
@@ -87,7 +90,7 @@ cp -R docs/build/ops/rehearsal-install-s5-20261026 deploy/activation/ && cd depl
 | J | anyone, read-only | `checks/trading-status.sh`, `mac/chain-monitor.py`, `checks/db-top-queries.sh` | see below |
 
 M3 defaults to `TOPUP=0`: no top-up is planned. Its exact-surplus option is retained for historical accounting;
-it is not a funding instruction. At the recorded 81.37 USDT balance M4 refuses, so B0 remains blocking.
+it is not a funding instruction. S5-SIZE01 replaces the old insufficient-cash refusal with a profile-derived check.
 
 ## What run 7 must show (IDEA-104 S5, the FS1 pipeline on the dev wallet)
 

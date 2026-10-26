@@ -7,7 +7,7 @@
 set -euo pipefail
 RUN=larp-dev-rehearsal-20261026-s5
 REVIEWER=${1:?reviewer name}; APPROVAL=${2:?IDEA-104 record of the run-7 approval}
-REF="IDEA-104 S5: $APPROVAL; dev signed rehearsal $RUN, larp_rehearsal7, S5 f371b18d FS1 routing+history"
+REF="IDEA-104 S5: $APPROVAL; dev signed rehearsal $RUN, larp_rehearsal7, S5 6dadc196 FS1 routing+history"
 [[ ${#REF} -le 200 ]] || { echo "review reference too long"; exit 3; }
 grep -q "\"run_id\": *\"$RUN\"" /etc/larp/runtime.json || { echo "unexpected runtime.json run"; exit 3; }
 grep -q '"database_name": *"larp_rehearsal7"' /etc/larp/runtime.json || { echo "unexpected database"; exit 3; }

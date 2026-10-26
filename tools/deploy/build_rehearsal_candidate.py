@@ -202,6 +202,10 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
         with_recovery_gas(p)
     if s5:
         p.update(S5_WINDOW, policy_id=S5_POLICY_ID)
+        p['s5_entry_lot_units'] = 19_000_000
+        p['provenance']['s5_entry_lot_units'] = dict(decision_id='IDEA-104 S5-SIZE01 (Keith request, 2026-10-26)',
+            formula='19 USDT high-level opening lots, within existing allocation/hard-name/gross/cash caps; '
+                    'gas excluded; measured entry minimum and exact quote costs unchanged')
         for key in S5_WINDOW:
             p['provenance'][key] = dict(decision_id='IDEA-104 S5 R2 (team request, 2026-10-26)',
                 formula='Dev test of FS1: buys from Mon 14:00 SGT to Tue 07:00 SGT, flatten from Tue 08:00 SGT, signing '

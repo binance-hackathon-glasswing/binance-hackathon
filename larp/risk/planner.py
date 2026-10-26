@@ -15,6 +15,7 @@ from .gas import plan_top_up
 from larp.strategy import s1 as s1_plan
 from larp.strategy import execution_bounds
 from larp.strategy import scheduled_flatten, self_check
+from larp.strategy.rehearsal_sizing import name_target as rehearsal_name_target
 
 
 def _request(symbol, side, pay_units, m, mandatory):
@@ -265,6 +266,8 @@ def plan(snapshot, proposal_or_none):
             # A name over the hard line is sold back to its target: level x w, at most the top level x w.
             t = targets.get(symbol)
             name_target = s1_level * s1["weights"][symbol]
+            name_target = rehearsal_name_target(p, s1, name_target, level=s1_level,
+                capital_scale=capital_scale, safe_equity=safe_equity, enabled=not r['deep_cut'])
             if t is not None and t.kind is TargetKind.TARGET_WEIGHT:
                 name_target = min(name_target, t.weight)
         else:
@@ -375,6 +378,9 @@ def plan(snapshot, proposal_or_none):
                 continue
             current = held.get(symbol, 0)
             name_cap = s1["high"] * s1["weights"][symbol] * capital_scale if s1 else fraction(p["operating_name_weight"])
+            if s1:
+                name_cap = rehearsal_name_target(p, s1, name_cap, level=s1_level,
+                    capital_scale=capital_scale, safe_equity=safe_equity, enabled=not r['deep_cut'])
             desired = 0 if t.kind is TargetKind.EXIT else floor(
                 min(t.weight, name_cap) * safe_equity * 10**m["decimals"] / m["price_units"])
             if (check_phase == "BUY" and symbol == check["symbol"]

@@ -317,3 +317,47 @@ Commit the verified source/tests/docs and push by ordinary fast-forward to
 `claude/s5-r3-fs1-models-20261026`. Preserve unrelated untracked files. No merge, host installation or live execution
 is requested. The source hashes and prior test results in the receipt are unchanged; only publication metadata
 and current-status wording changed after validation.
+
+## S5-SIZE01 — cash-funded rehearsal opening lots (2026-10-26; criteria before implementation/execution)
+
+User request: "ok resolve the sizing mismatch" after the S5 evaluation. No funding transfer, BNB inclusion,
+FS1 change, merge or installation is requested. This work prepares a reviewable local change; publication of
+the new decision code requires permission before execution (AGENTS.md and SKILL.md §0.3).
+
+The 18.637420 USDT entry minimum is derived from measured costs and stays unchanged. S5 alone opts into
+`s5_entry_lot_units=19000000`. At the high exposure level, each target is the larger of its ordinary equal-fifth
+target and 19 USDT, provided the lot fits the existing 30% allocation-weight cap times the high level, the hard
+name line and gas-excluded stock capital. At lower exposure levels the ordinary targets apply. This is a
+rehearsal sizing exception, not an exact equal-weight portfolio: the existing deterministic planner chooses
+among all five names, with total stock exposure/cash/gas and exact quote costs still limiting fills. At recorded
+cash 81.373047, stock capital after the 0.10 reserve is 81.273047 and its 95% ceiling is 77.209394 USDT;
+four 19 USDT lots fit, five do not. Existing 19.10 USDT per-trade cap and 0.10 cost reserve stay unchanged.
+Targets for held names retain the same floor at the high level so a filled opening lot cannot immediately
+produce a sell back to the unfundable equal-fifth target. Trend/limiter reductions and all mandatory sales retain
+priority. No performance/P&L input is used to choose the lot.
+
+Acceptance criteria:
+- SZ1: validate/rebuild S5 with exactly one additional non-provenance difference from R3: the 19 USDT lot.
+  FS1's four profiles, S4 and model routing retain their exact bytes; other profiles reject the opt-in.
+- SZ2: on the recorded cash/BNB balances, policy and independent planner admit a 19 USDT opening BUY with
+  executable synthetic quotes. Settle four serialized buys, preserving policy state across reconstruction;
+  there is no immediate discretionary sell-back and no fifth BUY beyond the 95% stock-capital ceiling.
+- SZ3: BNB price/balance changes cannot enlarge the stock target. Insufficient stock capital, bad quote costs,
+  lower trend/limiter levels, loss/health halts and the terminal window cannot be bypassed by the lot.
+  A forged oversized policy target is independently clamped to the bounded lot/ordinary name cap.
+- SZ4: M4 replaces the stale 98.32-USDT constant with a check derived from the exact selected profile and fresh
+  flat-book cash. Profile/probe pins and run-7 instructions agree; history and model gates remain required.
+- SZ5: run focused sizing/policy/planner/preparation/shell regressions and the full pinned offline suite after
+  the changed code has been committed and pushed. Record actual results, skips and limitations; no live claim.
+
+Implementation prepared locally: `s5_entry_lot_units`, bounded policy/planner targets, aggregate opening-capacity
+selection (largest gap then symbol, independent of BNB valuation), fresh-cash preparation check and regression
+tests. Profile `6dadc1961a54374f51415e2168ff8d4a917b28f90e58c9493a1b9fbd8731e80d`, digest
+`d80045d446af6297e5e0c5df2f1aeb6f0467e4a402728a1a222361b8b2ae4248`, probe
+`68e49922432f8a8e8081fbaa32b3d8bb3b5614a5ca2982b6ed5ee671262f8e17`. Exactly one new
+non-provenance profile key versus R3. Static syntax/pin/diff checks pass; FS1/S4/routing bytes match HEAD.
+The changed production code has not been executed: permission to commit/push and then run SZ1–SZ5 is pending.
+The original R3 no-entry result and prior full-suite receipt remain historical evidence, not validation of this change.
+
+Publication authorization (2026-10-26): user answered "yes" to committing/pushing this prepared S5 change to
+PR296 and running focused/full offline validation. Ordinary fast-forward publication only; no merge or installation.
