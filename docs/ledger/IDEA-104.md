@@ -361,3 +361,8 @@ The original R3 no-entry result and prior full-suite receipt remain historical e
 
 Publication authorization (2026-10-26): user answered "yes" to committing/pushing this prepared S5 change to
 PR296 and running focused/full offline validation. Ordinary fast-forward publication only; no merge or installation.
+
+First focused run after publication (`338beeb7`, native Python 3.12.14): 109 passed, 39 subtests passed,
+one new serial-settlement test failed. Its legacy four-decimal token fixture rounded a 19-USDT minimum output
+by whole cents, exceeding the unchanged cost reserve with measured gas. The test now uses production-style
+18-decimal token quantities; no cost gate or decision code was loosened. Rerun follows publication of this correction.

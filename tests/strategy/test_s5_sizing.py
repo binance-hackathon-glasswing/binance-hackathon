@@ -27,9 +27,14 @@ def profile():
 def snapshot(cash=s5.RUN6_CASH):
     s, _ = s5.round_at('2026-10-26T16:00:00Z', cash_units=cash, bnb_units=s5.RUN6_BNB, sizing=True)
     markets = s.context.read()['markets']
+    ledger = s.context.read()['portfolio']
     for m in markets:
         m['quotes'] = []
-    return changed(s, markets=markets)
+        # Production token precision: the legacy fixture's 0.01-USDT quantity ticks can themselves
+        # consume the 0.10-USDT cost reserve when exact minimum output and measured gas are combined.
+        m['decimals'] = 18
+        ledger['positions'][m['symbol']]['decimals'] = 18
+    return changed(s, markets=markets, portfolio=ledger)
 
 
 def test_four_serialized_openings_fit_cash_and_never_sell_back_or_buy_a_fifth():
