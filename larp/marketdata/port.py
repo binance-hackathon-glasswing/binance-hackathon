@@ -108,19 +108,30 @@ class MarketPort:
             raise Unavailable('price token identity mismatch')
         stamp = min(metadata['available_at'], r['available_at'], prices['available_at'])
         available = max(metadata['available_at'], r['available_at'], prices['available_at'])
-        basis = bool(self.basis_verifier and self.basis_verifier(row, underlying) is True)
-        price = int(number(price_row['tokenPrice']) * 1000000)
+        # IDEA-086: BV1-BV4 decide basis_verified; with no verifier nothing is verified (offline, Gate A, fixtures).
+        basis, checks, ratio = (self.basis_verifier(symbol, row, underlying, price_row) if self.basis_verifier
+                                else (False, ['NO_VERIFIER'], None))
+        with localcontext() as context:
+            context.prec = 60
+            # rwa/price quotes one share; a token is worth tokenToShareRatio shares (BV5, IDEA-086 F2).
+            price = int(number(price_row['tokenPrice']) * (ratio if ratio is not None else 1) * 1000000)
         if price <= 0 or not row.get('underlyingTicker'):
             raise Unavailable('missing positive price/underlying identity')
         result = dict(schema='MarketObservation.v1', origin='WEB3_OPEN_API', symbol=symbol, underlying_id=row['underlyingTicker'],
                     token_id=TOKENS[symbol], decimals=integer(row['decimals']), currency='USDT', money_scale=1000000,
                     price_units=price, source_id='BINANCE_WEB3', content_hash=hashlib.sha256(encoded(
-                        [metadata['artifact_sha256'], r['artifact_sha256'], prices['artifact_sha256']])).hexdigest(), quality='VALID',
+                        [metadata['artifact_sha256'], r['artifact_sha256'], prices['artifact_sha256']])).hexdigest(),
+                    # Rejected basis inputs are diagnostic only. The risk planner's existing partial-valuation
+                    # path defers loss stops and blocks new risk when a held symbol has no usable mark.
+                    quality='VALID' if self.basis_verifier is None or basis is True else 'INVALID',
                     observed_at=stamp, available_at=available, close_at=stamp,
                     token_open=row.get('statusInfo', {}).get('openState') is True,
                     underlying_open=underlying.get('statusInfo', {}).get('openState') is True,
-                    basis_verified=basis, quotes=[], observation_hashes=[metadata['artifact_sha256'], r['artifact_sha256'], prices['artifact_sha256']],
+                    basis_verified=basis is True, basis_checks=list(checks), quotes=[],
+                    observation_hashes=[metadata['artifact_sha256'], r['artifact_sha256'], prices['artifact_sha256']],
                     token_status=row.get('statusInfo'), underlying_status=underlying.get('statusInfo'))
+        if ratio is not None:
+            result['token_to_share_ratio'] = str(ratio)
         result.update(measured_roundtrip_bps=None, cost_status='UNAVAILABLE')
         try:
             cost = (self.cost_observation(symbol) if self.cost_observation is not None
@@ -241,6 +252,7 @@ class MarketPort:
             proof = self.quote_verifier(raw, request, observation)
             if proof is not None:
                 self._executable_quote(observation, request, raw, proof)
+                observation['dirty_allowances'] = proof.get('dirty_allowances', {})
         return observation
 
     def _executable_quote(self, observation, request, raw, proof):
@@ -256,10 +268,14 @@ class MarketPort:
         side = request['side']
         pay, receive = (USDT, observation['token_id']) if side == 'BUY' else (observation['token_id'], USDT)
         amount = request['pay_units'] * (10**12 if side == 'BUY' else 1)
+        # Only the untrusted-router decoder may leave the recipient unverified (IDEA-070 B02-U, DEV-23; IDEA-088),
+        # the same rule as validate_payload and the signer policy.
+        unverified = (decoded.recipient is None
+                      and getattr(getattr(self.quote_verifier, 'decoder', None), 'mode', None) == 'untrusted')
         if (payload.chain_id != 56 or payload.sender != self.wallet or payload.data != tx['data']
                 or payload.to != str(tx['to']).lower() or payload.value != integer(tx['value'])
                 or decoded.pay_token != pay or decoded.receive_token != receive
-                or decoded.amount != amount or decoded.recipient != self.wallet
+                or decoded.amount != amount or (decoded.recipient != self.wallet and not unverified)
                 or decoded.minimum_output != integer(tx['minReceiveAmount'])
                 or decoded.native_value != payload.value or proof.get('route_valid') is not True):
             raise Unavailable('decoded route does not bind quote economics')
@@ -274,14 +290,23 @@ class MarketPort:
                      slippage_bps=integer(proof['slippage_bps']), impact_bps=int(impact.to_integral_value(rounding='ROUND_CEILING')),
                      route_valid=True, quote_id=raw['artifact_sha256'], observed_at=raw['available_at'],
                      available_at=raw['available_at'], expires_at=datetime.fromtimestamp(decoded.deadline, timezone.utc).isoformat())
-        if quote['gas_bnb_units'] <= 0 or proof.get('exact_gas_verified') is not True:
+        if proof.get('gas_basis') == 'EXECUTION_FEE_AUTHORITY':
+            # IDEA-088: no swap estimate exists before its approve. gas_bnb_units reserves execution's whole fee
+            # authority; the expected fee, inside it, prices the entry (planner).
+            expected = integer(proof.get('expected_gas_bnb_units'))
+            if not 0 < expected <= quote['gas_bnb_units']:
+                raise Unavailable('expected gas must lie inside the reserved gas')
+            quote['expected_gas_bnb_units'] = expected
+        elif proof.get('exact_gas_verified') is not True:
+            raise Unavailable('exact payload gas evidence required')
+        if quote['gas_bnb_units'] <= 0:
             raise Unavailable('exact payload gas evidence required')
         now = datetime.fromisoformat(raw['available_at'].replace('Z', '+00:00'))
         if self.quote_limits is None:
             raise Unavailable('independent policy quote limits required')
         test = _quote_at_cap(dict(observation, quotes=[quote]), side, request['pay_units'],
                             self.quote_limits,
-                            now, quote['token_units'])
+                            now, quote['token_units'], request.get('mandatory') is True)
         if test[0] is None:
             raise Unavailable('quote fails consumer validator')
         observation.update(quotes=[quote], quote_status='VERIFIED_EXECUTABLE')
@@ -301,10 +326,15 @@ class MarketPort:
                     available_at=raw['available_at'], content_hash=raw['content_hash'])
 
     @observation_boundary
-    def candles(self, symbol, *, bar='1m', limit=100):
+    def candles(self, symbol, *, bar='1m', limit=100, after=None):
         if symbol not in TOKENS or bar not in ('1m', '5m', '15m', '1h', '4h', '1d') or type(limit) is not int or not 1 <= limit <= 300:
             raise Unavailable('invalid candle request')
-        r = self.call('market/candles', dict(tokenContractAddress=TOKENS[symbol], bar=bar, limit=limit))
+        if after is not None and (type(after) is not int or after < 0):
+            raise Unavailable('invalid candle pagination timestamp')
+        params = dict(tokenContractAddress=TOKENS[symbol], bar=bar, limit=limit)
+        if after is not None:
+            params['after'] = after  # observed inclusive end cursor, IDEA-103 / K6a
+        r = self.call('market/candles', params)
         rows = data(r)
         if not isinstance(rows, list):
             raise Unavailable('candles must be a list')

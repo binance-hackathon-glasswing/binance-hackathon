@@ -270,7 +270,7 @@ class Routing(unittest.TestCase):
         self.w.clock.advance(self.delay)
         if self.openai_error:
             return 429,json.dumps({'error':dict(code=self.openai_error,type=self.openai_error)}).encode()
-        output=decide(json.loads(body['input']))
+        output=decide(json.loads(body['input'].split('\n',1)[1]))  # after the JSON label
         return 200,json.dumps(dict(model=body['model'],status='completed',output=[dict(type='message',content=[
             dict(type='output_text',text=json.dumps(output))])],usage=dict(input_tokens=100,output_tokens=20))).encode()
 
@@ -286,6 +286,62 @@ class Routing(unittest.TestCase):
         result=router.assess(r)
         assessment_result(result,r,self.w.clock())
         return r,result.read()
+
+    def test_sg1_read_only_evidence_store_keeps_model_artifacts_private(self):
+        # On the host the runtime opens the evidence root read-only (IDEA-047 R15): build_driver reads evidence
+        # from the shared store and writes model I/O, stage results and tool results to a private one.
+        from larp.intelligence.fakes import MemoryArtifacts
+        from larp.intelligence.tools import PortEvidenceReader
+        from larp.sources.store import OverlayArtifacts
+        shared, private = self.w.artifacts, MemoryArtifacts()
+        class ReadOnly:
+            def get(self, digest): return shared.get(digest)
+            def put(self, content): raise OSError(30, 'Read-only file system')
+        before = dict(shared.blobs)
+        reader = PortEvidenceReader(self.w.store, OverlayArtifacts(ReadOnly(), private))
+        router = build_routed_assessor(self.s, registry=self.w.registry, reader=reader, config=self.w.config,
+            clock_ms=self.w.clock, artifacts=private, secrets={'LARP_AIAND_API_KEY': AIAND_KEY,
+                                                               'LARP_MODEL_API_KEY': OPENAI_KEY},
+            budget_root=self.root, transports={'aiand': self.aiand, 'openai': self.openai})
+        r, value = self.run_assessment(router)
+        self.assertIn(value['status'], ('ASSESSED', 'ABSTAIN'))
+        calls = value['model_io']['tool_calls']
+        self.assertTrue(calls)
+        self.assertFalse([c for c in calls if c['error'] == 'ARTIFACT_WRITE_ERROR'])
+        refs = [c['result_artifact'] for c in calls] + \
+               [s['result_artifact'] for s in value['routing']['stages']] + \
+               [s['response'][k] for s in value['model_io']['steps']
+                for k in ('request_payload_artifact', 'raw_response_artifact')]
+        for ref in refs:
+            self.assertIsNotNone(private.get(ref), ref)
+        self.assertEqual(shared.blobs, before)  # nothing written to the shared evidence store
+
+    def test_sg7_deterministic_tool_results_on_a_read_only_evidence_store(self):
+        # IDEA-057 SG-7b: the deterministic assessor's tool results go to the private store, as the routed path's.
+        from larp.intelligence.agent import EvidenceAssessor
+        from larp.intelligence.fakes import MemoryArtifacts
+        from larp.intelligence.models import RuleBaselineModel
+        from larp.intelligence.tools import PortEvidenceReader
+        from larp.sources.store import OverlayArtifacts
+        shared = self.w.artifacts
+        class ReadOnly:
+            def get(self, digest): return shared.get(digest)
+            def put(self, content): raise OSError(30, 'Read-only file system')
+        before = dict(shared.blobs)
+        def assess(artifacts):
+            assessor = EvidenceAssessor(registry=self.w.registry, reader=PortEvidenceReader(self.w.store, artifacts),
+                                        model=RuleBaselineModel(self.w.clock), config=self.w.config,
+                                        clock_ms=self.w.clock)
+            return self.run_assessment(assessor)[1]['model_io']['tool_calls']
+        failing = assess(ReadOnly())  # the host failure reproduces without the overlay
+        self.assertTrue(failing and all(c['error'] == 'ARTIFACT_WRITE_ERROR' for c in failing))
+        private = MemoryArtifacts()
+        calls = assess(OverlayArtifacts(ReadOnly(), private))
+        self.assertTrue(calls)
+        self.assertFalse([c for c in calls if c['error']])
+        for call in calls:
+            self.assertIsNotNone(private.get(call['result_artifact']))
+        self.assertEqual(shared.blobs, before)
 
     def test_ar4_external_first_then_sol_and_full_consumer_trace(self):
         router=self.build(); r,value=self.run_assessment(router)

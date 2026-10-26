@@ -4,9 +4,10 @@
 
 The service drives the W04 Executor through `ExecutionService` and `ExecutionLoop` (larp/execution_live/loop.py) with
 the database-backed `RemoteSigner` (larp/execution_live/signing.py): it never holds a wallet key, and a configuration
-that names one is refused. `build_execution` composes the live ports (IDEA-050). The `Executor` itself still accepts
-only fake capability bundles (verified router decoder, GAP-29), so `run` stops there with exit 2 NOT_INTEGRATED and
-reason EXECUTOR_CAPABILITY_GATE, which systemd does not restart. Nothing here lifts that gate.
+that names one is refused. `build_execution` composes the live ports (IDEA-050). The `Executor` accepts them only with
+a swap decoder pinned to router evidence (`router_evidence_file` + `router_evidence_sha256`; IDEA-070, GAP-29).
+Without that evidence `run` stops with exit 2 NOT_INTEGRATED and reason EXECUTOR_CAPABILITY_GATE, which systemd does
+not restart.
 
 Exit codes as the runtime service: 0 clean stop; 1 failure; 2 not integrated; 3 run quarantined; 4 start refused.
 """
@@ -21,6 +22,7 @@ import signal
 import time
 
 from larp.contracts import ContractError, Document
+from larp.runtime import faults
 
 EXIT_NOT_INTEGRATED, EXIT_QUARANTINED, EXIT_REFUSED = 2, 3, 4
 SCHEMA = 'ExecutionService.v1'
@@ -48,6 +50,12 @@ def validate_config(value):
         raise ContractError('The execution service runs only for dev or live runs')
     if type(value.get('native_trace', False)) is not bool:
         raise ContractError('native_trace must explicitly enable a qualified provider')
+    if type(value.get('allowance_recovery', False)) is not bool:
+        raise ContractError('allowance_recovery must be an explicit boolean')
+    if value.get('allowance_recovery', False):
+        from larp.execution_live.config import untrusted_router_settings
+        if untrusted_router_settings(value) is None:
+            raise ContractError('allowance recovery requires pinned untrusted router policy')
     if type(value['wallet_address']) is not str or not _ADDRESS.fullmatch(value['wallet_address']):
         raise ContractError('Invalid wallet address')
     for key, default in (('interval_seconds', None), ('signer_timeout_seconds', 20)):
@@ -58,6 +66,8 @@ def validate_config(value):
     keyed = [k for k in value if 'private_key' in k or 'mnemonic' in k or k in ('key_file', 'key_credential')]
     if keyed:
         raise ContractError('Execution configuration names a wallet key: ' + ','.join(sorted(keyed)))
+    from larp.execution_live.config import evidence_settings
+    evidence_settings(value)  # both or neither, as the signer's check (IDEA-070 R10)
     from larp.runtime.database import check_database_settings
     check_database_settings(value, DATABASE_USER)
     return value
@@ -74,6 +84,41 @@ def _pinned_json(path, sha256, what):
     return json.loads(raw)
 
 
+def execution_mapping(config, profile, decimals, *, wallet):
+    """`map_command` settings: profile limits, configured gas limits, and native settlement only when the RPC traces
+    native transfers (`native_trace`), the one path that can settle a gas top-up's fill (#30, IDEA-061)."""
+    from larp.strategy.schema import initial_gas_only
+    return dict(wallet=wallet, version_id=config['build_id'], router=config['router'], token_decimals=decimals,
+                limits=dict(per_trade_cap_units=profile['per_trade_cap_units'], slippage_bps=profile['slippage_bps'],
+                            max_gas=config['max_gas'], max_gas_price=config['max_gas_price'],
+                            gas_budget=config['gas_budget']),
+                native_settlement=config.get('native_trace', False) is True,
+                initial_gas_only=initial_gas_only(profile))
+
+
+def router_decoder(config, rpc=None):
+    """The swap decoder: pinned to router evidence (IDEA-070), or an untrusted-router policy bound to `rpc` for its
+    preflight (B02-U, DEV-23), when configured; else `UnverifiedRouter`, which keeps the Executor's capability gate
+    closed (exit 2). A decoder for another router than the configured one is refused."""
+    from larp.execution_live.config import untrusted_router_settings
+    from larp.execution_live.router import evidence_settings, load_evidence
+    from larp.execution_live.venue import UnverifiedRouter
+    settings = evidence_settings(config)
+    untrusted = untrusted_router_settings(config)
+    if untrusted is not None:
+        from larp.execution_live.untrusted_router import load_policy
+        decoder = load_policy(*untrusted)
+        if rpc is not None:
+            decoder.bind(rpc)
+    elif settings is None:
+        return UnverifiedRouter()
+    else:
+        decoder = load_evidence(*settings)
+    if decoder.router != config['router']:
+        raise ContractError('Router evidence is for another router than the configured one')
+    return decoder
+
+
 def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=None):
     """The execution loop over live ports (IDEA-050). Raises NotIntegrated at the Executor's capability gate.
 
@@ -88,7 +133,7 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     from larp.execution_live.settlement import ReceiptFacts
     from larp.execution_live.signing import RemoteSigner
     from larp.execution_live.store import ExecutionStore
-    from larp.execution_live.venue import LiveVenue, UnverifiedRouter
+    from larp.execution_live.venue import LiveVenue
     from larp.marketdata.port import MarketPort, TOKENS
     from larp.marketdata.web3 import Artifacts, Web3Client
     clock_s = clock_s or (lambda: int(time.time()))
@@ -107,6 +152,8 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     profile = _pinned_json(config['strategy_profile_file'], config['strategy_profile_sha256'], 'Strategy profile')
     if type(profile) is not dict or profile.get('schema') != 'StrategyProfile.v1' or profile.get('mode') != 'LIVE':
         raise ContractError('Execution needs the run\'s LIVE StrategyProfile.v1')
+    from larp.strategy.execution_bounds import require_open_state_scope
+    require_open_state_scope(profile, config.get('mode', 'offline'))  # IDEA-089 S2-1, S2-8 / IDEA-093 FS1: the admission side refuses too
     key, secret = secrets.get('BINANCE_API_KEY'), secrets.get('BINANCE_SECRET_KEY')
     if not key or not secret:
         raise ContractError('Quotes need the Web3 key pair')
@@ -117,17 +164,22 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     chain = ChainEvidence(Rpc(config['rpc_url'], artifacts=Artifacts(config['chain_artifact_root']),
                               source_id=config['rpc_source_id'], native_trace=config.get('native_trace', False)))
     market = MarketPort(client, wallet, quote_limits=profile)
+    decoder = router_decoder(config, rpc=chain.rpc)
+    # Untrusted router (IDEA-070 B02-U): an unsettled terminal execution withholds risk authority from every intent.
+    hold = (lambda: bool(loop._unpublished_terminal())) if getattr(decoder, 'mode', None) == 'untrusted' else None
     guards = LiveGuards(store=registry, market=market, chain=chain,
                         authorization=RunAuthorization(store, run_id=run_id, build_id=config['build_id'],
-                                                       manifest_sha256=manifest_sha256))
-    venue = LiveVenue(client, chain, decoder=UnverifiedRouter(),
+                                                       manifest_sha256=manifest_sha256, settlement_hold=hold))
+    venue = LiveVenue(client, chain, decoder=decoder,
                       release=FencedRelease(registry, Web3Broadcaster(
                           key, secret, wallet=wallet,
-                          artifacts=str(Path(config['market_artifact_root']) / 'broadcast'))))
+                          artifacts=str(Path(config['market_artifact_root']) / 'broadcast')), clock_s=clock_s,
+                          decoder=decoder))
     signer = RemoteSigner(execution=registry, guards=guards, clock_s=clock_s,
                           timeout_s=config.get('signer_timeout_seconds', 20))
     try:
-        executor = Executor(registry, guards, venue, signer, UnverifiedRouter())
+        executor = Executor(registry, guards, venue, signer, decoder,
+                            allowance_recovery=config.get('allowance_recovery', False))
     except Blocked:
         raise NotIntegrated('EXECUTOR_CAPABILITY_GATE') from None
     terminal = RoundTerminal(store, run_id=run_id)
@@ -135,14 +187,17 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     valuation = PlanValuation(store, registry, run_id=run_id)
     facts = ReceiptFacts(chain, wallet_id=wallet, valuation=valuation, bnb_decimals=valuation.bnb_decimals,
                          registry=registry, epoch=epoch, authority_version=epoch, round_terminal=terminal)
-    mapping = dict(wallet=wallet, version_id=config['build_id'], router=config['router'], token_decimals=decimals,
-                   limits=dict(per_trade_cap_units=profile['per_trade_cap_units'], slippage_bps=profile['slippage_bps'],
-                               max_gas=config['max_gas'], max_gas_price=config['max_gas_price'],
-                               gas_budget=config['gas_budget']))
+    mapping = execution_mapping(config, profile, decimals, wallet=wallet)
     loop.service = ExecutionService(store=store, executor=executor, mapping=mapping, observe=loop.publish,
                                     wallet_id=wallet, epoch=epoch, authority_version=epoch, settlement=facts,
-                                    round_terminal=terminal)
+                                    round_terminal=terminal,
+                                    admission=lambda intent, now: _execution_permitted(store, run_id, intent, now))
     return loop
+
+
+def _execution_permitted(store, run_id, intent, now_s):
+    from larp.strategy.execution_bounds import permitted
+    return permitted(store.load(run_id).read()['projection'], intent, now_s * 1000)
 
 
 def main(argv=None):
@@ -174,6 +229,10 @@ def main(argv=None):
             run = PostgresStore._run(db, config['run_id'], lock=False)
         if run['mode'] != config['mode'] or str(run['wallet_id']).lower() != config['wallet_address']:
             raise StartRefused('run differs from the execution configuration')
+        try:
+            faults.check(run['mode'])
+        except ContractError:
+            raise StartRefused('fault injection refused') from None
         if run['quarantined']:
             print(json.dumps(dict(started=False, reason='QUARANTINED', signing_enabled=False)))
             return EXIT_QUARANTINED

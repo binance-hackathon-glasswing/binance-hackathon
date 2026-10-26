@@ -221,7 +221,7 @@ run "service_alarms_follow_the_hosts" {
   }
   assert {
     condition = toset(keys(aws_cloudwatch_metric_alarm.service)) == toset(
-    ["runtime-heartbeat", "runtime-halted", "runtime-quarantined", "uploader-overdue", "signer-unanswered"])
+    ["runtime-heartbeat", "runtime-halted", "runtime-quarantined", "runtime-low-gas", "uploader-overdue", "signer-unanswered"])
     error_message = "IDEA-047 R5: one alarm per service signal while hosts run."
   }
   assert {
@@ -231,6 +231,10 @@ run "service_alarms_follow_the_hosts" {
   assert {
     condition     = aws_cloudwatch_metric_alarm.service["runtime-heartbeat"].comparison_operator == "LessThanThreshold" && aws_cloudwatch_metric_alarm.service["signer-unanswered"].threshold == 0
     error_message = "Heartbeat alarms below 1; counts alarm above 0."
+  }
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.service["runtime-low-gas"].metric_name == "GasPairUnaffordable" && aws_cloudwatch_metric_alarm.service["runtime-low-gas"].threshold == 0 && aws_cloudwatch_metric_alarm.service["runtime-low-gas"].comparison_operator == "GreaterThanThreshold"
+    error_message = "LD08: unaffordable initial-only action gas must have a dedicated alarm."
   }
   assert {
     condition     = length(aws_sns_topic.alarms) == 0 && length(aws_sns_topic_subscription.alarm_email) == 0
@@ -255,4 +259,48 @@ run "service_alarms_off_without_hosts" {
     condition     = length(aws_cloudwatch_metric_alarm.service) == 0
     error_message = "With hosts off the service alarms would sit in ALARM on missing data."
   }
+}
+run "every_alarm_explains_itself" {
+  command = plan
+  variables {
+    enable_hosts = true
+    ami_id       = "ami-0123456789abcdef0"
+  }
+  assert {
+    condition = alltrue([for a in concat(
+      [aws_cloudwatch_metric_alarm.database_storage], values(aws_cloudwatch_metric_alarm.host),
+      values(aws_cloudwatch_metric_alarm.recover), values(aws_cloudwatch_metric_alarm.reboot),
+      values(aws_cloudwatch_metric_alarm.maintenance), values(aws_cloudwatch_metric_alarm.service)) :
+    length(a.alarm_description) > 0 && length(a.alarm_description) <= 1024 && strcontains(a.alarm_description, "F-114")])
+    error_message = "Every alarm email must say what fired and that nobody acts on the agent during the run (AWS limit 1024 characters)."
+  }
+}
+# IDEA-080 signer provisioning access (SA1-SA3 as corrected in PR #143, SA8).
+run "signer_access_off_by_default" {
+  command = plan
+  variables {
+    enable_hosts           = true
+    enable_external_https  = true
+    enable_development_ssm = true
+    ami_id                 = "ami-0123456789abcdef0"
+  }
+  assert {
+    condition = (length(aws_vpc_endpoint.signer_ssm) == 0 && length(aws_security_group.signer_endpoints) == 0
+      && length(aws_vpc_security_group_ingress_rule.signer_endpoints) == 0
+      && length(aws_vpc_security_group_egress_rule.signer_endpoints) == 0
+    && length(aws_iam_role_policy_attachment.signer_ssm) == 0)
+    error_message = "IDEA-080 SA1: no signer endpoint, rule or SSM permission unless enable_signer_provisioning is set."
+  }
+  assert {
+    condition     = keys(aws_iam_role_policy_attachment.development_ssm) == ["primary"]
+    error_message = "Development SSM still reaches primary only."
+  }
+}
+run "signer_access_development_only" {
+  command = plan
+  variables {
+    environment                = "final"
+    enable_signer_provisioning = true
+  }
+  expect_failures = [aws_security_group.signer_endpoints, aws_iam_role_policy_attachment.signer_ssm]
 }

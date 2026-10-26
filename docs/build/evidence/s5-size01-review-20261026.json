@@ -1,0 +1,109 @@
+{
+  "criteria": {
+    "SZ1": "PASS offline",
+    "SZ2": "PASS offline",
+    "SZ3": "PASS offline",
+    "SZ4": "PASS offline",
+    "SZ5": "PASS offline"
+  },
+  "deployment_performed": false,
+  "economic_validation": "not performed; synthetic fills are not profitability evidence",
+  "environment": {
+    "architecture": "aarch64",
+    "image": "larp-ci:py31215",
+    "image_id": "sha256:9285c508b04b89faaf50058179d3baf35962e4a52c41fa04a31b2f84eb6d1e3f",
+    "network": "external networking disabled; runner shares disposable database namespace",
+    "postgresql": "14.24",
+    "python": "3.12.15",
+    "repository_env_hidden": true,
+    "worker_test_permissions": [
+      "SYS_ADMIN",
+      "seccomp=unconfined",
+      "systempaths=unconfined"
+    ]
+  },
+  "focused": {
+    "failed": 0,
+    "junit_sha256": "228f0d75fd2070be59a8cf834fe40a27fed5245287b393c1cb26519214d7e274",
+    "passed": 110,
+    "python": "3.12.14",
+    "seconds": 9.47,
+    "skipped": 0,
+    "subtests_passed": 39
+  },
+  "full_suite": {
+    "failed": 0,
+    "junit_sha256": "99c36fb70c837ae57960f8d2f425ab74f0d104197e877ebdbef13351fbf095f8",
+    "passed": 2978,
+    "seconds": 677.99,
+    "skipped": 8,
+    "skips": [
+      {
+        "reason": "optional private public-source fixture",
+        "test": "tests.intelligence.test_source_link_trust.SourceLinkTrust.test_original_public_source_stays_incomplete_in_exact_v3_composition"
+      },
+      {
+        "reason": "real response artifacts are external; opt-in only",
+        "test": "tests.marketdata.test_recorded.RecordedConsumers.test_real_outputs_pass_market_validator_and_unknown_routes_remain_nonexecutable"
+      },
+      {
+        "reason": "root ignores the directory mode",
+        "test": "tests.runtime.test_live_start.Refusals.test_w2_a_read_only_directory_is_a_refused_start"
+      },
+      {
+        "reason": "Disposable systemd test runner not enabled",
+        "test": "tests.runtime.test_systemd_conditions.UnitConditions.test_r13_changed_release_never_runs_or_restarts_the_main_process"
+      },
+      {
+        "reason": "Disposable systemd test runner not enabled",
+        "test": "tests.runtime.test_systemd_conditions.UnitConditions.test_r13_clean_evidence_cycle_still_restarts"
+      },
+      {
+        "reason": "Disposable systemd test runner not enabled",
+        "test": "tests.runtime.test_systemd_conditions.UnitConditions.test_r13_valid_condition_keeps_main_process_failure_recovery"
+      },
+      {
+        "reason": "Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)",
+        "test": "tests.runtime.test_systemd_conditions.RuntimeUnit.test_wr_t7_the_runtime_unit_gets_past_directory_binding"
+      },
+      {
+        "reason": "Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)",
+        "test": "tests.runtime.test_systemd_conditions.RuntimeUnit.test_wr_t8_without_its_state_directory_the_start_is_refused"
+      }
+    ],
+    "subtests_passed": 4069
+  },
+  "hosted_ci": {
+    "reason": "GitHub job not started: recent account payments failed or spending limit needs increase",
+    "run_id": 40287198787,
+    "status": "unavailable"
+  },
+  "pr": "https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/296",
+  "probe_sha256": "68e49922432f8a8e8081fbaa32b3d8bb3b5614a5ca2982b6ed5ee671262f8e17",
+  "profile_digest": "d80045d446af6297e5e0c5df2f1aeb6f0467e4a402728a1a222361b8b2ae4248",
+  "profile_sha256": "6dadc1961a54374f51415e2168ff8d4a917b28f90e58c9493a1b9fbd8731e80d",
+  "record_id": "S5-SIZE01",
+  "recorded_at_utc": "2026-10-26T07:54:01.471830+00:00",
+  "remaining": [
+    "actual token-history timestamp/adjustment qualification (TH-01)",
+    "exact profile/probe/signer/release acceptance and fresh hosted inputs",
+    "host qualification and installation",
+    "hosted CI unavailable due GitHub billing/startup failure"
+  ],
+  "source_hashes": {
+    "docs/build/ops/rehearsal-install-s5-20261026/host/p4-init-activate-start.sh": "6620ffc7b7e83604f64a746ac6641c46d282a8a25610f2697f5b8885f22dea3e",
+    "docs/build/ops/rehearsal-install-s5-20261026/mac/m1-fetch-bundle.sh": "c778bd9e1bfd322005b99527472647f6672121e651bb75935368928e69e790a0",
+    "docs/build/ops/rehearsal-install-s5-20261026/mac/m1-local-bundle.sh": "5a5ead611a7eb61b459347998ad8aa77a8f3ccd73c19f09156ce649f6cc85a59",
+    "docs/build/ops/rehearsal-install-s5-20261026/mac/m3-recapture-assemble.sh": "590b75e647e63d95578ec6428e1c7576091f4d98bab85f4545de45c3ca072d3f",
+    "docs/build/ops/rehearsal-install-s5-20261026/mac/m4-prepare.py": "3773d8a552f05dc4ee70293236cf442d4ab8864fc38c8840b1d7ecde3120a55a",
+    "larp/risk/planner.py": "5fe0629458aba79c7924c23a5d969a03f0d9a0b36a8b3b80829522f3b8ae3a08",
+    "larp/strategy/policy.py": "b34ec8d63fad2caa4ecbf7157d31057e2c80e4e5fc275720d2c775f63809a9ae",
+    "larp/strategy/rehearsal_sizing.py": "f2e33b41574a5e58b18d2e2ea3212e28bb51402b96726fd47ce76fc91b0f43d4",
+    "larp/strategy/schema.py": "46b5fc05d716d653f141dd06d529f7ad132edc86845e0a4aacfb47b714fdd217",
+    "tests/runtime/test_run7_sheet.py": "2c14858aa94de26131a2c758a03a58fdd7a42af68a0204b81b46f92096054a06",
+    "tests/strategy/test_s5_monday_flatten.py": "6a5200b5a24c17726d114d09c7d35ddcdf8e62bad5c698f84b82fb1fd0990822",
+    "tests/strategy/test_s5_sizing.py": "c9ac4540d80e76dcc36345e94633f82473e7e1b6f710f4583112c42f7b90ed34",
+    "tools/deploy/build_rehearsal_candidate.py": "58a18c35e86fdb28d708c93ccef02410e5d55a46d00cb2d47a8516a25912f890"
+  },
+  "tested_commit": "2f9e886c25b4ceba0eb35bd23dd5543952d23865"
+}

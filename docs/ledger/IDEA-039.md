@@ -1,5 +1,109 @@
 # IDEA-039 — Isaac: live market and execution integration
 
+## GB-RW3 — PR155 review: returned quote binding (2026-10-17 SGT, prospective)
+
+All-PR review found that the offline numeric checker binds request parameters but
+does not compare returned `routerResult` token addresses/decimals or input amount.
+Its synthetic fixtures omitted those real response fields. This can report
+numeric COVERED for a mismatched response, despite GB-CAP2's stated units/binding
+criterion; owner approval still remains blocked.
+
+Before changed code runs: extend fixtures to the actual response shape; compare
+returned pay/receive token addresses and metadata scales against the requested
+pair and configured stock units (USDT/BNB18), and require the exact returned input
+amount, positive received/minimum quantities and minimum <= quoted receipt.
+Check GET method and any supplied transaction sender/chain metadata; missing
+optional transaction sender/chain metadata is not invented. Mutations of each
+binding must yield numeric BLOCKED/missing pair, with unchanged owner/signing
+refusals. Push regression and fix before execution; run focused caps/proposal/
+Gate B checks and the combined review regression. No source or quote-execution
+qualification is inferred from these numeric comparisons.
+
+GB-RW3 review status: regression commit `2c594db` was pushed before execution;
+all 12 response/method mutations reproduced false numeric coverage. Fix `617abb0`
+is committed locally, but GitHub authentication subsequently returned HTTP401
+and Git push lost authentication. Changed-code tests have not run because the
+push-before-execution rule applies. Push the repair, then run the caps/proposal/
+Gate B regressions and combined review suite; do not call this repair verified yet.
+
+GB-RW3 update: authentication recovered and `a8101a9` (including fix `617abb0`)
+was pushed before changed-code execution. Focused cap/proposal/Gate B regression
+**33 passed, 105 subtests**, 0.88s, no skips (Linux/Python3.12.14). All 12 returned
+response/method mutations now block numeric coverage; non18 metadata and omitted
+optional transaction fields remain supported. The earlier blocked status above
+is historical. Combined review verification follows in IDEA-049 ALLPR-20261017.
+
+## GB-RW1 — remaining Gate B reconciliation (2026-10-17, prospective)
+
+User requests all remaining Gate B work after inspecting all PRs and the remaining-work briefs. Base: integration `0672fb8`, rather than lagging main `fb95114`. All 85 advertised PR heads were fetched through native Git and compared with both branches. Seven heads are outside integration: historical closed #10/#82/#83/#89, remaining-work brief #126, checklist #133 and incomplete source acquisition #139. Their documents were read as references; no PR is merged or represented as independently approved here. Initial GitHub API/discussion requests were blocked by cloud egress; `api.github.com` was added to the environment draft, preserving the package-manager preset. API access later recovered and was verified directly; publication of that draft is not claimed.
+
+The independent repository work is the missing #44 current-input qualification, plus reconciling GAP-30/31/32/47 with the actual execution/storage/replay implementation. Existing caps, lifetime proposals, decoder and signer-access code are reused. Router source/ABI, recorded quote files, current measured profile/holdings, numeric approvals, account/host access and real rehearsal evidence are external prerequisites. No team decision is inferred from a proposal or a synthetic PASS. B6's actual-session/attempt enforcement remains separate from the existing planning-session swap counter; it is not silently called complete.
+
+Pass criteria, before implementation or test execution:
+
+1. **GB-CAP1:** an offline, read-only cap review loads hash-pinned profile, policy, execution configuration and starting portfolio. It uses the existing LIVE-profile, signing-policy and execution-config validators. It checks one complete largest target position plus reserve, per-trade and gas-top-up USDT inputs in raw token units, every current token holding without assuming sell splitting, all configured tokens/spenders, and configured worst-case `max_gas * max_gas_price` against the signer fee ceiling. Use integer/rational arithmetic; reject boolean/negative/malformed quantities, wrong identities, units, environments and altered hashes.
+2. **GB-CAP2:** review existing recorded successful quote artifacts as additional raw input/fee observations, with chain, wallet, spender, exact supported pair, execution mode, token decimals, positive quantities and capture time checked. Missing five-name BUY/SELL or top-up coverage, stale/future captures, missing evidence and an example policy remain explicit blockers. A numeric-coverage result never grants approval or signing authority, generates an installable policy, calls a provider, reads credentials or starts a service.
+3. **GB-CAP3:** CLI inputs are size-bounded and pinned; output is a new private file, never overwrites, and failure output does not echo supplied content or secrets. Tests cover cap equality/+1, non-18 token scales, full-holding sale limits, gas envelope, environment/wallet/build binding, missing/stale/malformed evidence and byte changes. Push code/tests before running them.
+4. **GB-AUDIT:** verify relevant existing real-PostgreSQL identifier, crash/fencing, settlement/reservation, nonce/reorg and replay tests on this branch. Update stale remaining-work text only as far as those results demonstrate; keep source, owner, host and signed acceptance distinct. Run the full Linux/PostgreSQL14 suite with required namespace execution after focused checks pass.
+
+This record authorizes only offline repository qualification; the named human/account/wallet steps remain with the pre-trading checklist. Results are recorded below.
+
+GB-RW1 report finding (prospective): the no-input `gate_b report` correctly exits 2 with overall BLOCKED, but prints `blockers: []` while all 19 DR checks are blocked in the retained artifact. **GB-REPORT4:** expose the sorted blocked-check IDs and OWNER_REVIEW_REQUIRED acceptance in the CLI summary, preserving probe behavior and exit codes. The cap checker must also refuse an output inside the checkout and profile/ledger native-scale disagreement. Push these changes before execution.
+
+### GB-RW1 results and remaining qualification
+
+- Criteria pushed at `2bff036`; implementation/tests pushed at `6f3b668` before execution. First focused result: 6 passed, 1 failed, 27 subtests; the failure was a missing refusal-type import in the test, corrected/pushed at `73d5826` before rerun. No assertion was disabled.
+- **GB-AUDIT PASS** at `73d5826`: execution/cap/native/settlement/PostgreSQL crash/replay subset **117 passed, 165 subtests**, 19.18 s. Includes real database process death and immutable registry/observation recovery, actual I3/I4/accounting, reservation release on fill/revert/NOT_SUBMITTED, retained uncertainty after timeout/reorg, and recorded-port replay.
+- **GB-CAP1..3 / GB-REPORT4 PASS** at pushed `768d333`: cap/proposal/Gate B report subset **32 passed, 93 subtests**, 0.56 s. The new cap review has 10 tests, covering S1 largest frozen-position input, all raw stock holdings, fee equality/+1, non18 stock metadata, missing/stale/wrong-wallet/chain/pair quote evidence, source-byte changes, output privacy/non-overwrite, scope, native-scale mismatch and fixed failure output. `numeric_status: COVERED` never changes BLOCKED/ready_to_install=false/signing_enabled=false or supplies owner approval.
+- Full initial run at `768d333`: **1932 passed, 1 failed, 6 skipped, 2856 subtests**, 312.74 s. The one failure was the pre-existing stubbed archive SDK test inheriting a platform AWS_PROFILE selection without a backing profile (ProfileNotFound); it was an environment issue. `env -u AWS_PROFILE` for that offline test process made all four archive tests pass. No runtime or test source was changed for it.
+- **Full corrected run PASS**, same pushed code `768d333`, Linux x86_64 / Python3.12.14 / disposable PostgreSQL14.24 / required bubblewrap namespaces through elevated execution: **1933 passed, 6 skipped, 2856 subtests**, 339.97 s, exit0. Command: `env -u AWS_PROFILE PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PIP_CACHE_DIR=/workspace/.cache/pip LARP_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/larp_test .venv-runtime/bin/python -m pytest -q -ra -p no:cacheprovider`. Skips: one opt-in real-market artifact test and five disposable-systemd cases (systemd is not PID1 here). No xfailed cases. Saved environment startup instructions now include the test-only profile override; real deployment authentication is unchanged.
+- Logs retained outside Git under `/workspace/larp-cloud`: `gate-b-focused.log` SHA256 `0ff06575145f1baf2540135c00a68ada73540c6a22c8d93ccab666569ffd8485`; `gate-b-qualification.log` `6d12be72d9f0578ef2c0be90093a71eec7a27cc30dbc3d7087a848c495b5becb`; initial `gate-b-full.log` `14a7788dacbc5aa495961d1d5446c4cb2078ede8b25447e8b26122955135feba`; corrected `gate-b-full-corrected.log` `e6974f5827fc022f186069d79f040c08e9b51f737e6cb8a2e93cea1017e197bb`.
+- **GAP-30 definition/uniqueness COMPLETE**: the economic key, command/intent, decision/round/version/reservation, per-step attempt/payload/transaction and stable observation/round-log identities are implemented and exercised by the tests above. The exact mapping is in [GATE_B_REMAINING.md](../build/GATE_B_REMAINING.md). Remove its obsolete undefined-identifiers checklist item; real signed-pair and receiver acceptance remain DR-02 and other Gate B items. GAP-31/32/47 are narrowed to actual provider, source and hosted/signed qualification, not closed wholesale.
+- Actual no-input report at this code emits all 19 blocked DR IDs, OWNER_REVIEW_REQUIRED and signing_enabled=false, exit2; retained artifact SHA256 `6ef7cb8c507303c1cac99ea022cc67360f4feb131137eb1d3f90fa5beb77433e`. This is an inventory, not missing evidence being marked passed. Current-wallet cap review, real source/recorded routes, native tracing, signed rounds, hosted drills and release CI are **NOT RUN** in this machine.
+- All available PR heads and outstanding handoffs are recorded in [GATE_B_REMAINING.md](../build/GATE_B_REMAINING.md). After API connectivity recovered, all 85 PR descriptions and submitted-review events were fetched; every API head matched the Git inventory. Live issue discussions #27/#30/#32/#33/#36/#44/#92/#106/#127/#138/#142/#146/#150 were inspected. No later #27/#44 approval was found: available records still require the owner decisions. The current-input/artifact question remains unanswered. A technical #27 profile review is prepared in SIGNING_LIFETIME_PROPOSAL.md without attributing owner sign-off or changing the lifetime. No AWS/host/key/funding action, provider call, ai-seeds upload or real transaction was performed. Native Git read/push and GitHub API read work. The saved api.github.com network addition remains draft configuration; publication is not claimed.
+
+### GB-RW2 — current integration mirror bundle (prospective)
+
+The pre-trading checklist's Gate B mirror-bundle line is actionable with the existing authenticated Keegan4 mirror (repository permissions verified, no credential values read). Build reviewed integration `0672fb8d51056702c1d9e05450b422072bcb3138` on a new mirror branch `codex/gate-b-release-20261017`; preserve existing branches and use no force push. It contains PR130/144/148/149/153/131, and the registered-source manifest logic is already integrated. Criteria: dispatch the existing Runtime acceptance workflow once, require all runtime/infrastructure/host-bundle jobs to pass on that exact SHA, download the host-bundle artifact, verify the bundle sidecar checksum and the CI-built external/embedded manifest bytes, and retain run ID, artifact identity and both hashes. No AWS/upload/provisioning, settings/permissions edits, source promotion or signing. A later adopted source change requires a new build; this is not Gate B acceptance. Push this record before dispatch. Record blocked/failed CI distinctly rather than treating a queued workflow as success.
+
+### GB-RW2 result — CI passed, artifact verification blocked
+
+Criteria were pushed at `e38afb0` before creating the new mirror branch and
+dispatching workflow385777152 once. [Run39030800352](https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39030800352)
+completed SUCCESS at 2026-10-17T12:05:47Z on the exact reviewed integration
+`0672fb8d51056702c1d9e05450b422072bcb3138`. All four jobs passed: Terraform
+aws/bootstrap, runtime (Python3.12.15/PostgreSQL14.24, systemd, demo, Docker),
+and host-bundle (both Amazon Linux roles). This does not test unmerged PR155.
+
+Artifact12099524179, `larp-bundle-x86_64`, 98,397,459 bytes, is retained until
+2027-01-15; GitHub reports archive digest
+`sha256:0a2b764f848239d529f68fd60f40cf64134ee0a547b8e86909153b12a95fd782`.
+That is not a locally verified bundle or manifest hash. Two authenticated
+downloads were refused by the cloud egress policy at GitHub's artifact-storage
+hostname. The environment draft now preserves existing rules and adds
+`productionresultssa9.blob.core.windows.net`; revision4 saving is confirmed,
+but review/save and publication are required and application is not claimed.
+Sidecar checksum, external/embedded manifest byte comparison, and retaining
+both file hashes remain BLOCKED. The complete GB-RW2 pass criteria are not met.
+Public metadata is retained in
+[gate-b-mirror-build-20261017.json](../build/evidence/gate-b-mirror-build-20261017.json).
+No artifact was uploaded to AWS, no host was provisioned and nobody was messaged.
+
+### GB-RW1 publication / AWS access clarification
+
+[PR155](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/155)
+targets integration with the cap checker, blocked-check CLI summary and remaining-work audit.
+Its organization Actions run [39030940212](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39030940212)
+ran no steps; the runtime annotation retains the account-payment/spending-limit refusal.
+The passing local results above remain the verification of this code; the separate
+GB-RW2 mirror release is reviewed integration, not this unmerged PR.
+
+The user asked whether this session can access their AWS account. A metadata-only
+recheck found zero profiles in both injected AWS config files, no environment,
+web-identity or container credential binding, and boto3 ProfileNotFound. No account
+lookup was attempted from an email address; email alone grants no AWS access.
+AWS/host work remains with the checklist's authenticated AWS owner, Yao Zhu.
+
 ## GB-20261015 — Gate B implementation (prospective)
 
 User requests a new Gate B PR into `codex/system-testing-20261012`, and confirms using the existing build documents. Base target `0820b0dd87219cb6b96f2ede34051129fab9f49c`; carry unmerged PR70 prerequisite tree `9a14d6e4fc30387feb82be7923d479f71deb1f46` without merging either PR into the target. Branch `codex/gate-b-20261015`, worktree `/private/tmp/larp-gate-b-20261015`. Existing C baseline: 1303 passed, 7 skipped, 1 known D legacy-export expected failure, 1615 subtests (IDEA-049-C C-RESULT-007); this is recorded prior evidence, not a new run.
@@ -179,3 +283,250 @@ Verification:
 Collector restarted on pushed `980529a`, local PID 1921. First updated cycle `0be55946e0ff7e928fb2ade110c790f53d365d30f7fb57e81d67d7e29466b51a`, 2026-10-12 09:19:25.259–09:19:51.606 UTC, all five pairs collected. Quote latencies 126–173 ms; effective quoted spread bp: NVDAB -1.5004, GOOGLB 5.3674, SKHYB -2.2570, TSLAB -1.5346, MSFTB 12.5828. These are sequential samples with price-movement noise, not profitable arbitrage evidence. Artifacts remain private and ignored.
 
 Remaining integration requests: Keegan wires LiveGuards/epoch-derived execution authority and `check_broadcast` at the actual release boundary, uses pinned ownership in publication, and adopts NOT_SUBMITTED reservation release. HALT/revocation must quarantine or advance execution authority; ordinary journal commits must not. A future dedicated authority column may replace epoch derivation under the same interface. Keith supplies calibrated independent quote limits, actual gas/BNB scales and verified candle semantics. Confirmed first BNB, RPC/provider/router capability proof and live activation/rehearsal remain pending; no registered-wallet signatures, transactions or official logs were run by these fixes. Update the reserved IDEA-039 ledger row/backlog through Keegan; no whole shared backlog item is closed here.
+
+## GB-CHAIN-20261016 — Gate B chain-probe gaps GB-1/GB-2 (pre-registered 2026-10-16)
+
+These gaps came out of reviewing Gate B against Gate A's GA11 check (IDEA-058, PR #87). The user asked for the fix; Gate B is Isaac's code, so this section is for his review. The branch is `claude/gate-b-chain-gaps` from `codex/system-testing-20261012` at `7a8a246`. Nothing is signed or broadcast, and there is no AWS action.
+
+- **GB-1, a transaction mined but not finalized.** `probe_chain` compares only the `latest` and `pending` nonces. If a wallet transaction is mined but not yet finalized, the finalized BNB still equals the old opening balance, so DR-03 and DR-06 pass. Then the transaction finalizes and changes the balances.
+- **GB-2, only BNB cross-checked.** DR-06 compares only the starting BNB against the chain. USDT cash and the five bStock positions in the pinned initial state are not checked.
+
+**Pass criteria.**
+- **GB1a:** `probe_chain` also reads the wallet nonce at the finalized height and records it as `finalized_nonce`. When it differs from `latest_nonce`, the blockers include `UNFINALIZED_TRANSACTION_REQUIRES_RECONCILIATION`.
+- **GB1b:** the report's DR-03 stays BLOCKED for chain evidence with a missing, non-integer or mismatched `finalized_nonce`.
+- **GB2a:** `probe_chain` reads `decimals()` and `balanceOf(wallet)` for USDT and the five pinned bStocks at the finalized height. These go through `chain.Rpc`'s existing `eth_call` allowlist, between the two block-identity checks, and are recorded as `tokens`.
+- **GB2b:** DR-06 stays BLOCKED unless all of these hold:
+  - `cash_units` equals the chain USDT floored to micro-USDT (`units // 10**(decimals-6)`, decimals ≥ 6). This is Gate A's convention.
+  - Every bStock position equals its chain units. A position must be zero when the chain balance is zero. A non-zero position needs matching decimals and units. A token with no position counts as zero, and a position not in the pinned set refuses.
+- **GB-tests:** the existing Gate B tests keep passing with the fixture extended, and no `send` or `sign` method is called. A mutation of each new check is caught. The full suite shows no new failures against the base (`7a8a246`: 1546 passed, 7 skipped).
+
+### GB-CHAIN-20261016 results (2026-10-16)
+
+- **Order of commits:** criteria in `ade0d8c`, red tests in `a4a3096` (4 failing tests, 4 failing subtests), fix in `d4ab8be`. Two test corrections followed, after mutations survived:
+  - `e7aed94`: DR-03's status is always BLOCKED pending owner acceptance, so GB1b now asserts the refusal detail.
+  - `f1df6d5`: adds a `3.0` finalized-nonce case, so the integer-type check is exercised.
+- **GB1a/b: PASS.**
+  - `finalized_nonce` is recorded.
+  - A finalized nonce behind latest adds `UNFINALIZED_TRANSACTION_REQUIRES_RECONCILIATION`.
+  - DR-03 refuses a missing, mismatched or non-integer `finalized_nonce`.
+- **GB2a/b: PASS.**
+  - `tokens` holds USDT and all five bStocks at the finalized height, read through the existing `eth_call` allowlist.
+  - DR-06 refuses all of these: a USDT difference of one micro-USDT; a bStock on chain with no ledger position; a ledger position above the chain balance; an unknown position symbol.
+  - DR-06 accepts matching zero and non-zero holdings.
+- **Mutations:** 7, each caught after the corrections above:
+  - blocker;
+  - DR-03 nonce comparison;
+  - DR-06 cross-check;
+  - cash comparison;
+  - position comparison;
+  - unknown-position check;
+  - integer-type check.
+- **Full suite** (PostgreSQL 16.15, Python 3.12.3): base `7a8a246` 1546 passed, 7 skipped. This branch: **1550 passed, 7 skipped, 2155 subtests, 0 failed** (+4).
+- **Docs:** `config/execution/README.md` lists the new blocker and the DR-06 cross-check.
+- **Compatibility:** chain evidence captured before this change has no `finalized_nonce` or `tokens`, so it now keeps DR-03 and DR-06 blocked. Re-run `probe-chain` before Gate B review.
+- **Not done:** this is a repository change only. It has not run against a real BSC node, it needs Isaac's review, and mirror CI has not run.
+- When this merges, remove the GB-1/GB-2 line that PR #87 adds to `docs/INCOMPLETE_WORK.md`.
+
+## FG-01 — Isaac checklist task8: verify historical dev gas funding (2026-10-17, prospective)
+
+Isaac supplies transaction ID/hash `0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55` for the earlier2USDT USDT→BNB funding action. This is input, not a verified swap. Separate branch `codex/isaac-08-dev-gas-record-20261017` from integration92fd2ad; signer key task7 remains dependent on approved caps/access. Parent106 keeps the remaining dev funding, post-final-swap capture and final-wallet steps.
+
+Criteria before public transaction lookup / analysis:
+- **FG1:** use only bounded public, read-only HTTPS RPC (BNB public primary, NodeReal fallback on lack of a read capability), at most16 method calls,20s HTTP timeout, no retries/redirect/auth bypass/keys/env/AWS/signing/broadcast/official-log action. Allowed methods: chainId, transaction/receipt, numeric/finalized block, and optional debug_traceTransaction with prestateTracer diffMode, code/storage disabled. Preserve exact responses and UTC timing/hashes outside Git at `/private/tmp/larp-isaac-dev-gas-20261017`. This does not activate a provider or qualify production native_trace.
+- **FG2:** bind chain56, requested transaction hash, successful receipt, block number/hash, block timestamp and canonical identity below a finalized head; recheck identity after optional trace. Compare the involved wallet with previously user-supplied dev wallet0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479. A missing/reverted/approval-only or wrong-wallet transaction is not confirmed gas funding.
+- **FG3:** derive actual USDT transfers involving that wallet from receipt logs with pinned USDT contract/Transfer signature and18decimals; separate gross outgoing/incoming/net debit and any fee classification only when attributable. Do not assume the stated2USDT is the total charged or the tx sender pays the user's fee. Verify transaction-local native credit using trace if available; do not infer BNB received from a whole-block balance delta or WBNB event alone. Missing/unsupported evidence stays INCONCLUSIVE; record independently proved fields without guessing the rest.
+- **FG4:** publish only public normalized funding facts / evidence hashes in DEPLOYMENT_DAY§5 and this ledger, with source, exact units, uncertainty and finality scope. Do not treat this historical manual funding record as an agent trade/round or emit an ai-seeds log. Remove the existing placeholder row only if its fields are genuinely verified; preserve remaining dev/final/post-funding work in the live backlog. Separate PR closes only the verified historical-record slice, parent106 stays open. No application code/test or live service is run by the manual research.
+
+### FG-01 retrieval status / FG1a protocol clarification (2026-10-17, prospective)
+
+At pushed40e0aed, BNB public chain/transaction/receipt/finalized-head reads succeed. A mixed batch containing debug_traceTransaction is rejected in its entirety as unsupported-in-batch, including the numeric-block read. NodeReal fallback independently agrees on chain/hash/sender/success/canonical inclusion and block time2026-10-16T08:27:44Z; its standalone prestate trace returns missing trie node. Native credit is not inferred from events or block balances. Twelve RPC method calls consumed including the failed batch.
+
+**FG1a:** allow exactly one standalone trace request to the primary, because its prior response rejects the batch protocol, not a successful trace or identical standalone request. This is a new request shape, no transient retry loop or access bypass; keep the original16-method cap and20s timeout. Recheck receipt/block after this optional request. If it also cannot supply native credit, record the fields independently verified and explicitly request further amount evidence rather than call the historical record complete. An explorer transaction page may be inspected as a separate public source.
+
+### FG-01 partially verified historical record (2026-10-17)
+
+Criteria40e0aed and FG1a clarificiationeaf7282 were pushed before their reads. Exactly15 RPC method calls in6 HTTPS requests, within the16-call/20s cap, no transient retry/redirect/authentication bypass. BNB public and NodeReal independently return chain56, the supplied hash, the expected dev wallet sender0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479, successful receipt and the same canonical block below their finalized heads. The receipt and numeric block were rechecked after trace attempts with unchanged identities.
+
+**FG2 verified:** transaction0x24683de219c18cc78a2d7aeb37c94e733a6a383b1c3a58d3a403f95df7da5c55, block0x7a04e65, hash0x1983bbd3490a3bb69f7220d02c7bb218876b73caee5f1ed660d7dbbdad807b01, **2026-10-16T08:27:44Z** (16:27:44SGT), status1, nonce1, tx native value0. User attribution: MetaMask dev trial funding; this record does not prove every prior wallet activity or a current balance.
+
+**FG3 partially verified:** pinned USDT Transfer events in both receipts and the rechecked receipt show exactly2000000000000000000raw units leaving the wallet and0 returning = **2USDT net debit** at18decimals. Do not double-count downstream transfers or classify an unproven separate USDT fee. Receipt gas188294 ×effective price60000000wei =11297640000000wei =0.00001129764BNB; this protocol gas product does not establish what the MetaMask UI charged in USDT.
+
+**Native BNB credit INCONCLUSIVE:** primary mixed batch rejects the trace method; backup standalone trace and primary standalone trace each return missing trie node. The trace amount is not substituted by a pool/WBNB event or whole-block balance difference. BscScan transaction page is inaccessible to the browsing tool. Isaac was asked to relay the exact wallet-directed native amount from BscScan Internal Transactions, or the exact MetaMask received amount with its source. Until evidence arrives, preserve a flagged pending native-credit field and do not close the historical verification slice. No actual native_trace runtime capability is qualified or enabled by these failed traces.
+
+Normalized public evidence `docs/build/evidence/dev-gas-funding-20261016.json`, SHA256 **6ef24da0c9147f73b49caced1e1e2a981213f1705f42ab6274f58b9e2c81a141**; raw requests/responses/headers retained outside Git at `/private/tmp/larp-isaac-dev-gas-20261017`, with exact byte hashes/times in the report. Geth prestate diff semantics checked against its [primary documentation](https://geth.ethereum.org/docs/developers/evm-tracing/built-in-tracers#prestatetracer); JSON-RPC receipt/block fields checked against [Ethereum JSON-RPC documentation](https://ethereum.org/developers/docs/apis/json-rpc/). This is trusted-provider public observation, not a cryptographic proof.
+
+DEPLOYMENT_DAY§5 replaces only the now-known time/hash/debit placeholders and retains explicit native-credit uncertainty. GAP49 is narrowed to remaining amount evidence/dev funding/post-last-swap capture/final wallet, with source evidence here before narrowing. Validation: independent source identity/receipt/Transfer arithmetic checks and JSON/diff checks; no application tests/runtime, private key/env, AI-seeds, new swap/signing/broadcast or AWS action. Parent106 remains open; issue150's full-record criteria remain incomplete, and its PR must stay draft without a closing claim until the missing amount is evidenced.
+
+
+### FG-01 U1 — attributed explorer amount completes the historical funding note (2026-10-17)
+
+Isaac relayed the BscScan Internal Transactions entry for the same transaction: **0.002684720969362886 BNB** (2684720969362886 wei), from `0xc590175e458b83680867afd273527ff58f74c02b` to `0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479`. The recipient matches the RPC-verified sender/dev wallet; the intermediary also appears in the USDT transfer path. Source: public explorer text copied by Isaac on 2026-10-17, not an independently retrieved RPC trace. The displayed USD estimate is unused. This is gross incoming BNB, not net/current balance or proof of the MetaMask fee-token economics.
+
+FG2 and the USDT portion of FG3 retain their prior RPC evidence. The native portion of FG3 remains RPC-INCONCLUSIVE because the trace errors above are unchanged; the exact amount is now separately evidenced by the attributed explorer entry. No missing evidence is inferred from a pool event or whole-block delta. The historical funding-note deliverable under FG4 is complete with this explicit source grade; this does not convert FG3 into a trace-verification pass or qualify runtime native_trace.
+
+The normalized report now has status `FUNDING_RECORD_COMPLETE_WITH_ATTRIBUTED_EXPLORER_CREDIT`, `native_credit_rpc_verified: false`, and SHA256 **dd27d380f878f5d7e540e6dacc3893d9986f7acbd1bb3e8987de8a49659ddfe9**. The earlier partial-report hash remains above as historical evidence. A source-attributed transcript is preserved outside Git at `/private/tmp/larp-isaac-dev-gas-20261017/isaac-explorer-native-transfer.json`, with its byte hash in the report. DEPLOYMENT_DAY §5 now records all four historical fields. GAP49 retains remaining planned dev funding, Yao's fresh opening capture after the last manual funding swap, final-wallet funding and separate #30 native-trace/floor qualification; no entire live backlog item is fully complete for removal.
+
+PR #151 carries `Closes #150` for the historical-record slice only; because its target is the integration branch, verify issue closure when it is merged rather than assume GitHub closes a non-default-branch merge. Parent #106 remains open. No new transaction, application test/runtime, signing/key, AWS or official-log action was performed.
+
+Validation for U1: evidence JSON parses; exact BNB/wei and receipt gas arithmetic, recipient identity and every retained raw artifact SHA256 match; `git diff --check` passes. Documentation/evidence-only change, so no application tests were added or run.
+
+FG-01 U1 publication: pushed `321980a`; [PR #151](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/151) is OPEN and ready for review with `Closes #150`, targeting integration. Child #150 now states the completed attributed-record scope and remains open pending merge; parent #106 now distinguishes the recorded trial from remaining Isaac funding and Yao opening capture. GitHub reports no automatic closing-issue linkage for this non-default target; verify closure at merge. Actions run [39016527481](https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/39016527481), head `321980a`, runtime annotation: job did not start because recent account payments failed or spending limit needs increasing (existing #98). No CI pass or hosted acceptance claimed. Remaining source/decoder, signing-lifetime, caps approval, signer access/key placement and funding/host gates stay with their previously recorded owners.
+
+GB-RW3 combined regression: published review head `7328e0a` includes this PR's
+repaired code from `4c19ee8` and all seven other open PRs. Linux/Python3.12.14 /
+PostgreSQL14.24: **1957 passed, 6 expected skips, 2931 subtests**, 326.89s, no
+failures or xfails. Skips: one external recorded corpus and five opt-in systemd
+checks. Full per-PR dispositions and exact heads: IDEA-049 ALLPR-20261017 on
+PR158. This confirms offline engineering behavior only; current external input
+files, #27/#44 decisions, source/route proof and hosted signed acceptance remain
+with their existing owners. This result commit changes documentation only.
+
+## GB-RV155 — integration refresh and merge review (2026-10-18, prospective)
+
+Yao Zhu requests review, repair where needed and merge of PR155/157 into the
+integration branch; PR133 stays open. Review PR155 at fbd86ba against integration
+a2af2df, incorporating the base by ordinary merge. Preserve GB-CAP1..3,
+GB-REPORT4 and GB-RW3 acceptance: exact request/returned economics and raw units,
+full-position/holding/top-up and fee bounds, private exclusive output, blocked
+owner acceptance and no signing authority. Re-run caps/proposal/Gate B report
+checks on the refreshed pushed head; require no failures/skips in that subset.
+Run the execution suite to check consumer compatibility; explicitly retain any
+macOS/PostgreSQL/Linux-only skips and do not claim a new Linux release build.
+Inspect the diff and existing review discussions before merge. No new runtime
+policy, live profile acceptance, owner sign-off or host deployment is implied.
+
+### GB-RV155 result — 2026-10-18
+
+Refreshed/pushed head `387160a` includes integration `a2af2df` by ordinary merge.
+No further code defect found after reading the full cap checker, its validators,
+report consumer, fixtures, prior corrections and empty GitHub review discussions.
+Focused caps/proposal/report: **33 passed, 105 subtests, no skips**, 1.29s.
+Execution suite: **170 passed, 52 skipped, 694 subtests**, 2.20s on macOS arm64 /
+Python3.12. Skips require disposable PostgreSQL or Linux isolation; this is not a
+new Linux/host/release qualification. Prior GB-RW3 combined Linux evidence remains
+historical. `git diff --check` passes. Existing organization Actions jobs at
+run39047166150 have zero steps (the known billing block), not failed assertions.
+No runtime code or cap values changed in this refresh; #27/#44 approval,
+real-source/route evidence and all host/signing acceptance remain outstanding.
+
+## SP-NATIVE — public endpoint qualification attempt (2026-10-18)
+
+SP-01 R1 records bounded public reads at07:44UTC. Both providers agree on
+chain56 and rechecked finalized block identities, but both return -32002
+resource debug_traceTransaction not available even for a recent finalized tx,
+as well as -32000 missing trie node for the historical funding hash. #30 is
+UNQUALIFIED, not merely an archive-history problem. Isaac needs a permitted
+execution endpoint exposing exact prestateTracer diff semantics/retention; Yao
+retains actual host/receipt-path verification. No native_trace enablement or swap.
+
+Full criteria, evidence, limits and remaining owners: [SP-01](../build/SIGNED_PREREQUISITES_20261018.md).
+
+## NT-Q1 — native RPC qualification, separate PR (prospective, 2026-10-18)
+
+Isaac asks to carry out each immediate point in its own PR and reports no source
+export, private RPC config or extra funding hash available. Build a bounded
+read-only qualification CLI using the exact production Rpc/ChainEvidence.native_receipt,
+not a trace-shaped mock or balance/block delta substituted for transaction proof.
+
+Pass criteria: exact chain56 successful canonical finalized receipt rechecked
+around prestateTracer diff; expected public wallet/sender, nonce and positive
+native credit after actual gas; value0. No native receipt/foreign wallet/reorg,
+wrong chain, unsupported tracer, malformed response or exhausted read budget
+can pass. Per provider at most16 RPC calls, four configured candidates maximum,
+20s per call/no retries/redirects. Inputs stay private/ignored, new output stays
+outside Git and cannot overwrite. Output excludes URLs/credentials/echoed errors;
+real evidence PASS is not automatic selection, runtime enablement, hosted
+qualification or the dedicated agent top-up round. Push criteria/code before
+execution, test privacy/refusal/actual production receipt composition offline.
+
+Public investigation: examine no more than two new primary-documented public
+candidates (SubQuery BNB endpoint listed by BNB Chain and PublicNode's published
+BSC endpoint), at most8 availability/chain/finalized/trace discovery calls total.
+Only a positive exact tracer response can advance to the committed production
+qualification CLI. No account signup/payment/keys, AWS, model call, signing or
+wallet transaction. Retain response status/hashes and exact sanitized blocker.
+
+### NT-Q1 delivery and results
+
+Discovery five calls: SubQuery DNS failure, PublicNode chain56/finalized succeeds
+but recent/historical prestateTracer returns -32601 unavailable. No private
+account input; actual positive transaction proof/host qualification NOT_RUN.
+Candidate report SHA25613bb1b38a77526760317d8554f90cf8869676f50b2a6d0b4a5c294bf496b0b46. Primary QuickNode docs list the exact
+tracer/diff option; account access/finality/retention not qualified. NodeReal BSC
+docs list callTracer only, which is not a substitute. No signup or payment.
+
+Committed qualifier uses production Rpc/ChainEvidence.native_receipt with a16
+read/provider cap, private inputs/outputs and sanitized reports. At ab105c1 final
+native/provider/settlement/top-up subset:42 passed /56 subtests /0 skips,3.24s
+with disposable PostgreSQL14. Full log SHA256
+4350c8cbd9fe0ab7dca81a33b18bd87eee40a12302f8b7c80b45f4d867c7df2f.
+Initial29-test pass included imported fixture test collection; final import
+uses the fixture module and adds wrong-chain/revert refusals without collecting
+those cases twice. A misspelled existing test path ran no tests before the
+corrected final invocation. No assertions weakened or full/host/CI pass claimed.
+Procedure: [NT-Q1](../build/NATIVE_RPC_QUALIFICATION_20261018.md). Parent30 stays
+open; provider selection/runtime enablement/native top-up round remain separate.
+
+NT-Q1 delivery: dedicated [PR173](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/173),
+OPEN against PR133's checklist branch. Tool review scope is complete locally;
+actual endpoint/account proof, selection and Yao host acceptance remain open.
+No full-suite/CI pass, provider enablement, account signup or payment is claimed.
+
+## NT-RV02 — receipt gas-price qualification repair (prospective, 2026-10-19)
+
+During remaining-task review, native_credit eagerly evaluates tx[gasPrice] even when effectiveGasPrice exists in the receipt. A valid typed transaction without the legacy field can fail qualification. Add regression before RED; use receipt effective price when present, legacy transaction price only as fallback. Positive canonical native proof, gas arithmetic, privacy and no runtime/provider authority remain required. Run existing native qualification regressions with no external RPC.
+
+NT-RV02 RED at e6d8a91 demonstrates eager gasPrice KeyError with a valid effectiveGasPrice receipt. Initial test used incorrect proof key transaction; corrected to actual tx before the genuine RED. GREEN native subset is included in final17 passed/9 subtests at0191633. No private RPC input or positive actual provider qualification supplied; all enabled/selected/signing flags remain false.
+
+NT-RV02 final validation is included in all4-green mirror39227766192 and independent local full2119/6/3340 suite. The receipt gas-price repair is delivered in PR187; actual native-account proof remains NOT_RUN_MISSING_APPROVED_INPUT. No provider/runtime/signing enablement or real RPC call.
+
+## FG-02 — remaining dev funding preflight/handoff (prospective, 2026-10-18)
+
+User asks each immediate point in its own PR and has no additional funding hash.
+No wallet key/session or MetaMask control is available. Prepare the independent
+#106 handoff and collect at most16 public read-only RPC method calls using the
+existing public BNB Chain endpoint; 20s/no retries/redirects, no keys or wallet
+transactions. Bind chain56, canonical finalized block/hash, dev public wallet,
+latest/pending/finalized nonces, native balance, USDT decimals/balance, and the
+known historical transaction/receipt/time. Recheck the same numeric block.
+
+Pass: accurately retain observed fields with source/UTC/body hashes and classify
+remaining funding and opening capture as NOT_DONE unless actual new transaction
+evidence is supplied. A positive balance or unchanged nonce is not proof that all
+activity/funding has been audited, nor Yao's actual opening capture. Do not send a
+swap or imply signing/key-placement approval. Record exact human next step and
+required funding-note fields, preserve F120/first-agent-trade precondition,
+keep parent106/GAP49 open; remove no unfinished live backlog item. Check official
+verbatim source_page/kit gas text plus F120/G13/Q03 and existing confirmed team
+position before writing the handoff. Validate public JSON and receipt arithmetic;
+no unnecessary application tests for documentation/evidence-only scope.
+
+### FG-02 public preflight and handoff results
+
+At10:59:12UTC chain56 finalized block128350421 rechecked canonical; native
+2694498869362886wei, USDT98 with18decimals, nonces2/2/2. Historical nonce1
+funding tx/receipt/block/time reverified. Exactly14 public read-only calls, no
+retry/redirect/key/wallet/AWS action. Report SHA256
+2784503923b345095e58302becf06220818b3dde869f0749ff33941d3e93a83a. Source bytes/requests/hashes and limits in
+[FG-02 handoff](../build/DEV_GAS_FUNDING_HANDOFF_20261018.md). Positive BNB and
+nonce agreement are not full activity/run or post-last-seed opening proof.
+
+User has no additional hash; remaining about2USDT funding is NOT_DONE and Yao
+opening capture NOT_RUN. Draft PR records the exact manual step, reconciliation
+precondition and verification fields without manufacturing a new transaction.
+Source/JSON/hash/receipt checks pass; no application tests needed for this
+documentation/evidence-only scope. Parent106/GAP49 remain open.
+
+FG-02 delivery: dedicated draft [PR172](https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/172)
+against PR133's checklist branch. Source-byte/normalized JSON/diff and exact
+98USDT/nonces2/2/2 checks pass. Owner wallet action/new hash and Yao's actual
+post-last-seed capture remain incomplete. No wallet signing/funding/key or AWS
+operation occurred; parent106/GAP49 remain open.
+
+## RV172-20261019 — independent funding-handoff review
+
+Criteria before verification: preserve the original public report bytes/hash and all FG-02/NT-Q1 history; separate block timestamp from collection completion; require accepted operator handoff plus fresh holdings/funding reconciliation and no first agent trade/in-flight work before any manual step. Validate report JSON/hash/arithmetic, relative links and documentation-only diff against PR133.
+
+Corrected obsolete host ownership: operational work needs a named approved operator after accepted handoff; no access/acceptance is assumed. Additional funding is conditional on actual remaining need under the existing plan, not automatically another swap from an old balance. Isaac remains the manual wallet operator; approved signer-session requirements remain. No new transaction/hash, current holdings or hosted opening capture was provided. PR172 remains draft, #106/GAP49/GAP70 remain open.
+
+RV172 verification: original report bytes and SHA256 unchanged; chain56,98USDT, native2694498869362886wei, nonce2/2/2,14 observations and disabled signing/funding/key flags verify. Opening status remains NOT_RUN_NOT_A_PORTFOLIOSTATE_OR_HOST_CAPTURE. All five changed files are documentation; JSON, relative Markdown links and whitespace checks pass. An initial checker expected a shortened opening-status label; corrected it to the exact stored label without changing evidence. No current RPC/host/wallet state was checked.

@@ -1,0 +1,97 @@
+{
+  "archive": {
+    "bytes": 49009956,
+    "decoded_response_bodies_verified": 14257,
+    "manifest_payload_files_verified": 14268,
+    "path": "captures/LARP-capture-complete-20261020T031658Z.zip",
+    "sha256": "2dcb92c67c4e041019aeba759518e1aeb699182a59e4cb5016db2937be6f4755",
+    "zip_crc_valid": true
+  },
+  "archive_quote_range": {
+    "first": "2026-10-16T18:19:08.345000+00:00",
+    "freshness_limit_seconds": 300,
+    "last": "2026-10-19T23:57:06.475000+00:00",
+    "newest_age_seconds": 147778
+  },
+  "artifact_schemas": {
+    "Web3Observation.v1": 14258
+  },
+  "blockers": [
+    "ARCHIVE_PREDATES_SELECTED_PR235_PROFILE",
+    "QUOTES_OUTSIDE_300_SECOND_REVIEW_WINDOW",
+    "NO_CURRENT_RECONCILED_HOLDINGS_NONCE_ALLOWANCE_RESERVATION_PACKET",
+    "NO_SELECTED_PROFILE_FULL_EXIT_AND_CHILD_QUOTE_PACKET"
+  ],
+  "canonical_commit": "5bee00600ae38fa8f593508ef93aad5d84dbdc71",
+  "capture_commit": "e26c96f7fecc807492e0919598d78943c6866716",
+  "capture_rows": {
+    "BNB_PRICE": 385,
+    "FAILURE": 2,
+    "SAMPLE": 1924
+  },
+  "checked_at": "2026-10-21T17:00:05.166304+00:00",
+  "coverage_status": "BLOCKED_NOT_CURRENT_LD10_PACKET",
+  "decision_id": "IDEA-049-C SJ-01",
+  "endpoints": {
+    "aggregator/approve-transaction": 3852,
+    "aggregator/quote-and-swap": 6168,
+    "market/rwa/tokens": 386,
+    "pre-transaction/gas-limit": 3852
+  },
+  "numeric_coverage_review_performed": false,
+  "primary_capture_performed": false,
+  "ready_to_install": false,
+  "schema": "CaptureSignerCoverageReview.v1",
+  "scope": "OFFLINE_ARCHIVE_AND_SELECTED_PROFILE_COMPARISON",
+  "selected_profile": {
+    "exit_reserve_wei": "3072000000000000",
+    "maximum_buy_raw": "20100000000000000000",
+    "minimum_buy_raw": "18637420000000000000",
+    "path": "docs/build/evidence/rehearsal-exit-split-20261021/rehearsal-deterministic.json",
+    "sha256": "e95d5842d15c07e0e2bb5dab761e6a1730f69aed4af4cfce2596eec68e070250"
+  },
+  "signing_enabled": false,
+  "stock_quotes": {
+    "GOOGLB": {
+      "buy_requested_amount_counts": {
+        "40000000000000000000": 772
+      },
+      "selected_maximum_buy_matches": 0,
+      "selected_minimum_buy_matches": 0,
+      "sell_requests": 386
+    },
+    "MSFTB": {
+      "buy_requested_amount_counts": {
+        "40000000000000000000": 769
+      },
+      "selected_maximum_buy_matches": 0,
+      "selected_minimum_buy_matches": 0,
+      "sell_requests": 385
+    },
+    "NVDAB": {
+      "buy_requested_amount_counts": {
+        "40000000000000000000": 772
+      },
+      "selected_maximum_buy_matches": 0,
+      "selected_minimum_buy_matches": 0,
+      "sell_requests": 386
+    },
+    "SKHYB": {
+      "buy_requested_amount_counts": {
+        "40000000000000000000": 772
+      },
+      "selected_maximum_buy_matches": 0,
+      "selected_minimum_buy_matches": 0,
+      "sell_requests": 386
+    },
+    "TSLAB": {
+      "buy_requested_amount_counts": {
+        "40000000000000000000": 770
+      },
+      "selected_maximum_buy_matches": 0,
+      "selected_minimum_buy_matches": 0,
+      "sell_requests": 385
+    }
+  },
+  "task_1_complete": false
+}

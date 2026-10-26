@@ -5,11 +5,15 @@ bundles pending verified decoder, production store, manifest and logging integra
 """
 from datetime import datetime, timezone
 
-from larp.execution import Blocked, Intent, USDT, NATIVE_BNB, integer, possibly_submitted
+from larp.execution import Blocked, Intent, USDT, NATIVE_BNB, integer, possibly_submitted, REVOKE_TOKENS
 from larp.marketdata.port import TOKENS
 
 
-def map_command(command, *, run_id, wallet, version_id, router, token_decimals, limits, now_ms):
+def map_command(command, *, run_id, wallet, version_id, router, token_decimals, limits, now_ms,
+                native_settlement=False, initial_gas_only=False):
+    """I3 command -> W04 Intent. A GAS_TOP_UP is mapped only when `native_settlement` is True: its fill settles only
+    through the transaction-bound native trace (`ChainEvidence.native_receipt`, config `native_trace`), so without it
+    the swap's USDT would leave the wallet with no I4 fact to release its reservations (#30, IDEA-061)."""
     try:
         if hasattr(command, 'read'):
             command = command.read()
@@ -22,9 +26,15 @@ def map_command(command, *, run_id, wallet, version_id, router, token_decimals, 
         if integer(command['expires_ms'], positive=True) <= integer(now_ms):
             raise Blocked('expired execution command')
         kind, symbol, side = p.get('kind', 'BSTOCK_TRADE'), p['symbol'], p['side']
+        if type(initial_gas_only) is not bool:
+            raise Blocked('initial-only gas scope must be a boolean')
         if kind == 'GAS_TOP_UP':
+            if initial_gas_only:
+                raise Blocked('gas top-up refused by initial-only profile')
             if symbol != 'BNB' or side != 'BUY':
                 raise Blocked('gas top-up must buy native BNB')
+            if native_settlement is not True:
+                raise Blocked('gas top-up needs native settlement (native_trace) to settle its fill')
             token = NATIVE_BNB
             receive_scale = integer(p['receive_decimals'])
             if receive_scale > 18 or p.get('decimals', receive_scale) != receive_scale:
@@ -53,7 +63,10 @@ def map_command(command, *, run_id, wallet, version_id, router, token_decimals, 
                         router.lower(), command['expires_ms'] // 1000,
                         integer(limits['max_gas'], positive=True), integer(limits['max_gas_price'], positive=True),
                         integer(limits['gas_budget'], positive=True), kind=kind, max_cash_units=cap,
-                        max_slippage_bps=limits.get('slippage_bps', 50))
+                        max_slippage_bps=limits.get('slippage_bps', 50),
+                        # #27 Option A: the margin fixed with the plan's authority, never the current profile's
+                        authority_margin=integer(p['authority']['margin_seconds'], positive=True)
+                        if 'authority' in p else 0)
         result.validate()
         return result
     except (KeyError, TypeError, ValueError, AttributeError):
@@ -64,20 +77,26 @@ def broadcast_observation(state,attempt,*,wallet_id):
     if not wallet_id:raise Blocked('configured wallet identity required')
     if not attempt.tx_hash or attempt.broadcast_at is None:raise Blocked('no durable broadcast attempt')
     intent=state.intent
-    return dict(schema='ExecutionObservation.v1',kind='BROADCAST_ATTEMPTED',
+    result = dict(schema='ExecutionObservation.v1',kind='BROADCAST_ATTEMPTED',
                 run_id=intent.run_id,wallet_id=wallet_id,round_id=intent.round_id,intent_id=intent.intent_id,
                 event_id=attempt.attempt_id+':broadcast',attempt_id=attempt.attempt_id,tx_hash=attempt.tx_hash,
                 decision_id=intent.decision_id,version_id=intent.version_id,step=attempt.step.lower(),
                 observed_at=datetime.fromtimestamp(attempt.broadcast_at, timezone.utc).isoformat())
+    if attempt.step in REVOKE_TOKENS:
+        result.update(maintenance='ALLOWANCE_REVOKE', token_contract=REVOKE_TOKENS[attempt.step],
+                      spender=intent.router, approved_amount='0')
+    return result
 
 
 class ExecutionService:
-    def __init__(self,*,store,executor,mapping,observe,wallet_id,epoch,authority_version,settlement=None,round_terminal=None):
+    def __init__(self,*,store,executor,mapping,observe,wallet_id,epoch,authority_version,settlement=None,
+                 round_terminal=None,admission=None):
         self.store,self.executor,self.mapping,self.observe=store,executor,mapping,observe
         if not wallet_id:raise Blocked('configured wallet identity required')
         self.wallet_id=wallet_id
         self.settlement=settlement
         self.round_terminal = round_terminal or (lambda state: False)
+        self.admission = admission
         self.epoch, self.authority_version = epoch, authority_version
     def create_from_command(self,run_id,command_id,epoch,now_ms):
         if epoch != self.epoch:raise Blocked('command caller ownership mismatch')
@@ -100,11 +119,13 @@ class ExecutionService:
                     raise Blocked('final receipt observation adapter required before advancing')
                 fact=self.settlement(state,attempt)
                 if (fact.get('schema')!='ExecutionObservation.v1' or fact.get('settlement')!='FINAL'
-                        or fact.get('kind') not in ('APPROVAL','FILL','REVERT')
+                        or fact.get('kind') not in ('APPROVAL','FILL','REVERT','ABNORMAL')
                         or fact.get('intent_id')!=state.intent.intent_id
                         or fact.get('attempt_id')!=attempt.attempt_id or fact.get('tx_hash')!=attempt.tx_hash):
                     raise Blocked('settlement fact identity mismatch')
                 self.observe(fact)
+                if fact['kind'] == 'ABNORMAL':
+                    return state  # no later stage or automatic recovery after the incident
         if state.status == 'ABORTED' and not any(a.step == 'SWAP' and possibly_submitted(a)
                                                  for a in state.attempts):
             identity = state.intent.key+':not-submitted'
@@ -121,12 +142,22 @@ class ExecutionService:
                 fact = self.executor.store.put_observation(fact, self.epoch, self.authority_version)
             self.observe(fact)
         if state.status!='ACTIVE':return state
+        if self.admission is not None and not self.admission(state.intent, now):
+            # A delayed S1 command cannot sign/send outside its recorded session.
+            # Revoke only positive unbroadcast authority; pending/unknown sends
+            # still reconcile and publish receipts even after the window ends.
+            last = state.attempts[-1] if state.attempts else None
+            if last is None or last.state in ('PREPARED', 'FINAL_SUCCESS'):
+                return self.executor.abort_unsigned(key, now)
+            if last.broadcast_at is None and last.state in ('AUTHORIZED', 'SIGNED_DURABLE'):
+                return self.executor.abort_unbroadcast(key, now)
         if (now >= state.intent.valid_until and (not state.attempts
                 or state.attempts[-1].state in ('PREPARED', 'FINAL_SUCCESS'))):
             # No signature exists for the next step. Expiry must release this
             # intent instead of leaving authorize() to fail on every restart.
             return self.executor.abort_unsigned(key, now)
-        if not state.attempts or state.attempts[-1].state=='FINAL_SUCCESS':
+        if not state.attempts or state.attempts[-1].state=='FINAL_SUCCESS' or (
+                state.abort_pending and state.attempts[-1].state in {'ABORTED', 'NOT_SUBMITTED'}):
             if state.prepare_probes >= state.intent.max_prepare_probes:
                 return self.executor.abort_unsigned(key, now)
             return self.executor.prepare(key,now)

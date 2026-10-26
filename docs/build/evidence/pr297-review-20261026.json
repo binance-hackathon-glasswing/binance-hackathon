@@ -1,0 +1,160 @@
+{
+  "artifact_sha256": {
+    "demo-sandbox.json": "8a6f5a5eb274b8bb8ac8ddacaf93e9694c48749e2084738ab0757081a2c5f4fa",
+    "final.xml": "fd00b11fcca5af0ce417f5cf2ab56f037c7f77893e0007051cf3ef8433ea4f6e",
+    "focused.xml": "b79a6be466b46093e747862f5995713329db2049e2d30eeaa10ac125fa2e2067",
+    "full.xml": "0fcc37d0181a5275b50f0b3dae74daf06be7ef13e5b9823def9c4adbc470f553",
+    "live-replay.json": "b9a96840fee2203f272c7a16d43fe98d957bf4941ef1c429b672f7d33dcdc337",
+    "rerun.xml": "85871c287fef08be83e431238d226dbbba21740fbd4d3aa818893666eda8da1d",
+    "sandbox.log": "12b244b923a290b739a003eb3101140e9d927d3db464d9bb0a855086430774c2"
+  },
+  "canonical_base": "d4f7a6e0d00285960c4ee717d19b2979f147ee9d",
+  "deployment": {
+    "fs1_ready": false,
+    "performed": false,
+    "remaining": [
+      "Keith qualified token_adjustment_version, generated history config hash and Keegan input/release acceptance",
+      "Fresh current-wallet quote/caps/gas and exact profile/signer/release owner acceptance",
+      "Reconciled model account budget/adoption, provider and wallet bindings",
+      "Current-host checks and S5 live rehearsal evidence; final-wallet funding, BNB valuation, RPC and activation self-check for FINAL"
+    ],
+    "report": "docs/build/S5_FS1_READINESS_20261026.md",
+    "s5_ready": false
+  },
+  "environment": {
+    "applicable_locked_requirement_lines": 53,
+    "architecture": "aarch64",
+    "full_suite_image": "larp-test:pr282",
+    "full_suite_image_id": "sha256:81bef1c942036709753a126766e55555fa84826b1f11ecf9f0671a927aeb4dc0",
+    "lock_mismatches": [],
+    "network": "No external network; shared isolated disposable PostgreSQL namespace",
+    "pip_check": "PASS",
+    "postgresql": "14.24",
+    "python": "3.12.15",
+    "sandbox_demo_image": "larp-test:archive",
+    "source_mount": "read-only; isolated tmpfs for deploy/activation",
+    "unique_locked_distributions": 44
+  },
+  "findings": {
+    "observation_timing": "TS2/TS3 classify by response availability and count distinct response times; TS1 rejects misaligned minute labels.",
+    "source_binding": "Config now checks hash-named raw observations, exact request identity, parsed rows, metadata and response availability via an artifact-only MarketPort replay."
+  },
+  "first_full_run": {
+    "failed": 3,
+    "passed": 3002,
+    "reason": "Read-only source mount prevented creation of ignored deploy/activation scratch directory; all three passed with isolated tmpfs, then clean full rerun passed.",
+    "subtests_passed": 4067
+  },
+  "focused": {
+    "failed": 0,
+    "passed": 201,
+    "seconds": 26.31,
+    "skipped": 0
+  },
+  "full": {
+    "deselected": 3,
+    "failed": 0,
+    "passed": 3005,
+    "seconds": 295.47,
+    "skipped": 8,
+    "skips": [
+      {
+        "reason": "optional private public-source fixture",
+        "test": "tests.intelligence.test_source_link_trust.SourceLinkTrust.test_original_public_source_stays_incomplete_in_exact_v3_composition"
+      },
+      {
+        "reason": "real response artifacts are external; opt-in only",
+        "test": "tests.marketdata.test_recorded.RecordedConsumers.test_real_outputs_pass_market_validator_and_unknown_routes_remain_nonexecutable"
+      },
+      {
+        "reason": "root ignores the directory mode",
+        "test": "tests.runtime.test_live_start.Refusals.test_w2_a_read_only_directory_is_a_refused_start"
+      },
+      {
+        "reason": "Disposable systemd test runner not enabled",
+        "test": "tests.runtime.test_systemd_conditions.UnitConditions.test_r13_changed_release_never_runs_or_restarts_the_main_process"
+      },
+      {
+        "reason": "Disposable systemd test runner not enabled",
+        "test": "tests.runtime.test_systemd_conditions.UnitConditions.test_r13_clean_evidence_cycle_still_restarts"
+      },
+      {
+        "reason": "Disposable systemd test runner not enabled",
+        "test": "tests.runtime.test_systemd_conditions.UnitConditions.test_r13_valid_condition_keeps_main_process_failure_recovery"
+      },
+      {
+        "reason": "Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)",
+        "test": "tests.runtime.test_systemd_conditions.RuntimeUnit.test_wr_t7_the_runtime_unit_gets_past_directory_binding"
+      },
+      {
+        "reason": "Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)",
+        "test": "tests.runtime.test_systemd_conditions.RuntimeUnit.test_wr_t8_without_its_state_directory_the_start_is_refused"
+      }
+    ],
+    "subtests_passed": 4069
+  },
+  "github_ci": {
+    "annotation": "The job was not started because recent account payments have failed or your spending limit needs to be increased.",
+    "code_head": "df01d9cbb518baf09b3a68ab4be5858d352aaf54",
+    "run_id": 40311935172,
+    "status": "NOT_STARTED_ACCOUNT_BILLING"
+  },
+  "install_script_syntax": {
+    "passed": 37
+  },
+  "live_evidence_commit": "84f0fd47068608eff37d925b97ee946fea539dae",
+  "live_replay": {
+    "evidence_sha256": "cc8371bd235eb4db284367fbf0267890d3c6a87bafca60ca2573f0b9d64b3fa6",
+    "metadata_end": {
+      "GOOGLB": "1.000478058978107511",
+      "MSFTB": "1.001313964833366845",
+      "NVDAB": "1.000778223752807865",
+      "SKHYB": "1.000000000000000000",
+      "TSLAB": "1.000000000000000000"
+    },
+    "metadata_start": {
+      "GOOGLB": "1.000478058978107511",
+      "MSFTB": "1.001313964833366845",
+      "NVDAB": "1.000778223752807865",
+      "SKHYB": "1.000000000000000000",
+      "TSLAB": "1.000000000000000000"
+    },
+    "names_ok": [
+      "GOOGLB",
+      "MSFTB",
+      "NVDAB",
+      "SKHYB",
+      "TSLAB"
+    ],
+    "raw_artifacts": 442,
+    "source_commit": "1ea2047106c2b40fba7d424f8bc7df8edd54bc0f",
+    "verdict": "PASS"
+  },
+  "offline_demo": "PASS with bubblewrap-enabled image; first image lacks bwrap",
+  "original_reviewed_head": "35aab2dc5a41912bf638a341225ce56e2e02a407",
+  "pr": "https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/297",
+  "raw_http_body_hash_and_parsed_object_consistency": {
+    "passed": 442
+  },
+  "record_id": "PR297-RV01",
+  "recorded_at_utc": "2026-10-26T11:16:36.363805+00:00",
+  "red": {
+    "new_regressions_failed": 9,
+    "original_source": "35aab2dc"
+  },
+  "repair_source_commit": "df01d9cbb518baf09b3a68ab4be5858d352aaf54",
+  "runtime_profile_routing_changes": false,
+  "sandbox": {
+    "failed": 0,
+    "passed": 3,
+    "seconds": 0.33
+  },
+  "source_file_sha256": {
+    "config/intelligence/aiand-routing.fs1.json": "9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4",
+    "docs/build/evidence/fs1-final-20261025/fs1-final-recovery.json": "b8ba06e248b48b6406d77c1bda4110001324382e91bb63c71a27ce514731892f",
+    "docs/build/evidence/s5-rehearsal-profile-20261026/rehearsal-s5.json": "6dadc1961a54374f51415e2168ff8d4a917b28f90e58c9493a1b9fbd8731e80d",
+    "tests/marketdata/test_th01_candle_timestamps.py": "f10bccaccc1b88eb2afa7b0c942e1feb7c219c8b2f96e09b0fbd595a3d25a33c",
+    "tools/th01_candle_timestamps.py": "9a09638ab28ea887aea7b363c0e59cffd2dbb3c75269867a4caaf3d5cfacacc6"
+  },
+  "source_unchanged_during_final_full_run": true
+}

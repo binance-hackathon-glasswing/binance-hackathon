@@ -74,14 +74,15 @@ class PolicyConfiguration(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises(ContractError):
                 validate_config(self.config(**change))
 
-    def test_live_run_refuses_example_caps(self):
+    def test_dev_and_live_runs_refuse_example_caps(self):
         from larp.signer.policy import EXAMPLE_CAP_BASIS
         from larp.signer.service import validate_config
         example = policy_config(cap_basis=EXAMPLE_CAP_BASIS)
-        validate_config(self.config(signing_policy=example))  # dev may use the marked example values
-        with self.assertRaises(ContractError):
-            validate_config(self.config(mode='live', signing_policy=example))
-        validate_config(self.config(mode='live'))
+        for mode in ('dev', 'live'):
+            with self.subTest(mode=mode):
+                with self.assertRaises(ContractError):
+                    validate_config(self.config(mode=mode, signing_policy=example))
+                validate_config(self.config(mode=mode))
 
     def test_example_config_marks_its_caps_as_an_example(self):
         from larp.signer.policy import EXAMPLE_CAP_BASIS
@@ -92,9 +93,9 @@ class PolicyConfiguration(unittest.TestCase):
         filled = {**{k: v for k, v in example.items() if not k.startswith('database_')}, 'run_id': 'run',
                   'build_id': 'b' * 40, 'wallet_address': '0x' + '1' * 40, 'database_dsn_file': '/d',
                   'signing_policy': {**example['signing_policy'], 'allowed_spenders': [ROUTER]}}
-        validate_config(filled)
-        with self.assertRaises(ContractError):  # the example caps never reach a live run
-            validate_config({**filled, 'mode': 'live'})
+        for mode in ('dev', 'live'):
+            with self.subTest(mode=mode), self.assertRaises(ContractError):
+                validate_config({**filled, 'mode': mode})
 
 
 class PolicyCase(fixtures.RolesCase):

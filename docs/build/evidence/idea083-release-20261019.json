@@ -1,0 +1,115 @@
+{
+  "schema": "UnsignedTrialReleaseVerification.v1",
+  "verified_at_utc": "2026-10-19T06:41:34.425604+00:00",
+  "scope": "IDEA083_CANDIDATE_RELEASE_ONLY",
+  "build_id": "c5be26959a2b99d603c8d548f7c9767c9c2cf1e0",
+  "mirror_repository": "Keegan4/Keegan4-larp-ci-mirror",
+  "run_id": 39210402678,
+  "run_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39210402678",
+  "artifact_id": 12167516848,
+  "artifact_digest": "sha256:a30e37a7880731613390edc5742b86549820706448ef7931089d1f91753b89fb",
+  "all_four_jobs_passed": true,
+  "bundle": "larp-c5be26959a2b-x86_64.tar.gz",
+  "bundle_sha256": "02b3aceeaa6b3e88a50b30c793c56ca3984fb97344bb7e21209cbcaa83735067",
+  "bundle_bytes": 98389775,
+  "manifest": "larp-c5be26959a2b-x86_64.release.json",
+  "manifest_sha256": "9af8a58ef9bf40a99f98c0b0f9fefc860343250215226c101380481966ecaf19",
+  "external_embedded_manifest_equal": true,
+  "registered_repository": "https://github.com/binance-hackathon-glasswing/binance-hackathon",
+  "build_origin": "https://github.com/Keegan4/Keegan4-larp-ci-mirror",
+  "manifest_file_count": 198,
+  "bundle_file_checksums_verified": 237,
+  "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+  "routing_spec_sha256": "baf3d54686235c00d3c9ba3ff12ca67c8450e6c538f6d19184c8eb2a5706266e",
+  "unsigned_trial_spec_sha256": "a5fca50a6f3e166b48299a0d29e686aa6dbfd2428f4bb011839acc684b222d8d",
+  "trial_policy": {
+    "schema": "OpenAITrial.v1",
+    "trial_id": "larp-unsigned-v3-20261018",
+    "start_ms": 1792321200000,
+    "end_ms": 1792627200000,
+    "total_micro_usd": 8000000,
+    "utc_day_micro_usd": 2500000
+  },
+  "bundle_identity": {
+    "build_id": "c5be26959a2b99d603c8d548f7c9767c9c2cf1e0",
+    "arch": "x86_64",
+    "python_version": "3.12.15",
+    "python_tag": "20261001",
+    "python_file": "cpython-3.12.15+20261001-x86_64-unknown-linux-gnu-install_only.tar.gz",
+    "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
+    "rds_region": "ap-southeast-2",
+    "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b"
+  },
+  "jobs": [
+    {
+      "id": 117922262085,
+      "name": "host-bundle",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39210402678/job/117922262085"
+    },
+    {
+      "id": 117922262188,
+      "name": "infrastructure (deploy/bootstrap)",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39210402678/job/117922262188"
+    },
+    {
+      "id": 117922262266,
+      "name": "infrastructure (deploy/aws)",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39210402678/job/117922262266"
+    },
+    {
+      "id": 117922262295,
+      "name": "runtime",
+      "conclusion": "success",
+      "html_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39210402678/job/117922262295"
+    }
+  ],
+  "host_deployment_performed": false,
+  "paid_provider_calls_performed": false,
+  "signing_enabled": false,
+  "live_trading_ready": false,
+  "merged_implementation": "PR179/180/181/182",
+  "original_gap_report_verdict": "FAIL",
+  "gap_review_record": "PC-GAP02-RV1",
+  "pending": [
+    "Coordinator/operator preserving ledger setup and actual provider/funding/rights checks",
+    "Coordinator/operator host install/bind/activation, real stage timing and receiver ACK",
+    "Keith measured profile, fees, affordability, labels and team adoption",
+    "Verified router source/replay, tracing provider, signing lifetime #27 and caps #44",
+    "Funding reconciliation, signer provisioning and approved key-placement session"
+  ],
+  "acceptance": {
+    "full_suite": {
+      "passed": 2091,
+      "skipped": 6,
+      "subtests": 3324,
+      "seconds": 487.03
+    },
+    "real_systemd": {
+      "passed": 5,
+      "subtests": 5,
+      "seconds": 17.9
+    },
+    "all_four_jobs_passed": true
+  },
+  "publication_run_id": 39211350217,
+  "publication_run_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39211350217",
+  "publication_branch": "codex/publish-idea083-20261019",
+  "publication_commit": "2b8c9dfa938b4705c173c8579f7975390bbcc507",
+  "release_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/idea083-c5be269",
+  "independent_download_verification": {
+    "schema": "DownloadedReleaseVerification.v1",
+    "build_id": "c5be26959a2b99d603c8d548f7c9767c9c2cf1e0",
+    "release_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/releases/tag/idea083-c5be269",
+    "checks": "all_six_asset_digests_full_bundle_checksums_exact_git_sources_manifest_CA",
+    "passed": true
+  },
+  "negative_controls": [
+    "mismatched source SHA refused",
+    "failed run refused",
+    "failed constituent job refused"
+  ],
+  "local_artifact_redirect": "Denied; original CI ZIP verified inside approved mirror. Published assets then downloaded and independently verified locally."
+}

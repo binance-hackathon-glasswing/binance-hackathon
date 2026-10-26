@@ -1,0 +1,56 @@
+{
+  "schema": "FS1HistoryEvidence.v1",
+  "date_sgt": "2026-10-26",
+  "pr": 295,
+  "base": "ecdbc1aae556c71aa39c6aac23b2b93981d9ef5e",
+  "tested_source": "93ea0e1fd3822fbfbbe55f1c9f6e08273bdedec8",
+  "environment": {
+    "os": "Linux aarch64",
+    "python": "3.12.15",
+    "postgresql": "14.24",
+    "image": "larp-test:pr282"
+  },
+  "focused": {
+    "passed": 73,
+    "subtests": 11,
+    "skipped": 0,
+    "seconds": 6.13
+  },
+  "full": {
+    "status": "STOPPED_AT_USER_REQUEST_DEFERRED_UNTIL_RESUME",
+    "exit_code": 137,
+    "final_pass_claimed": false
+  },
+  "earlier_full": {
+    "source": "d8e95f02",
+    "passed": 2893,
+    "failed": 1,
+    "skipped": 11,
+    "subtests": 4060,
+    "seconds": 274.11,
+    "finding": "Parallel FS1 composition fixture omitted required history input; repaired and focused check passes at tested_source"
+  },
+  "features": [
+    "bounded five-name hourly history",
+    "exact decimal normalization and representation bound",
+    "pinned session/calendar/semantics identity",
+    "post-close delay/DST/early-close conversion",
+    "no future availability leakage",
+    "atomic compact cache and restart backoff",
+    "actual policy/planner downshift SELL and recovery BUY",
+    "missing-history risk exits retained",
+    "production preparation/composition/pin checks",
+    "PostgreSQL recorded-port replay with live ports disabled"
+  ],
+  "deployment": false,
+  "real_provider_calls": false,
+  "model_spending": false,
+  "wallet_operations": false,
+  "next_work": {
+    "full_suite": "Codex/reviewer after user resumes",
+    "semantics_qualification": "Keith",
+    "release_review": "Keegan",
+    "host_input_and_acceptance": "Yao",
+    "record": "docs/INCOMPLETE_WORK.md TH-01"
+  }
+}

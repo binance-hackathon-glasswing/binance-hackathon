@@ -1,0 +1,148 @@
+{
+  "base": "81ee30a1696c54ff22deed9ced3ce6aa26538b07",
+  "environment": {
+    "image": "larp-ci:py31215",
+    "image_id": "sha256:9285c508b04b89faaf50058179d3baf35962e4a52c41fa04a31b2f84eb6d1e3f",
+    "network": "isolated namespace shared only with disposable PostgreSQL",
+    "postgresql": "14.24",
+    "python": "3.12.15",
+    "worker_test_permissions": [
+      "SYS_ADMIN",
+      "seccomp=unconfined",
+      "systempaths=unconfined"
+    ]
+  },
+  "full_suite": {
+    "failed": 0,
+    "junit_sha256": "644e98b6437f921c871f8637ed5445581a5d59c72f272097cdd94d80fbfc543d",
+    "passed": 2962,
+    "seconds": 492.96,
+    "skipped": 8,
+    "skips": [
+      {
+        "reason": "optional private public-source fixture",
+        "test": "tests.intelligence.test_source_link_trust.SourceLinkTrust.test_original_public_source_stays_incomplete_in_exact_v3_composition"
+      },
+      {
+        "reason": "real response artifacts are external; opt-in only",
+        "test": "tests.marketdata.test_recorded.RecordedConsumers.test_real_outputs_pass_market_validator_and_unknown_routes_remain_nonexecutable"
+      },
+      {
+        "reason": "root ignores the directory mode",
+        "test": "tests.runtime.test_live_start.Refusals.test_w2_a_read_only_directory_is_a_refused_start"
+      },
+      {
+        "reason": "Disposable systemd test runner not enabled",
+        "test": "tests.runtime.test_systemd_conditions.UnitConditions.test_r13_changed_release_never_runs_or_restarts_the_main_process"
+      },
+      {
+        "reason": "Disposable systemd test runner not enabled",
+        "test": "tests.runtime.test_systemd_conditions.UnitConditions.test_r13_clean_evidence_cycle_still_restarts"
+      },
+      {
+        "reason": "Disposable systemd test runner not enabled",
+        "test": "tests.runtime.test_systemd_conditions.UnitConditions.test_r13_valid_condition_keeps_main_process_failure_recovery"
+      },
+      {
+        "reason": "Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)",
+        "test": "tests.runtime.test_systemd_conditions.RuntimeUnit.test_wr_t7_the_runtime_unit_gets_past_directory_binding"
+      },
+      {
+        "reason": "Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)",
+        "test": "tests.runtime.test_systemd_conditions.RuntimeUnit.test_wr_t8_without_its_state_directory_the_start_is_refused"
+      }
+    ],
+    "subtests_passed": 4069
+  },
+  "hosted_ci": "No workflow runs for reviewed PR head at API check",
+  "installation_performed": false,
+  "live_ready": false,
+  "local_branch": "codex/pr296-fs1-standalone-review-20261026",
+  "pr": "https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/296",
+  "profile_and_routing_values_changed": false,
+  "profile_non_provenance_differences": {
+    "activation_self_check": {
+      "fs1": {
+        "buy_after": "2026-10-27T00:00:00Z",
+        "buy_until": "2026-10-28T18:00:00Z",
+        "flat_by": "2026-10-28T23:00:00Z",
+        "pay_units": 32000000,
+        "symbol": "SKHYB"
+      },
+      "s5": null
+    },
+    "cost_reserve_units": {
+      "fs1": 200000,
+      "s5": 100000
+    },
+    "environment": {
+      "fs1": "FINAL",
+      "s5": "REHEARSAL"
+    },
+    "expected_equity_units": {
+      "fs1": 200000000,
+      "s5": 100000000
+    },
+    "flatten_start": {
+      "fs1": "2026-11-10T19:00:00Z",
+      "s5": "2026-10-27T00:00:00Z"
+    },
+    "new_risk_end": {
+      "fs1": "2026-11-09T21:00:00Z",
+      "s5": "2026-10-26T23:00:00Z"
+    },
+    "per_trade_cap_units": {
+      "fs1": 38200000,
+      "s5": 19100000
+    },
+    "policy_id": {
+      "fs1": "larp-fs1-final-v1",
+      "s5": "larp-s5-rehearsal-v1"
+    },
+    "signing_end": {
+      "fs1": "2026-11-11T14:45:00Z",
+      "s5": "2026-10-27T04:00:00Z"
+    },
+    "trade_after": {
+      "fs1": "2026-10-29T14:00:00Z",
+      "s5": "2026-10-26T06:00:00Z"
+    }
+  },
+  "publication_authorization": {
+    "date_sgt": "2026-10-26",
+    "expected_parent": "f89ec87389d0e20b5725e1a4c67961d602db5704",
+    "scope": "commit and ordinary fast-forward push; no merge",
+    "target_branch": "claude/s5-r3-fs1-models-20261026",
+    "target_pr": 296,
+    "user_request": "push to the latest PR"
+  },
+  "record_id": "PR296-RV01",
+  "recorded_at_utc": "2026-10-26T06:17:01.584759+00:00",
+  "red_reproductions": {
+    "deterministic_fs1_and_s5_direct_start": "both accepted before fix; regressions failed 2/2"
+  },
+  "remaining": [
+    "actual token-history timestamp/adjustment qualification",
+    "fresh final-wallet quotes/gas/funding/caps",
+    "model adoption and reconciled shared OpenAI account budget",
+    "exact registered release/signer approvals and host acceptance",
+    "S5 cash/sizing or no-trade decision and actual history input"
+  ],
+  "remote_changes": false,
+  "reviewed_head": "f89ec87389d0e20b5725e1a4c67961d602db5704",
+  "source_file_sha256": {
+    "docs/build/ops/final-fs1/host/p3-install-primary.sh": "bf00e5ae634bda8bce007ab542fbf32971e07a6977dd79720d19408cd9ad360c",
+    "docs/build/ops/final-fs1/host/p4-init-activate-start.sh": "893d972940085d45063d92c87902a35de72296655f139265d30b4fb5e1273ff2",
+    "docs/build/ops/final-fs1/host/p5-start-execution.sh": "d680207ba12977c3edb422a651a78d991b4cb4059d3f95c8d992f46ebb11584b",
+    "docs/build/ops/final-fs1/host/p6-start-runtime.sh": "5f66c7bd04e2cdf4deddaf4e77f587835b6763de137e63cfe2d48c6fb8c62442",
+    "docs/build/ops/rehearsal-install-s5-20261026/host/p4-init-activate-start.sh": "13f6411acf1619341408cdf6ae09aa6c03ccdb6630a55c3bf24887bcd744689f",
+    "docs/build/ops/rehearsal-install-s5-20261026/host/p6-start-runtime.sh": "5f66c7bd04e2cdf4deddaf4e77f587835b6763de137e63cfe2d48c6fb8c62442",
+    "docs/build/ops/rehearsal-install-s5-20261026/mac/m4-prepare.py": "cd2e28d6aa31a15e128bc52874dfc5d34e24719171e5df95ec579395e68fb5b9",
+    "larp/runtime/service.py": "f16e4f828267e61d89ab687b88f4e9dd5b276b1170f248f106e77873fa0ac7a0",
+    "tests/runtime/test_fs1_standalone.py": "dfc5a31b3b522a64ca9a1644cf9d50acd2e12edb41d1491c7456610825d2c968",
+    "tests/runtime/test_fs1_start_order.py": "c251138a9523b1c16408f8a45c4a5a20a383286ad91dc7bf2d08db4ea7f4395c",
+    "tools/deploy/prepare_fs1.py": "2a45d08b54fa61d653bfade47a27c3ac9fb659c7196f41c93b44c01f424adf62"
+  },
+  "status": "LOCAL_UNCOMMITTED_FIXES_VERIFIED_OFFLINE",
+  "test_source_unchanged_during_final_full_run": true
+}

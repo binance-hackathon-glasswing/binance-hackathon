@@ -413,7 +413,9 @@ class Halt(ServiceHarness):
             return any(a.step == 'APPROVE' and a.state == 'FINAL_SUCCESS'
                        for k in self.keys() for a in execution.registry.load(k).attempts)
         self.assertTrue(self.run_both(driver, execution, until=approved))
-        Guard(self.store, RUN, max_failures=3, clear_after=2)._halt('DELIVERY_DEADLINE', self.w.clock(), {})
+        # D-DN-09: CLOCK blocks every signature. A pausing HALT (DELIVERY_DEADLINE) would let this mandatory sell
+        # finish; that case is tests/runtime/test_halt_split.py HS5.
+        Guard(self.store, RUN, max_failures=3, clear_after=2)._halt('CLOCK', self.w.clock(), {})
         self.run_both(driver, execution, ticks=60, until=lambda: self.closed(round_id))
         [key] = self.keys()
         state = execution.registry.load(key)
@@ -477,6 +479,46 @@ class Quotes(ServiceHarness):
         self.assertEqual(len(market.requests), 1)
         self.assertNotIn('quote_round_id', summary)
         self.assertEqual(self.planned(), {})
+
+    def quote_incidents(self):
+        return [b.read()['event']['incident'] for b in self.store.journal(RUN)
+                if b.read()['event']['kind'] == 'INCIDENT'
+                and b.read()['event']['incident'].get('type') == 'QUOTE_NOT_EXECUTABLE']
+
+    def test_qv8_a_dropped_quote_is_journaled_with_its_reason(self):
+        market = QuoteMarket(self, executable=False)
+        driver = self.service_driver(market=market, max_quote_rounds=3)
+        summary = driver.once(self.w.clock())
+        [incident] = self.quote_incidents()
+        [request] = market.requests
+        self.assertEqual(incident['round_id'], summary['round_id'])
+        self.assertEqual(incident['requests'], [dict(symbol=request['symbol'], side=request['side'],
+                                                     pay_units=request['pay_units'],
+                                                     reason='CAPABILITY_PROOF_REQUIRED')])
+        self.assertEqual(summary['quote_incident'], 'JOURNALED')
+        head, expected = self.replay_head(driver)
+        self.assertEqual(head, expected)
+
+    def test_qv8_a_refused_quote_journals_the_refusal_without_unknown_text(self):
+        class Refusing(QuoteMarket):
+            def observe(self, request):
+                self.requests.append(dict(request))
+                from larp.marketdata.web3 import Unavailable
+                raise (Unavailable if len(self.requests) == 1 else RuntimeError)('quote proof refused: other router')
+        market = Refusing(self)
+        driver = self.service_driver(market=market, max_quote_rounds=1)
+        summary = driver.once(self.w.clock())
+        [incident] = self.quote_incidents()
+        self.assertEqual([r['reason'] for r in incident['requests']],
+                         ['Unavailable: quote proof refused: other router'])
+        self.assertEqual(summary['quote_errors'], ['Unavailable'])
+        from larp.runtime.driver import quote_drop_reason
+        self.assertEqual(quote_drop_reason(RuntimeError('https://key@rpc.invalid')), 'RuntimeError')
+
+    def test_qv8_an_executable_quote_journals_no_incident(self):
+        driver = self.service_driver(market=QuoteMarket(self), max_quote_rounds=1)
+        driver.once(self.w.clock())
+        self.assertEqual(self.quote_incidents(), [])
 
     def test_e6_quote_rounds_are_bounded(self):
         driver = self.service_driver(market=QuoteMarket(self), max_quote_rounds=0)

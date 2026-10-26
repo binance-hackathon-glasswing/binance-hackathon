@@ -1,0 +1,50 @@
+{
+  "capture_hash": "2ec51d514bff738a1b09a5c0be694d69a0e1334dc3bc2990b9c7d57354dde7da",
+  "capture_records": 516,
+  "fee_netting": "UNVERIFIED",
+  "final_defaults": "REFUSED",
+  "final_refusal": "Capture coverage incomplete: NVDAB: 9 US_SESSION samples < 10; NVDAB: 2 UTC days < 3; GOOGLB: 9 US_SESSION samples < 10; GOOGLB: 2 UTC days < 3; SKHYB: 9 US_SESSION samples < 10; SKHYB: 2 UTC days < 3; TSLAB: 9 US_SESSION samples < 10; TSLAB: 2 UTC days < 3; MSFTB: 9 US_SESSION samples < 10; MSFTB: 2 UTC days < 3",
+  "gas": "ALL_860_SWAP_ESTIMATES_FALLBACK",
+  "original_capture_prefixes": [
+    {
+      "bytes": 140585,
+      "name": "capture-2026-10-16.jsonl",
+      "omitted_incomplete_bytes": 0,
+      "records": 180,
+      "sha256": "a125d2a400c1a5375d609dfdd24200aead10099aa23376ac29b9a4f6fbaa3379"
+    },
+    {
+      "bytes": 261914,
+      "name": "capture-2026-10-17.jsonl",
+      "omitted_incomplete_bytes": 0,
+      "records": 336,
+      "sha256": "3796ebfd29b1f83f622dbaf8c7c7f933cfe56c12eafc948e788a84dbb75cc190"
+    }
+  ],
+  "original_files": {
+    "README-INTERIM.txt": {
+      "bytes": 1699,
+      "sha256": "7484f31468106e882a82b98c8aa2df5174223c8d84f2caee8fcf69872c962ac1"
+    },
+    "quote-cost-summary.json": {
+      "bytes": 1580,
+      "sha256": "41e17b4d14322d79b0231544d81d058b128c039b6abb707de5f2c7a5f183be2b"
+    },
+    "quote-cost-summary.report.json": {
+      "bytes": 16410,
+      "sha256": "0195e57623b6aa1bf6fdb9f02cbd6aa83f1dbe6d5c7ef763d42ddcfaba824f89"
+    },
+    "run-metadata.json": {
+      "bytes": 1954,
+      "sha256": "396c88325617c300f3023b48f11f9d5d4c45f9afab46111228706108d4f1338b"
+    }
+  },
+  "profile_approved": false,
+  "profile_generated": false,
+  "raw_api_response_reverification": "NOT_RUN",
+  "record_id": "YP-01",
+  "report_coverage_and_symbols": "EXACT_OBJECT_EQUALITY",
+  "result": "PASS",
+  "schema": "InterimProvenanceVerification.v1",
+  "summary_reproduction": "EXACT_OBJECT_EQUALITY"
+}

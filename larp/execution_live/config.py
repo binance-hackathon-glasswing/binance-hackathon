@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
+from larp.contracts import ContractError
 from larp.execution import Blocked, address
 
 
@@ -33,3 +34,26 @@ class WalletBinding:
     @property
     def audit_directory(self):
         return self.directory / '.ai-seeds'
+
+
+def _pair(config, prefix):
+    path, sha256 = config.get(prefix + '_file'), config.get(prefix + '_sha256')
+    if path in (None, '') and sha256 in (None, ''):
+        return None
+    if path in (None, '') or sha256 in (None, ''):
+        raise ContractError('Set both %s_file and %s_sha256, or neither' % (prefix, prefix))
+    return path, sha256
+
+
+def evidence_settings(config):
+    """`(path, sha256)` from a service config, or None when neither is set; both or neither (IDEA-070 R6).
+    Refuses a config that also names an untrusted-router policy: one swap decoder per service (B02-U)."""
+    settings = _pair(config, 'router_evidence')
+    if settings is not None and untrusted_router_settings(config) is not None:
+        raise ContractError('Configure router evidence or an untrusted-router policy, not both')
+    return settings
+
+
+def untrusted_router_settings(config):
+    """`(path, sha256)` of an UntrustedRouterPolicy.v1 (IDEA-070 B02-U, DEV-23), or None; both or neither."""
+    return _pair(config, 'untrusted_router_policy')

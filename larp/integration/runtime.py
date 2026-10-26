@@ -33,8 +33,9 @@ from larp.intelligence.gate import accept, consume, initial_state
 from larp.integration.contract import accept_records, authority, build_evidence_context, mandatory_reductions
 from larp.ports import decimal_string as decimal_amount  # exact decimal of base units (one implementation)
 from larp.risk.planner import plan as risk_plan
+from larp.risk.reconcile import spendable_view
 from larp.strategy.policy import decide
-from larp.strategy.schema import MONEY_SCALE, SYMBOLS, market_view
+from larp.strategy.schema import MONEY_SCALE, SYMBOLS, execution_authority, market_view, profile
 
 ADAPTER = "RuntimePlan.v1"
 SETTLED = ("USDT", "BNB")
@@ -103,6 +104,14 @@ class StrategyPolicy:
         return decide(snapshot, state)
 
 
+def _legs(projection, session_index):
+    """This session's discretionary swap count per name (IDEA-076 Q14); empty from the next session on."""
+    legs = projection.get("discretionary_legs")
+    if type(legs) is not dict or legs.get("session") != session_index:
+        return {}
+    return dict(legs["counts"])
+
+
 class ContextBuilder:
     """Coordinator context builder. `issuers`: {issuer_id: {"token": symbol, "underlying_id": id}}."""
 
@@ -113,6 +122,10 @@ class ContextBuilder:
         self.lifecycle_policy, self.series = lifecycle_policy, series
         self.gas_quotes = gas_quotes
         self.universe = tuple(sorted(universe or SYMBOLS))  # the coordinator's snapshot universe
+        # {"bps", "hold_ms"} enables the price-jump guard (IDEA-055 PR 4); None keeps contexts as they were.
+        self.price_jump = None
+        from larp.strategy.execution_bounds import MANDATORY_CADENCE
+        self.execution_attempt_policy = MANDATORY_CADENCE
 
     def __call__(self, current: dict, request: dict, assessment: dict | None, now_ms: int) -> tuple:
         projection = current["projection"]
@@ -136,10 +149,10 @@ class ContextBuilder:
                                   "decision": decision})
         updates = {"evidence": evidence, "evidence_decisions": decisions}
         try:
-            context, anchor = self._context(current, evidence, decisions, now_ms)
+            context, anchor, jumps = self._context(current, evidence, decisions, now_ms)
         except Exception as exc:
             raise ContextUnavailable(updates) from exc
-        updates = dict(updates, session_anchor=anchor)
+        updates = dict(updates, session_anchor=anchor, **jumps)
         if "last_discretionary_observed_ms" in context:
             updates["last_discretionary_session"] = context["last_discretionary_session"]
         return context, updates
@@ -155,6 +168,8 @@ class ContextBuilder:
                                                    token=meta["token"], underlying_id=meta["underlying_id"],
                                                    policy_profile_hash=self.profile_hash))
         ledger = ledger_from(projection, current["reservations"])
+        # A recorded chain deficit is subtracted in the planner's view only; the journaled ledger stays (IDEA-055).
+        ledger = spendable_view(ledger, (projection.get("balance_check") or {}).get("deficits") or {})
         if current.get("mode") is not None:
             ledger["mode"] = current["mode"].upper()
         held = {s: p["units"] for s, p in ledger["positions"].items()}
@@ -184,14 +199,61 @@ class ContextBuilder:
             "session_index": session["index"], "remaining_sessions": session["remaining"],
             "session_started_ms": anchor["first_ms"],
             "last_discretionary_session": last_discretionary_session,
+            **({"discretionary_legs": _legs(projection, session["index"])}
+               if self.profile.get("baseline") == "TREND_GUARDED_VOL" else {}),
             "assessments": contexts, "reduction_constraints": reductions,
             "health": self.health(current), "evidence_decisions": decisions,
         }
+        if self.profile.get('baseline') == 'TREND_GUARDED_VOL':
+            if self.execution_attempt_policy is not None:
+                context['execution_attempt_policy'] = self.execution_attempt_policy
+            context['execution_session'] = self.calendar.window(now_ms)
+            context['execution_attempt_budget'] = projection.get('execution_attempt_budget')
+            from larp.integration.exposure import exposure_inputs
+            parsed = market_view(markets, self.universe, datetime.fromtimestamp(now_ms / 1000, timezone.utc), self.profile)
+            context['exposure_input'] = exposure_inputs(records=contexts, profile=self.profile,
+                run_id=self.run_id, profile_hash=self.profile_hash, now_ms=now_ms, markets=parsed,
+                known_versions=((current.get('policy_state') or {}).get('data') or {}).get('evidence_versions', {}),
+                universe=self.universe, session=session['index'], calendar=self.calendar)
+            context['exposure_evidence'] = context['exposure_input']['evidence']
         if self.gas_quotes is not None:
             context["gas_quotes"] = self.gas_quotes(now_ms)
         if broadcast_ms is not None:
             context["last_discretionary_observed_ms"] = broadcast_ms
-        return context, anchor
+        jumps = {}
+        if self.price_jump is not None:
+            marks, holds = self._jumps(projection, markets, now_ms)
+            jumps = {"marks": marks, "price_jump": holds}
+            context["price_jump_hold"] = {s: h["reference_price_units"] for s, h in sorted(holds.items())}
+        return context, anchor, jumps
+
+    def _jumps(self, projection: dict, markets: list, now_ms: int) -> tuple:
+        """Price-jump guard (IDEA-055 PR 4): the last usable mark per symbol, and the holds still active.
+
+        A held symbol whose mark moved by at least `bps` of its last journaled mark gets a hold until a balance check
+        after the jump confirms the chain (BalanceCheck clears it) or `hold_ms` passes. A split changes the price and
+        the token count together, but the balance check lags: until then the planner neither trades the symbol nor
+        evaluates the loss stops, and values it at the lower of the two marks."""
+        cutoff = datetime.fromtimestamp(now_ms / 1000, timezone.utc)
+        try:
+            parsed = market_view(markets, self.universe, cutoff, self.profile)
+        except ContractError:
+            parsed = {}
+        previous = projection.get("marks") or {}
+        marks = dict(previous)
+        holds = {s: h for s, h in (projection.get("price_jump") or {}).items() if now_ms < h["until_ms"]}
+        held = {s for s, p in projection["portfolio"]["positions"].items() if p.get("units")}
+        bps, hold_ms = self.price_jump["bps"], self.price_jump["hold_ms"]
+        for symbol, m in sorted(parsed.items()):
+            if m is None:
+                continue
+            price, old = m["price_units"], previous.get(symbol)
+            if (symbol in held and symbol not in holds and type(old) is int and old > 0
+                    and abs(price - old) * 10000 >= bps * old):
+                holds[symbol] = {"reference_price_units": old, "price_units": price, "jump_ms": now_ms,
+                                 "until_ms": now_ms + hold_ms}
+            marks[symbol] = price
+        return marks, holds
 
     def _reductions(self, contexts: list, current: dict, held: dict, markets: list, now_ms: int) -> list:
         """Reductions only from records the strategy itself would accept: same identity/hash/time checks, its parsed
@@ -237,10 +299,31 @@ class RuntimePlanner:
         valid_until = (int(proposal_or_none.valid_until.timestamp() * 1000) if proposal_or_none is not None
                        else None)
         intents, deltas = [], []
+        # #27 / C-OPEN-003 Option A (IDEA-049-C LD04): with a finite authority L configured, an admitted decision may
+        # execute until A = min(t0 + L, signing_end, its execution window, new_risk_end for a discretionary buy),
+        # fixed here and journaled with the plan. Without it, the parent stays bounded by the quote and proposal.
+        p = profile(snapshot) if raw["intents"] else None
+        finite = execution_authority(p) if p is not None else None
         for intent in raw["intents"]:
-            expires = iso_ms(intent["quote_expiry"])
-            if valid_until is not None and not intent["mandatory"]:
+            if finite is None:
+                expires = iso_ms(intent["quote_expiry"])
+            else:
+                expires = min(now_ms + finite[0] * 1000, iso_ms(p["signing_end"]))
+                if not intent["mandatory"] and intent["side"] == "BUY":
+                    expires = min(expires, iso_ms(p["new_risk_end"]))
+            if 'execution_bounds' in intent:
+                expires = min(expires, intent['execution_bounds']['valid_until_ms'])
+            if not intent['mandatory'] and intent['side'] == 'BUY':
+                from larp.strategy.scheduled_flatten import buy_deadline
+                deadline = buy_deadline(p, raw.get('risk_state'))
+                if deadline is not None:
+                    expires = min(expires, int(deadline.timestamp() * 1000))
+            if finite is None and valid_until is not None and not intent["mandatory"]:
                 expires = min(expires, valid_until)  # a discretionary intent never outlives its proposal
+            if finite is not None:
+                intent = dict(intent, authority=dict(decision_ms=now_ms, proposal_expires_ms=valid_until,
+                                                     authority_ms=expires, authority_seconds=finite[0],
+                                                     margin_seconds=finite[1]))
             decision_id = "decision:" + digest("larp.decision.v1", {"snapshot_id": snapshot.snapshot_id,
                                                                      "intent_id": intent["intent_id"]})
             # The organiser's order amount is USDT spent for BUY, token quantity for SELL.
@@ -275,6 +358,17 @@ class RuntimePlanner:
     def _jobs(self, snapshot, proposal, now_ms) -> list:
         context = snapshot.context.read()
         jobs = []
+        if context.get('profile', {}).get('baseline') == 'TREND_GUARDED_VOL':
+            from larp.strategy.s1 import config
+            close = context['execution_session']['close_ms']
+            due = close + config(context['profile'])['delay'] * 1000
+            for symbol, issuer in sorted(self.issuer_by_token.items()):
+                if symbol in snapshot.universe:
+                    job = self._job(dict(kind='REASSESS_ISSUER', issuer_id=issuer,
+                        reason='S1_SESSION_CLOSE', session=context['execution_session']['index'],
+                        close_ms=close, profile_hash=snapshot.policy_profile_hash), due, 45)
+                    job['missed'] = 'expire'  # a delayed trigger cannot pretend to be a timely close review
+                    jobs.append(job)
         for record in context.get("assessments", []):
             if record.get("due_reviews"):
                 due = record.get("review_due_ms")

@@ -10,16 +10,17 @@ before the key is used:
   signer's own lists;
 - an approve's amount and a swap's decoded input are at most the per-token cap, and an unlimited approve is refused;
 - the transaction fee limit (`gas * gas_price`) is at most the fee cap;
-- a swap pays out to the signer's wallet and sends no native value.
+- a swap pays out to the signer's wallet and sends no native value. With the untrusted-router decoder the recipient
+  is not in the calldata; that mode is chosen by the signer's own pinned config (IDEA-070 B02-U, DEV-23).
 
-Cap values are a team decision (IDEA-049-C WR-C); `cap_basis` labels where they come from, and a live run refuses
-the example values.
+Cap values are a team decision (IDEA-049-C WR-C); `cap_basis` labels where they come from. Both dev and live
+service configurations refuse the pending-decision example marker (IDEA-070 SR-01).
 """
 from dataclasses import dataclass
 import re
 
 from larp.contracts import ContractError
-from larp.execution import BSTOCKS, NATIVE_BNB, USDT, Blocked
+from larp.execution import BSTOCKS, NATIVE_BNB, USDT, Blocked, REVOKE_TOKENS
 
 EXAMPLE_CAP_BASIS = 'EXAMPLE_PENDING_TEAM_DECISION'
 UNIVERSE = frozenset({USDT, NATIVE_BNB}) | BSTOCKS
@@ -52,11 +53,14 @@ class SigningPolicy:
     allowed_tokens: frozenset
     max_input_units: dict
     max_fee_wei: int
+    allowance_recovery: bool = False
 
     @classmethod
     def from_config(cls, value):
-        if type(value) is not dict or set(value) != KEYS:
+        if type(value) is not dict or set(value) - {'allowance_recovery'} != KEYS:
             raise ContractError('signing_policy needs exactly: ' + ','.join(sorted(KEYS)))
+        if type(value.get('allowance_recovery', False)) is not bool:
+            raise ContractError('signing_policy.allowance_recovery must be an explicit boolean')
         if type(value['cap_basis']) is not str or not value['cap_basis'].strip():
             raise ContractError('signing_policy.cap_basis must name where the caps come from')
         spenders = _addresses(value['allowed_spenders'], 'allowed_spenders')
@@ -70,7 +74,7 @@ class SigningPolicy:
             raise ContractError('signing_policy.max_input_units must cap exactly each allowed payable token')
         return cls(value['cap_basis'], spenders, tokens,
                    {token: _units(cap, 'max_input_units') for token, cap in caps.items()},
-                   _units(value['max_fee_wei'], 'max_fee_wei'))
+                   _units(value['max_fee_wei'], 'max_fee_wei'), value.get('allowance_recovery', False))
 
     def _input(self, token, amount):
         if token not in self.max_input_units:
@@ -90,21 +94,30 @@ class SigningPolicy:
             raise Blocked('signer policy: sender or native value refused')
         if payload.gas * payload.gas_price > self.max_fee_wei:
             raise Blocked('signer policy: transaction fee exceeds signer fee cap')
-        if step == 'APPROVE':
+        if step == 'APPROVE' or step in REVOKE_TOKENS:
             data = payload.data
             if (payload.to not in self.allowed_tokens or type(data) is not str
                     or not re.fullmatch(r'0x095ea7b3[0-9a-fA-F]{128}', data) or data[10:34] != '0' * 24):
                 raise Blocked('signer policy: approve token or shape not allowed')
             if '0x' + data[34:74].lower() not in self.allowed_spenders:
                 raise Blocked('signer policy: approve spender not allowed')
-            self._input(payload.to, int(data[74:], 16))
+            if step in REVOKE_TOKENS:
+                if (not self.allowance_recovery or getattr(decoder, 'mode', None) != 'untrusted'
+                        or getattr(decoder, 'router', None) != intent.router or intent.kind != 'BSTOCK_TRADE'
+                        or payload.to != REVOKE_TOKENS[step] or int(data[74:], 16) != 0
+                        or '0x' + data[34:74].lower() != intent.router):
+                    raise Blocked('signer policy: zero-only allowance recovery not authorized')
+            else:
+                self._input(payload.to, int(data[74:], 16))
         elif step == 'SWAP':
             if payload.to not in self.allowed_spenders:
                 raise Blocked('signer policy: swap spender not allowed')
             economics = decoder.decode(payload)  # GAP-29: UnverifiedRouter refuses every swap here
             if economics.receive_token not in self.allowed_tokens:
                 raise Blocked('signer policy: swap token not allowed')
-            if economics.recipient != wallet or economics.native_value != 0:
+            # The untrusted-router mode comes from the signer's own pinned policy, never from the request (B02-U).
+            unverified = economics.recipient is None and getattr(decoder, 'mode', None) == 'untrusted'
+            if (economics.recipient != wallet and not unverified) or economics.native_value != 0:
                 raise Blocked('signer policy: swap recipient or native value refused')
             self._input(economics.pay_token, economics.amount)
         else:

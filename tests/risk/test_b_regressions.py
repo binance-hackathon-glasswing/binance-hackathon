@@ -127,6 +127,6 @@ def test_b_req_002_035_planned_native_gas_scale_agrees_with_execution_mapping(sc
     mapped = map_command(command, run_id=snapshot.run_id, wallet=WALLET, version_id="synthetic-scale",
                          router=ROUTER, token_decimals={}, now_ms=int(snapshot.observed_at.timestamp() * 1000),
                          limits=dict(per_trade_cap_units=values["per_trade_cap_units"], max_gas=1_000_000,
-                                     max_gas_price=10, gas_budget=10**18))
+                                     max_gas_price=10, gas_budget=10**18), native_settlement=True)
     assert mapped.minimum_output == intent["min_receive_units"] * 10 ** (18 - scale)
     assert mapped.amount == intent["pay_units"] * 10**12

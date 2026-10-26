@@ -1,0 +1,113 @@
+{
+  "additional_checks": {
+    "backlog_and_index_ids_preserved": true,
+    "deviation_renderer": "PASS",
+    "historical_evidence_and_default_configs_unchanged": true,
+    "local_links_and_anchors": "PASS",
+    "offline_demo": {
+      "audit_chunks": 2,
+      "journal_batches": 6,
+      "sha256": "d7f88c023411e2bd4b805ba71c80472525eca9a442e0dee4c39b92914448e06d",
+      "simulated": true,
+      "status": "PASS"
+    },
+    "pip_check": "PASS",
+    "unprivileged_startup": {
+      "detail": "Root-permission case exercised; three PostgreSQL cases already exercised in full root suite",
+      "passed": 6,
+      "skipped": 3
+    },
+    "whitespace": "PASS"
+  },
+  "base_commit": "06a93f9",
+  "capability": {
+    "default_enabled": false,
+    "execution_opt_in_required": true,
+    "gate_b_accepted": false,
+    "independent_signer_opt_in_required": true,
+    "maintenance_amount": "0",
+    "max_cleanup_transactions_per_parent": 6,
+    "native_value": "0",
+    "parent": "BSTOCK_TRADE",
+    "ready_to_install": false,
+    "signing_enabled": false
+  },
+  "ci": {
+    "annotation": "Account payments failed or spending limit needs increase",
+    "executed_steps": 0,
+    "jobs": 4,
+    "run_id": 39387215745,
+    "source": "581a70c",
+    "status": "BLOCKED_BEFORE_STEPS"
+  },
+  "criteria_commit": "d732a2e",
+  "environment": {
+    "database": "DISPOSABLE_TMPFS",
+    "external_container_network": false,
+    "git_metadata_mount": "READ_ONLY",
+    "ignored_scratch_mount": "ISOLATED_WRITABLE",
+    "sandbox_permissions": [
+      "SYS_ADMIN",
+      "seccomp=unconfined",
+      "apparmor=unconfined",
+      "systempaths=unconfined"
+    ],
+    "source_mount": "READ_ONLY"
+  },
+  "full_suite": {
+    "failed": 0,
+    "passed": 2190,
+    "seconds": 138.73,
+    "skipped": 8,
+    "skips": {
+      "external_fixtures": 2,
+      "root_permission": 1,
+      "systemd_not_enabled": 5
+    },
+    "status": "PASS",
+    "subtests_passed": 3660
+  },
+  "platform": {
+    "os": "Linux",
+    "postgresql": "14.24",
+    "python": "3.12.15",
+    "test_image": "sha256:750132bb93c250e52f14f9ea69ce517f993414f2f5060b7af58e78dcaabbb004"
+  },
+  "post_merge": {
+    "canonical": "db506bd",
+    "deviation_renderer": "PASS",
+    "full_suite_repeated": false,
+    "register_subtests_passed": 3,
+    "register_tests_passed": 5,
+    "runtime_test_tool_bytes_equal_full_suite_source": true,
+    "scope": "PR199 reviewed gas-scope documentation/register only",
+    "source": "1f4b072"
+  },
+  "preliminary_failures": {
+    "aggregate_gas_fixture": "Corrected fixture initially failed quote admission before aggregate-budget check",
+    "disposition": "Git metadata/ignored scratch mount and nested proc/sandbox permissions corrected; final full suite PASS",
+    "initial_full_suite_environment_failures": 6
+  },
+  "real_operations": {
+    "aws": false,
+    "installation": false,
+    "paid_model": false,
+    "provider_rpc": false,
+    "receiver": false,
+    "wallet_or_key": false,
+    "wallet_signing_or_broadcast": false
+  },
+  "recorded_date_sgt": "2026-10-20",
+  "release_or_host_acceptance": false,
+  "remaining": {
+    "abnormal_fills": "LD05",
+    "actual_authority_and_host_qualification": "LD02/04/15-21 owners",
+    "actual_policy_and_gas_reserve_acceptance": "Isaac / Keith",
+    "gas_scope": "LD07/08",
+    "independent_review": "Keegan",
+    "systemd_and_new_release": "Keegan"
+  },
+  "schema": "LD06Verification.v1",
+  "scope": "OFFLINE_REPOSITORY_ACCEPTANCE_ONLY",
+  "source_commit": "913b400f7b0e2a9d5a6abfc97f6338d8a462c987"
+}

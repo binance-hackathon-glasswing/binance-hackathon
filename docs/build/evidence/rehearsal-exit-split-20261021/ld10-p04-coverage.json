@@ -1,0 +1,129 @@
+{
+ "collected_utc": "2026-10-21T16:55:45.175Z",
+ "configs_unchanged": true,
+ "criteria": {
+  "c1": "PASS",
+  "c2": "PASS",
+  "c3": "PASS (only INITIAL_BNB_EXIT_RESERVE and OWNER_REVIEW_REQUIRED, as pre-registered)",
+  "c4": "PASS (no URL in packet; 12139 of 24000 SSM output characters)"
+ },
+ "decision_id": "IDEA-049-C LD10-P04",
+ "execution_pending": 0,
+ "full_ld10_owner_acceptance": false,
+ "funding_authorized": false,
+ "holdings": {
+  "latest_nonce": 2,
+  "native_wei": 2694498869362886,
+  "pending_nonce": 2,
+  "status": "MATCH",
+  "stock_units": {
+   "GOOGLB": 0,
+   "MSFTB": 0,
+   "NVDAB": 0,
+   "SKHYB": 0,
+   "TSLAB": 0
+  },
+  "usdt_units": 98000000
+ },
+ "host_build": "ea25b52325656a19b29e8ddb07b94dd792be6e18",
+ "instance": "i-040fc5fea8b700e9a (primary only)",
+ "private_packet_sha256": "f08a901c656d2de1887d09a57743d163a58694d26a5916867be7ff28ca3f9ec5",
+ "probe_generator": "tools/deploy/ld10_readonly_packet.py at canonical 5bee006",
+ "probe_sha256": "692787e49a55c37fec5af9082a0247e202e86f4aaf8e083e939c55c6d59b69b3",
+ "quotes": {
+  "names": {
+   "GOOGLB": {
+    "all_request_bound": true,
+    "child_proceeds_raw_usdt": [
+     "10049847207768367966"
+    ],
+    "child_sell_quotes": 1,
+    "full_sell_proceeds_raw_usdt": "20099611071592468752"
+   },
+   "MSFTB": {
+    "all_request_bound": true,
+    "child_proceeds_raw_usdt": [
+     "10055074229367292560"
+    ],
+    "child_sell_quotes": 1,
+    "full_sell_proceeds_raw_usdt": "20109925582775016296"
+   },
+   "NVDAB": {
+    "all_request_bound": true,
+    "child_proceeds_raw_usdt": [
+     "10054279414333752765",
+     "10054279414333752987"
+    ],
+    "child_sell_quotes": 2,
+    "full_sell_proceeds_raw_usdt": "20108558725811283554"
+   },
+   "SKHYB": {
+    "all_request_bound": true,
+    "child_proceeds_raw_usdt": [
+     "10047126079914288383",
+     "10047126079914288527"
+    ],
+    "child_sell_quotes": 2,
+    "full_sell_proceeds_raw_usdt": "20094252139254862425"
+   },
+   "TSLAB": {
+    "all_request_bound": true,
+    "child_proceeds_raw_usdt": [
+     "10048512655033796498"
+    ],
+    "child_sell_quotes": 1,
+    "full_sell_proceeds_raw_usdt": "20097025310067592996"
+   }
+  },
+  "ok": 22,
+  "total": 22
+ },
+ "ready_to_install": false,
+ "reservations": 0,
+ "review": {
+  "blockers": [
+   "INITIAL_BNB_EXIT_RESERVE",
+   "OWNER_REVIEW_REQUIRED"
+  ],
+  "build_id": "5bee00600ae38fa8f593508ef93aad5d84dbdc71",
+  "checks": 92,
+  "covered": 91,
+  "evidence_hashes": {
+   "execution_config": "4742357ec3e9cf99f1e4fdb158f9ca969689f202f727bf3355d3cc0d26f1fb7e",
+   "initial_state": "3a5f61e1f54e505f44d4e93ffe5cbedfe3033776c4efe11e76ea032ffbf88117",
+   "profile": "e95d5842d15c07e0e2bb5dab761e6a1730f69aed4af4cfce2596eec68e070250",
+   "signing_policy": "3241abd36dfeb216ffe3bb06a3ce800f42e8206ccc261240da6f059b0dd5ea61"
+  },
+  "full_book_exit_reserve": {
+   "cap": "3072000000000000",
+   "check": "FULL_BOOK_EXIT_RESERVE",
+   "covered": true,
+   "required": "3072000000000000"
+  },
+  "full_exit_children": {
+   "GOOGLB": 2,
+   "MSFTB": 2,
+   "NVDAB": 2,
+   "SKHYB": 2,
+   "TSLAB": 2
+  },
+  "inputs_sha256": "154bd820fa8947b36a5983750a3769b8fe787c0ae035c6bbaff606f44762caf3",
+  "not_covered": [
+   {
+    "cap": "2694498869362886",
+    "check": "INITIAL_BNB_EXIT_RESERVE",
+    "required": "3072000000000000"
+   }
+  ],
+  "numeric_status": "BLOCKED",
+  "quote_artifacts": 22,
+  "ready_to_install": false,
+  "review_sha256": "6030dde9cd833db1f7f4ebca50e678a10d1a03cc12b6f0c6d0d120f3dfddf876",
+  "signing_enabled": false
+ },
+ "router_allowances_all_zero": true,
+ "schema": "LD10P04CoverageRecord.v1",
+ "selected_profile_sha256": "e95d5842d15c07e0e2bb5dab761e6a1730f69aed4af4cfce2596eec68e070250",
+ "signing_enabled": false,
+ "ssm_command_id": "9b30395c-9cc6-4cb1-9b12-3ea075de3230"
+}

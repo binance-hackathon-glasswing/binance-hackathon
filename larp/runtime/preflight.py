@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 
 from larp.contracts import ContractError, Document
+from larp.runtime import faults
 from larp.runtime.register import load_register
 from larp.runtime.release import verify_manifest
 
@@ -18,6 +19,8 @@ def release_files(root):
     patterns = [('larp', '*.py'), ('migrations', '*.sql'), ('deploy', '*.lock'),
                 ('deploy', '*.tf'), ('deploy/systemd', '*'), ('deploy/postgres', '*.sql'),
                 ('deploy', 'Dockerfile'), ('config', '*.json'), ('config', '*.txt'),
+                # Routed-assessor stage prompts are pinned by the routing spec and read at startup (IDEA-081).
+                ('config/intelligence/prompts', '*.md'),
                 # The deviations register validates verbatim quotes against this file at every host startup.
                 ('docs/proposal', 'proposal_answers.md')]
     for directory, pattern in patterns:
@@ -89,6 +92,15 @@ def verify_service_config(manifest, name, raw):
     recorded = manifest.get('service_configs_sha256')
     if type(recorded) is not dict or recorded.get(name) != hashlib.sha256(raw).hexdigest():
         raise ContractError('Service configuration differs from the registered manifest')
+
+
+def _mode(raw):
+    """The run mode a config declares, or None when it is not a JSON object naming one."""
+    try:
+        value = json.loads(raw)
+    except ValueError:
+        return None
+    return value.get('mode') if type(value) is dict else None
 
 
 def service_config_arguments(values):
@@ -220,8 +232,14 @@ def main(argv=None):
                 raise ContractError('Operations configuration differs from the registered manifest')
             if args.runtime_config:
                 verify_runtime_config(m, Path(args.runtime_config).read_bytes())
+            modes = []
+            if args.runtime_config:
+                modes.append(_mode(Path(args.runtime_config).read_bytes()))
             for name, raw in service_config_arguments(args.service_config).items():
                 verify_service_config(m, name, raw)
+                modes.append(_mode(raw))
+            for mode in modes or [None]:
+                faults.check(mode)  # RG2-H01: a misconfigured drill, or any armed point in a live run, fails here
             print(json.dumps(dict(release_verified=True, signing_enabled=False)))
         return 0
     except Exception:

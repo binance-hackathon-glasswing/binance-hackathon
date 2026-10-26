@@ -219,6 +219,23 @@ class SQLiteEvidenceStore:
         self.db.close()
 
 
+class OverlayArtifacts:
+    """Reads the shared store and writes a private one, for a process that opens the shared store read-only.
+
+    On the host the runtime reads the evidence root without write access (IDEA-047 R15), so artifacts it produces
+    itself (tool results, model request/reply bytes) go to `private`; reads look there first, then in `shared`."""
+
+    def __init__(self, shared, private):
+        self.shared, self.private = shared, private
+
+    def put(self, content: bytes) -> str:
+        return self.private.put(content)
+
+    def get(self, digest: str) -> bytes | None:
+        held = self.private.get(digest)
+        return held if held is not None else self.shared.get(digest)
+
+
 class FileArtifacts:
     """Content-addressed bytes under `root` (outside the repository)."""
 

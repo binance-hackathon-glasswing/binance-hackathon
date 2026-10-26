@@ -1,0 +1,39 @@
+{
+  "schema": "IncidentEvidence.v1",
+  "id": "IDEA-096",
+  "run_id": "larp-dev-rehearsal-20261024-s2",
+  "registered_build": "2d160073d0f26c1f35c6c977c3dd6167a5ee0d26",
+  "observed_by": "Claude Code (read-only SSM checks/trading-status.sh and decisions-export.sh; BSC public RPC eth_call)",
+  "ssm_command_id": "29d1369d-d40c-423e-ab48-b5e60af658ae",
+  "snapshots_utc": ["2026-10-25T09:26:52Z", "2026-10-25T09:30:20Z", "2026-10-25T09:35Z (chain)"],
+  "rounds": [
+    {
+      "round_id": "cadence:1992132#1",
+      "started_utc": "2026-10-25T09:00:04Z",
+      "targets": "EXIT/TERMINAL_REQUIREMENT for GOOGLB, MSFTB, NVDAB, SKHYB, TSLAB"
+    },
+    {
+      "round_id": "cadence:1992132#1/quote1",
+      "started_utc": "2026-10-25T09:00:21Z",
+      "intent": {"side": "SELL", "symbol": "SKHYB", "amount_units": 68939879194155372, "mandatory": true, "reason": "TERMINAL_FLATTEN", "clamp": "PER_TRADE_CAP"},
+      "approve": {"nonce": 14, "tx_hash": "0x21de2f5e30f0f696fdfa1264aca8d79b7acc6206106ce401ef183c66dfd81bc2", "receipt_status": 1, "gas_used": 54432},
+      "swap": {"status": "ABORTED", "observation": "ABORTED_BEFORE_SWAP_BROADCAST", "blocked_reason": "encoded swap economics mismatch/expired"}
+    },
+    {
+      "round_id": "cadence:1992134#1",
+      "at_utc": "2026-10-25T09:30:02Z",
+      "incident": {"side": "SELL", "symbol": "NVDAB", "pay_units": 44718666978285414, "reason": "Unavailable: quote proof refused: router allowance exceeds what this swap may take"}
+    }
+  ],
+  "chain": {
+    "wallet": "0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479",
+    "router": "0xb44446b0c8e56988c34f7ff73ae904982b5fdda5",
+    "allowance_to_router": {"USDT": 0, "NVDAB": 0, "GOOGLB": 0, "SKHYB": 68939879194155372, "TSLAB": 0, "MSFTB": 0},
+    "balance": {"USDT": 20274322000000000000, "NVDAB": 89437333956570829, "GOOGLB": 58963981213780645, "SKHYB": 137879758388310745, "TSLAB": 50963873012289550, "MSFTB": 0}
+  },
+  "ledger_check": "MATCH",
+  "halt": false,
+  "quarantined": false,
+  "signer_refusals": 0,
+  "service_restarts": {"larp-runtime": 0, "larp-execution": 1, "larp-evidence": 1, "larp-uploader": 1}
+}

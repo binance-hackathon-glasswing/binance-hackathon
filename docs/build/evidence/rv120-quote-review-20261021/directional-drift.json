@@ -1,0 +1,120 @@
+{
+  "actual_revert_frequency": null,
+  "adverse_definition": "later BUY quote receives fewer token units than the initial BUY quote",
+  "calendar_sha256": "bf4c2eca967195cdbd7d0ab56cbffdfb54352389e6fbca1057d372ac003b769c",
+  "changes_selected_profile": false,
+  "comparison": "strictly greater; exact integer cross multiplication",
+  "decision_id": "IDEA-063 RV120-RV01",
+  "input_files": {
+    "capture-2026-10-16.jsonl": "a125d2a400c1a5375d609dfdd24200aead10099aa23376ac29b9a4f6fbaa3379",
+    "capture-2026-10-17.jsonl": "a07a128bf34cde047e2985ae9657379672ad0e6dcfc2ed44e55e81a634b8e3b6",
+    "capture-2026-10-18.jsonl": "286c8a287f721c6a8b93dfa4534acd0906c47ad746c449418493abfe8d681f86",
+    "capture-2026-10-19.jsonl": "9e49d8879cb18eede6b9873fb7d39d2eed60ed05ca683d5a4e2947951a0201e4"
+  },
+  "interpretation": "Counterfactual quote-output comparisons, not executed or simulated reverts.",
+  "samples": 1924,
+  "schema": "DirectionalRequoteDriftReview.v1",
+  "symbols": {
+    "GOOGLB": {
+      "OFF_SESSION": {
+        "absolute_exceedances": 0,
+        "absolute_percent": 0.0,
+        "adverse_exceedances": 0,
+        "adverse_percent": 0.0,
+        "favourable_exceedances": 0,
+        "favourable_percent": 0.0,
+        "samples": 342
+      },
+      "US_SESSION": {
+        "absolute_exceedances": 0,
+        "absolute_percent": 0.0,
+        "adverse_exceedances": 0,
+        "adverse_percent": 0.0,
+        "favourable_exceedances": 0,
+        "favourable_percent": 0.0,
+        "samples": 43
+      }
+    },
+    "MSFTB": {
+      "OFF_SESSION": {
+        "absolute_exceedances": 4,
+        "absolute_percent": 1.169591,
+        "adverse_exceedances": 1,
+        "adverse_percent": 0.292398,
+        "favourable_exceedances": 3,
+        "favourable_percent": 0.877193,
+        "samples": 342
+      },
+      "US_SESSION": {
+        "absolute_exceedances": 4,
+        "absolute_percent": 9.52381,
+        "adverse_exceedances": 1,
+        "adverse_percent": 2.380952,
+        "favourable_exceedances": 3,
+        "favourable_percent": 7.142857,
+        "samples": 42
+      }
+    },
+    "NVDAB": {
+      "OFF_SESSION": {
+        "absolute_exceedances": 1,
+        "absolute_percent": 0.292398,
+        "adverse_exceedances": 1,
+        "adverse_percent": 0.292398,
+        "favourable_exceedances": 0,
+        "favourable_percent": 0.0,
+        "samples": 342
+      },
+      "US_SESSION": {
+        "absolute_exceedances": 1,
+        "absolute_percent": 2.325581,
+        "adverse_exceedances": 0,
+        "adverse_percent": 0.0,
+        "favourable_exceedances": 1,
+        "favourable_percent": 2.325581,
+        "samples": 43
+      }
+    },
+    "SKHYB": {
+      "OFF_SESSION": {
+        "absolute_exceedances": 23,
+        "absolute_percent": 6.725146,
+        "adverse_exceedances": 10,
+        "adverse_percent": 2.923977,
+        "favourable_exceedances": 13,
+        "favourable_percent": 3.80117,
+        "samples": 342
+      },
+      "US_SESSION": {
+        "absolute_exceedances": 4,
+        "absolute_percent": 9.302326,
+        "adverse_exceedances": 2,
+        "adverse_percent": 4.651163,
+        "favourable_exceedances": 2,
+        "favourable_percent": 4.651163,
+        "samples": 43
+      }
+    },
+    "TSLAB": {
+      "OFF_SESSION": {
+        "absolute_exceedances": 3,
+        "absolute_percent": 0.877193,
+        "adverse_exceedances": 2,
+        "adverse_percent": 0.584795,
+        "favourable_exceedances": 1,
+        "favourable_percent": 0.292398,
+        "samples": 342
+      },
+      "US_SESSION": {
+        "absolute_exceedances": 2,
+        "absolute_percent": 4.651163,
+        "adverse_exceedances": 2,
+        "adverse_percent": 4.651163,
+        "favourable_exceedances": 0,
+        "favourable_percent": 0.0,
+        "samples": 43
+      }
+    }
+  },
+  "threshold_bps": 8
+}

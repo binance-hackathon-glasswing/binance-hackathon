@@ -1,7 +1,7 @@
 from larp.contracts import ContractError, Document
 from larp.runtime.maintenance import Maintenance, HOUR_MS
 from larp.storage.archive import S3Archive
-from larp.storage.backup import export, restore
+from larp.storage.backup import export, restore, restore_chain
 from larp.storage.postgres import Conflict, Unavailable, digest
 from tests.storage.test_archive import FakeS3
 from tests.support import DatabaseCase
@@ -100,9 +100,9 @@ class MaintenanceTests(DatabaseCase):
         for _ in range(2): worker.once('run', 100)
         with self.store.transaction() as db:
             receipt = Document(bytes(db.execute("SELECT acknowledgement FROM archive_outbox WHERE kind='backup'").fetchone()[0]))
-        backup = Document(worker.archive.fetch(receipt))
+        backup = worker.archive.fetch(receipt)  # a Backup.v2 segment (IDEA-094)
         with self.store.transaction() as db: db.execute('TRUNCATE runs CASCADE')
-        restore(self.store, backup)
+        restore_chain(self.store, [backup])
         self.assertTrue(self.store.load('run').read()['quarantined'])
         self.store.verify('run', minimum_version=1)
 

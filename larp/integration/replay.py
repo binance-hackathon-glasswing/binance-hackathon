@@ -32,6 +32,8 @@ class RecordedPorts:
         context = (record.get("policy_input") or {}).get("context") or {}
         cause = next((e[len(FAILURE):] for e in record.get("errors", []) if e.startswith(FAILURE)), None)
         recorded = copy(self.builder)
+        # IDEA-102: historical rounds keep their recorded cap/output bytes.
+        recorded.execution_attempt_policy = context.get('execution_attempt_policy')
         if cause is not None:
             recorded.market = recorded.calendar = recorded.health = recorded.series = recorded.gas_quotes = _failing(cause)
             return recorded
@@ -40,10 +42,34 @@ class RecordedPorts:
             "index": context["last_discretionary_session"]
             if now_ms == context.get("last_discretionary_observed_ms") else context["session_index"],
             "remaining": context["remaining_sessions"]}
+        if 'execution_session' in context:
+            recorded.calendar.window = lambda now_ms: context['execution_session']
+            recorded.calendar.sessions = (context.get('exposure_input') or {}).get(
+                'calendar_sessions', getattr(self.builder.calendar, 'sessions', ()))
         recorded.health = lambda current: context["health"]
         recorded.series = lambda now_ms: context["series"]
         recorded.gas_quotes = (lambda now_ms: context["gas_quotes"]) if "gas_quotes" in context else None
+        # ContextBuilder takes the portfolio's mode from the run. Replay runs
+        # remain OFFLINE for safety, but the decision originally saw DEV/LIVE.
+        # Preserve that recorded input in the copied builder only; never change
+        # the target store's mode or activate its signing capability (IDEA-058).
+        mode = (context.get('portfolio') or {}).get('mode')
+        if mode in ('OFFLINE', 'PAPER', 'DEV', 'LIVE'):
+            return RecordedMode(recorded, mode.lower())
         return recorded
+
+
+class RecordedMode:
+    """Replay-only context mode; all other ports/attributes are the copied builder's."""
+
+    def __init__(self, builder, mode):
+        self.builder, self.mode = builder, mode
+
+    def __getattr__(self, name):
+        return getattr(self.builder, name)
+
+    def __call__(self, current, *args):
+        return self.builder(dict(current, mode=self.mode), *args)
 
 
 def replay_live(batches, initial, target, *, builder, **options):

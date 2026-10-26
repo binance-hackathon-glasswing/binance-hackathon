@@ -47,8 +47,8 @@ class Receiver(Protocol):
 
 DECIMAL = re.compile(r"^(0|[1-9][0-9]*)(\.[0-9]*[1-9])?$")
 INTENT_KINDS = ("BSTOCK_TRADE", "GAS_TOP_UP")  # I7: a gas top-up is its own round with exactly one USDT -> BNB intent
-OBSERVATION_KINDS = ("BROADCAST_ATTEMPTED", "APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED")
-FINAL_KINDS = ("APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED")
+OBSERVATION_KINDS = ("BROADCAST_ATTEMPTED", "APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED", "ABNORMAL")
+FINAL_KINDS = ("APPROVAL", "FILL", "REVERT", "NOT_SUBMITTED", "ABNORMAL")
 # Accounting fields: a broadcast attempt must not carry them (I4 boundary 1).
 ACCOUNTING_FIELDS = ("token_units", "cash_units", "fee_units", "gas_bnb_units", "gas_value_units")
 ORIGINS = ("SCRIPTED_FAKE", "EXECUTION_RECONCILER")
@@ -107,6 +107,18 @@ def validate_execution_request(command: dict) -> dict:
         raise ContractError("Command identity differs from its intent")
     if _int(command.get("expires_ms"), "expires_ms", 1) != p.get("expires_ms"):
         raise ContractError("Command expiry differs from its intent")
+    if "authority" in p:  # #27 Option A (IDEA-049-C LD04): the finite authority fixed when the round was planned
+        a = p["authority"]
+        if type(a) is not dict or set(a) != {"decision_ms", "proposal_expires_ms", "authority_ms",
+                                             "authority_seconds", "margin_seconds"}:
+            raise ContractError("Malformed execution authority")
+        for key in ("decision_ms", "authority_ms", "authority_seconds", "margin_seconds"):
+            _int(a[key], "authority." + key, 1)
+        if a["proposal_expires_ms"] is not None:
+            _int(a["proposal_expires_ms"], "authority.proposal_expires_ms", 1)
+        if (a["authority_ms"] != p["expires_ms"] or a["margin_seconds"] >= a["authority_seconds"]
+                or not a["decision_ms"] < a["authority_ms"] <= a["decision_ms"] + a["authority_seconds"] * 1000):
+            raise ContractError("Execution authority differs from the command expiry or its own bounds")
     kind = p.get("kind", "BSTOCK_TRADE")
     if kind not in INTENT_KINDS or "purpose" in p:
         raise ContractError("Unknown intent kind")
@@ -153,8 +165,25 @@ def validate_execution_observation(observation: dict) -> dict:
     if kind not in OBSERVATION_KINDS:
         raise ContractError("Unknown execution observation kind")
     _instant(o.get("observed_at"), "observed_at")
+    from larp.execution import REVOKE_TOKENS
+    cleanup = {step.lower(): token for step, token in REVOKE_TOKENS.items()}
+    step = o.get('step')
+    if step is not None and type(step) is not str:
+        raise ContractError('Execution step must be text')
+    if o.get('maintenance') == 'ALLOWANCE_REVOKE' and step not in cleanup:
+        raise ContractError('Allowance maintenance needs its exact cleanup step')
+    if type(step) is str and step.startswith('revoke:'):
+        if (step not in cleanup or kind not in ('BROADCAST_ATTEMPTED', 'APPROVAL', 'REVERT')
+                or o.get('maintenance') != 'ALLOWANCE_REVOKE' or o.get('token_contract') != cleanup[step]
+                or o.get('approved_amount') != '0' or type(o.get('spender')) is not str
+                or not re.fullmatch(r'0x[0-9a-f]{40}', o['spender'])):
+            raise ContractError('Invalid zero-only allowance maintenance fact')
+    if "attempt_refund" in o and (kind != "NOT_SUBMITTED" or o["attempt_refund"] is not True
+                                  or o.get("reason") != "COMMAND_EXPIRED_UNCLAIMED"):
+        # IDEA-097 S4-F1: only a command the execution service never claimed gives its attempt back.
+        raise ContractError("attempt_refund is only an unclaimed command expiry")
     if kind == "BROADCAST_ATTEMPTED":
-        if o.get("step") not in ("approve", "swap") or not TX_HASH.fullmatch(o.get("tx_hash") or ""):
+        if o.get("step") not in ('approve', 'swap', *cleanup) or not TX_HASH.fullmatch(o.get("tx_hash") or ""):
             raise ContractError("A broadcast attempt names its step and transaction hash")
         if any(key in o for key in ACCOUNTING_FIELDS + ("settlement",)):
             raise ContractError("A broadcast attempt cannot carry settlement or accounting facts")
@@ -175,6 +204,18 @@ def validate_execution_observation(observation: dict) -> dict:
             or o.get("canonical") is not True:
         raise ContractError("Final facts need the tx hash and canonical receipt evidence")
     _int(o.get("gas_bnb_units"), "gas_bnb_units"); _int(o.get("gas_value_units"), "gas_value_units")
+    if kind == "ABNORMAL":
+        if (o.get("origin") != "EXECUTION_RECONCILER" or o.get("step") != "swap"
+                or not o["intent_terminal"] or o.get("disposition") != "SUSTAINED_QUARANTINE"
+                or o.get("accounting_status") != "UNRECONCILED_ASSET_MOVEMENTS"
+                or o.get("reason") != "FINALIZED_TRANSFER_CONTRACT_VIOLATION"
+                or any(k in o for k in ("token_units", "cash_units", "fee_units"))):
+            raise ContractError("Abnormal receipt requires explicit quarantine without normal fill amounts")
+        deltas = o.get("raw_token_deltas")
+        if (type(deltas) is not dict or len(deltas) > 256
+                or any(not re.fullmatch(r"0x[0-9a-f]{40}", k) or type(v) is not int
+                       or not -2**256 < v < 2**256 for k, v in deltas.items())):
+            raise ContractError("Abnormal receipt requires bounded exact signed token deltas")
     if kind == "APPROVAL" and o["intent_terminal"]:
         raise ContractError("An approval never ends its intent")
     if kind == "FILL":

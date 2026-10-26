@@ -141,12 +141,15 @@ class Web3Client:
 
     mode = 'live'
 
-    def __init__(self, key, secret, *, artifacts, opener=None, min_interval=0.35, timeout=20):
-        if not key or not secret or min_interval < 0.3 or not 0 < timeout <= 30:
+    def __init__(self, key, secret, *, artifacts, opener=None, min_interval=0.35, timeout=20,
+                 exact_decimals=False):
+        if (not key or not secret or min_interval < 0.3 or not 0 < timeout <= 30
+                or type(exact_decimals) is not bool):
             raise Unavailable('invalid transport configuration')
         self.key, self.secret, self.artifacts = key, secret, artifacts
         self.opener = opener or build_opener(NoRedirect())
         self.min_interval, self.timeout, self.last = min_interval, timeout, 0
+        self.exact_decimals = exact_decimals
 
     def request(self, method, endpoint, params):
         if (method, endpoint) not in self.endpoints:
@@ -202,7 +205,8 @@ class Web3Client:
             if len(raw) > 2 * 1024 * 1024:
                 raise Unavailable('response_too_large')
             try:
-                body = json.loads(raw)
+                # Opted-in history retains the source decimal lexeme; ordinary clients keep their bytes/types.
+                body = json.loads(raw, parse_float=str) if self.exact_decimals else json.loads(raw)
             except (ValueError, UnicodeError):
                 raise Unavailable('non_json_response') from None
             code = body.get('code') if isinstance(body, dict) else None

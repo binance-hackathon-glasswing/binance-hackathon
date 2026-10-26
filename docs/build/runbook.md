@@ -32,17 +32,23 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
    - `issuers` (issuer ID → token and the market's `underlying_id`);
    - `execution`: `"shadow"` (every planned order ends `NOT_SUBMITTED`, reason `SHADOW_NO_SIGNING`) or `"service"` (committed commands go to the execution service), with `expiry_grace_ms` for service;
    - optionally `day_roll_window_ms` (daily risk anchor), `max_quote_rounds` and `max_quote_requests` (quote follow-up);
+   - `balance_rpc_url` (HTTPS), `balance_rpc_source_id`, `balance_check_interval_ms` and `balance_check_max_age_ms` for the chain-balance check ([IDEA-055](../ledger/IDEA-055.md), #36); required in `dev` and `live`, so a start without them exits 4;
    - `assessor: "deterministic"`; a hosted model assessor exits 2 (not integrated).
+   - optionally `untrusted_router_policy_file` / `untrusted_router_policy_sha256` (both or neither; the signer's LD03 `UntrustedRouterPolicy.v1`, readable by `larp-runtime`), which turns on the runtime's quote verifier ([IDEA-088](../ledger/IDEA-088.md)); without them every quote stays `CAPABILITY_PROOF_REQUIRED` and no order can form. `prepare_shadow prepare --untrusted-router-policy-file … --untrusted-router-policy-sha256 …` writes them ([IDEA-089](../ledger/IDEA-089.md) S2-10). The examples leave them out, because a null there is a placeholder to fill.
 
    `cycle_timeout_seconds` (top level of `runtime.json`, required in `dev` and `live`; example 600 s) is the watchdog: a cycle that runs longer ends the process for a supervised restart of the same build ([IDEA-049-D](../ledger/IDEA-049-D.md) D-FND-004, #35).
 
-   Each cycle: journal the execution service's observations and end commands that expired unclaimed (`COMMAND_EXPIRED_UNCLAIMED`); close finished rounds; **commit nothing while a command still waits for the execution service to claim it**; roll the daily anchor in the first `day_roll_window_ms` after UTC midnight (no roll means no new risk that day); then run at most one round (a scheduled review job first, then an ingested filing, otherwise one cadence round per slot), fetching the market before the round so its decision time follows the data. A round that asked for quotes gets at most `max_quote_rounds` follow-up rounds, only when an executable quote comes back. A missing or mismatched file, hash, issuer or setting exits 4. systemd restarts neither 2 nor 4. Round logs are uploaded by the uploader process, not by the runtime.
+   Each cycle: journal the execution service's observations and end commands that expired unclaimed (`COMMAND_EXPIRED_UNCLAIMED`); close finished rounds; **commit nothing while a command still waits for the execution service to claim it**; when nothing is in flight and a check is due, read the wallet's balances at a finalized block and compare them with the ledger (a deficit blocks new spending and caps that asset's sales at the chain units; a surplus is only recorded; the ledger is never rewritten; until this process's first good check, no new risk); roll the daily anchor in the first `day_roll_window_ms` after UTC midnight (no roll means no new risk that day); then run at most one round (a scheduled review job first, then an ingested filing, otherwise one cadence round per slot), fetching the market before the round so its decision time follows the data. A round that asked for quotes gets at most `max_quote_rounds` follow-up rounds, only when an executable quote comes back. A missing or mismatched file, hash, issuer or setting exits 4. systemd restarts neither 2 nor 4. Round logs are uploaded by the uploader process, not by the runtime.
 
 6. **Run activation (operator, before the scored run and after any restore; IDEA-050):**
    - `python -m larp.runtime.service init --config /etc/larp/runtime.json --manifest /etc/larp/release.json --root /opt/larp/current` creates the configured `dev`/`live` run, quarantined, from `initial_state_file` (a `PortfolioState.v1` pinned by `initial_state_sha256`: the wallet's attested starting balances). It refuses an existing run or a wallet that already has one.
    - `python -m larp.runtime.service activate … --reviewer NAME --review-ref REF` is the reviewed step that authorizes the run: it verifies the full journal and the release, refuses if a round is open or an execution record is unfinished, lifts the quarantine under a new epoch, registers the running build if none is registered (another registered build is refused), and journals `RUN_ACTIVATED` with the reviewer and reference. Start `larp-runtime` and `larp-execution` only after it.
 
 7. **Execution service (`larp-execution`, IDEA-050):** each cycle it claims current commands, advances every execution and writes its facts to `execution_observations`; the runtime journals them. Its guard facts come from the journal at every step, so a HALT stops the next signature of an execution already under way, while reconciliation of a possible send continues. Today `run` exits 2 `NOT_INTEGRATED` with reason `EXECUTOR_CAPABILITY_GATE`: the W04 Executor accepts only fake capability bundles until the verified router decoder exists (GAP-29, Isaac). The broadcast path is `FencedRelease`: it re-checks the durable possible-send record, then submits through the Web3 Open API `broadcast-transaction` endpoint with its own submit-only authenticated client (F-104; PR #66 R1).
+
+For ordered execution, acceptance criteria and per-attempt/daily evidence, use
+[RG-01 rehearsal gates](REHEARSAL_GATES_20261019.md). Its entry checks apply
+before the host drills below; no host result is inferred from this runbook.
 
 ## 2. Automatic restart (C5) — **host** drill at Gate A
 
@@ -56,7 +62,7 @@ Draft for the activation pack (DR-22; [IDEA-042](../ledger/IDEA-042.md) T2). Eac
 
 | Trigger | Effect | Clears |
 |---|---|---|
-| Decision clock behind the last committed decision | HALT `CLOCK` | Never during the run (latched) |
+| Decision clock behind the last committed decision | HALT `CLOCK` | Automatically, after 30 minutes in which the kernel reports the clock NTP-synchronised and time never steps back (D-DN-10). A restart starts the 30 minutes again. Without that signal (e.g. chrony without `rtcsync`) it never clears |
 | A round log past its upload deadline (next UTC midnight + 2 h) | HALT `DELIVERY_DEADLINE` | Automatically, once nothing is overdue |
 | N consecutive failed rounds (planner, plan, commit, policy, context, audit content) | HALT `REPEATED_FAILURES` | Automatically, after the configured number of successful **probe** rounds (below) |
 | Journal fails verification | Run **quarantined** (every write and signature fenced) | Not during the run |
@@ -67,13 +73,24 @@ While halted:
 - no command is committed;
 - `store.command()` refuses every signature, mandatory exits included.
 
-Every HALT and clear is a journal event. Tests: `tests/runtime/test_supervision.py` (H3–H6).
+Every HALT and clear is a journal event. Tests: `tests/runtime/test_supervision.py` (H3–H6), `tests/runtime/test_clock_clear.py` (D-DN-10).
 
 **Host drill:** set the guard's clock input behind the last decision on the rehearsal build. Expect `HALT:CLOCK`, rounds still logged, and the signer receiving nothing.
 
+LD08 initial-only gas uses a separate warning, not a HALT. `LOW_GAS` incidents
+record `BELOW_EXIT_RESERVE` or `PAIR_UNAFFORDABLE` in `projection.gas_health`;
+`GasPairUnaffordable` drives the dedicated `runtime-low-gas` alarm. The runtime
+records transitions only at quiet boundaries after reconciliation, preserving
+open rounds, uncertain attempts and reservations. Buys retain the exit reserve;
+an affordable reduction/exit can continue under every other existing check.
+Recovery is recorded automatically from a later valid balance view; the warning
+does not authorize funding or intervention. During an unresolved execution the
+last transition remains visible until the next quiet check. See
+[LD08 scope and actual host acceptance](INITIAL_GAS_ONLY.md).
+
 ## 4. Restore — **host** drill at Gate B
 
-1. `python -m larp.runtime.operations restore --config /etc/larp/operations.json --receipt <pinned backup receipt> --target-dsn-file <empty database DSN>` restores into an empty, migrated database. It verifies the backup checksum and every run's journal, and leaves every run **quarantined** with a new epoch.
+1. `python -m larp.runtime.operations restore --config /etc/larp/operations.json --receipt <pinned backup receipt> --target-dsn-file <empty database DSN>` restores into an empty, migrated database. A Backup.v2 backup (`.json.gz`, IDEA-094) is a chain: repeat `--receipt` for every segment receipt from the first daily backup up to the one restored (any order). It verifies the backup checksum and every run's journal, and leaves every run **quarantined** with a new epoch.
 2. Verify against the hourly anchors read back from the Object Lock archive: `larp.runtime.maintenance.verify_anchors(store, run_id, anchors)`.
    - A restore behind the latest anchor is refused as stale.
    - A rewritten journal is refused.

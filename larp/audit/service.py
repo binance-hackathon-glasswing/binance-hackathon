@@ -165,7 +165,9 @@ def main(argv=None, *, client_factory=secrets_client, receiver_factory=None,
         receiver = (receiver_factory or HttpReceiver)(config['wallet_address'], secret)
         uploader = Uploader(store, config['run_id'], config['wallet_address'],
                             DeliveryWorker(store, receiver, retry_ms=config.get('retry_ms', 30000),
-                                           max_backoff_ms=config.get('max_backoff_ms', 300000)),
+                                           max_backoff_ms=config.get('max_backoff_ms', 300000),
+                                           observe=lambda attempt: print(json.dumps(dict(delivery_attempt=attempt)),
+                                                                         flush=True)),
                             batch=config.get('batch', 50))
         stopping = []
         signal.signal(signal.SIGTERM, lambda *a: stopping.append(True))

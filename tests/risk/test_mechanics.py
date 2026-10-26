@@ -244,15 +244,25 @@ class RiskTests(unittest.TestCase):
             with self.assertRaises(ContractError):
                 advance_accounting(initial, Document.from_dict({**fill_fixture(s, intent).read(), **patch}))
 
-    def test_stale_name_does_not_block_healthy_terminal_or_cap_exit(self):
+    @staticmethod
+    def stale_msftb(s):
+        c = s.context.read()
+        msft = next(m for m in c["markets"] if m["symbol"] == "MSFTB")
+        msft["observed_at"] = (s.observed_at - timedelta(minutes=5)).isoformat()
+        return changed(s, markets=c["markets"])
+
+    def test_stale_name_does_not_block_healthy_terminal_or_continuing_cap_exit(self):
         for terminal in (False, True):
             s = snapshot(held={"NVDAB": 8000, "MSFTB": 2000})
             if terminal:
                 s = snapshot(held={"NVDAB": 8000, "MSFTB": 2000}, now=s.observed_at.replace(day=21))
             c = s.context.read()
-            msft = next(m for m in c["markets"] if m["symbol"] == "MSFTB")
-            msft["observed_at"] = (s.observed_at - timedelta(minutes=5)).isoformat()
-            s = changed(s, markets=c["markets"])
+            if not terminal:
+                # PF-05: the cap trim was started under complete marks, so the stale name does not stop it.
+                c["portfolio"]["risk"]["cap_trims"] = {"names": ["NVDAB"], "gross": False, "gross_shares": {}}
+                s = changed(s, portfolio=c["portfolio"])
+                c = s.context.read()
+            s = self.stale_msftb(s)
             raw = plan(s, None).read()
             self.assertEqual(raw["valuation_status"], "LOWER_BOUND")
             self.assertIsNone(raw["worst_case_gross_units"])
@@ -265,6 +275,25 @@ class RiskTests(unittest.TestCase):
             self.assertEqual(blocked["status"], "BLOCKED_MARK")
             self.assertEqual(blocked["held_units"], 2000)
 
+    def test_pf05_a_stale_mark_never_starts_a_healthy_name_cap_trim(self):
+        # #55: NVDAB is 19.5% of complete equity, under the 20% line, but 21.7% of the lower bound that counts
+        # the stale MSFTB as 0. Neither case trims.
+        held = {"NVDAB": 3900, "MSFTB": 2000}
+        complete = plan(with_quotes(snapshot(held=held), policy=False), None).read()
+        self.assertEqual(complete["valuation_status"], "COMPLETE")
+        self.assertFalse(any(r["symbol"] == "NVDAB" for r in complete["requirements"]))
+        raw = plan(with_quotes(self.stale_msftb(snapshot(held=held)), policy=False), None).read()
+        self.assertEqual(raw["valuation_status"], "LOWER_BOUND")
+        self.assertFalse(any(r["symbol"] == "NVDAB" for r in raw["requirements"]))
+        self.assertEqual([r["symbol"] for r in raw["requirements"]], ["MSFTB"])
+        self.assertFalse(raw["intents"])
+        # Even a name far over the line under the lower bound waits for complete marks, unless an obligation
+        # proven by complete marks already exists (previous test).
+        raw = plan(with_quotes(self.stale_msftb(snapshot(held={"NVDAB": 8000, "MSFTB": 2000})), policy=False),
+                   None).read()
+        self.assertFalse(any(r["symbol"] == "NVDAB" for r in raw["requirements"]))
+        self.assertTrue(any(r["reason"] == "PARTIAL_VALUATION_NEW_RISK_BLOCKED" for r in raw["rejections"]))
+
     def test_nonpositive_terminal_equity_retains_flatten_requirement(self):
         s = snapshot(held={"NVDAB": 2000}, now=snapshot().observed_at.replace(day=21))
         c = s.context.read()
@@ -276,15 +305,20 @@ class RiskTests(unittest.TestCase):
         self.assertFalse(r["intents"])
 
     def test_better_sell_price_requests_smaller_quote_and_can_progress(self):
+        # LD10-P03: balanced children keep 1% mark headroom, so only a quote more than 1% above
+        # the mark exceeds the cap; it is resized to a balanced part, never a cap-ratio residual.
+        first = plan(snapshot(held={"NVDAB": 8000}, profile_changes={"per_trade_cap_units": 15_000_000}),
+                     None).read()["quote_requests"][0]["pay_units"]
         s = with_quotes(snapshot(held={"NVDAB": 8000}, profile_changes={"per_trade_cap_units": 15_000_000}),
-                        policy=False, spread_bps=-7)
+                        policy=False, spread_bps=-300)
         r = plan(s, None).read()
         self.assertFalse(r["intents"])
         q = next(q for q in r["quote_requests"] if q["symbol"] == "NVDAB")
         self.assertLess(q["pay_units"], 1500)
+        self.assertEqual(q["pay_units"], first // 2)
         self.assertEqual(r["requirements"][0]["status"], "REQUOTE_REQUIRED")
         # New observed exact-size quote, not a fabricated proportional fill.
-        following = with_quotes(s, policy=False, spread_bps=-7)
+        following = with_quotes(s, policy=False, spread_bps=-300)
         r = plan(following, None).read()
         self.assertTrue(r["intents"])
         self.assertLessEqual(r["intents"][0]["cash_units"] + r["intents"][0]["fee_units"], 15_000_000)

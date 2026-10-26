@@ -1,22 +1,27 @@
 """Validated evidence-path configuration and opt-in live settings.
 
-Development mode uses the labelled synthetic defaults in config/intelligence/. Live mode
+Development mode uses the labelled synthetic defaults in config/intelligence/.
+Shadow mode uses the explicitly approved unsigned-development settings (IDEA-058);
+runtime/ingestion entry points enforce its dev-shadow scope. Live mode
 refuses to start while any live parameter is unset, while the prompt file differs from its
 pinned hash, or while the model/EDGAR environment settings are missing. Secret values are
 returned only inside `LiveModelSettings` and never appear in its repr or in any document.
 """
 
+from larp.intelligence.time_budget import MAX_ASSESSMENT_MS
+
 from dataclasses import dataclass, field
 from pathlib import Path
 import json
 import os
+import re
 
 from larp.intelligence.common import IntelligenceError, require_hash, sha256_hex
 from larp.intelligence.issuers import IssuerRegistry
 
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config" / "intelligence"
 KNOWN_TOOLS = ("fetch_document", "prior_context", "compare_facts")
-MODES = ("development", "live")
+MODES = ("development", "shadow", "live")
 
 
 def _load(name: str, base: Path) -> tuple:
@@ -45,13 +50,15 @@ class IntelligenceConfig:
 def load_config(mode: str = "development", base: Path = CONFIG_DIR) -> IntelligenceConfig:
     if mode not in MODES:
         raise IntelligenceError("Unknown configuration mode")
-    raw, config_hash = _load("intelligence.v1.json", base)
+    # Shadow keeps separate operational parameters (IDEA-058). All modes share the
+    # IDEA-083 ceiling; final/live parameters still require an explicit decision.
+    raw, config_hash = _load("intelligence.shadow.v1.json" if mode == "shadow" else "intelligence.v1.json", base)
     if raw.get("schema") != "IntelligenceConfig.v1":
         raise IntelligenceError("Unknown evidence configuration schema")
     budget = raw["budget"]
     # G-50 [POLICY] is the declared ceiling; config may tighten it, never loosen it.
     if not (type(budget["max_tool_calls"]) is int and 0 <= budget["max_tool_calls"] <= 6
-            and type(budget["max_deadline_ms"]) is int and 0 < budget["max_deadline_ms"] <= 60000
+            and type(budget["max_deadline_ms"]) is int and 0 < budget["max_deadline_ms"] <= MAX_ASSESSMENT_MS
             and budget["max_tool_types"] <= 3):
         raise IntelligenceError("Evidence budget exceeds the G-50 declaration")
     tools = tuple(raw["tools"])
@@ -99,16 +106,34 @@ def live_model_settings(env=None) -> LiveModelSettings:
     return LiveModelSettings(provider, model_id, key or None, path or None)
 
 
-_PLACEHOLDERS = ("<", ">", "example.com", "contact email", "you@")
+# Template text copied from instructions, and the RFC 2606 example domains. sec.gov answers such agents with 403
+# (IDEA-066 PC-TERMS01: "LARP Team Your Name your.real@email" passed the earlier check).
+_PLACEHOLDERS = ("<", ">", "example.com", "example.net", "example.org", "contact email", "you@",
+                 "your name", "yourname", "your.name", "your_name", "your real", "your.real", "your email",
+                 "youremail", "your.email", "your_email", "first last", "firstname", "lastname")
+# One whitespace-delimited address whose domain has a dotted ending of two or more letters.
+_SEC_EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
+_SEC_AGENT_HELP = ("set LARP_SEC_USER_AGENT to a team or person name followed by a contact email that someone reads, "
+                   "with no brackets or quotes")
 
 
 def sec_user_agent(env=None) -> str:
-    """Declared SEC User-Agent (fair-access rules). LARP_SEC_USER_AGENT; legacy SEC_USER_AGENT."""
+    """Declared SEC User-Agent (fair-access rules: a name and a contact email). LARP_SEC_USER_AGENT; legacy
+    SEC_USER_AGENT. Refusals name the failed rule, never the value."""
     env = os.environ if env is None else env
     new, old = env.get("LARP_SEC_USER_AGENT"), env.get("SEC_USER_AGENT")
     if new and old and new != old:
         raise IntelligenceError("LARP_SEC_USER_AGENT and SEC_USER_AGENT disagree")
     agent = (new or old or "").strip()
-    if not agent or "@" not in agent or any(p in agent.lower() for p in _PLACEHOLDERS):
-        raise IntelligenceError("A real SEC User-Agent with contact details is required (LARP_SEC_USER_AGENT)")
-    return agent
+    words = agent.split()
+    if not agent:
+        reason = "it is not set"
+    elif any(p in agent.lower() for p in _PLACEHOLDERS):
+        reason = "it contains template text, brackets or an example domain"
+    elif not any(_SEC_EMAIL.fullmatch(w) for w in words):
+        reason = "it has no email address with a domain ending such as .com or .edu.sg"
+    elif all(_SEC_EMAIL.fullmatch(w) or "@" in w for w in words):
+        reason = "it has no name before the email"
+    else:
+        return agent
+    raise IntelligenceError(f"A real SEC User-Agent is required: {reason}; {_SEC_AGENT_HELP}")

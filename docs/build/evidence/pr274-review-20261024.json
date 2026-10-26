@@ -1,0 +1,93 @@
+{
+  "schema": "ReviewVerification.v1",
+  "id": "PR274-RV01",
+  "date_sgt": "2026-10-24",
+  "review_base": "2d160073d0f26c1f35c6c977c3dd6167a5ee0d26",
+  "original_pr_head": "bc25991b3dd1c8b992871f1f09d3e581b6085829",
+  "final_tested_source_head": "feedefc677cb9bc1cf66c7651ab1505b36a7f790",
+  "full_suite_head": "855abc2bc5f0914df574169f61b54ef00eff203e",
+  "environment": {
+    "os": "Darwin",
+    "arch": "arm64",
+    "python": "3.12.14",
+    "postgresql": "14.24",
+    "pytest": "9.1.1",
+    "dependencies": "44 applicable pinned package versions match deploy/requirements-test.lock recursively; pip check PASS",
+    "database": "dedicated disposable local PostgreSQL container, sequential suites"
+  },
+  "full_suite": {
+    "passed": 2643,
+    "skipped": 10,
+    "subtests_passed": 4004,
+    "failed": 0,
+    "errors": 0,
+    "seconds": 316.63,
+    "previously_failing_host_profile_test": "PASS with pinned dependencies",
+    "skips": {
+      "systemd_opt_in": 5,
+      "linux_bubblewrap": 3,
+      "private_source_fixture": 1,
+      "external_market_artifacts": 1
+    }
+  },
+  "final_dashboard_and_contracts": {
+    "passed": 42,
+    "subtests_passed": 44,
+    "failed": 0,
+    "seconds": 2.14
+  },
+  "scope_of_final_follow_up": "After the full run, only dashboard tools, their regression and docs changed; the final 42-test suite covers those files. No larp/config/deploy change since the full-suite head.",
+  "red_green": {
+    "R1": "Default export 24336 bytes; size-budget regression failed before repair and passed after.",
+    "R2": "Both audited WITH_ASSESSMENT and ONLY regressions failed with Deterministic replay diverged before repair; passed after.",
+    "R3": "Actual /quote1 and /quote2#2 IDs yielded zero exported rounds before repair; export/full-detail/redaction regression passes after."
+  },
+  "log_sha256": {
+    "larp-pr274-full.log": "63c2e995a624b0f5141f19dfe5b1d3b103708a6fdd2ff3febd15d5e93446838e",
+    "larp-pr274-full.xml": "1f31a26cf132d1647181e9a826228db63376c31c9141c559590f2e3933407b7a",
+    "larp-pr274-dashboard-final.log": "587318ae9855def10168f0d6e0c4d3eb3bbb9e1c82a816cff9f8f42b211ea77b",
+    "larp-pr274-dashboard-final.xml": "d240c3aee5f1c5a7a37b4ff7420e6c7003a84fabfdbaa04c31251b7d7a70717d"
+  },
+  "source_sha256": {
+    "config/runtime/runtime.aiand-shadow.example.json": "28e01ab5b65ee758fb25ae2b286b532c157c547c28c28119159c65f3e7601583",
+    "config/runtime/runtime.example.json": "23e74bb9a34a7d881f0bf01626d3eb700aa2658b37eeda1369e0d06dff23aa72",
+    "larp/execution_live/venue.py": "0d798ff497201baae8b347b3185f2336fd1eae40b0c7bbdf857b62529d9a9d46",
+    "larp/risk/planner.py": "7763f831ab8c9eff283ac5d80661a7d2c89eec2f33e85caa012b2662d9b3d322",
+    "larp/runtime/coordinator.py": "8c88145fcdf6f183adf9cf65624ec3e210a5aa41a686dcd13a7f83d858f6e627",
+    "larp/runtime/driver.py": "ce3b5348a7a2ea163dc58e74f1ef80bcf5642e96bd2a16830b11bcdebf318f82",
+    "larp/runtime/replay.py": "0f75a942d5624058813236156affc249117613ee91378f7db7216af595e5f948",
+    "larp/strategy/execution_bounds.py": "b6153aaf8e00ddb2c83a5ce87c00fe252d6b54dfd147b510c62488f656cfabd4",
+    "tests/execution/test_requote_at_authorized_minimum.py": "39142957abf087ed8f39e1fd37256188875a4d8a97dc6e44966fd6a92d66253a",
+    "tests/runtime/test_cadence_every_slot.py": "0835f7d8d055559f631ca33e0b094ad3f32eba6412de69e97225d7e66c8bf94d",
+    "tests/runtime/test_driver.py": "a3e6da228aa1741c38c176a89f28e5f4a802cf837d5e0ebd3e05ad9bdc3bd6a1",
+    "tests/strategy/test_child_keeps_parent_leg.py": "954a34fd7e7bc45a0f4c3a9bcdb3305c128cfe6ecf11db8cbeffc2e8781f49fa",
+    "tests/strategy/test_requote_follow_up.py": "08298a47954e991056fbafd90c3b80e680b640724264e178721c6703d5a2487f",
+    "tests/test_dashboard.py": "c6718ba001f0bf129f7e9a9e0730f2f62adb36effb73847e07aabb34c3fb784f",
+    "tests/test_dashboard_decisions.py": "bdb1a35f16bdc4f40e6b56e2cea52ef1ecfe41886963537795d57384fc04ca10",
+    "tools/dashboard/build.py": "226f8bd48d1a3c2304cd0b793d88e17525cce5c4d3045305278ae180b97714ad",
+    "tools/dashboard/decisions-export.sh": "13a244b8ef7a037177b0e3565d8c159cccca79078c82e88bb479759b7f080c1f",
+    "tools/dashboard/decisions.py": "a7a468f5a670593d56829faa9f240cc615cacdc5e6fa48b429c3566444eb6b4e",
+    "tools/dashboard/template.html": "ddd270ea809fd3f76ece74355b68ecc2c8ea74544ad59d9bb1d02f8a5e904de9"
+  },
+  "github_actions": {
+    "run_id": 40085742176,
+    "url": "https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/40085742176",
+    "conclusion": "Jobs not started; not CI acceptance",
+    "reason": "Verified runtime, host-bundle and bootstrap annotations: account payments/spending limits. AWS matrix cancelled."
+  },
+  "acceptance": "PASS for reviewed repository merge; existing execution minimum/caps/lifetime/router/signing guards retained",
+  "not_performed": [
+    "Linux/systemd/host-bundle release qualification",
+    "host or wallet operation",
+    "paid model call",
+    "dashboard publication",
+    "live decisions export"
+  ],
+  "remaining": {
+    "operator_and_release_coordinator": "IDEA-090 F7 and actual post-approve swaps in a later dev run; final release/config/host qualification",
+    "Keith_and_Keegan": "selected strategy/profile/runtime settings and unchanged attempt-budget consumption under faster cadence",
+    "Isaac": "exact later profile/config/cap/signing acceptance, separate from this source review",
+    "team_and_Keith": "IDEA-087 PAGES01 publishing choice and first approved read-only primary decisions export",
+    "account_owner": "restore GitHub Actions billing availability"
+  }
+}

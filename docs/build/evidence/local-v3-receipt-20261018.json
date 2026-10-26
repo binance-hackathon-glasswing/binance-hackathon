@@ -1,0 +1,50 @@
+{
+  "schema": "LocalUnsignedBundleReceipt.v1",
+  "build_id": "d8aa7d53e5e27543135f8729ff7a7afd4450278a",
+  "bundle_sha256": "9930f361dce63480ec1966082b2ca0d0e4360ad1512b35a9eca57ef00bd90b89",
+  "manifest_sha256": "8bed25395fa23947f93193f2eb48acfbf1091e8b0ad3aa37ca4cafc899b149e0",
+  "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+  "release_files_verified_against_git": 195,
+  "bundle_checksums_verified": 234,
+  "routing_sha256": "baf3d54686235c00d3c9ba3ff12ca67c8450e6c538f6d19184c8eb2a5706266e",
+  "source_ancestry": "PR167, PR165, KMP-P2 fix included; source is ancestor of current integration",
+  "fresh_private_mirror_api": "HTTP404; CI result retained from Keegan verification, not freshly observed",
+  "paid_calls": false,
+  "host_changes": false,
+  "record_id": "PC-REL08",
+  "checked_at_ms": 1792319811357,
+  "read_only_ssm_command_id": "18b9419e-1380-42fe-ad09-0c940ef857d5",
+  "cursor_ssm_command_id": "6b652063-97aa-4eb9-bae7-a9d262421de3",
+  "host_installed_build": "bb46234f1b997dae968e2c3f3668d73627857376",
+  "host_assessor": "deterministic",
+  "host_execution": "shadow",
+  "model_budget_exists": false,
+  "archive_healthy": true,
+  "ack_audit_chunks": 62,
+  "historical_incident_backup": "PERMANENT, retained; superseded by ACK daily backup",
+  "doj_bis_poll_snapshot_sha256": "436965c62eaf3169cae6ba69c06b30f44759633f94951944fabf8e324ade71b3",
+  "doj_failure": {
+    "status": "SOURCE_UNAVAILABLE",
+    "error": "RESPONSE_TOO_LARGE",
+    "polls": 94,
+    "first_utc": "2026-10-17T19:00:53.025Z",
+    "last_utc": "2026-10-18T10:30:53.045Z",
+    "continuation_page": 97,
+    "fixed_window_report": "NOT_DUE until 2026-10-18T11:00:00Z",
+    "PC_GAP01_exception": "INAPPLICABLE to response-size errors"
+  },
+  "owner_balance_reconfirmation": {
+    "OpenAI_remaining_usd": 48,
+    "AIand_reported_balance": "140+",
+    "AIand_units": "UNVERIFIED",
+    "measurement": "Owner-reported; no fresh provider billing export"
+  },
+  "trial_caps": "UNENFORCED by bundled account/pacing code; host admission method remains required",
+  "private_receipt_hashes": {
+    "ssm-result.json": "20206553d4192cb4c0ea167fa316be7591607cb950738d3235c5bfe695c2ef7e",
+    "host-output.txt": "45ec10c9c2fff2ab7f6ca1d7f3c51650709a8356460491ba81394ec69caba47a",
+    "host-sanitized.json": "61673e80e85720e1221fc48631e673787b5ab669240bc2e807f34d7e76f3d24b",
+    "doj-bis-polls.jsonl": "436965c62eaf3169cae6ba69c06b30f44759633f94951944fabf8e324ade71b3",
+    "cursor-ssm-result.json": "e7f7e0d746992eda5b4fd11bc6b71547050431059f229ca943430eb9bc288169"
+  }
+}

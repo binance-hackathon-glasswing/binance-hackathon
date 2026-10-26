@@ -1,0 +1,52 @@
+{
+  "schema": "PR187ReviewVerification.v1",
+  "review_id": "IDEA-076 PR187-RV1",
+  "pr": 187,
+  "parent_pr": 133,
+  "base_branch": "claude/pre-trading-checklist-20261017",
+  "reviewed_source": "10a5cf307db8708768e325ba8b2bebc6127a9eb7",
+  "finding": "ADVERSE latches must not certify fresh complete coverage for limiter expiry",
+  "red_source": "d96e1cb",
+  "red_failed_subcases": 2,
+  "ci_repository": "Keegan4/Keegan4-larp-ci-mirror",
+  "ci_run_id": 39231045091,
+  "ci_url": "https://github.com/Keegan4/Keegan4-larp-ci-mirror/actions/runs/39231045091",
+  "ci_conclusion": "success",
+  "ci_log_sha256": "333c54c4190370ae2edfc0477c022161aa176acaa920d477fead72c30b2615d3",
+  "ci_jobs": {
+    "runtime": "success",
+    "host-bundle": "success",
+    "infrastructure (deploy/aws)": "success",
+    "infrastructure (deploy/bootstrap)": "success"
+  },
+  "linux_runtime": {"passed": 2121, "skipped": 6, "subtests": 3342, "seconds": 365.19},
+  "real_systemd": {"passed": 5, "subtests": 5, "seconds": 14.85},
+  "terraform": {"deploy/aws": 19, "deploy/bootstrap": 1},
+  "local_focused": {"passed": 74, "skipped": 1, "subtests": 38},
+  "local_postgresql_replay": {"passed": 11, "skipped": 0, "subtests": 2},
+  "local_first_full": {
+    "passed": 2117, "skipped": 9, "subtests": 3342, "failed": 1, "seconds": 290.41,
+    "failure": "Wrapper subprocess used system Python without dotenv; virtual environment was not on PATH",
+    "corrected_path_targeted_rerun": {"passed": 1, "failed": 0},
+    "single_run_full_pass_claimed": false
+  },
+  "local_demo": "REFUSED_LINUX_BUBBLEWRAP_UNAVAILABLE; Linux CI demo passes",
+  "local_log_sha256": {
+    "red": "2ce4b5181e813668641f25086139e618f196917b876a581756bd271ed3955a08",
+    "focused": "f6f37bd1cd3eae56411a36367fe3b9fb92ec06d21efc5f99f63704f58cd4d83a",
+    "full": "cb9638975f887f25fd00caf7e9d6bf22179f742c569af7ca733267898b37b3d8",
+    "corrected_path_rerun": "99a24796443a1d07f66a424f8116a06a2079063af758e7d3c87801c191ad2ecd",
+    "postgresql_replay": "7afbab1b8cbe81c0623e295e8770cb826ffe15e9d1c30a137437f5dd09ebfb9f"
+  },
+  "organization_ci": {"run_id": 39230525522, "status": "NOT_STARTED_BILLING_LIMIT"},
+  "review_mirror_explicitly_authorized": true,
+  "disposable_database_removed": true,
+  "release_published": false,
+  "host_operations_performed": false,
+  "signing_enabled": false,
+  "live_input_qualification": false,
+  "notes": [
+    "Later review-record changes are documentation only; qualified application bytes remain unchanged.",
+    "O2 acceptance, experiments, actual profiles, full issuer/official-event inputs and hosted adoption remain open."
+  ]
+}

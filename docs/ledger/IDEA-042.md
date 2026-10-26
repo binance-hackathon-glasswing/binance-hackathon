@@ -390,3 +390,317 @@ User authorizes review/fix all open PRs, ordinary target merges including PR11 t
 4.7 additional prospective acceptance: exercise real published red-flag directives through both policy and the independent no-policy risk path; a Class 1 exit remains mandatory and precedes replenishment/buys. Wire the actual execution service, PostgreSQL execution store and receipt producer through coordinator settlement, then prove reservation release, order mapping, durable ACKs and same-head replay. Synthetic venue/chain/signer fixtures only; no live release.
 
 4.7 release inspection finding: release_files includes JSON configuration but omits the assessor's deployed .txt prompts (G-03/G-12), and the runtime Dockerfile. Prospective pass: manifest includes both when present, changing only either invalidates verify_release; synthetic temp trees only. Add these files to the existing manifest inventory; do not relax startup/version gates.
+
+## RG-01 — rehearsal gate packet (2026-10-19), prospective criteria
+
+User asks to create/work on rehearsal gates. Prepare a repository-only operator
+packet for C09/C10 in PR133. Account-owner details are resolved per the user's
+2026-10-19 update; no host access or signed acceptance is inferred.
+
+Pass criteria before verification:
+1. Map every DR13–22 requirement and DR04/05 crash/reconciliation prerequisite
+   to an ordered gate, observation, explicit failure condition and evidence.
+2. Separate ready preparation, unsigned observation, signed drills and final
+   acceptance; use existing adopted bounds, never invent numerical acceptance.
+3. Supply reusable per-drill and daily records; all actual outcomes start NOT_RUN.
+4. Reference existing supported commands/APIs; flag missing host-specific fault
+   injection plans rather than inventing CLI options or unsafe generic mutations.
+5. Check changed Markdown links and mapping coverage after pushing this packet;
+   no cloud, receiver, signer, wallet or live trading operations. C09/C10 and
+   all partially completed GAPs remain open pending measured host evidence.
+
+Results: NOT_RUN at registration. Operational status: NOT_RUN; packet preparation
+cannot approve a policy, qualify a release, or pass Gate A/B/C.
+
+RG-01 repository verification (2026-10-19): PASS at `6e0373b` for all7 local
+packet links, RG1–10 and DR13–22 mapping, three actual API definitions, existing
+operations CLI choices/options and tracker/runbook/backlog links. Initial literal
+DR coverage check failed on combined `DR18/20` formatting; references were made
+explicit and the check passed. `git diff --check` PASS. Documentation-only change;
+no runtime tests, cloud operations, fault injections or live drills run. Missing
+host-specific harnesses/procedures are explicitly BLOCKED until pinned/reviewed.
+C09/C10 and operational Gate A/B/C outcomes remain open/NOT_RUN.
+
+## RG-02 — offline rehearsal evidence index (2026-10-19), prospective criteria
+
+Next repository slice: implement a stdlib-only local packet initializer/checker
+for RG-01. It makes no AWS, RPC, database, signer or receiver calls and cannot
+approve a rehearsal or enable execution. Tool/code additions require their own
+future release qualification; prior release evidence does not cover these bytes.
+
+Prospective acceptance:
+- Initialization creates a new packet with ten NOT_RUN gates, never overwrites.
+- Checking requires exact source/bundle/manifest/profile/config/run/wallet binding;
+  duplicate/missing gates and malformed inputs fail closed without raw input output.
+- Reviewed evidence claims require UTC ordered times, distinct attributed operator
+  and reviewer, procedure/approval refs, complete gate-specific criterion results,
+  and actual local artifact hashes. Missing/refused/synthetic evidence cannot be
+  reported as observed host evidence. Evidence completeness is never Gate C PASS.
+- Artifact reads stay within an explicit sanitized evidence directory: refuse
+  absolute/traversal/symlink/special-file paths and bound file/input sizes. No raw
+  paths, provider URLs, input content or exception strings in reports.
+- Synthetic tests exercise tamper, wrong identity, missing criteria/reviews,
+  duplicate keys/gates, path escape, symlinks, malformed timestamps and overwrite
+  refusal. Commit/push implementation before execution; targeted tests suffice
+  for this independent offline utility. Live outcomes remain NOT_RUN.
+
+RG-02 results at `0ca9621262cd32cc405a568c9e70a7303e4749da`: PASS,
+`python -m unittest tests.runtime.test_rehearsal_evidence -q`, Python3.12.14,
+14 tests,0 skips,0.043s. Initial11 tests passed at0628f62; added CLI completeness/
+refusal distinctions and special-file input checks passed at the final source.
+PASS all7 local packet links and `git diff --check`. Source was pushed before
+execution. Tests use synthetic claims/artifacts only and explicitly retain
+host_results_verified=false, gate_c_accepted=false, signing_enabled=false even
+for complete packet indexes. No application path changed and no host/runtime
+suite or new original release qualification was run. All live C09/C10 drill
+results remain NOT_RUN. A01 wording and the handoff now acknowledge the user's
+resolved account-owner details while retaining actual access/evidence requirements.
+
+## RG-02-RV01 — Keegan review of PR188 (2026-10-19), criteria before the fix
+
+Review of `510c3c0` found one defect against RG-02's "malformed inputs fail
+closed without raw input output": a deeply nested JSON packet (well under the
+1MiB bound) raises `RecursionError`, which `main` does not catch, so the CLI
+prints a Python traceback and exits 1 (the "incomplete" code) instead of the
+fixed `PACKET_REFUSED` report with exit 2. Operator/reviewer independence also
+compares raw strings, so `"Isaac"` and `" isaac"` count as different people.
+
+Pass criteria, written before the fix:
+- RV01-1: a nested packet or identity file raises `Refused` from `load`, and
+  the CLI prints only `PACKET_REFUSED` and exits 2 (red test pushed first).
+- RV01-2: operator and reviewer that differ only by case or surrounding
+  whitespace report `INDEPENDENT_REVIEW_REQUIRED`.
+- RV01-3: all existing RG-02 tests still pass; no other behaviour changes.
+
+RG-02-RV01 results at `fa04d5428aa7900c9d238989756d061d1d9bd226`: **PASS** RV01-1..3. Red first at `ddc9df0`
+(1 failure, 1 error); after the fix `python -m unittest
+tests.runtime.test_rehearsal_evidence -q` on Python 3.12, Linux: 16 tests,
+0 skips. A 200,000-deep packet from the CLI now prints only `PACKET_REFUSED`
+and exits 2. Not changed, recorded for the operator: the checker refuses an
+evidence root with any symlinked ancestor, so on macOS a root under `/tmp` or
+`/var/folders` (both behind symlinks) is refused, and so are these synthetic
+tests' temporary directories. Keep the sanitized export under the home
+directory, which is not a symlink. RG-02's own scope is unchanged:
+`gate_c_accepted`, `signing_enabled` and `host_results_verified` stay false
+and every live drill result stays NOT_RUN.
+
+## RG-02-RV02 — PR188 integration review (2026-10-19), prospective
+
+Review current PR188 merged with its checklist base. Native macOS synthetic
+verification exposed the documented symlink-ancestor limitation in the test
+fixture itself: tempfile returns a path through /var, so ordinary positive
+cases never reach validation. Keep the checker strict; canonicalize only the
+fresh synthetic fixture directory. Pass criteria before the fix: all16 tests
+pass on macOS, including explicit symlink refusals and all CLI exit codes;
+add a symlinked-ancestor regression; packet links and whitespace pass. No host
+or release acceptance is transferred. GitHub run39240046615 never started:
+its annotation reports failed account payments/spending limit, not test failure.
+
+RG-02-RV02 results: PASS on native macOS/Python3.9.6,17 tests/0 skips,
+including new symlinked-ancestor refusal. Canonical fixture paths fix only test
+portability; production path refusal is unchanged. All7 packet local links and
+`git diff --check` PASS. Reviewed the DR mapping, CLI/API references and complete
+changed docs; no additional blocker. Application/runtime/config source is
+unchanged from the current checklist base. Hosted CI remains billing-blocked;
+new tools still need future release qualification and all live drills stay open.
+
+## LD21-H — drill harnesses and procedures (2026-10-20)
+
+Prepared for the approved operator (all drills NOT_RUN):
+[LD21_DRILL_PROCEDURES.md](../build/LD21_DRILL_PROCEDURES.md) pins D1 restart, D2 DELIVERY_AGE HALT/clear,
+D3 anchors, D4 restore/alert and D5 throwaway wallet switch, with pass/fail criteria written before any run.
+Two harnesses close RG-01's "pinned invocation harness" blockers for RG4 and RG6:
+`tools/deploy/drill_verify_anchors.py` (read-only `verify_anchors` over downloaded Anchor.v2 files, with hourly
+coverage) and `tools/deploy/drill_wallet_switch.py` (read-only preflight that agrees with `switch_wallet`, and a
+confirmed switch step). PostgreSQL tests: 3 + 6 passed. RG8 replay harness and signer-boundary crash injection
+remain open.
+
+LD21-H addendum (2026-10-20): `tools/deploy/drill_replay_day.py` adds the RG8 harness. It rebuilds the
+builder/planner/policy from the run's pinned configuration with every live port made to raise (calls are counted
+even when the coordinator records them as context failures), reads the source journal read-only, and replays into an
+empty isolated target with `replay_live`. It refuses a non-empty target or the source database. 5 PostgreSQL tests:
+full and prefix replays reach the recorded heads, a forced live-port call fails as `LIVE_PORT_CALLED`, a reused
+target is refused, and the builder matches the pinned config. Procedure D6 is added. Signer-boundary crash injection
+remains open.
+
+## RG2-D01 — boundary crash injection design (2026-10-21, design only)
+
+[RG2_CRASH_INJECTION_DESIGN_20261021.md](../build/RG2_CRASH_INJECTION_DESIGN_20261021.md) proposes the RG2 fault
+matrix F1–F10 over the authorized, signed-durable, send/unknown, receipt/settlement and round/ACK boundaries. Wide
+gaps use an external SIGKILL on a durable marker. Narrow gaps (F3, F5, F7a, F7b, F8) use a proposed same-build fault
+point that is inert by default, consumes a one-shot token and is refused in final mode. Six read-only pass checks
+cover duplicate execution, UNKNOWN fencing, reservation release, restart, recovery time and chain agreement. Nothing is
+built and no host is touched. Keegan decides on the matrix, the hook and the signer-host rows. Until then RG2 stays
+BLOCKED on instrumentation.
+
+## RG2-D02 — decision on the RG2 design (Keegan, 2026-10-21)
+
+Keegan delegated the pending decisions as "use the recommended option" (2026-10-21). For RG2-D01:
+
+1. The fault matrix F1–F10 is accepted as written and frozen for the RG-01 attempt template.
+2. The fault-point hook is accepted as specified, and ships in the release build:
+   - it sits at five sites;
+   - it is inert unless both `LARP_FAULT_POINT` names the site and a one-shot token is consumed;
+   - it uses SIGKILL;
+   - preflight and `check_signing_run` refuse a final-mode run while it is armed.
+3. Keegan approves each signer-host run (F3/F4) individually; the operator (Keegan's team since LD12-M01) runs it.
+
+Still to do:
+- build the hook with its tests and the extended local crash worker (F3/F5/F7a/F7b/F8 via the real
+  `RemoteSigner`/`SignerService` on PostgreSQL), reviewed before any host use;
+- run F1–F10 on the signed development hosts after LD20, under LD21.
+
+RG2 stays BLOCKED until the hook exists.
+
+## RG2-H01 — fault-point hook implementation (2026-10-21; prospective)
+
+This builds the hook accepted in RG2-D02, as specified in RG2-D01. Criteria are written before any code (H1–H7):
+
+- H1. `larp/runtime/faults.py` uses the standard library only. `point(name)` returns after a single environment
+  lookup unless `LARP_FAULT_POINT` equals `name`. When it does, it fires only if the absolute path in
+  `LARP_FAULT_TOKEN` can be renamed atomically to `<token>.consumed`; then it sends SIGKILL to its own process. A
+  missing or relative token, or a lost rename race, never fires. An unknown point name passed in code is a
+  programming error and raises.
+- H2. The sites, which change nothing else in behaviour, are:
+  - `SignerService._sign`: F3 just before `signer.sign`, F4 just after it returns;
+  - `Executor.sign`: F5 after the signature is verified, before the SIGNED_DURABLE commit;
+  - `Executor.broadcast`: F7a after the BROADCAST_ATTEMPTED commit, before `venue.broadcast`, and F7b after
+    `venue.broadcast` returns, before the phase commit;
+  - `Executor.reconcile`: F8 after `venue.outcome` returns, before the phase commit.
+- H3. Refusals:
+  - `faults.check(mode)` refuses an unknown `LARP_FAULT_POINT` value, or an armed point with no absolute token
+    path, in any mode;
+  - it refuses any armed point when `mode == 'live'` (final);
+  - preflight applies it to the runtime and service configs it verifies, the execution and signer services apply it
+    to the run's mode at start, and `check_signing_run` applies it on every new signature.
+- H4. Unit tests cover:
+  - inert with no environment variable (no file-system call is made);
+  - inert for another point's name, a missing token or a relative token;
+  - fires exactly once with SIGKILL, and the token is consumed;
+  - every H3 refusal.
+- H5. A subprocess crash test on real PostgreSQL arms F5, F7a, F7b and F8 in turn in a child process that runs the
+  existing executor with the fake venue. Each child must die by SIGKILL (return code −9). Then a restarted executor
+  must recover:
+  - F5: `SIGNATURE_RECOVERED`, with the same bytes;
+  - F7a and F7b: no second broadcast of different bytes, and the attempt stays a possible send;
+  - F8: FINAL once.
+  In every case there is exactly one signature row per attempt.
+- H6. A test drives F3 and F4 through `SignerService._sign` with the local signer: F3 dies before the signature row
+  exists and the request is served again; F4 dies after the row exists and the request is never signed twice.
+- H7. The full suite passes. Nothing is deployed, armed on a host, or run against a wallet.
+
+### RG2-H01 results — `01d651b` + docs `1a9ceb1` (2026-10-21)
+
+- **H1 PASS.** `larp/runtime/faults.py` (stdlib only). Inert with no environment variable, verified with patched
+  `os.rename`/`isabs` that fail if touched. Inert for another point's name, a missing or relative token, or no
+  token. Fires exactly once with SIGKILL and consumes the token; a second call doesn't fire. An unknown name in
+  code raises.
+- **H2 PASS.** Sites: F3 and F4 in `SignerService._sign`, F5 in `Executor.sign`, F7a and F7b in
+  `Executor.broadcast`, F8 in `Executor.reconcile`. The existing execution, signer and preflight suites are
+  unchanged (619 passed before the new tests).
+- **H3 PASS (with one gap):**
+  - `faults.check` refuses an unknown point or a non-absolute token in any mode, and any armed point in `live`.
+  - `check_signing_run` raises `Conflict` before any other check (tested).
+  - Preflight refuses an armed `live` service config, an unknown point and a relative token, and allows an armed
+    `dev` config (tested on a synthetic release).
+  - The execution and signer service-start refusals are wired, but those start paths have no dedicated tests.
+- **H4 PASS.** `tests/runtime/test_faults.py`: 5 tests, 4 subtests.
+- **H5 PASS.** `tests/execution/test_fault_points.py`: 4 tests on real PostgreSQL. Each child exits by SIGKILL
+  (−9) and its token is consumed. After restart:
+  - F5: `AUTHORIZED`, with one signature row, and `recover_signature` gives `SIGNED_DURABLE` with the same hash;
+  - F7a: `BROADCAST_ATTEMPTED` with no resend;
+  - F7b: no resend, then `FINAL_SUCCESS` from the receipt;
+  - F8: the probe stayed durable, the phase didn't, and FINAL is reached once and stays unchanged on the next
+    reconcile.
+  In every case there is exactly one signature row.
+- **H6 PASS.** `tests/signer/test_fault_points.py`. F3 dies with no signature row, and the restarted signer serves
+  the same request once. F4 dies after the row; the restarted signer handles 0 requests and the executor recovers
+  the signature.
+- **H7 PASS.** Full suite on Linux, Python 3.12, local PostgreSQL 16: 2375 passed, 11 skipped, 3801 subtests
+  passed. Nothing is deployed or armed on a host.
+
+RG2 is no longer blocked on instrumentation. The signed-host F1–F10 runs remain under LD21, after LD20, with
+approval for each run.
+
+## GAP62-F01 — deviations register: complete-row review and finalisation (2026-10-21; prospective)
+
+Keegan delegated the GAP-62 review as "follow the recommended option" (2026-10-21). Criteria, written before any
+register edit (V1–V5):
+
+- V1. Every row is re-read against current canonical. A row becomes FINAL only if three things hold: its decision is
+  recorded with a date, its v1 wording describes the behaviour the final build will have (no "pending" placeholder
+  for a value or decision that would change the wording), and no open owner decision can change it.
+- V2. Rows that depend on an open decision stay DRAFT. Their `reason` names the decision and owner that would
+  finalise them. These are the S1 profile and exits (Keith, #120/LD09/LD11), model adoption (LD11/LD22), and the
+  router safeguards still being built or decided (KG-DEC-01 pre-sign simulation, LD05 abnormal fills, LD06 cleanup
+  enablement).
+- V3. Declared quotes are unchanged and remain verbatim; evidence IDs resolve; `validate_deviations` passes; plan.md
+  §6.5 is re-rendered with `tools/render_deviations.py --write`, and `--check` passes.
+- V4. Services: `bsc-rpc` records the KG-DEC-01 execution read approval and stays PROVISIONING until the signed
+  config binds it. The assessor services stay PROVISIONING pending LD11.
+- V5. The release-register tests and the full suite pass. The runtime's refusal of OPEN/DRAFT rows at final
+  activation is unchanged; with any DRAFT row left, final activation is still refused.
+
+### GAP62-F01 results (2026-10-21)
+
+- **V1/V2.** I re-read all 23 rows on canonical `146a751` and added DEV-24 (below).
+  - **FINAL (15):** DEV-05, 06, 08–18, 20 and 21.
+    - DEV-14's reason now points at the decided DEV-18.
+    - DEV-20's reason records its finalisation.
+    - DEV-21's v1 text replaces "measured reserve and seeding values remain pending" with the LD09-B rule (reserve
+      at the cap gas price, sizing at an expected gas price, exact values pinned in the selected profile).
+  - **DRAFT (9),** each with its finalising decision in `reason`:
+    - DEV-01–04 and DEV-07: the S1 profile and exits (Keith, #120/LD11);
+    - DEV-19 and DEV-22: model adoption (LD11/LD22);
+    - DEV-23: LD05 abnormal fills and LD06 cleanup enablement;
+    - **DEV-24 (new, "Rehearsal"):** recorded today under D-DN-02 because Gate B was missed (KG-REV01), DRAFT until
+      the actual signed window is known.
+  - A side finding for KG-DEC-01: `Executor.prepare` already requires the venue's exact-payload gas estimate (the
+    Web3 API's `pre-transaction/gas-limit`) before any attempt exists, and a missing or failed estimate blocks with
+    no fallback. That is a pre-sign simulation; KG-DEC-01 is corrected separately.
+- **V3.** Declared quotes are verbatim, including DEV-24's "full pipeline for 5+ days including a weekend, at
+  minimum size". Evidence IDs resolve, `tools/render_deviations.py --write` re-rendered plan.md §6.5, and `--check`
+  passes. The JSON keeps its original formatting; one stray-indent line was normalised.
+- **V4.** `bsc-rpc` records the KG-DEC-01 execution-read approval and stays PROVISIONING. The assessor services
+  are unchanged (PROVISIONING pending LD11).
+- **V5.** Release-register tests pass; the full-suite result is in the PR. Final activation is still refused while
+  any DRAFT row remains (9 now). The final register needs the S1 profile (#120), model adoption (LD11/LD22), the
+  LD05/LD06 decisions and the actual rehearsal window before final activation (LD24).
+
+## GAP62-F02 — record the SKHYB foreign-filer coverage limit (#39, 2026-10-23; prospective)
+
+Keegan's session, under his delegation to address issues that are already solved. IDEA-084 PF-03 decided to keep
+all five names and to **accept SKHYB's asymmetric foreign-filer adverse-event coverage**. PF-03 asks for that to be
+recorded as a deviation and the manifested scope checked before #39 closes. The register (`deviations.v1.json`)
+has no such row: DEV-01..DEV-24 contain no SKHYB, foreign-filer or 6-K entry.
+
+Pass criteria, written before the change:
+- V1. Add one row, DEV-25 "Adverse-event coverage", status FINAL (decided by PF-03, 2026-10-21). `declared` quotes
+  the submitted proposal verbatim (`docs/proposal/proposal_answers.md`: SEC EDGAR 8-K, 10-Q and 10-K filings). The
+  v1.0 behaviour matches the shipped config.
+- V2. Manifested scope still matches the decision: `red_flags.v1.json` keeps Class 1/2 to domestic 8-K filers and
+  states the 6-K gap as `scope_limit`; no foreign-filer predicate exists; other statements stay SHADOW; the strategy
+  universe keeps all five names.
+- V3. `tools/render_deviations.py --write` re-renders plan.md, `--check` passes, and the JSON keeps its formatting
+  (indent 1, ASCII). Release-register, Gate A and red-flag tests pass.
+- V4. The DRAFT count is unchanged (9). No other row, config, profile or code changes.
+
+### GAP62-F02 results (2026-10-23) — PASS
+
+- **V1.** DEV-25 "Adverse-event coverage" added, FINAL, decided 2026-10-21 (PF-03). `declared` is the proposal's
+  verbatim SEC EDGAR line. The v1.0 behaviour names the three domestic 8-K exits (Item 4.02 Class 1; Items 1.05 and
+  2.06 Class 2), states that none can fire for SKHYB, and keeps Class 3 WATCH as SHADOW for every name.
+- **V2.** The manifested scope matches the decision, unchanged:
+  - `red_flags.v1.json` scopes the three Class 1/2 predicates to `filer_classes: ["DOMESTIC"]` and states the 6-K
+    gap in `scope_limit`;
+  - the only predicate covering `FOREIGN_PRIVATE` is RF3-STATEMENTS, Class 3 WATCH, with directive SHADOW;
+  - no foreign-filer predicate exists, and the universe keeps all five names.
+- **V3.** `render_deviations.py --write` re-rendered plan.md (one row); `--check` passes. The JSON diff is the new
+  row plus `updated` 2026-10-23 (indent 1, ASCII). Every test that reads the register, red flags or release
+  manifest, plus the Gate A check: 195 passed, 175 subtests (local PostgreSQL 16). A first run hit 53 connection
+  errors when the container's local PostgreSQL stopped; after a restart all passed.
+- **V4.** 16 FINAL, 9 DRAFT (unchanged DRAFT set). No other row, config, profile or code changed. This changes a
+  manifested file, so it belongs in the next release candidate (RC6 or later); installed builds are unaffected.
+
+#39 can close: acceptance 1 (decision, PF-03) and acceptance 3 (manifested scope) are met, acceptance 2 does not
+apply, and PF-03's recording step is done.

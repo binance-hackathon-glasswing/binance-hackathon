@@ -75,6 +75,18 @@ bind `/etc/larp/release.json` from the CI-built `release-manifest.json` that pro
 never writes configs or keys and never starts a service. Still to check on the first real hosts: `LoadCredential`
 ownership/mode, RDS IAM login per role, Amazon Time Sync, and the units under systemd (`docs/INCOMPLETE_WORK.md`).
 
+**Disk budget for balance-check observations (#96, IDEA-055; estimate, not yet measured on a host).** Every RPC
+call of the balance check writes one `ChainObservation.v1` file under `<market_artifact_root>/chain` on `primary`'s
+20 GiB root disk, and these files are audit evidence: never delete them during the run. A check makes 12 calls once
+`decimals()` is cached (18 until two reads of it agree, normally the first two checks of each process): chain ID, the finalized block and its re-check, the
+native balance, six `balanceOf()` and two nonces. The two block files carry the block's transaction-hash list (about
+16 KB at 200 transactions); every other file is under 400 bytes but takes a whole 4 KiB filesystem block. That is
+about 70–100 KiB per check. At the normal 10-minute interval: about 144 checks and 10–15 MiB a day. Worst case, every
+check skipped and retried every 60 s (pending nonce, ledger ahead of the finalized block, RPC down): about 1,440
+checks, 100–140 MiB and 17,000 files a day, so about 2 GiB over the 14-day run. Budget 3 GiB for these files from
+first hosted start to the winner audit. Measure the real rate with `du -s` and `df -i` in the Gate A hosted shadow
+run, and size the memory and disk decision for `primary` together (#60, D-DN-08).
+
 **Evidence store sharing (IDEA-047 R3, decided 2026-10-14).** The poller's SQLite store and artifacts under
 `/var/lib/larp-evidence` are group `larp-evidence` (`StateDirectoryMode=0770`, `UMask=0007`); others get nothing. The
 coordinator (`larp-runtime`) joins that group (`SupplementaryGroups=`) and opens the store with
@@ -162,12 +174,79 @@ accepted trade-off. It sits next to the open
 4. Delete the RDS final snapshot once the export is verified (it bills per GB-month).
 5. Next day, check Billing → Bills and Cost Explorer. What remains is the KMS key (≈ $1/month) and the archive (cents) until the retention date; then delete them and close the account.
 
+## Approved network destinations (two-host layout; IDEA-062, #32)
+
+**Status: approved by Keegan (section B) 2026-10-16 and Isaac (section C) 2026-10-17; Isaac extends the same model destinations to explicitly adopted signed/live builds on 2026-10-18 (IDEA-062 SP-NET D2)** (the owners #32 names). Every destination below is derived
+by `larp/runtime/routes.py` from the manifested service configs, `config/sources/sources.v1.json` and the clients'
+own endpoint constants; `tests/runtime/test_routes.py` R8 checks this table against that derivation. `<region>` is
+the config's `region` (`ap-southeast-2` now).
+
+| From | Unit | Destination | Port | Purpose |
+|---|---|---|---|---|
+| primary | larp-runtime, larp-execution | `web3.binance.com` | 443 | Binance Web3 Open API: market data, quotes, transaction building, broadcast (F-90..F-106) |
+| primary | larp-runtime | host of each `driver.balance_rpc_providers` URL in `runtime.json` (primary first, then backups; or the legacy `driver.balance_rpc_url`) | 443 | BSC RPC for the finalized chain-balance check (IDEA-055) with failover (PR 5); account-specific, chosen by Isaac (#92), declared as `bsc-rpc` in `config/release/services.v1.json` and bound to the manifest through the runtime config hash |
+| primary | larp-execution | host of `rpc_url` in `execution.json` | 443 | BSC RPC for chain reads and receipts; account-specific |
+| primary | larp-uploader | `api.commonservice.io` | 443 | ai-seeds event log (F-99..F-101) |
+| primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.aiand.com` | 443 | Shadow and explicitly adopted signed/live application scope (SP-NET D2): fixed `/v1/chat/completions` for configured GLM/Kimi stages. Provider-policy/account/model rights, funding, trial/adoption and exact-release host gates remain required |
+| primary | larp-runtime (only with `"assessor": "aiand_routed"`) | `api.openai.com` | 443 | Shadow and explicitly adopted signed/live application scope (SP-NET D2): fixed `/v1/responses` for configured OpenAI stages, optional runtime key and exact adopted durable budget. V1/v2 retain $40/$10; approved v3 protocol still needs release/host conformance |
+| primary | larp-runtime, larp-execution, larp-uploader | `secretsmanager.<region>.amazonaws.com` | 443 | service secrets (public endpoint; no interface endpoint, IDEA-046) |
+| primary | larp-archive | `s3.<region>.amazonaws.com` and the configured archive bucket's virtual-hosted S3 hostname | 443 | archive and hourly anchors through the S3 gateway endpoint; bucket-scoped IAM still applies |
+| primary | larp-archive | `monitoring.<region>.amazonaws.com` | 443 | CloudWatch metrics |
+| primary | larp-runtime, larp-execution, larp-uploader, larp-archive | `database_host` (RDS) | 5432 | PostgreSQL with RDS IAM tokens over verified TLS |
+| primary | larp-evidence | `data.sec.gov`, `www.sec.gov` | 443 | EDGAR submissions and filing archives, SEC press |
+| primary | larp-evidence | `www.federalregister.gov`, `www.justice.gov`, `ec.europa.eu` | 443 | the enabled official sources; a disabled source's host is not approved |
+| signer | larp-signer | `database_host` (RDS) | 5432 | signing requests and results (migration `009`); the only transport between the execution service and the signer |
+| signer | provision.sh | `s3.<region>.amazonaws.com` and the configured artifact bucket's virtual-hosted S3 hostname | 443 | release bundle through the S3 gateway endpoint; release-object IAM still applies |
+| signer | none | `web3.binance.com`, `api.commonservice.io`, `data.sec.gov`, `secretsmanager.<region>.amazonaws.com` | 443 | **must be refused**: the signer has no internet route (IDEA-046 B2) |
+
+- **Internal transports.** All `primary` services share one host, so none of them talks to another over the network:
+  the runtime reads the evidence store from local disk (IDEA-047 R3) and hands work to the execution service through
+  the database. The signer is reached only through the database, under its own role `larp_signer`. Every database
+  login is a per-role RDS IAM token over certificate-verified TLS (`deploy/postgres/roles.sql`).
+- **Model endpoints: application scope approval (2026-10-18, Isaac; IDEA-062 SP-NET D2).**
+  The user explicitly authorizes the exact reviewed proposal after the earlier review-only
+  refusal. The same `api.aiand.com` and `api.openai.com` destinations are approved only
+  from `primary`/`larp-runtime` with `aiand_routed`, including explicitly adopted signed
+  rehearsal/live builds. Merged SLM-01 supports these builds with an adoption reference,
+  LIVE profile and pinned routing/prompts; it does not activate them by itself.
+  Only lawful registered public evidence/model requests are in scope. KMP-RIGHTS01
+  provider-policy compatibility, account/model terms, funding, trial/quality/adoption,
+  services/DEV-19 and exact-release/host qualification remain separate prerequisites.
+  No model-selected endpoint, signer/execution model access or AWS/IAM/firewall/secret
+  change follows. The route checker lists both hosts only for `aiand_routed`.
+  **Not approved:** `api.anthropic.com`. Development SSM remains a provisioning concern.
+- **Enforcement.** The security group allows HTTPS to any address from `primary` (AWS security groups cannot filter by
+  host name), so this list is enforced by the application, which calls only the hosts above: fixed constants, the
+  manifested configs and each source's `allow` list. The signer's isolation is enforced by the network (no route, no
+  public address; Terraform `internet_reaches_primary_only`).
+- **Section C review scope (2026-10-17, IDEA-062 NC-01).** Isaac explicitly approved this application destination scope (NC-01 D1); see
+  [NETWORK_SECTION_C_REVIEW.md](NETWORK_SECTION_C_REVIEW.md) for the reviewed boundaries and owner decision.
+  This table names application destinations; it is not a per-unit network firewall or proof of hosted permissions.
+  S3's configured-bucket form is `<bucket>.s3.<region>.amazonaws.com` ([AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html));
+  it is the same S3 gateway/prefix-list service and bucket-scoped IAM, not permission for arbitrary buckets.
+  The route checker currently tests the regional S3 endpoint only; actual release download and archive/anchor ACK
+  evidence must also demonstrate the configured bucket's route and permissions. Database probes open TCP only,
+  so per-role IAM login and pinned-CA PostgreSQL TLS must be checked separately. Yao Zhu owns these host checks
+  and the applied signer route/SG evidence; source constants and mock plans do not prove them.
+- **Route check (Gate A, R-07).** On each host, from the installed release, without credentials:
+  `python -m larp.runtime.routes --role primary --config runtime=/etc/larp/runtime.json --config execution=/etc/larp/execution.json --config uploader=/etc/larp/uploader.json --config operations=/etc/larp/operations.json --root /opt/larp/current --output <new file>`
+  and `python -m larp.runtime.routes --role signer --config signer=/etc/larp/signer.json --root /opt/larp/current --output <new file>`.
+  Each destination gets DNS, a TCP connect and a verified TLS handshake; no HTTP request, credential or round log is
+  sent. Exit 0 means every `primary` destination answered, or every signer internet destination was refused while
+  the database and S3 answered. An unset RPC URL or database host fails the check. The report (`RouteCheck.v1`)
+  names host and port only. It shows the host's routes, not each unit's systemd sandbox (for example `larp-evidence`'s `IPAddressDeny`).
+  For an expected-blocked signer target, `DNS_FAILED` now yields `INCONCLUSIVE`, `passed=false`, exit 1. Fix the DNS
+  prerequisite and rerun; do not treat inability to resolve as isolation evidence. Unknown statuses fail. A TCP/TLS
+  connection remains `UNEXPECTED_ROUTE`; a resolved connection failure is a sampled non-connectivity check, not
+  proof that every possible internet destination is blocked. At unsigned Gate A, omit `--config execution=...`
+  if the execution config has not been installed: the report explicitly leaves `larp-execution` untested until Gate B.
+
 ## What is now implemented
 
 | Layer | Implemented artifact | Current boundary |
 |---|---|---|
 | Terraform state | `deploy/bootstrap/`: private, encrypted, versioned S3 state bucket; deletion protection | Bootstrap apply and secured state migration require an account; state is never committed |
-| Network | `deploy/aws/network.tf`: two private subnets/AZs, separate service security groups, S3 gateway and private AWS service endpoints | No public host addresses or inbound service ports; optional NAT/HTTPS only for evidence/uploader; application RPC and destination allowlists await owner adapters |
+| Network | `deploy/aws/network.tf`: two private subnets/AZs, separate service security groups, S3 gateway and private AWS service endpoints | No public host addresses or inbound service ports; optional NAT/HTTPS only for evidence/uploader (six-host template, superseded: the two-host destinations and route check are in "Approved network destinations" above, IDEA-062) |
 | Database | Encrypted private RDS PostgreSQL, managed admin secret, IAM authentication, TLS enforcement, backups, Multi-AZ default, deletion protection | User chooses version/class/storage/retention; migration and IAM role binding need a deployed database |
 | Archive | S3 versioning/Object Lock COMPLIANCE, KMS, public-access denial, conditional creation and deletion denial; separate release bucket | Explicit retention/account/bucket/namespace required; hosted lock verification still unrun |
 | Identity | Separate primary/standby/archive/uploader/evidence/signer IAM roles; service secret metadata without secret values in Terraform | Primary/standby/signer database grants and authenticated service communication need reviewed adapters; signer has no public internet access |

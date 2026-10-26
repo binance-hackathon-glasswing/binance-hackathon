@@ -259,3 +259,23 @@ class PostgresExecutionTests(DatabaseCase):
         signed=signer.sign(a.attempt_id,a.payload,a.epoch,a.guard_version)
         self.assertTrue(verify(a.payload,signed))
         self.assertEqual(signed,signer.lookup(a.attempt_id,a.payload.hash))
+
+
+    def test_durable_abnormal_outbox_fences_signer_before_runtime_ingestion_and_after_restart(self):
+        key = self.prepared()
+        epoch, version = self.execution_store.execution_authority()
+        self.execution_store.put_observation(dict(event_id='abnormal-final', run_id='run',
+            kind='ABNORMAL', disposition='SUSTAINED_QUARANTINE'), epoch, version)
+        self.restart()
+        with self.assertRaisesRegex(Conflict, 'quarantined'):
+            self.executor.sign(key, 13)
+        economic_intent = self.executor._load(key).intent
+        with self.store.transaction() as db:
+            run = self.execution_store._release_authority(db, epoch, version)
+            self.assertTrue(run['abnormal_outcome'])
+            with self.assertRaisesRegex(Conflict, 'quarantined'):
+                self.execution_store.check_signing_run(run, economic_intent)
+        # Receipt publication is still possible; quarantine never hides chain facts.
+        self.execution_store.put_observation(dict(event_id='later-receipt', run_id='run',
+            kind='REVERT'), epoch, version)
+        self.assertIsNotNone(self.execution_store.lookup_observation('later-receipt'))

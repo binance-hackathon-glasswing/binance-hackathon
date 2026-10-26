@@ -1,0 +1,180 @@
+{
+  "schema": "ReviewVerification.v1",
+  "id": "PR277-RV01",
+  "date_sgt": "2026-10-24",
+  "review_base": "a0409d19742f42adf1679236da22b354d5d58314",
+  "original_pr_head": "08dd9a842af907c2487e7e7e55b62ac015bd7c3c",
+  "criteria_head": "1d00e179",
+  "red_test_head": "28c94ce6",
+  "tested_source_head": "0d97b74729a88f6db57da4463496364dd4b01b08",
+  "acceptance": "PASS for reviewed source merge with explicit environment exclusions; not release/install/profile/signer acceptance",
+  "environment": {
+    "python": "3.12.15",
+    "system": "Linux",
+    "machine": "aarch64",
+    "packages": {
+      "psycopg": "3.3.6",
+      "psycopg-binary": "3.3.6",
+      "typing_extensions": "4.16.0",
+      "tzdata": "2026.4",
+      "boto3": "1.43.111",
+      "botocore": "1.43.111",
+      "s3transfer": "0.19.2",
+      "jmespath": "1.1.0",
+      "python-dateutil": "2.9.0.post0",
+      "six": "1.17.0",
+      "urllib3": "2.8.0",
+      "annotated-types": "0.8.0",
+      "bitarray": "3.11.0",
+      "ckzg": "2.1.8",
+      "cytoolz": "1.1.0",
+      "eth-account": "0.14.0",
+      "eth-hash": "0.8.0",
+      "eth-keyfile": "0.10.0",
+      "eth-keys": "0.8.0",
+      "eth-rlp": "3.0.0",
+      "eth-typing": "6.0.0",
+      "eth-utils": "6.0.0",
+      "eth_abi": "6.0.0",
+      "hexbytes": "2.0.0",
+      "parsimonious": "0.10.0",
+      "py-ecc": "8.0.0",
+      "pycryptodome": "3.23.0",
+      "pydantic": "2.13.5",
+      "pydantic_core": "2.46.5",
+      "regex": "2026.9.29",
+      "rlp": "5.0.0",
+      "toolz": "1.1.0",
+      "typing-inspection": "0.4.4",
+      "pytest": "9.1.1",
+      "numpy": "2.5.3",
+      "requests": "2.34.2",
+      "python-dotenv": "1.2.4",
+      "certifi": "2026.7.22",
+      "charset-normalizer": "3.5.2",
+      "idna": "3.20",
+      "iniconfig": "2.3.0",
+      "packaging": "26.3",
+      "pluggy": "1.6.0",
+      "Pygments": "2.21.0"
+    },
+    "mismatches": []
+  },
+  "database": {
+    "postgresql": "14.24 (Debian 14.24-1.pgdg12+2)",
+    "image": "postgres:14.24-bookworm@sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2",
+    "scope": "Dedicated disposable database on internal Docker network, synthetic data only"
+  },
+  "test_container": {
+    "image": "larp-consolidation-test:20261019",
+    "image_id": "750132bb93c2",
+    "architecture": "aarch64",
+    "source_and_git": "read-only mounts",
+    "activation_outputs": "separate writable disposable directory",
+    "seccomp": "unconfined for nested namespace probe; default capabilities, no production configuration changed",
+    "network": "internal test network only"
+  },
+  "dependency_check": "44 applicable exact pins match deploy/requirements-test.lock recursively; pip check PASS",
+  "focused": {
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 0.71,
+    "scope": "15 strategy/profile cases and one real PostgreSQL coordinator/restart/settlement/replay case"
+  },
+  "full_suite": {
+    "passed": 2659,
+    "skipped": 8,
+    "deselected": 3,
+    "subtests_passed": 4004,
+    "failed": 0,
+    "errors": 0,
+    "seconds": 171.76,
+    "skip_reasons": {
+      "optional private public-source fixture": 1,
+      "real response artifacts are external; opt-in only": 1,
+      "root ignores the directory mode": 1,
+      "Disposable systemd test runner not enabled": 3,
+      "Disposable systemd runner and PostgreSQL required (WR-T7/8 NOT RUN)": 2
+    },
+    "command": "python -m pytest -q -p no:cacheprovider --deselect=tests/runtime/test_worker_release.py::Sandbox --junitxml=/tmp/pr277-full-final.xml",
+    "exclusion": "Three unchanged Sandbox tests: Docker permits user namespaces with seccomp adjusted but denies the nested proc mount (EPERM). Entire group excluded, including the negative case that otherwise passes without proving a working sandbox."
+  },
+  "red_green": {
+    "RV1": "Both cutoff regressions failed at28c94ce6: command authority crossed the schedule and independent admission returned True at the cutoff. All16 S3 cases pass at0d97b747.",
+    "RV2": "Real ContextBuilder/RuntimePlanner/Coordinator/PostgresStore commits DONE; recreated coordinator settles a synthetic re-entry BUY, later held book retains DONE without scheduled sales, and journal replays to the exact head with external ports disabled.",
+    "RV3": "Existing helper covers reservations/dust; new budget case preserves exhausted BUY counts and terminal SAFETY obligations. S2/S3 candidate byte rebuilds and validation/scope tests pass."
+  },
+  "initial_restricted_run": {
+    "passed": 2657,
+    "failed": 5,
+    "skipped": 8,
+    "subtests_passed": 4002,
+    "seconds": 169.63,
+    "cause": "Three existing tests require writable ignored deploy/activation; two need a working nested bubblewrap proc mount. No application code changed to repair the test environment."
+  },
+  "environment_recheck": {
+    "passed": 53,
+    "failed": 2,
+    "subtests_passed": 76,
+    "seconds": 1.07,
+    "cause": "Writable synthetic activation output resolves all three filesystem failures. Remaining two failures are the unchanged nested-sandbox tests."
+  },
+  "offline_demo": "NOT_ACCEPTED: attempted in restricted container; isolated worker cannot mount proc, so entry round absent. No successful demo or Linux sandbox acceptance claimed.",
+  "github_actions": {
+    "original_run": 40098610551,
+    "fixed_source_run": 40100265719,
+    "url": "https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/40100265719",
+    "result": "Jobs not started: account payments/spending-limit annotation verified; no CI pass claimed"
+  },
+  "source_sha256": {
+    "larp/risk/planner.py": "1c7a8cc2cea17b907a81e7fe965167f7061d120e7ab29035b26cad6ead695753",
+    "larp/strategy/policy.py": "07a08c169442b2c69da6ead2d33afd79b16aab3e49c8ffd9c47a64a11f5da46d",
+    "larp/strategy/profiles.py": "9f56ac79580a03aba776acb6e4097fbf4a94954fb450b1026b535f5649809db8",
+    "larp/strategy/scheduled_flatten.py": "1ec258147b1bc98d59a910362cab116a67f9743c857b8b9fcaf1a179c294cc5a",
+    "larp/integration/runtime.py": "620bae85e8613f2f28dd35d1804c239b0e1056ad07ea880553abdd2970dc241f",
+    "larp/strategy/execution_bounds.py": "9409f585679fadfffece27ce0ce50461beafc0dbc2288bb8ca20ac61a7dec9a8",
+    "tools/deploy/build_rehearsal_candidate.py": "b9e5a67bf472146cb24e028f87f5f19f5b5fe8d0bf0e9df61514ef19f113510d",
+    "tests/strategy/test_s3_scheduled_flatten.py": "ea44edc665f67f84f8387711c2c54488ec9525cbf52ae6dcb695689122ed3519",
+    "tests/runtime/test_s3_scheduled_flatten.py": "23620a30358314c6941c7fa56f0c348ba898ed4787a16c210e8d497075524442",
+    "docs/build/evidence/s3-rehearsal-profile-20261024/rehearsal-s3-deterministic.json": "2fb32b8e9ba342192ad57b61059654409ffbe3fad04e900c1887053a263f1526"
+  },
+  "log_sha256": {
+    "larp-pr277-red.log": "ea5ce8f58e97c429167ec8daea5fb75f7e927864e2790408c8bdc0e0bcde3ab8",
+    "larp-pr277-focused.log": "14c3716b92ae0e0775de6bcfbd6fab2744b9de71ab4b6cb04a595e7ce9e77779",
+    "larp-pr277-focused.xml": "70518f8ee969653e57bebc3e881b35fbd2c216d1c058e98aa1b4bc88391feb9f",
+    "larp-pr277-full.log": "c33d7635bdc51609942c079dd9053f431923fcb9d7a971831a83197c94804cda",
+    "larp-pr277-full-restricted.xml": "800d08698bf77968bce8200edbf8c1157331e114bdca6e1a557b30ead0c8e3a2",
+    "larp-pr277-full-final.log": "162d72aa25ff09bcc36b7acb76ff2854ad94d0a6cc81d4006fb041270a767160",
+    "larp-pr277-full-final.xml": "6ff41a948fb3ff2a68d70a1efcb3276a940545431a5c70f29a90ec342f5333af"
+  },
+  "candidate_hashes": {
+    "s2_unchanged": "eb55d76a36b9fb931f551752da9266c379072611d789ab85d9cb1fc2291d8e68",
+    "s3_unchanged": "2fb32b8e9ba342192ad57b61059654409ffbe3fad04e900c1887053a263f1526"
+  },
+  "rules_checked": [
+    "docs/official/source_page.md rules/audit/trade traceability",
+    "docs/official/kit/bstocks-trading-guide.md trading flow/openState/approval/quote/broadcast",
+    "docs/skill/SKILL.md section0.3/F-114/117/119/120/124 and settled Q notes",
+    "docs/skill/reference/participant-kit.md K8/K18"
+  ],
+  "not_performed": [
+    "profile or signer approval",
+    "carry-over or dust-at-install change",
+    "release/host bundle qualification",
+    "real systemd or working nested-sandbox qualification",
+    "wallet/host/model operations",
+    "manual trade or funding action"
+  ],
+  "remaining": {
+    "Yao": "Choose whether/when to run S3; stock-flat install or separately reviewed carry-over/window (H1/H2); later S3-L1 evidence.",
+    "Isaac": "Exact profile/signer and fresh gas/attempt/full-exit/cap acceptance; no approval inferred from source merge.",
+    "Keegan_Keith": "Release/host build and systemd/sandbox/coverage/RC bindings, Q1/D1/M3 and review of any carry-over.",
+    "account_owner": "Restore GitHub Actions billing availability."
+  },
+  "final_documentation_checks": {
+    "added_line_local_links_checked": 7,
+    "whitespace": "PASS",
+    "source_unchanged_since_full_suite": true
+  }
+}

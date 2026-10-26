@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fractions import Fraction
 import re
 
-from larp.execution import Blocked, USDT, NATIVE_BNB, integer
+from larp.execution import Blocked, USDT, NATIVE_BNB, integer, approval_step, REVOKE_TOKENS
 from .chain import hash_value, quantity
 
 TRANSFER = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
@@ -58,7 +58,7 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
     status = quantity(receipt['status'])
     if status not in (0, 1):
         raise Blocked('unknown receipt status')
-    kind = 'REVERT' if status == 0 else ('APPROVAL' if attempt.step == 'APPROVE' else 'FILL')
+    kind = 'REVERT' if status == 0 else ('APPROVAL' if approval_step(attempt.step) else 'FILL')
     if not wallet_id or not observed_at:
         raise Blocked('run wallet identity and observation time required')
     result = dict(schema='ExecutionObservation.v1', origin='EXECUTION_RECONCILER', kind=kind,
@@ -76,6 +76,13 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
                                         finalized_height=proof['finalized_height'], canonical=True,
                                         gas_used=gas_used, effective_gas_price=gas_price,
                                         gas_chain_units=gas, bnb_decimals=bnb_decimals))
+    if attempt.step in REVOKE_TOKENS:
+        # Maintenance cannot masquerade as a fill. Unexpected transfers require the
+        # existing unsettled-outcome quarantine, never a fabricated gas-only fact.
+        if any(_net_transfers(receipt, intent.wallet, token) for token in REVOKE_TOKENS.values()):
+            raise Blocked('allowance cleanup has unexpected token movements')
+        result.update(maintenance='ALLOWANCE_REVOKE', token_contract=REVOKE_TOKENS[attempt.step],
+                      spender=intent.router, approved_amount='0')
     if kind == 'FILL':
         if intent.receive_token == NATIVE_BNB:
             native = proof.get('native_balance')
@@ -112,8 +119,23 @@ def final_observation(state, attempt, proof, *, wallet_id, bnb_price_units, obse
         token_delta = _net_transfers(receipt, intent.wallet, token)
         cash_delta = _net_transfers(receipt, intent.wallet, USDT)
         pay, received = (-cash_delta, token_delta) if side == 'BUY' else (-token_delta, cash_delta)
-        if pay != intent.amount or received < intent.minimum_output:
-            raise Blocked('actual transfers violate exact input or minimum receive')
+        # LD05-Q01: a finalized anomalous swap is an observed loss/ownership incident,
+        # never a normal fill. Keep raw signed deltas; do not invent accounting-scale output.
+        tokens = {USDT, *TOKENS.values()}
+        tokens.update(str(log.get('address', '')).lower() for log in receipt['logs']
+                      if log.get('topics') and str(log['topics'][0]).lower() == TRANSFER)
+        deltas = {t: _net_transfers(receipt, intent.wallet, t) for t in sorted(tokens)}
+        deltas = {t: v for t, v in deltas.items() if v}
+        extra = any(v for t, v in deltas.items() if t not in (intent.pay_token, intent.receive_token))
+        if pay != intent.amount or received < intent.minimum_output or extra:
+            result.update(kind='ABNORMAL', intent_terminal=True, round_terminal=False,
+                          disposition='SUSTAINED_QUARANTINE',
+                          reason='FINALIZED_TRANSFER_CONTRACT_VIOLATION',
+                          raw_token_deltas=deltas,
+                          expected_pay_token=intent.pay_token, expected_receive_token=intent.receive_token,
+                          expected_pay_units=intent.amount, expected_min_receive_units=intent.minimum_output,
+                          accounting_status='UNRECONCILED_ASSET_MOVEMENTS')
+            return result
         cash_raw = -cash_delta if side == 'BUY' else cash_delta
         if cash_raw <= 0 or (side == 'BUY' and cash_raw % 10**12):
             raise Blocked('actual cash cannot be represented exactly in accounting scale')

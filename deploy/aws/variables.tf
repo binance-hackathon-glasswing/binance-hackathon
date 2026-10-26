@@ -157,6 +157,11 @@ variable "enable_development_ssm" {
   type        = bool
   default     = false
 }
+variable "enable_signer_provisioning" {
+  description = "IDEA-080: temporary SSM interface endpoints and SSM permission for the signer, to install the bundle, signer.json and the key. Development only; set back to false afterwards and never during the scored run."
+  type        = bool
+  default     = false
+}
 variable "alarm_topic_arns" {
   description = "Existing explicitly authorized destinations; empty creates silent alarms only."
   type        = list(string)

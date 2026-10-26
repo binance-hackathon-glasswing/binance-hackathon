@@ -1,0 +1,111 @@
+{
+  "actual_caps_review": "NOT_RUN_MISSING_INPUTS",
+  "canonical_base": "f10d9ad",
+  "decision_id": "IDEA-049-C LD10-P01",
+  "gate_b_accepted": false,
+  "historical_public_report": {
+    "coverage": {
+      "bnb_quotes": 385,
+      "failures": 2,
+      "samples": 1924,
+      "utc_days": [
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18",
+        "2026-10-19"
+      ],
+      "weekend_days": [
+        "2026-10-17",
+        "2026-10-18"
+      ]
+    },
+    "fee_netting_status": "UNVERIFIED",
+    "raw_capture_independently_replayed": false
+  },
+  "missing_actual_packet": [
+    "selected profile and Keith/Isaac #120 confirmation",
+    "current complete reconciled PortfolioState.v1 and metadata",
+    "intended execution.json with exact run/build/environment/CA bindings",
+    "fresh original request-bound BUY/SELL artifacts for all five names",
+    "reviewed freshness budget and four-file GateBCapsInputs.v1 manifest"
+  ],
+  "offline_candidate_checks": "PASS",
+  "profiles": {
+    "FINAL": {
+      "baseline": "EQUAL_WEIGHT",
+      "cash_cap_raw": "70000000000000000000",
+      "cash_covered": true,
+      "cash_required_raw": "40200000000000000000",
+      "configured_fee_ceiling_wei": "192000000000000",
+      "deployment_accepted": false,
+      "document_sha256": "07e8e8c90b06440993052a0ce67ce6f24b103edac4dc7b168ba457a75267a542",
+      "fee_ceiling_covered": true,
+      "file_sha256": "0497a820821524cbcbd5234c937aa211b8b94da9409b6b8e787f49b33cde5f40",
+      "final_pf04_mismatches": {
+        "flatten_start": {
+          "candidate": "2026-11-10T00:00:00Z",
+          "selected": "2026-11-10T19:00:00Z"
+        },
+        "new_risk_end": {
+          "candidate": "2026-11-09T00:00:00Z",
+          "selected": "2026-11-09T21:00:00Z"
+        },
+        "trade_after": {
+          "candidate": "2026-10-29T00:00:00Z",
+          "selected": "2026-10-29T14:00:00Z"
+        }
+      },
+      "independent_fee_cap_wei": "200000000000000",
+      "policy_sha256": "717879d24ef6fb7154e7b2c32c77394924b8f560842909438266af00ecd161c7",
+      "production_live_validation": "PASS",
+      "reproduced": true,
+      "windows": {
+        "flatten_start": "2026-11-10T00:00:00Z",
+        "new_risk_end": "2026-11-09T00:00:00Z",
+        "signing_end": "2026-11-11T14:45:00Z",
+        "trade_after": "2026-10-29T00:00:00Z"
+      }
+    },
+    "REHEARSAL": {
+      "baseline": "EQUAL_WEIGHT",
+      "cash_cap_raw": "35000000000000000000",
+      "cash_covered": true,
+      "cash_required_raw": "20100000000000000000",
+      "configured_fee_ceiling_wei": "192000000000000",
+      "deployment_accepted": false,
+      "document_sha256": "df58529756c715282c567e39b013163cd1428d347c5d5bef196a273b152f5d6e",
+      "fee_ceiling_covered": true,
+      "file_sha256": "d76b640866250a2963618d093eadc8fb0b48e26cfca8f98151d693d3e392740f",
+      "final_pf04_mismatches": {},
+      "independent_fee_cap_wei": "200000000000000",
+      "policy_sha256": "3241abd36dfeb216ffe3bb06a3ce800f42e8206ccc261240da6f059b0dd5ea61",
+      "production_live_validation": "PASS",
+      "reproduced": true,
+      "windows": {
+        "flatten_start": "2026-10-26T00:00:00Z",
+        "new_risk_end": "2026-10-25T00:00:00Z",
+        "signing_end": "2026-10-26T14:45:00Z",
+        "trade_after": "2026-10-23T00:00:00Z"
+      }
+    }
+  },
+  "ready_to_install": false,
+  "schema": "LD10ProfileCoverageInventory.v1",
+  "separate_remaining_gates": [
+    "signed-child/cleanup/full-exit/whole-run gas coverage (priority 2)",
+    "fresh router replay/live preflight (priority 3)",
+    "qualified release and private signer assembly (priority 4)",
+    "fee netting #119; receipt confirmation at LD19/LD20"
+  ],
+  "signing_enabled": false,
+  "source_hashes": {
+    "config/intelligence/red_flags.v1.json": "0259311b2c15ed51f0df51490b36ec4a4545af8ff520222f5facc1381226ae55",
+    "docs/build/evidence/ld02-execution-packet-20261020.json": "ad43b6346542f157c84fa113b6802f6bfce6c6aad1d5393680bc7ac24bc4ced4",
+    "docs/build/evidence/ld02d-size-sell-20261021.json": "0acea18fc87890cb5a19a96e00ca6dbadcc2a260991ca9d595951a13a02511a6",
+    "docs/build/evidence/quotes-complete-20261020/quote-cost-summary.json": "9d4479e3b02e0aceb2c739e7292b8ca80043972b5c258734c7439a979ef1946a",
+    "docs/build/evidence/quotes-complete-20261020/quote-cost-summary.report.json": "a43bbd26c1e418231d056c2b7e641d58a1640d8817ecff766d56cf1002527ca3",
+    "docs/build/evidence/signer-numeric-ceilings-20261021.json": "049d98337019d6579162504067fdf26e33a65e57bc7710add98797b6bd8e18ef",
+    "docs/ledger/IDEA-084.md": "9cc7055e66196c7697be30999f97f409130adafaeeb61dfc4b76e268c9d90140"
+  },
+  "status": "BLOCKED_MISSING_ACTUAL_INPUTS"
+}

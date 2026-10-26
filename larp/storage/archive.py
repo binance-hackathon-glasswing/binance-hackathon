@@ -37,13 +37,15 @@ class S3Archive:
 
     def put(self, key, payload, *, created_ms, now_ms):
         from botocore.exceptions import BotoCoreError, ClientError
-        if not re.fullmatch(r'[a-zA-Z0-9/_-]+\.json', key) or '..' in key:
+        if not re.fullmatch(r'[a-zA-Z0-9/_-]+\.json(\.gz)?', key) or '..' in key:
             raise ContractError('Invalid archive object key')
         if not payload or len(payload) > self.max_bytes:
             raise ContractError('Archive object exceeds configured limit')
         if created_ms < 0 or now_ms < created_ms:
             raise ContractError('Invalid archive time')
-        retain_ms = created_ms + self.retention_days * 86400000
+        # S3 stores Object Lock dates to whole seconds: request the next whole second, never less than the
+        # retention, so the read-back check compares the date S3 actually keeps (IDEA-082).
+        retain_ms = -(-(created_ms + self.retention_days * 86400000) // 1000) * 1000
         if retain_ms <= now_ms:
             raise ContractError('Archive retention window exhausted; explicit recovery required')
         retain_until = datetime.fromtimestamp(retain_ms / 1000, timezone.utc)
@@ -53,7 +55,8 @@ class S3Archive:
                 response = self.client.put_object(
                     Bucket=self.bucket, Key=full_key, Body=payload,
                     ExpectedBucketOwner=self.account_id, IfNoneMatch='*',
-                    ContentType='application/json',
+                    # Backup.v2 segments are gzip-compressed JSON lines (IDEA-094).
+                    ContentType='application/gzip' if key.endswith('.gz') else 'application/json',
                     ContentMD5=base64.b64encode(hashlib.md5(payload).digest()).decode('ascii'),
                     ServerSideEncryption='aws:kms', SSEKMSKeyId=self.kms_key,
                     ObjectLockMode='COMPLIANCE', ObjectLockRetainUntilDate=retain_until,

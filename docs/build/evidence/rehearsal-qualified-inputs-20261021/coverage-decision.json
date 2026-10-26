@@ -1,0 +1,834 @@
+{
+  "additional_bnb_wei": 4601501130637114,
+  "aggregate_pair_budget_wei": 384000000000000,
+  "allowances_to_router": {
+    "GOOGLB": 0,
+    "MSFTB": 0,
+    "NVDAB": 0,
+    "SKHYB": 0,
+    "TSLAB": 0,
+    "USDT": 0
+  },
+  "cleanup_enabled": false,
+  "conservative_seed_target_wei": 7296000000000000,
+  "current_wallet_fingerprint": "72afa2ee745685ab",
+  "decision_id": "IDEA-049-C LD10-Q01",
+  "exit_reserve_wei": 1536000000000000,
+  "holdings": {
+    "assets": {
+      "BNB": {
+        "chain": 2694498869362886,
+        "cls": "MATCH",
+        "ledger": 2694498869362886
+      },
+      "GOOGLB": {
+        "chain": 0,
+        "cls": "MATCH",
+        "ledger": 0
+      },
+      "MSFTB": {
+        "chain": 0,
+        "cls": "MATCH",
+        "ledger": 0
+      },
+      "NVDAB": {
+        "chain": 0,
+        "cls": "MATCH",
+        "ledger": 0
+      },
+      "SKHYB": {
+        "chain": 0,
+        "cls": "MATCH",
+        "ledger": 0
+      },
+      "TSLAB": {
+        "chain": 0,
+        "cls": "MATCH",
+        "ledger": 0
+      },
+      "USDT": {
+        "chain": 98000000,
+        "cls": "MATCH",
+        "ledger": 98000000
+      }
+    },
+    "block": 128949097,
+    "block_hash": "0x8092fc71c8a72e927348f588ec7092b21257484e63823355481a4d2c7568edd2",
+    "latest_nonce": 2,
+    "native_wei": 2694498869362886,
+    "note": "fresh read in this run, not a #92 citation",
+    "observation_sha256": "2ce99abfcd7cd9cda99002e0e9f8eb4957f6016cb079ed269fbbedf80259156b",
+    "observed_utc": "2026-10-21T13:51:14.201Z",
+    "pending_nonce": 2,
+    "served_by": "BSC_BNBCHAIN_PUBLIC",
+    "status": "MATCH"
+  },
+  "in_flight": {
+    "commands": {},
+    "execution_pending": [],
+    "reservations": {},
+    "rounds": {
+      "CLOSED": 70
+    },
+    "settled_block": null
+  },
+  "limits": [
+    "Numeric config is a proposed envelope, not installed DB/RPC/CA/run/release bindings.",
+    "Caps review tool always retains OWNER_REVIEW_REQUIRED; this records delegated technical review, not forged personal signoff.",
+    "Fresh pre-install and per-action quotes/holdings remain mandatory; this snapshot does not authorize future wallet state.",
+    "All quotes/simulations only; fee netting remains conditional on LD19/LD20 actual receipt check.",
+    "Funding target is unmet; no wallet, signer-host, host-file or service writes occurred.",
+    "LD16 actual configuration/owner acceptance and LD17 install/session approval remain separate."
+  ],
+  "max_gas_price_wei": 160000000,
+  "max_signed_child_gas": 1200000,
+  "missing_quote_coverage": [],
+  "numeric_checks": [
+    {
+      "cap": "35000000000000000000",
+      "check": "FULL_POSITION_USDT",
+      "covered": true,
+      "required": "20100000000000000000"
+    },
+    {
+      "cap": "2694498869362886",
+      "check": "INITIAL_BNB_EXIT_RESERVE",
+      "covered": true,
+      "required": "1536000000000000"
+    },
+    {
+      "cap": "198599352431777696",
+      "check": "FULL_HOLDING_GOOGLB",
+      "covered": true,
+      "required": "0"
+    },
+    {
+      "cap": "130728070832380858",
+      "check": "FULL_HOLDING_MSFTB",
+      "covered": true,
+      "required": "0"
+    },
+    {
+      "cap": "303543664881272184",
+      "check": "FULL_HOLDING_NVDAB",
+      "covered": true,
+      "required": "0"
+    },
+    {
+      "cap": "410076157000585824",
+      "check": "FULL_HOLDING_SKHYB",
+      "covered": true,
+      "required": "0"
+    },
+    {
+      "cap": "182786714017129727",
+      "check": "FULL_HOLDING_TSLAB",
+      "covered": true,
+      "required": "0"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "CONFIGURED_FEE_ENVELOPE_WEI",
+      "covered": true,
+      "required": "192000000000000"
+    },
+    {
+      "cap": "384000000000000",
+      "check": "INITIAL_SIGNED_CHILD_GAS_ENVELOPE",
+      "covered": true,
+      "required": "384000000000000"
+    },
+    {
+      "cap": "384000000000000",
+      "check": "INITIAL_PROFILE_ACTION_BUDGET",
+      "covered": true,
+      "required": "384000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "MEASURED_APPROVE_FEE_GOOGLB",
+      "covered": true,
+      "required": "4535116110000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "MEASURED_SWAP_FEE_GOOGLB",
+      "covered": true,
+      "required": "71587336644000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "MEASURED_APPROVE_FEE_MSFTB",
+      "covered": true,
+      "required": "4555355630000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "MEASURED_SWAP_FEE_MSFTB",
+      "covered": true,
+      "required": "70903201860000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "MEASURED_APPROVE_FEE_NVDAB",
+      "covered": true,
+      "required": "4517158240000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "MEASURED_SWAP_FEE_NVDAB",
+      "covered": true,
+      "required": "71660475936000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "MEASURED_APPROVE_FEE_SKHYB",
+      "covered": true,
+      "required": "4522237790000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "MEASURED_SWAP_FEE_SKHYB",
+      "covered": true,
+      "required": "70647624468000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "MEASURED_APPROVE_FEE_TSLAB",
+      "covered": true,
+      "required": "4527007240000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "MEASURED_SWAP_FEE_TSLAB",
+      "covered": true,
+      "required": "70718241600000"
+    },
+    {
+      "cap": "35000000000000000000",
+      "check": "QUOTE_INPUT_577802f4f7bde386692f7b083a95a9c1ef124ba082eb7be4dbe84d13e0bb157b",
+      "covered": true,
+      "required": "18637420000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_577802f4f7bde386692f7b083a95a9c1ef124ba082eb7be4dbe84d13e0bb157b",
+      "covered": true,
+      "required": "13263531250000"
+    },
+    {
+      "cap": "35000000000000000000",
+      "check": "QUOTE_INPUT_23d0e66545b372db56318d74cee60bb762862b6441eccc71518dfbacb49197e8",
+      "covered": true,
+      "required": "20100000000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_23d0e66545b372db56318d74cee60bb762862b6441eccc71518dfbacb49197e8",
+      "covered": true,
+      "required": "14177234500000"
+    },
+    {
+      "cap": "303543664881272184",
+      "check": "QUOTE_INPUT_40c495562e665022b30bc66941eff2b42db940d3d6035beaaf91a46e52192a71",
+      "covered": true,
+      "required": "91211542343987606"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_40c495562e665022b30bc66941eff2b42db940d3d6035beaaf91a46e52192a71",
+      "covered": true,
+      "required": "14177234500000"
+    },
+    {
+      "cap": "35000000000000000000",
+      "check": "QUOTE_INPUT_a492a57aaa60e8686a8546de84f687f0933dacf9a1942969cbae9c3eea7d95c7",
+      "covered": true,
+      "required": "18637420000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_a492a57aaa60e8686a8546de84f687f0933dacf9a1942969cbae9c3eea7d95c7",
+      "covered": true,
+      "required": "14177234500000"
+    },
+    {
+      "cap": "35000000000000000000",
+      "check": "QUOTE_INPUT_03fba7ce084ab1e0793a23e4d537cc540f98af8afcf1e77e65c182ab5c7c1b98",
+      "covered": true,
+      "required": "20100000000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_03fba7ce084ab1e0793a23e4d537cc540f98af8afcf1e77e65c182ab5c7c1b98",
+      "covered": true,
+      "required": "13838240750000"
+    },
+    {
+      "cap": "198599352431777696",
+      "check": "QUOTE_INPUT_8ca53d0c930af1fc1d8c936e9ee710c1effad81aecb12fbb4576b9c29b2afe47",
+      "covered": true,
+      "required": "60238445255764177"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_8ca53d0c930af1fc1d8c936e9ee710c1effad81aecb12fbb4576b9c29b2afe47",
+      "covered": true,
+      "required": "13908179250000"
+    },
+    {
+      "cap": "35000000000000000000",
+      "check": "QUOTE_INPUT_6eb727aa645dfba66478947ca4ec005b9ffb7f7e211a960e2d227c64ff039a40",
+      "covered": true,
+      "required": "18637420000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_6eb727aa645dfba66478947ca4ec005b9ffb7f7e211a960e2d227c64ff039a40",
+      "covered": true,
+      "required": "14177234500000"
+    },
+    {
+      "cap": "35000000000000000000",
+      "check": "QUOTE_INPUT_e58309856472e3fac0846e5ebff56d332aedbe8927a37467b007937cd40d0ded",
+      "covered": true,
+      "required": "20100000000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_e58309856472e3fac0846e5ebff56d332aedbe8927a37467b007937cd40d0ded",
+      "covered": true,
+      "required": "14083671750000"
+    },
+    {
+      "cap": "410076157000585824",
+      "check": "QUOTE_INPUT_82719d622b6d9503f6169c17a3f3732d026dd2962d2881b01e22a2af10a9ffc1",
+      "covered": true,
+      "required": "141971449450417785"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_82719d622b6d9503f6169c17a3f3732d026dd2962d2881b01e22a2af10a9ffc1",
+      "covered": true,
+      "required": "13499423000000"
+    },
+    {
+      "cap": "35000000000000000000",
+      "check": "QUOTE_INPUT_cbea81534595162ebe961faf08fcca804d465b2ce534817c75c7444a7bf8ab0e",
+      "covered": true,
+      "required": "18637420000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_cbea81534595162ebe961faf08fcca804d465b2ce534817c75c7444a7bf8ab0e",
+      "covered": true,
+      "required": "13408991500000"
+    },
+    {
+      "cap": "35000000000000000000",
+      "check": "QUOTE_INPUT_94f78174df612b5397bf6b683a14a4f47080d5f4846e64b21a292c40a09fb1c1",
+      "covered": true,
+      "required": "20100000000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_94f78174df612b5397bf6b683a14a4f47080d5f4846e64b21a292c40a09fb1c1",
+      "covered": true,
+      "required": "13624339250000"
+    },
+    {
+      "cap": "182786714017129727",
+      "check": "QUOTE_INPUT_3537e7cf3831058db9ccaf5e708ebee1b6b7c68604e8a5160f55420eab4f1e82",
+      "covered": true,
+      "required": "51755155534024740"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_3537e7cf3831058db9ccaf5e708ebee1b6b7c68604e8a5160f55420eab4f1e82",
+      "covered": true,
+      "required": "13683392000000"
+    },
+    {
+      "cap": "35000000000000000000",
+      "check": "QUOTE_INPUT_471545040af98c00da0cff07eb6a1e65f4977374a540802687c21496c2efbd92",
+      "covered": true,
+      "required": "18637420000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_471545040af98c00da0cff07eb6a1e65f4977374a540802687c21496c2efbd92",
+      "covered": true,
+      "required": "13683392000000"
+    },
+    {
+      "cap": "35000000000000000000",
+      "check": "QUOTE_INPUT_d61966d01ce467914a109827e6cf5c801448d5524312fdcb4c8b136c14172b17",
+      "covered": true,
+      "required": "20100000000000000000"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_d61966d01ce467914a109827e6cf5c801448d5524312fdcb4c8b136c14172b17",
+      "covered": true,
+      "required": "13408991500000"
+    },
+    {
+      "cap": "130728070832380858",
+      "check": "QUOTE_INPUT_4a659ab6ffe2b360782134fa05882945dcb1a5302eddb4fac25259c137ec660b",
+      "covered": true,
+      "required": "37775772084790427"
+    },
+    {
+      "cap": "200000000000000",
+      "check": "QUOTE_FEE_4a659ab6ffe2b360782134fa05882945dcb1a5302eddb4fac25259c137ec660b",
+      "covered": true,
+      "required": "13448846750000"
+    }
+  ],
+  "numeric_scope_build_id": "122d04b6407b6f96ffac25833d355333e9c98727",
+  "numeric_scope_config_sha256": "e84c989d1b33a2ab0c900390cebdc75ef9812101851afc301cc9468fbe6a5b8b",
+  "numeric_status": "COVERED",
+  "numeric_tool_blockers": [
+    "OWNER_REVIEW_REQUIRED"
+  ],
+  "observed_at": "2026-10-21T13:51:14.201Z",
+  "planned_pairs": 15,
+  "policy_check": {
+    "matches_live_draft": true,
+    "policy_sha256": "05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5",
+    "quotes": 15,
+    "rows": [
+      {
+        "artifact": "42e8bb7e068a2ac8",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "e2655a76a13b1a9e",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "9ba18970a996809c",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "3348600f96ac7289",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "07bfa0d7499c4d77",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "dc1279a8ec93e178",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "3dbab86abd63e5ef",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "2c332e57d8a46619",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "d0e15f0b8eca143f",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "8f28b54f79fd8169",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "d1f452ad41d484af",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "a7b61f57d37805f2",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "7a198560392ed8a7",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "1823d80534a10c60",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      },
+      {
+        "artifact": "fd30be1a96b10295",
+        "matches_quote": true,
+        "status": "PASS",
+        "tampered_refused": true
+      }
+    ],
+    "signing_enabled": false,
+    "status": "PASS"
+  },
+  "private_packet_sha256": "0d49679df804a77eae877e9b5df7430c924c5e9d1dffc09a1da77f3b87d8e6ad",
+  "private_review_sha256": "19c085bf846c218f33ad4392a2456fc76dc71b3ab2c739479c26ed65b1e6d1ba",
+  "profile_document_sha256": "43f956afe7a832e06146bdcdd8e3e725b7b6032541bec5aaab578cd5bb530258",
+  "profile_file_sha256": "bad7f160bd55c0d40736ee434e7c253ff9d85d7706ac85addfe738659e7a9934",
+  "quote_artifact_hashes": [
+    "577802f4f7bde386692f7b083a95a9c1ef124ba082eb7be4dbe84d13e0bb157b",
+    "23d0e66545b372db56318d74cee60bb762862b6441eccc71518dfbacb49197e8",
+    "40c495562e665022b30bc66941eff2b42db940d3d6035beaaf91a46e52192a71",
+    "a492a57aaa60e8686a8546de84f687f0933dacf9a1942969cbae9c3eea7d95c7",
+    "03fba7ce084ab1e0793a23e4d537cc540f98af8afcf1e77e65c182ab5c7c1b98",
+    "8ca53d0c930af1fc1d8c936e9ee710c1effad81aecb12fbb4576b9c29b2afe47",
+    "6eb727aa645dfba66478947ca4ec005b9ffb7f7e211a960e2d227c64ff039a40",
+    "e58309856472e3fac0846e5ebff56d332aedbe8927a37467b007937cd40d0ded",
+    "82719d622b6d9503f6169c17a3f3732d026dd2962d2881b01e22a2af10a9ffc1",
+    "cbea81534595162ebe961faf08fcca804d465b2ce534817c75c7444a7bf8ab0e",
+    "94f78174df612b5397bf6b683a14a4f47080d5f4846e64b21a292c40a09fb1c1",
+    "3537e7cf3831058db9ccaf5e708ebee1b6b7c68604e8a5160f55420eab4f1e82",
+    "471545040af98c00da0cff07eb6a1e65f4977374a540802687c21496c2efbd92",
+    "d61966d01ce467914a109827e6cf5c801448d5524312fdcb4c8b136c14172b17",
+    "4a659ab6ffe2b360782134fa05882945dcb1a5302eddb4fac25259c137ec660b"
+  ],
+  "quote_rows": [
+    {
+      "artifact": "42e8bb7e068a2ac8",
+      "calldata": "0f271fb1525df574",
+      "deadline_after_request_s": 499.9,
+      "elapsed_ms": 266,
+      "impact_percent": "0.0000000000",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 84506858967854295,
+      "native_value_zero": true,
+      "pay_units": 18637420,
+      "quoted_gas": 250000,
+      "receive_units": 84574518582720472,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "BUY",
+      "status": "OK",
+      "symbol": "NVDAB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "e2655a76a13b1a9e",
+      "calldata": "377162113ce23855",
+      "deadline_after_request_s": 499.5,
+      "elapsed_ms": 133,
+      "impact_percent": "0.0000000000",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 91138573110112415,
+      "native_value_zero": true,
+      "pay_units": 20100000,
+      "quoted_gas": 250000,
+      "receive_units": 91211542343987606,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "BUY",
+      "status": "OK",
+      "symbol": "NVDAB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "9ba18970a996809c",
+      "calldata": "dd5c4ee934fcbb94",
+      "deadline_after_request_s": 499.2,
+      "elapsed_ms": 141,
+      "impact_percent": "0.0018197672",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 20088216053805054845,
+      "native_value_zero": true,
+      "pay_units": 91211542343987606,
+      "quoted_gas": 250000,
+      "receive_units": 20104299493399774665,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "SELL",
+      "status": "OK",
+      "symbol": "NVDAB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "3348600f96ac7289",
+      "calldata": "943278ca143af0c9",
+      "deadline_after_request_s": 499.8,
+      "elapsed_ms": 142,
+      "impact_percent": "0.0000008700",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 55810503960179639,
+      "native_value_zero": true,
+      "pay_units": 18637420,
+      "quoted_gas": 250000,
+      "receive_units": 55855188110668174,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "BUY",
+      "status": "OK",
+      "symbol": "GOOGLB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "07bfa0d7499c4d77",
+      "calldata": "62384abacfe0201f",
+      "deadline_after_request_s": 499.5,
+      "elapsed_ms": 137,
+      "impact_percent": "0.0000009382",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 60190254499559565,
+      "native_value_zero": true,
+      "pay_units": 20100000,
+      "quoted_gas": 250000,
+      "receive_units": 60238445255764177,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "BUY",
+      "status": "OK",
+      "symbol": "GOOGLB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "dc1279a8ec93e178",
+      "calldata": "c2d775b3f945b36d",
+      "deadline_after_request_s": 499.1,
+      "elapsed_ms": 134,
+      "impact_percent": "0.0004220428",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 20070695931548372372,
+      "native_value_zero": true,
+      "pay_units": 60238445255764177,
+      "quoted_gas": 250000,
+      "receive_units": 20086765343823431117,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "SELL",
+      "status": "OK",
+      "symbol": "GOOGLB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "3dbab86abd63e5ef",
+      "calldata": "c4747f940139402f",
+      "deadline_after_request_s": 499.8,
+      "elapsed_ms": 166,
+      "impact_percent": "0.0000000000",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 131541227634795995,
+      "native_value_zero": true,
+      "pay_units": 18637420,
+      "quoted_gas": 250000,
+      "receive_units": 131646544870692550,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "BUY",
+      "status": "OK",
+      "symbol": "SKHYB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "2c332e57d8a46619",
+      "calldata": "2b2ff3a5ec1c7f0b",
+      "deadline_after_request_s": 499.4,
+      "elapsed_ms": 158,
+      "impact_percent": "0.0000000000",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 141857872290857450,
+      "native_value_zero": true,
+      "pay_units": 20100000,
+      "quoted_gas": 250000,
+      "receive_units": 141971449450417785,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "BUY",
+      "status": "OK",
+      "symbol": "SKHYB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "d0e15f0b8eca143f",
+      "calldata": "9d4e8a672c425997",
+      "deadline_after_request_s": 500.1,
+      "elapsed_ms": 141,
+      "impact_percent": "0.0012024948",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 20047732220684505425,
+      "native_value_zero": true,
+      "pay_units": 141971449450417785,
+      "quoted_gas": 250000,
+      "receive_units": 20063783247282331291,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "SELL",
+      "status": "OK",
+      "symbol": "SKHYB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "8f28b54f79fd8169",
+      "calldata": "ce84caee0921b382",
+      "deadline_after_request_s": 499.7,
+      "elapsed_ms": 155,
+      "impact_percent": "0.0028562824",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 47943124094504250,
+      "native_value_zero": true,
+      "pay_units": 18637420,
+      "quoted_gas": 250000,
+      "receive_units": 47981509301945807,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "BUY",
+      "status": "OK",
+      "symbol": "TSLAB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "d1f452ad41d484af",
+      "calldata": "996865dc37097260",
+      "deadline_after_request_s": 499.4,
+      "elapsed_ms": 168,
+      "impact_percent": "0.0028843031",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 51713751409597520,
+      "native_value_zero": true,
+      "pay_units": 20100000,
+      "quoted_gas": 250000,
+      "receive_units": 51755155534024740,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "BUY",
+      "status": "OK",
+      "symbol": "TSLAB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "a7b61f57d37805f2",
+      "calldata": "4a60b395efabadd3",
+      "deadline_after_request_s": 500.0,
+      "elapsed_ms": 139,
+      "impact_percent": "0.0000012908",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 20079992768143173819,
+      "native_value_zero": true,
+      "pay_units": 51755155534024740,
+      "quoted_gas": 250000,
+      "receive_units": 20096069623842247618,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "SELL",
+      "status": "OK",
+      "symbol": "TSLAB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "7a198560392ed8a7",
+      "calldata": "54fb337029496853",
+      "deadline_after_request_s": 499.7,
+      "elapsed_ms": 134,
+      "impact_percent": "0.0030172138",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 34999037263112470,
+      "native_value_zero": true,
+      "pay_units": 18637420,
+      "quoted_gas": 250000,
+      "receive_units": 35027058910240663,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "BUY",
+      "status": "OK",
+      "symbol": "MSFTB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "1823d80534a10c60",
+      "calldata": "1894cc7224cfa6ba",
+      "deadline_after_request_s": 499.3,
+      "elapsed_ms": 140,
+      "impact_percent": "0.0030185647",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 37745551467122594,
+      "native_value_zero": true,
+      "pay_units": 20100000,
+      "quoted_gas": 250000,
+      "receive_units": 37775772084790427,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "BUY",
+      "status": "OK",
+      "symbol": "MSFTB",
+      "vendor": "LiquidMesh"
+    },
+    {
+      "artifact": "fd30be1a96b10295",
+      "calldata": "9d9a03a8c2c5a063",
+      "deadline_after_request_s": 500.0,
+      "elapsed_ms": 170,
+      "impact_percent": "0.0000000000",
+      "minimum_below_quote_bps": 8,
+      "minimum_receive": 20085122269367676178,
+      "native_value_zero": true,
+      "pay_units": 37775772084790427,
+      "quoted_gas": 250000,
+      "receive_units": 20101203231953238770,
+      "request_bound": true,
+      "router_pinned": true,
+      "selector_pinned": true,
+      "side": "SELL",
+      "status": "OK",
+      "symbol": "MSFTB",
+      "vendor": "LiquidMesh"
+    }
+  ],
+  "ready_to_install": false,
+  "reviewer": "Codex technical review under Keegan explicit step-2/3/4 delegation; not a personal Isaac attestation",
+  "schema": "RehearsalCoverageDecision.v1",
+  "signer_policy_sha256": "3241abd36dfeb216ffe3bb06a3ce800f42e8206ccc261240da6f059b0dd5ea61",
+  "signing_enabled": false,
+  "sizing_budget_wei": 80004608000000,
+  "source_host_build": "ea25b52325656a19b29e8ddb07b94dd792be6e18",
+  "source_run_id": "larp-dev-llm-trial-20261018t170339z",
+  "status": "TECHNICAL_COVERAGE_ACCEPTED_FOR_SCOPED_REHEARSAL",
+  "token_decimals": {
+    "GOOGLB": 18,
+    "MSFTB": 18,
+    "NVDAB": 18,
+    "SKHYB": 18,
+    "TSLAB": 18
+  }
+}

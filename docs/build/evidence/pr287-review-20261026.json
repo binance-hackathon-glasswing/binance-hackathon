@@ -1,0 +1,57 @@
+{
+  "schema": "Pr287ReviewValidation.v1",
+  "review_id": "IDEA-099 PR287-RV01",
+  "date": "2026-10-26",
+  "timezone": "Asia/Singapore",
+  "original_head": "b7063e0d1d0d54750be791871cf4fbcdd3fcad37",
+  "source_commit": "62b5d47f7ff7a44c8999a58c94e3730263b582d2",
+  "original_base": "f52107f0ced9dac1fc66c027f4f1c2fd36ca927c",
+  "integration_base": "75989642",
+  "integration_merge": "980ffbfa7973d53fc8eb30e1c00c874650beabbd",
+  "integration_change": "PR285 documentation only; preserved both appended ledger entries; application, tests, tools, deployment files and migrations identical to tested source.",
+  "environment": {
+    "python": "3.12.15",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "postgres": "14.24",
+    "test_image": "sha256:750132bb93c250e52f14f9ea69ce517f993414f2f5060b7af58e78dcaabbb004",
+    "postgres_image": "sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2",
+    "verified_applicable_requirement_lines": 53,
+    "verified_unique_distributions": 44,
+    "dependency_check": "pip check: No broken requirements found",
+    "network": "internal disposable Docker network; source and Git metadata read-only"
+  },
+  "file_sha256": {
+    "larp/audit/reasons.py": "47519fb0ada2268f108501be6bdc564179c7df27e0db9d0879f5813d26dafe4d",
+    "larp/runtime/coordinator.py": "fc327193bbf1749788ff9d4284ac5c904cf3f76522c6a39fc9d187b6f0497618",
+    "tests/audit/test_reason_summary.py": "c75e69816c64727e83e3bfb73ce260d49de8c02e269a63af7ec6867d35cab02e",
+    "tests/integration/test_settlement.py": "7fdd59f37a3dcf752ffe95f2b0868e25f8c8619da1ba1629c0db567013bcd36f"
+  },
+  "focused": {"passed": 102, "subtests_passed": 97, "failed": 0, "seconds": 17.29},
+  "full": {"passed": 2840, "subtests_passed": 4055, "failed": 0, "skipped": 8, "deselected": 3, "seconds": 266.69},
+  "command": "python -m pytest -q -rs -p no:cacheprovider --deselect=tests/runtime/test_worker_release.py::Sandbox --junitxml=/tmp/pr287-full.xml",
+  "post_integration": {"passed": 41, "subtests_passed": 34, "failed": 0, "scope": "release register/bundle, run-5 sheet and reason summaries"},
+  "evidence_sha256": {
+    "focused_junit": "72598cbb65fd94a212a33da52aab0369b515c6046565425d65b67e056343dad4",
+    "full_junit": "58f63a6cd5f02a79eccd0e5e68d6a11e48c14e817f4ac091003cae589ad1845c",
+    "full_stdout": "c9b940cef25582802cbe68e1d3124a304be58af1b445b2a29ef79ca824d9656b"
+  },
+  "findings": {
+    "RV1": "Planned-action wording, latched deep drawdown and discretionary falsifier wording corrected; non-submission reason bound to intent_id, including gas top-ups.",
+    "RV2": "Fallback includes empty decision_summaries and no orders/commands; multi-order identity retained.",
+    "RV3": "Malformed optional shapes do not raise; deterministic pure summaries; logging, settlement and replay regressions pass with unchanged order schema.",
+    "RV4": "Pinned offline full suite passed; documented environment limitations and CI startup failure.",
+    "RV5": "Stock and gas BUY amounts explicitly labeled USDT spent; SELL amounts remain token quantities; stored metadata/order amounts unchanged.",
+    "RV6": "Real planner pending quotes and blocked mandatory reductions named instead of no target change."
+  },
+  "github_ci": {
+    "status": "NOT_STARTED_ACCOUNT_BILLING",
+    "runtime_check": "https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/40210026821/job/121219067932",
+    "annotation": "The job was not started because recent account payments have failed or your spending limit needs to be increased."
+  },
+  "limitations": [
+    "Eight skips: optional private source fixture, external recorded artifacts, root directory-mode behavior, five systemd cases.",
+    "Three unchanged nested-bubblewrap Sandbox tests deselected because the Docker host lacks required namespaces/proc mounts.",
+    "Two partial full runs interrupted to fix newly discovered review issues; only the completed source_commit run is counted.",
+    "No live wallet, deployment or owner acceptance. Keegan/Isaac wording acceptance, a release containing this change and Yao's FINAL activation-log check remain open."
+  ]
+}

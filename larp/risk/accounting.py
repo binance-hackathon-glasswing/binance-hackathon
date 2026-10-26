@@ -23,7 +23,13 @@ def roll_day(portfolio: Document, *, boundary, anchor_units):
     return Document.from_dict(d)
 
 
-def update_risk(portfolio: Document, *, now, equity_units):
+def update_risk(portfolio: Document, *, now, equity_units, recover_run_halt=False):
+    """PF02: caller may enable recovery only with the opted-in profile and fresh reconciled complete valuation.
+
+    Historical callers retain the latched stop. The peak, daily stop and deep cut are never reset by recovery.
+    """
+    if type(recover_run_halt) is not bool:
+        raise ContractError("Risk recovery eligibility must be a boolean")
     now = instant(now.isoformat())
     d = portfolio.read()
     r = d["risk"]
@@ -31,6 +37,8 @@ def update_risk(portfolio: Document, *, now, equity_units):
     peak = max(integer(r["peak_units"], 1), equity_units)
     r["peak_units"] = peak
     r["run_halt"] |= equity_units * 100 <= peak * 92
+    if recover_run_halt and equity_units * 100 > peak * 95:
+        r["run_halt"] = False
     r["deep_cut"] |= equity_units * 100 <= peak * 88
     if now.date().isoformat() == r["day"]:
         r["daily_halt"] |= equity_units * 100 <= integer(r["day_anchor_units"], 1) * 97
@@ -56,7 +64,7 @@ def advance_accounting(portfolio: Document, observation: Document):
         d["accounting"]["service_units"] += integer(e["cost_units"])
         applied[event_id] = digest
         return Document.from_dict(d)
-    if e["kind"] not in ("FILL", "APPROVAL", "REVERT"):
+    if e["kind"] not in ("FILL", "APPROVAL", "REVERT", "ABNORMAL"):
         raise ContractError("Only settled fills/approval/revert observations allowed")
     if e.get("settlement") != "FINAL":
         raise ContractError("Provisional events require execution/finality integration")
@@ -86,6 +94,14 @@ def advance_accounting(portfolio: Document, observation: Document):
     gas_value = integer(e["gas_value_units"])
     d["accounting"]["gas_value_units"] += gas_value
     # Gas expense uses observed USDT valuation, not inferred token quote amounts.
+    if e["kind"] == "ABNORMAL":
+        from larp.ports import validate_execution_observation
+        validate_execution_observation(e)
+        # The existing portfolio is the last reconciled asset snapshot, not an assumed
+        # normal fill. Exact chain deltas are retained separately until reconciliation.
+        # All spending and economic reports remain blocked; no automatic clearing exists.
+        d.setdefault("unreconciled_outcomes", {})[event_id] = e
+        d["accounting_status"] = "QUARANTINED_UNRECONCILED"
     if e["kind"] == "FILL":
         symbol, side = reservation["symbol"], reservation["side"]
         if e["symbol"] != symbol or e["side"] != side:
@@ -174,6 +190,8 @@ def _final_receipt(e, reservation):
 
 def economic_views(portfolio: Document, *, equity_units):
     d = portfolio.read()
+    if d.get("unreconciled_outcomes"):
+        raise ContractError("Economic views unavailable for unreconciled abnormal outcomes")
     wallet = integer(equity_units) - integer(d["opening_equity_units"])
     return Document.from_dict({"schema": "EconomicViews.v1", "wallet_net_units": wallet,
                               "off_wallet_service_units": d["accounting"]["service_units"],

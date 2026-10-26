@@ -12,7 +12,11 @@ offline (wallet nonce, market open, risk, health) come from the request, as the 
 Because primary writes the intent, the signer also checks every request against its own pinned signing policy
 (larp/signer/policy.py; `signing_policy` in its config): allowed spenders and tokens, per-token input caps and a fee
 cap, so a compromised primary cannot get an approve to another spender or an unlimited approve signed (WR02, #44).
-A swap needs a verified router decoder; none exists yet (GAP-29), so swap requests are refused.
+A swap needs a decoder pinned to router evidence (`router_evidence_file` + `router_evidence_sha256`; IDEA-070, GAP-29),
+or an untrusted-router policy (`untrusted_router_policy_file` + `_sha256`; IDEA-070 B02-U, DEV-23), never both,
+loaded from the signer's own pinned copy and for a router in its own `allowed_spenders`. Check and run refuse
+missing or invalid evidence before database/key access. Both dev and live refuse the undecided example caps.
+Check verifies local config/release/evidence only; it does not accept Gate B or inspect the run, host or key.
 
 It signs through `LocalSigner`, whose fenced registry keeps at most one signature per attempt. A failed check becomes
 a refusal row for that request; a database outage is not a refusal and stops the cycle.
@@ -35,6 +39,7 @@ from larp.execution import Blocked, Gates, address, validate_sequence
 from larp.execution_live import signing
 from larp.execution_live.store import ExecutionStore
 from larp.execution_live.venue import UnverifiedRouter
+from larp.runtime import faults
 from larp.signer.keyfile import load_key_file
 from larp.signer.local import LocalSigner
 from larp.signer.policy import EXAMPLE_CAP_BASIS, SigningPolicy
@@ -114,7 +119,8 @@ class SignerService:
             run = self.registry._release_authority(db, *authority)
             if run['mode'] != 'offline' and (not self.build_id or not self.manifest_sha256):
                 raise Blocked('verified signer build and manifest identity required')
-            self.registry.check_signing_run(run, state.intent, self.build_id, self.manifest_sha256)
+            self.registry.check_signing_run(run, state.intent, self.build_id, self.manifest_sha256,
+                                            now_ms=now * 1000)
         if now + self.max_skew < gates.observed_at:
             raise Blocked('signer clock is behind the request')
         validate_sequence(state, attempt.step, attempt.payload, gates)
@@ -122,7 +128,10 @@ class SignerService:
         self._current = (attempt.attempt_id, state.intent, attempt.step, gates, max(now, gates.observed_at),
                          self.decoder)
         try:
-            return self.signer.sign(attempt.attempt_id, attempt.payload, *authority)
+            faults.point('F3')
+            signed = self.signer.sign(attempt.attempt_id, attempt.payload, *authority)
+            faults.point('F4')
+            return signed
         finally:
             self._current = None
 
@@ -156,11 +165,51 @@ def validate_config(value):
             type(value['key_credential']) is str and _CREDENTIAL.fullmatch(value['key_credential'])):
         raise ContractError('Invalid key credential name')
     policy = SigningPolicy.from_config(value.get('signing_policy'))
-    if value['mode'] == 'live' and policy.cap_basis == EXAMPLE_CAP_BASIS:
-        raise ContractError('A live signer needs decided signing caps, not the example values')
+    if policy.cap_basis.strip() == EXAMPLE_CAP_BASIS:
+        raise ContractError('A signer needs decided signing caps, not the example values')
+    from larp.execution_live.config import evidence_settings
+    evidence_settings(value)
     from larp.runtime.database import check_database_settings
     check_database_settings(value, DATABASE_USER)
     return value
+
+
+def router_decoder(config, policy):
+    """Load the production signer's pinned decoder before any database or key access.
+
+    Direct offline unit fixtures can still construct SignerService with an
+    UnverifiedRouter. A production service must not start an approval-only path
+    while its subsequent swap cannot be validated (IDEA-070 SR-01).
+    """
+    from larp.execution_live.config import untrusted_router_settings
+    from larp.execution_live.router import evidence_settings, load_evidence
+    settings = evidence_settings(config)
+    untrusted = untrusted_router_settings(config)
+    if untrusted is not None:
+        # Offline: the signer never binds an RPC; primary's preflight checks the live router state (B02-U).
+        from larp.execution_live.untrusted_router import load_policy
+        decoder = load_policy(*untrusted)
+    elif settings is None:
+        raise ContractError('Signer requires pinned router evidence or an untrusted-router policy')
+    else:
+        decoder = load_evidence(*settings)
+    if decoder.router not in policy.allowed_spenders:
+        raise ContractError('Router evidence is for a router outside signing_policy.allowed_spenders')
+    if policy.allowance_recovery and decoder.mode != 'untrusted':
+        raise ContractError('allowance recovery requires the untrusted router policy')
+    return decoder
+
+
+def _decoder_identity(decoder):
+    """How the signer decodes swaps, for its start/check line: VERIFIED evidence, an UNTRUSTED router policy
+    (B02-U, DEV-23) or UNVERIFIED (no swap is ever signed)."""
+    mode = getattr(decoder, 'mode', None)
+    if mode == 'verified':
+        return dict(swap_decoder='VERIFIED', router_evidence_sha256=decoder.evidence_sha256)
+    if mode == 'untrusted':
+        return dict(swap_decoder='UNTRUSTED', untrusted_router_policy_sha256=decoder.policy_sha256,
+                    router_evidence_sha256=None, deviation=decoder.deviation)
+    return dict(swap_decoder='UNVERIFIED', router_evidence_sha256=None)
 
 
 def key_path(config, environ=os.environ):
@@ -203,14 +252,24 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
     args = parser.parse_args(argv)
     try:
         config, manifest = load_config(args, with_manifest=True)
+        policy = SigningPolicy.from_config(config['signing_policy'])
+        try:
+            decoder = router_decoder(config, policy)
+        except (ContractError, OSError, ValueError):
+            raise StartRefused('router evidence refused') from None
         if args.command == 'check':
-            print(json.dumps(dict(configuration_valid=True, signing_enabled=False)))
+            print(json.dumps(dict(configuration_valid=True, signing_enabled=False, **_decoder_identity(decoder),
+                                  scope='LOCAL_CONFIG_AND_ROUTER_EVIDENCE_ONLY', gate_b_accepted=False)))
             return 0
         from larp.runtime.database import open_service_store
         store = open_service_store(config)
         run = run_state(store, config['run_id'])
         if run['mode'] != config['mode'] or str(run['wallet_id']).lower() != config['wallet_address']:
             raise StartRefused('run differs from the signer configuration')
+        try:
+            faults.check(run['mode'])
+        except ContractError:
+            raise StartRefused('fault injection refused') from None
         if run['quarantined']:
             print(json.dumps(dict(started=False, reason='QUARANTINED', signing_enabled=False)))
             return EXIT_QUARANTINED
@@ -222,8 +281,7 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
         try:
             credentials = load_key_file(key_path(config, environ))
             service = SignerService(store=store, run_id=config['run_id'], wallet=config['wallet_address'],
-                                    credentials=credentials, clock_s=clock_s,
-                                    policy=SigningPolicy.from_config(config['signing_policy']),
+                                    credentials=credentials, clock_s=clock_s, policy=policy, decoder=decoder,
                                     max_skew_s=config.get('max_clock_skew_seconds', 2), build_id=config['build_id'],
                                     manifest_sha256=manifest_sha256)
         except Blocked as refused:
@@ -232,7 +290,7 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
             return EXIT_REFUSED
         stopping = []
         signal.signal(signal.SIGTERM, lambda *a: stopping.append(True))
-        print(json.dumps(dict(started=True, signing_enabled=True, swap_decoder='UNVERIFIED',
+        print(json.dumps(dict(started=True, signing_enabled=True, **_decoder_identity(decoder),
                               cap_basis=service.policy.cap_basis)))
         cycles = 0
         while not stopping and (max_cycles is None or cycles < max_cycles):
