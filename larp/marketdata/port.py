@@ -326,10 +326,15 @@ class MarketPort:
                     available_at=raw['available_at'], content_hash=raw['content_hash'])
 
     @observation_boundary
-    def candles(self, symbol, *, bar='1m', limit=100):
+    def candles(self, symbol, *, bar='1m', limit=100, after=None):
         if symbol not in TOKENS or bar not in ('1m', '5m', '15m', '1h', '4h', '1d') or type(limit) is not int or not 1 <= limit <= 300:
             raise Unavailable('invalid candle request')
-        r = self.call('market/candles', dict(tokenContractAddress=TOKENS[symbol], bar=bar, limit=limit))
+        if after is not None and (type(after) is not int or after < 0):
+            raise Unavailable('invalid candle pagination timestamp')
+        params = dict(tokenContractAddress=TOKENS[symbol], bar=bar, limit=limit)
+        if after is not None:
+            params['after'] = after  # observed inclusive end cursor, IDEA-103 / K6a
+        r = self.call('market/candles', params)
         rows = data(r)
         if not isinstance(rows, list):
             raise Unavailable('candles must be a list')

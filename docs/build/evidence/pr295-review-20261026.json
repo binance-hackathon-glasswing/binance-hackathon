@@ -1,0 +1,77 @@
+{
+  "source_commit": "ba6f0d94c24276b0f18d0bd6e8138a6431bc9a9d",
+  "file_sha256": {
+    "larp/marketdata/history.py": "ef18159ba6aefe01a5519da8278f40033e151876e5f62bb51f28cbdb228e9cdb",
+    "larp/marketdata/port.py": "024e5b5c5721bf172f35b6ad6a8607cac18214825a1b448c19af5b7145bf8a5d",
+    "larp/marketdata/web3.py": "046166ea0f9b6d85e9f630647949b65ea11bcf5d81f038f45d9480b55e3254af",
+    "larp/runtime/gate_a.py": "77f7a34382f81aa0e5fad8b39ee63963cf77464a7dc211a3935880a78f2ceb1e",
+    "larp/runtime/gate_a_check.py": "a7449c5880fd58e4167e66a0feab8ce37ff192c1b8e9937f2b667a06163bf631",
+    "larp/runtime/service.py": "af1c12b0fbf218c45e0369e4599ce557321ea7cd1fb30233f23df2c9925bbb6d",
+    "larp/strategy/sessions.py": "14478641ded2ff3382762a5ee9868ab07e370be3225b0586d66103af7745b387",
+    "tests/integration/test_history_replay.py": "a5aeea32b38425aa88acd7c49cf5829ecefd21a98f66684c0353da6733220edf",
+    "tests/marketdata/test_session_history.py": "9b58fcc2cf417773d7ad0d66a49ca8aecd8e026de0c14a3655327740bea14ef0",
+    "tests/runtime/test_parallel_assessments.py": "5ba702a61226ffb2cb6a8d440da1cd0ebafbdb30fe0c32aa259fdcff3cc99e3b",
+    "tests/strategy/test_fs1_final.py": "1b1613f302d22e0ef937c1f52ed5784b3c6d98a03de04dd5d095447cd710387d",
+    "tests/strategy/test_history_trend.py": "dc76c0c5dd761c7df73800676bd180520a6b4277eae58ffca762522d962117a8",
+    "tests/strategy/test_s1_rehearsal.py": "8ac5a3b274a037dfd09590ece1c5caf1b781267549e6e5ade854cf6a6829ddec",
+    "tests/strategy/test_s2_weekend.py": "44144ae0dba2d59a02edf0dfe68d440db79f5d428437b4b3b089cbc0e9e09619",
+    "tools/deploy/prepare_shadow.py": "6b92c9d9dab75cd92937ca534d98c4a8b09c38aeb7cff26322479c00da76504e"
+  },
+  "schema": "Pr295ReviewValidation.v1",
+  "review_id": "IDEA-103 PR295-RV01",
+  "date": "2026-10-26",
+  "timezone": "Asia/Singapore",
+  "original_head": "1a2bd8f06d7a16f11400eba5a4cb1916ba2a7d5b",
+  "base_commit": "ecdbc1aae556c71aa39c6aac23b2b93981d9ef5e",
+  "environment": {
+    "python": "3.12.15",
+    "postgres": "14.24",
+    "platform": "Linux-6.12.76-linuxkit-aarch64-with-glibc2.36",
+    "test_image": "sha256:750132bb93c250e52f14f9ea69ce517f993414f2f5060b7af58e78dcaabbb004",
+    "postgres_image": "sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2",
+    "verified_applicable_requirement_lines": 53,
+    "verified_unique_distributions": 44,
+    "pip_check": "No broken requirements found",
+    "network": "Internal disposable network, source/Git metadata read-only"
+  },
+  "focused": {
+    "passed": 112,
+    "subtests_passed": 20,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 8.21
+  },
+  "full": {
+    "passed": 2901,
+    "subtests_passed": 4060,
+    "failed": 0,
+    "skipped": 8,
+    "deselected": 3,
+    "seconds": 307.97
+  },
+  "command": "python -m pytest -q -rs -p no:cacheprovider --deselect=tests/runtime/test_worker_release.py::Sandbox --junitxml=/tmp/pr295-full.xml",
+  "findings": {
+    "RV1": "History transport opts into exact JSON decimal lexemes; raw screened evidence retained. Default clients unchanged.",
+    "RV2": "History opts into exact rational price scaling independent of Decimal context precision; legacy converter default unchanged.",
+    "RV3": "Inconsistent OHLC ranges rejected; malformed and unavailable history remains sanitized, bounded data.",
+    "RV4": "Production composition, actual BUY/SELL planning, legacy behavior and exact PostgreSQL replay passed; no profile or threshold changes.",
+    "RV5": "Deferred full suite completed on pinned environment; CI billing startup failure documented."
+  },
+  "github_ci": {
+    "status": "NOT_STARTED_ACCOUNT_BILLING",
+    "runtime_check_id": 121379203073,
+    "runtime_check": "https://github.com/binance-hackathon-glasswing/binance-hackathon/actions/runs/40263002275/job/121379203073",
+    "annotation": "The job was not started because recent account payments have failed or your spending limit needs to be increased."
+  },
+  "limitations": [
+    "Eight skips: optional private source fixture, external market artifacts, root directory-mode behavior and five opt-in systemd cases.",
+    "Three unchanged nested-bubblewrap Sandbox tests explicitly deselected because the Docker host lacks required namespaces/proc mounts.",
+    "No live provider calls, credentials, wallet operations, model spending, deployment or economic-performance evaluation.",
+    "Keith actual timestamp/adjustment qualification, Keegan exact input/release review, Yao transfer/current-host history checks and EXP-007 remain open in TH-01."
+  ],
+  "evidence_sha256": {
+    "focused.xml": "ff9647fe655ffdaee13c68b142241110ac3b169ea38529a9a6cff35698ba5038",
+    "full.xml": "803c0529e72f9c0307aca9f7eaa5c25e482bf8afc6090594c161c20ae42a430c",
+    "full.log": "be7f6ba79ceb48c66533eba087aa07a9ab4396a26c05024157fc9bcf0f24b1fe"
+  }
+}
