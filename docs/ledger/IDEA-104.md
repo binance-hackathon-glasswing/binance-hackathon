@@ -145,3 +145,33 @@ exercised; FS1's `activation_self_check` is FINAL-only; sizes are 1/5 of about 1
 **Remaining:** Yao: B0 top-up (≥ 98.32 USDT, about +20 USDT recommended) and the TH input with Keith's actual
 timestamp-evidence hash; team: merge PR294 so the build contains R2; Isaac: A1 (profile, probe, signer hash);
 Keegan: review S5R2-8, the sheet and the input; Yao: install; then the live checks in the sheet's J section.
+
+## R3: FS1's model calls and authority, and the dev wallet as it is (2026-10-26 SGT, pre-registered before tests or code)
+
+**Requests (in chat, 2026-10-26):** "well i cant add more usdt so use whatever is inside" and "yes turn on the FS1's
+aland/chatgpt model calls like FS1, s5 is meant to mirror FS1".
+
+**Design.**
+- **Models as in FS1.** S5 takes FS1 FINAL's evidence authority: `evidence_mode` `BOUNDED_FALSIFIER`,
+  `falsifier_authority` `DISCRETIONARY_EXIT` (statements stay `SHADOW`, `red_flag_authority` RF1 4.02 / RF2 1.05, 2.06
+  as before). A verified Class 1 finding then forces a mandatory SELL, and a verified Class 2 finding blocks buys, as in
+  FS1. Signed preparation then needs the reviewed routing, because the deterministic-rehearsal path covers SHADOW
+  profiles only. M4 passes `config/intelligence/aiand-routing.fs1.json` (`9b86c732…`); the runtime assessor is
+  `aiand_routed` with FS1's five assessment workers. `require_open_state_scope` gains a third, narrow scope: a
+  REHEARSAL with `policy_id` `larp-s5-rehearsal-v1`, FS1's v1 authority, in a `dev` run. S2's and FS1's scopes are
+  unchanged.
+- **Wallet as it is (no top-up).** S5 counts BNB in stock capital (no `s1_capital_basis` key; FS1 keeps
+  `EXCLUDE_GAS`). At run 6's closing balance (81.373047 USDT, BNB 0.024973 at the profile's 722.15 USDT/BNB), equity is
+  about 99.4 USDT, so each 1/5 target at 95 % is about 18.87 USDT, just above the 18.637 USDT minimum. Cash allows at
+  most four buys of about 19 USDT.
+- The R2 top-up guard in M4 is replaced with an equity guard; `--accept-usdt-surplus-units` stays available but
+  unused (`TOPUP` 0).
+
+| # | Pass when |
+|---|---|
+| S5R3-1 | The rebuilt S5 passes `validate_live`. Against `fs1-final-recovery.json` (`b8ba06e2…`) its non-provenance keys differ only in `environment`, `cost_reserve_units`, `expected_equity_units`, `per_trade_cap_units`, the four window keys, `policy_id`, `activation_self_check` (absent) and `s1_capital_basis` (absent). Its `s1` block equals FS1's. |
+| S5R3-2 | `require_open_state_scope` accepts S5 in `dev` and `None`; refuses it in `live`, `offline` and `''`; refuses a REHEARSAL with another `policy_id` (FS1-R, S2) and FS1's authority; refuses S5 with SHADOW statements changed. Every existing S2-1/FS1 scope test passes unchanged. |
+| S5R3-3 | Signed dev preparation of S5 without routing is refused. With the FS1 routing file and an adoption reference it packages `model-routing.json`, pins `9b86c732…`, sets assessor `aiand_routed` and keeps the token-history pin; `gate_a_check` scope and inputs pass; the built runtime has five `RoutedAssessor`s and a `SessionHistory`. |
+| S5R3-4 | Planner on the S5 profile at run 6's closing balance in the buy window: the first round plans one BUY intent of at least `minimum_trade_units`; with three names already held at about 19 USDT each and the matching remaining cash, a fourth BUY is still planned. |
+| S5R3-5 | Planner at Mon 22:59Z BUY, Mon 23:00Z no BUY, Tue 00:00Z `TERMINAL_FLATTEN` mandatory SELLs only (S5R2-5 on the R3 profile). The FS1 profiles and S4 still rebuild byte for byte. |
+| S5R3-6 | Full suite: no new failures against canonical `81ee30a1` in the same environment; exact counts reported. |
