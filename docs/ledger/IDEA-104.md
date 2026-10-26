@@ -104,3 +104,12 @@ S5 buy. FS1's `s1_capital_basis` `EXCLUDE_GAS` leaves stock capital `cash − co
 | # | Pass when |
 |---|---|
 | S5R2-7 | Planner on the S5 profile's sizing keys with a flat book inside the buy window: at cash 81.373047 USDT and BNB 0.024973 (profile BNB price) no BUY intent or BUY quote request is planned; at cash 101.373047 USDT with the same BNB, five BUY targets are planned and the first BUY quote request is at least `minimum_trade_units`. |
+
+**R2 addendum: declared USDT top-up in the M3 caps review (added 2026-10-26 SGT before tests or code).** If the dev
+wallet is topped up to meet S5R2-7, M3 must accept it. `tools/deploy/review_rehearsal_caps.py` `chain_start` accepts
+USDT equal to the source ledger or short by an exactly declared seed debit (`--accept-usdt-deficit-units`), and refuses
+any USDT surplus. Add the mirror image: `--accept-usdt-surplus-units N`, an exact declared top-up.
+
+| # | Pass when |
+|---|---|
+| S5R2-8 | Hosted review with `usdt_surplus=N`: accepted only when chain USDT − ledger USDT is exactly N, USDT is classed `SURPLUS` and the packet status is `SURPLUS_ONLY`; the new run starts from the chain cash; `portfolio-rebinding.json` records `accepted_usdt_surplus_units` N. Refused: an undeclared surplus, a surplus off by one unit, a declared surplus with a matching chain, a negative or non-integer value, a surplus and a deficit together, and numeric-only mode with a surplus. Every existing deficit/BNB/stock test passes unchanged. |
