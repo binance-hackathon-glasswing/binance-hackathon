@@ -221,6 +221,15 @@ def test_ts5_existing_output_directory_is_refused(tmp_path, capsys):
     assert json.loads(capsys.readouterr().out)['status'] == 'TH01_PROBE_REFUSED'
 
 
+def test_ts5_missing_parent_directory_is_created(tmp_path, capsys):
+    clock = Clock('2026-10-26T13:40:00Z')
+    out = tmp_path / 'larp-th01' / 'run'
+    assert th.main(['probe', '--out', str(out)], port_factory=lambda _: Market(clock), clock=clock,
+                   sleep=clock.sleep) == 0
+    assert json.loads(capsys.readouterr().out)['verdict'] == 'PASS'
+    assert (out / 'timestamp-evidence.json').is_file()
+
+
 def test_ts5_production_port_uses_the_history_transport(tmp_path):
     port = th.production_port(dict(BINANCE_API_KEY='k' * 16, BINANCE_SECRET_KEY='s' * 16), tmp_path / 'raw')
     assert port.client.exact_decimals is True and port.client.timeout == 5

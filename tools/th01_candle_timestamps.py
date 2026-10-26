@@ -221,6 +221,7 @@ def production_port(creds, raw_root):
 
 def _probe(args, port_factory, clock, sleep):
     out = Path(args.out).expanduser()
+    out.parent.mkdir(mode=0o700, parents=True, exist_ok=True)  # e.g. ~/larp-th01 on a first run
     out.mkdir(mode=0o700)  # a new directory only: never mix two runs' evidence
     port = port_factory(out)
     start = clock()
