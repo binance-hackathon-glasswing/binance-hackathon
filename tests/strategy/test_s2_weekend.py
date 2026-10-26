@@ -181,6 +181,13 @@ def build_runtime(raw, *, mode='dev', **driver):
         cfg['driver'].update(driver)
         (fixture.root / 'profile.json').write_bytes(raw)
         cfg['driver']['strategy_profile_sha256'] = gate_a.digest(raw)
+        if json.loads(raw).get('policy_id') == 'larp-fs1-rehearsal-v1':
+            from tests.marketdata.test_session_history import SEMANTICS
+            from tests.runtime.test_gate_a import captured
+            history_raw = json.dumps(SEMANTICS).encode()
+            (fixture.root / 'token-history.json').write_bytes(history_raw)
+            cfg['driver'].update(token_history_file=str(fixture.root / 'token-history.json'),
+                                 token_history_sha256=gate_a.digest(history_raw), issuers=gate_a.issuer_map(captured()))
         cfg['mode'] = mode
         with patch('socket.create_connection', side_effect=AssertionError('No network during construction')):
             runtime = build_driver(cfg, Store(), fixture.secrets)

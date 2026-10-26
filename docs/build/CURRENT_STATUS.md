@@ -1,5 +1,13 @@
 # Current shared build and remaining work
 
+PR295 / IDEA-103 PR295-RV01 (2026-10-26 SGT): FS1 history producer, bounded pagination/cache,
+qualified timestamp/adjustment input and production preparation/startup wiring reviewed. Fixed exact JSON/close
+price precision and inconsistent OHLC acceptance. Source `ba6f0d94`: **112 focused tests/20 subtests PASS**;
+deferred full rerun complete: pinned Python3.12.15/PG14.24 **2901 tests/4060 subtests PASS**, 8 skips/3 nested
+sandbox exclusions. GitHub CI startup billing-blocked. [Receipt](evidence/pr295-review-20261026.json).
+[Record](../ledger/IDEA-103.md) / [input and transfer contract](FS1_TOKEN_HISTORY.md).
+Actual provider/semantics qualification and exact release/host acceptance remain with TH-01's owners; no deployment.
+
 PR291 / IDEA-102 MC-RV03 (2026-10-26 SGT): mandatory S1 SELL legs now retry without a session ceiling,
 with one new attempt per leg per UTC15-minute slot. Quote children may reuse their parent's open slot; refunds
 retain spacing. Discretionary caps and all gas/window/health/signer/preflight checks remain. New runtime rounds

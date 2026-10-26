@@ -320,7 +320,7 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
             balance_rpc_url=None, balance_rpc_source_id=None, balance_rpc_providers=None,
             model_routing_raw=None, model_routing_sha256=None, execution='shadow', runtime_mode='dev',
             adoption_ref=None, untrusted_router_policy_file=None, untrusted_router_policy_sha256=None,
-            allowance_recovery=False, carry_over_raw=None):
+            allowance_recovery=False, carry_over_raw=None, token_history_raw=None):
     """Return filenames -> exact bytes. The caller writes them only to ignored deployment storage.
 
     The balance RPC is either one `balance_rpc_url` + `balance_rpc_source_id` or an ordered `balance_rpc_providers`
@@ -334,6 +334,14 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
     if routing is not None and routing.get('openai_trial') is not None and (signed or runtime_mode != 'dev'):
         raise ContractError('Unsigned trial routing requires dev/shadow preparation')
     profile, capture = json.loads(profile_raw), json.loads(capture_raw)
+    from larp.marketdata.history import CONFIG_FILE, MAX_CONFIG_BYTES, configuration as history_configuration, requires_history
+    history = None
+    if token_history_raw is not None:
+        if len(token_history_raw) > MAX_CONFIG_BYTES or profile.get('baseline') != 'TREND_GUARDED_VOL':
+            raise ContractError('Token history configuration outside scope/budget')
+        history = history_configuration(json.loads(token_history_raw))
+    if requires_history(profile) and history is None:
+        raise ContractError('FS1 requires pinned token history configuration (IDEA-103)')
     require_open_state_scope(profile, runtime_mode)  # IDEA-089 S2-1 / IDEA-093 FS1
     deterministic_rehearsal = routing is None and scoped_rehearsal(profile, runtime_mode)
     if (execution not in ('shadow', 'service') or runtime_mode not in ('dev', 'live')
@@ -409,8 +417,11 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
                              strategy_profile_sha256=digest(profile_raw),
                              session_calendar_sha256=digest(calendar_raw), issuers=issuers)
     for key in ('model_routing_file', 'model_routing_sha256', 'model_budget_root', 'model_adoption_ref',
-                'untrusted_router_policy_file', 'untrusted_router_policy_sha256'):
+                'untrusted_router_policy_file', 'untrusted_router_policy_sha256', 'token_history_file',
+                'token_history_sha256'):
         runtime['driver'].pop(key, None)
+    if history is not None:
+        runtime['driver'].update(token_history_file=CONFIG_FILE, token_history_sha256=digest(token_history_raw))
     if policy != (None, None):
         runtime['driver'].update(untrusted_router_policy_file=policy[0], untrusted_router_policy_sha256=policy[1])
     runtime['driver'].pop('allowance_recovery', None)
@@ -430,6 +441,8 @@ def prepare(configs, *, profile_raw, capture_raw, calendar_raw, run_id, build_id
              (('runtime.json', runtime), ('uploader.json', uploader), ('operations.json', operations))}
     files.update({'strategy-profile.json': profile_raw, 'session-calendar.json': calendar_raw,
                   'initial-state.json': state_raw, 'input-capture.json': capture_raw})
+    if history is not None:
+        files['token-history.json'] = token_history_raw
     if routing is not None:
         files['model-routing.json'] = model_routing_raw
     if carry_over_raw is not None:
