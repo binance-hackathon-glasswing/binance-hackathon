@@ -13,7 +13,10 @@
 
 - Date / author: 2026-10-26 SGT / requested in a Claude Code session on Keith's machine; design, arithmetic, code and
   record by Claude Code (subagent). Strategy owner for review: Keith.
-- Status: **pre-registered 2026-10-26; not yet run.** Predictive edge: NOT_ESTABLISHED.
+- Status: **backtest run 2026-10-26: INCONCLUSIVE** (P: S8 − FS1-STATIC +0.004 pp/window, 90% CI −0.037..+0.047;
+  P1 +0.040, P2 −0.022; T +0.40 pp, −0.15..+0.80; G1, G2, G3, G7 fail; drawdown and cost gates pass). S8 is not
+  adopted; FS1 is unchanged. No profile, runtime, wallet, host or deploy action was taken. Predictive edge:
+  NOT_ESTABLISHED.
 - Base: `d0f242cb` (has the IDEA-106/IDEA-107 simulators), branch `claude/s8-experimental-strategy-20261026`; not
   pushed.
 - Related: IDEA-093 (FS1), IDEA-106 (S6), IDEA-107 (S7), EXP-007, EXP-008, IDEA-001 §15 (EDGAR off hold for runtime),
@@ -299,3 +302,95 @@ In order; each step recorded here with its evidence:
   announcement days exist at the +409-day shift (no extra coverage filter); costs, controls, variants, years and the
   mechanism diagnostic are reported for P and T, gates use P except G5, G6 and G8 (as pre-registered).
 - **Deviations:** none.
+
+## Backtest result (2026-10-26 SGT): INCONCLUSIVE
+
+Run at `16ba8aa3` (code `40fe1373`), offline, command as in the run record; report
+`~/larp-idea108/report-40fe1373.json` (SHA-256 `a656f091f23337804333a1392bf302bf612b93d980eb959855b2951f0b534163`,
+outside Git). Simulated fills at bar or daily closes, not realised fills (ledger rule 4). Differences are per
+10-session window in percentage points of the 200 USDT start; intervals are moving-block bootstrap 90% (block 10,
+10,000 resamples, seed 108).
+
+**Main table (central costs).**
+
+| Data | Windows (non-overlapping) | S8 mean net | FS1-STATIC mean net | S8 − FS1-STATIC (90% CI) | S8 own 90% CI |
+|---|---|---|---|---|---|
+| **P** 2019-07-01 → 2026-10-23 | 1,831 (184); tilt windows 606 (m = 1: 414, m = 2: 192; m = 0: 1,147, m = 3: 65, m = 4: 13) | +1.083% | +1.080% | **+0.004 pp (−0.037, +0.047)** | (+0.54, +1.63) |
+| P1 2019-07 → 2022-12 | 875 | +0.765% | +0.725% | +0.040 pp (−0.005, +0.090) | (−0.03, +1.66) |
+| P2 2023-01 → 2026-10 | 947 | +1.396% | +1.418% | **−0.022 pp** (−0.090, +0.044) | (+0.71, +2.09) |
+| P, tilt windows only | 606 | — | — | +0.011 pp (−0.123, +0.139), ahead in 49.7% | — |
+| **T** 2026-07-16 → 2026-10-23 | 62 (7); tilt 28 (m = 1: 24, m = 2: 4) | +1.024% | +0.626% | **+0.40 pp (−0.15, +0.80)** | (+0.12, +3.73) |
+| T, tilt windows only | 28 | — | — | +0.88 pp (−0.35, +1.79) | — |
+
+**Controls and mechanism.**
+
+| | P | T |
+|---|---|---|
+| S8 − TILT-AVG (structure) | +0.001 pp (−0.036, +0.039) | +0.16 pp (−0.12, +0.43) |
+| S8 − PLACEBO (+45 days) | +0.048 pp (−0.011, +0.110) | +0.47 pp (−0.09, +0.86) |
+| Announcer minus non-announcer price return over the hold, tilt windows (break-even 0.61%) | **+0.09%** (−1.02, +1.14) | +2.88% (−3.86, +9.05) |
+| Overweight counts | GOOGLB 187, MSFTB 195, NVDAB 221, TSLAB 195, SKHYB 0 | TSLAB 14, GOOGLB 9, MSFTB 9, NVDAB 0 |
+
+**Costs and drawdown (P unless stated).**
+
+| | S8 − FS1-STATIC | S8 | FS1-STATIC |
+|---|---|---|---|
+| Central | +0.004 pp | +1.083% | +1.080% |
+| Team convention (25 bp + 0.03) | +0.005 pp | +0.899% | +0.894% |
+| Stress (50 bp + 0.03) | +0.005 pp | +0.420% | +0.414% |
+| Gas at the cap price (0.277) | −0.003 pp | −0.337% | −0.334% |
+| **Break-even gas per pair** | **≥ 5 USDT (the search cap; see the correction below)** | | |
+| Mean legs / cost per window | +0.03 legs, +0.003 USDT (0.0016% of equity) | 12.88 / 0.982 USDT | 12.85 / 0.979 USDT |
+| P: DD ≥ 8% / ≥ 12% / median max DD | | 10.9% / 2.8% / 3.28% | 11.3% / 2.7% / 3.23% |
+| T: DD ≥ 8% / ≥ 12% / median max DD | | 17.7% / 1.6% / 3.55% | 17.7% / 6.5% / 3.59% |
+| Smallest discretionary leg | | 25.33 USDT | 38.0 USDT |
+
+P by build year (S8 − FS1-STATIC, pp): 2019 +0.02, 2020 +0.08, 2021 +0.09, 2022 −0.07, 2023 −0.09, 2024 +0.14,
+2025 −0.04, 2026 −0.10 (4 of 8 positive). Reported-only variants (P / T, pp vs FS1-STATIC): WITH_SKHY −0.006 / +0.09;
+WIDE +0.011 / +0.34; ALL_M −0.002 / +0.40. T fill fallbacks: next bar 5, session close 3.
+
+**Gate by gate.**
+
+| Gate | Result | Why |
+|---|---|---|
+| S8-G0 point in time, costs | PASS | 28 tests, run record |
+| S8-G1 profit vs FS1 on P | **FAIL** | mean +0.004 pp but the 90% lower bound −0.037 < 0 (S8's own lower bound +0.54% > 0) |
+| S8-G2 P1 and P2 both > 0 | **FAIL** | P1 +0.040, P2 −0.022 |
+| S8-G3 timing, not structure | **FAIL** | S8 − TILT-AVG +0.001 pp, lower bound −0.036 < 0 (S8 − PLACEBO +0.048 > 0 passes its part) |
+| S8-G4 cost robustness | PASS | team +0.005, stress +0.005 pp > 0; break-even gas ≥ 5 USDT ≥ 0.116 |
+| S8-G5 drawdown (P and T) | PASS | DD ≥ 8%: P 10.9% vs 11.3%, T 17.7% vs 17.7%; DD ≥ 12%: P 2.8% vs 2.7% (+0.2 pp ≤ +2), T 1.6% vs 6.5%; median max DD ratio P 1.02, T 0.99 |
+| S8-G6 T does not contradict | PASS | T upper bound +0.80 ≥ 0 |
+| S8-G7 breadth (≥ 5 of 8 years) | **FAIL** | 4 of 8 |
+| S8-G8 implementation bound | PASS | smallest leg 25.33 USDT; +0.03 legs; +0.0016% of equity (P), −0.009% (T) |
+
+**Outcome (pre-registered rule): INCONCLUSIVE.** No NOT SUPPORTED trigger fired (P upper bound +0.047 ≥ 0, S8's own
+P upper bound > 0, T upper bound ≥ 0, G5 passes, P2 negative but P1 positive), and G1, G2, G3 and G7 fail. On P the
+difference is indistinguishable from zero (+0.004 pp per window, about 0.007 USDT), the announcers did not beat the
+other names by anything near the 0.61% break-even (+0.09%), and the structure control explains the whole difference.
+T is positive (+0.40 pp) but it is 62 overlapping windows (7 independent), driven by TSLAB and the late-July GOOGLB/
+MSFTB predictions, and cannot decide anything. **S8 is not adopted; FS1 is unchanged; the announcement-premium edge in
+this basket is NOT_ESTABLISHED.**
+
+**Caveats.**
+1. *The signal is a noisy stand-in for real dates.* Announcement days are price-detected (largest basket-residual move
+   of the quarter), not true filing dates. Recent detected days include several that, from memory and unverified here
+   (no network), were not earnings reactions (e.g. NVDAB 2025-01-27 and 2025-04-09, GOOGLB 2025-09-03, MSFTB
+   2026-06-26), while others match the usual late-January/April/July/October reports. The test is therefore biased
+   toward zero; the deployment step 3 backtest with EDGAR Item 2.02 dates is the proper test and was not run.
+2. *Cost economics differ from the pre-registered estimate.* The arithmetic assumed S8 pays one or two extra pairs
+   each way. In simulation FS1-STATIC's 38 USDT positions usually exceed the 38.2 USDT leg cap after any gain, so its
+   flatten takes two legs per name, while S8's 33.25 and 25.33 USDT underweights still flatten in one. Net, S8 used only
+   +0.03 legs per window on P (+0.0016% of equity) and fewer on T. This is why the break-even gas reached the 5 USDT
+   search cap and S8-G4 passed. It depends on how the runtime splits a position slightly above 38.2 USDT (two legs in
+   the simulator), which was not checked against FS1's sell path.
+3. P is a proxy (Yahoo, research-only, D-09), with SKHYB at the KRX close; T is short and its "announcement days" come
+   from the proxy a year earlier.
+4. The overlapping windows are not independent; the block bootstrap only partly allows for it. 606 of 1,831 P windows
+   carry any tilt, so whole-sample differences are diluted by construction (the tilt-only row shows the same answer).
+5. The independence of the design is limited: prior S6/S7/EXP-008 results were partly seen before the criteria (see the
+   disclosure). S8's signal avoids those signals, but the choice of a non-price mechanism was informed by them.
+6. Even if it had passed, S8 would most likely hold FS1's exact book in the Oct 29 – Nov 12, 2026 run (scored-run note
+   above) and cannot be used there anyway (F-114, F-117, F-126).
+
+- 2026-10-26 note (Claude Code, with the results): the Economics table's "+0.108..0.142 USDT" for m = 1 is correct for
+  a flat market (tested); in moving markets the flatten-leg effect in caveat 2 offsets it. The criteria are unchanged.
