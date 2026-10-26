@@ -1,5 +1,16 @@
 # Current shared build and remaining work
 
+PR297-RV01 (2026-10-26 SGT): Keith's committed TH-01 evidence `cc8371bd…`
+independently replays as the identical five-name PASS, with all442 raw artifacts
+verified. Config generation now verifies source hashes, request identity, rows
+and availability; observation timing/count/alignment regressions are repaired.
+S5 and FS1 source/preparation checks pass offline, but **both remain blocked for
+deployment** on actual history config/adjustment choice, exact release/signer/
+owner bindings and current-host qualification. PR296 is already merged at
+`d4f7a6e0`; historical statements below that it awaits merge are superseded.
+[Readiness and owner checklist](S5_FS1_READINESS_20261026.md) /
+[review receipt](evidence/pr297-review-20261026.json).
+
 S5-SIZE01 (2026-10-26 SGT, source `2f9e886c…`, **supported offline; not installed**): S5 adds scoped 19-USDT
 high-level opening lots under its existing allocation/name/gross/cash limits. At recorded 81.37-USDT cash,
 four lots fit and a fifth is refused; BNB exclusion, measured minimum, exact cost gates and FS1 are unchanged.
