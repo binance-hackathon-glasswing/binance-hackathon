@@ -22,6 +22,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import time
@@ -129,19 +130,22 @@ def _symbol(polls, symbol, boundary):
                 for row in entry['rows']:
                     stamp = _stamp(row)
                     if (type(stamp) is not int or stamp > available + CLOCK_TOLERANCE_MS
-                            or (bar == '1h' and stamp % HOUR_MS)):
+                            or stamp % (HOUR_MS if bar == '1h' else MIN_MS)):
                         found['ts1'] = False
         live = []
         for p in polls:
             entry = p['symbols'][symbol]['1h']
-            if hour + 5 * MIN_MS <= p['at_ms'] < boundary and _ok(entry) and entry['rows']:
+            if _ok(entry) and entry['rows'] and hour + 5 * MIN_MS <= _ms(entry['available_at']) < boundary:
                 if _stamp(entry['rows'][-1]) == hour:
-                    live.append(json.dumps(entry['rows'][-1], sort_keys=True))
-        found['ts2'] = len(live) >= 2 and len(set(live)) > 1
-        after = [p for p in polls if p['at_ms'] >= boundary + GRACE_MS and _ok(p['symbols'][symbol]['1h'])]
+                    live.append((_ms(entry['available_at']), json.dumps(entry['rows'][-1], sort_keys=True)))
+        found['ts2'] = len({t for t, _ in live}) >= 2 and len({r for _, r in live}) > 1
+        after = [p for p in polls if _ok(p['symbols'][symbol]['1h'])
+                 and _ms(p['symbols'][symbol]['1h']['available_at']) >= boundary + GRACE_MS]
         frozen = [json.dumps(row, sort_keys=True) for p in after for row in p['symbols'][symbol]['1h']['rows']
                   if _stamp(row) == hour]
-        found['ts3'] = len(frozen) >= 3 and len(set(frozen)) == 1
+        frozen_times = {_ms(p['symbols'][symbol]['1h']['available_at']) for p in after
+                        if any(_stamp(r) == hour for r in p['symbols'][symbol]['1h']['rows'])}
+        found['ts3'] = len(frozen_times) >= 3 and len(set(frozen)) == 1
         if len(set(frozen)) > 1:
             found['contradictions'].append('TS3')
         last = next((p for p in reversed(after) if _ok(p['symbols'][symbol]['1m'])), None)
@@ -219,6 +223,62 @@ def production_port(creds, raw_root):
     return MarketPort(client, UNUSED_WALLET)
 
 
+def verify_sources(evidence, raw_root):
+    """Replay hash-bound public observations, never fetching replacements from the provider."""
+    class ArtifactClient:
+        def __init__(self):
+            self.sha = None
+
+        def request(self, method, endpoint, params):
+            if type(self.sha) is not str or not re.fullmatch('[0-9a-f]{64}', self.sha):
+                raise ContractError('Invalid source artifact hash')
+            raw = (raw_root / (self.sha + '.json')).read_bytes()
+            if hashlib.sha256(raw).hexdigest() != self.sha:
+                raise ContractError('Source artifact hash mismatch')
+            record = json.loads(raw)
+            if (record.get('schema') != 'Web3Observation.v1' or record.get('source_id') != 'BINANCE_WEB3'
+                    or record.get('method') != method or record.get('endpoint') != endpoint
+                    or record.get('params') != params or record.get('outcome') != 'ok'
+                    or type(record.get('http_status')) is not int or not 200 <= record['http_status'] < 300
+                    or type(record.get('response')) is not dict or type(record['response'].get('code')) is not int
+                    or record['response']['code'] != 0):
+                raise ContractError('Source request/response binding mismatch')
+            return dict(record, artifact_sha256=self.sha)
+
+    client = ArtifactClient()
+    port = MarketPort(client, UNUSED_WALLET)
+    record = evidence['record']
+    for name in ('metadata_start', 'metadata_end'):
+        metadata = record[name]
+        if 'error' not in metadata:
+            if set(metadata) != set(TOKENS):
+                raise ContractError('Incomplete metadata identities')
+            client.sha = metadata[sorted(TOKENS)[0]]['content_hash']
+            if _metadata(port) != metadata:
+                raise ContractError('Metadata source mismatch')
+    previous = None
+    for item in record['polls']:
+        stamp = item['at_ms']
+        if type(stamp) is not int or (previous is not None and stamp <= previous):
+            raise ContractError('Poll times must be strictly increasing')
+        previous = stamp
+        if set(item['symbols']) != set(TOKENS):
+            raise ContractError('Incomplete candle identities')
+        for symbol in sorted(TOKENS):
+            for bar, limit in REQUESTS:
+                entry = item['symbols'][symbol][bar]
+                if not _ok(entry):
+                    if type(entry) is not dict or set(entry) != {'error'}:
+                        raise ContractError('Invalid unavailable observation')
+                    continue
+                client.sha = entry['content_hash']
+                source = port.candles(symbol, bar=bar, limit=limit)
+                expected = dict(available_at=source['available_at'], content_hash=source['content_hash'],
+                                rows=source['rows'])
+                if entry != expected or _ms(entry['available_at']) < stamp - CLOCK_TOLERANCE_MS:
+                    raise ContractError('Candle source mismatch')
+
+
 def _probe(args, port_factory, clock, sleep):
     out = Path(args.out).expanduser()
     out.parent.mkdir(mode=0o700, parents=True, exist_ok=True)  # e.g. ~/larp-th01 on a first run
@@ -237,6 +297,7 @@ def _probe(args, port_factory, clock, sleep):
     summary = dict(status='TH01_PROBE_COMPLETE', verdict=assessment['verdict'], names_ok=assessment['names_ok'],
                    timestamp_evidence_sha256=sha, evidence=str(out / 'timestamp-evidence.json'))
     if assessment['verdict'] == 'PASS' and args.adjustment_version is not None:
+        verify_sources(evidence, out / 'raw')
         summary['config_sha256'] = _write_new(out / 'token-history.json', config_bytes(sha, args.adjustment_version))
         summary['config'] = str(out / 'token-history.json')
     print(json.dumps(summary, sort_keys=True))
@@ -244,13 +305,15 @@ def _probe(args, port_factory, clock, sleep):
 
 
 def _config(args):
-    raw = Path(args.evidence).read_bytes()
+    path = Path(args.evidence).expanduser()
+    raw = path.read_bytes()
     evidence = json.loads(raw)
     if evidence.get('schema') != 'TokenHistoryTimestampEvidence.v1':
         raise ContractError('Not a TH-01 timestamp evidence file')
     assessment = assess(evidence['record'])  # re-assess: the stored verdict is not trusted
     if assessment['verdict'] != 'PASS' or assessment != evidence.get('assessment'):
         raise ContractError('Evidence does not re-assess as the stored PASS')
+    verify_sources(evidence, path.parent / 'raw')
     sha = hashlib.sha256(raw).hexdigest()
     target = Path(args.out_file).expanduser()
     config_sha = _write_new(target, config_bytes(sha, args.adjustment_version))

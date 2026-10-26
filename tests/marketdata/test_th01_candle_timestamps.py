@@ -159,10 +159,32 @@ def run_probe(tmp_path, *args, mode='open', start='2026-10-26T13:40:00Z'):
 
     def factory(out):
         seen['out'] = out
-        return Market(clock, mode=mode)
+        return artifact_market(clock, out, mode=mode)
     code = th.main(['probe', '--out', str(tmp_path / 'probe'), *args], port_factory=factory,
                    clock=clock, sleep=clock.sleep)
     return code, tmp_path / 'probe'
+
+
+def artifact_market(clock, out, mode='open'):
+    """Synthetic provider observations in the production artifact format, without network access."""
+    from larp.marketdata.web3 import Artifacts
+    from larp.marketdata.port import MarketPort
+    market, artifacts = Market(clock, mode=mode), Artifacts(out / 'raw')
+
+    class Client:
+        def request(self, method, endpoint, params):
+            if endpoint == 'market/candles':
+                symbol = next(s for s, t in TOKENS.items() if t == params['tokenContractAddress'])
+                rows = market.bars(symbol, clock(), MIN if params['bar'] == '1m' else HOUR)[-params['limit']:]
+            else:
+                rows = [dict(tokenContractAddress=t, tokenSymbol=s, binanceChainId='56', decimals=18,
+                             tokenToShareRatio='1.0', tokenPrice='100', statusInfo=dict(openState=True))
+                        for s, t in TOKENS.items()]
+            record = dict(schema='Web3Observation.v1', source_id='BINANCE_WEB3', endpoint=endpoint,
+                          method=method, params=params, requested_at=iso(clock()), available_at=iso(clock()),
+                          http_status=200, outcome='ok', response=dict(code=0, data=rows))
+            return dict(record, artifact_sha256=artifacts.put(record))
+    return MarketPort(Client(), th.UNUSED_WALLET)
 
 
 def test_ts5_ts6_probe_writes_hash_bound_evidence_and_a_valid_config(tmp_path, capsys):
@@ -228,6 +250,67 @@ def test_ts5_missing_parent_directory_is_created(tmp_path, capsys):
                    sleep=clock.sleep) == 0
     assert json.loads(capsys.readouterr().out)['verdict'] == 'PASS'
     assert (out / 'timestamp-evidence.json').is_file()
+
+
+@pytest.mark.parametrize('damage', ['missing', 'changed', 'rows', 'availability', 'request', 'metadata'])
+def test_config_refuses_unbound_sources_even_when_assessment_still_passes(tmp_path, capsys, damage):
+    assert run_probe(tmp_path)[0] == 0
+    out = tmp_path / 'probe'
+    path = out / 'timestamp-evidence.json'
+    doc = json.loads(path.read_bytes())
+    entry = doc['record']['polls'][0]['symbols']['NVDAB']['1h']
+    artifact = out / 'raw' / (entry['content_hash'] + '.json')
+    if damage == 'missing':
+        artifact.unlink()
+    elif damage == 'changed':
+        artifact.write_bytes(artifact.read_bytes() + b' ')
+    elif damage == 'rows':
+        # Volume does not participate in the TS4 calculation; PASS must still not bless edited source rows.
+        entry['rows'][-1][4] = '99999'
+    elif damage == 'availability':
+        entry['available_at'] = iso(ms(entry['available_at']) + 1000)
+    elif damage == 'request':
+        source = json.loads(artifact.read_bytes())
+        source['params']['tokenContractAddress'] = TOKENS['TSLAB']
+        raw = th._encoded(source)
+        entry['content_hash'] = hashlib.sha256(raw).hexdigest()
+        (out / 'raw' / (entry['content_hash'] + '.json')).write_bytes(raw)
+    else:
+        doc['record']['metadata_start']['NVDAB']['tokenToShareRatio'] = '99'
+    assert th.assess(doc['record']) == doc['assessment']
+    path.write_bytes(th._encoded(doc))
+    target = tmp_path / 'never.json'
+    assert th.main(['config', '--evidence', str(path), '--adjustment-version', 'v1',
+                    '--out-file', str(target)]) == 4
+    assert not target.exists()
+
+
+def test_ts2_uses_response_time_when_a_poll_crosses_the_boundary():
+    record = collected()[0]
+    for item in record['polls']:
+        if item['at_ms'] < record['boundary_ms']:
+            for entries in item['symbols'].values():
+                entries['1h']['available_at'] = iso(record['boundary_ms'])
+    result = th.assess(record)
+    assert result['verdict'] == 'INCONCLUSIVE'
+    assert all(not v['ts2'] for v in result['symbols'].values())
+
+
+def test_ts3_duplicate_response_times_do_not_count_as_three_observations():
+    record = collected()[0]
+    for item in record['polls']:
+        if item['at_ms'] >= record['boundary_ms'] + th.GRACE_MS:
+            for entries in item['symbols'].values():
+                entries['1h']['available_at'] = iso(record['boundary_ms'] + th.GRACE_MS)
+    result = th.assess(record)
+    assert result['verdict'] == 'INCONCLUSIVE'
+    assert all(not v['ts3'] for v in result['symbols'].values())
+
+
+def test_ts1_rejects_misaligned_minute_labels():
+    record = collected()[0]
+    record['polls'][0]['symbols']['NVDAB']['1m']['rows'][0][5] += 1
+    assert 'TS1' in th.assess(record)['symbols']['NVDAB']['contradictions']
 
 
 def test_ts5_production_port_uses_the_history_transport(tmp_path):

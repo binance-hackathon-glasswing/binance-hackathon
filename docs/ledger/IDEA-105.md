@@ -143,3 +143,15 @@ across the 10:00 UTC boundary (H = 09:00), in the Asian session rather than the 
 
 Remaining (TH-01): Keith chooses `token_adjustment_version` and runs the `config` step above on this evidence;
 Keegan reviews the binding before the file goes to `prepare_shadow.py` / `prepare_fs1.py --token-history-config`.
+
+## PR297-RV01 — prospective review checks (2026-10-26 SGT)
+
+Before new verification: config generation must verify every successful candle/metadata observation against its
+hash-named raw Web3 artifact, exact request identity, response and availability. Missing, modified, misbound or
+edited observations must refuse config creation even when their stored assessment still says PASS. Replay uses
+the production MarketPort parser with an artifact-only client, with no provider calls. Synthetic evidence remains
+test-only and never establishes provider qualification. Require distinct response times for TS2/TS3, classify
+observations by response availability rather than poll-start time, and reject misaligned minute labels (TS1).
+These enforce the existing observation/source contract; preserve the original live evidence and TS4 calculation.
+Run probe/history/preparation/S5/FS1 focused checks and the pinned Python3.12.15/PostgreSQL14.24 full suite;
+record skips and deployment prerequisites separately. Code is committed/pushed before any execution.
