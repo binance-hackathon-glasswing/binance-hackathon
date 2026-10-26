@@ -412,4 +412,33 @@ packages after installation. Stop at an actual refusal and preserve its evidence
 
 Initial AWS identity check refused because the `larp` login expired. User asked to run `aws login --profile larp`;
 local preparation continues while authentication is pending. No host change has occurred at this point.
+
+### S5-DEPLOY01 preparation / authorization binding
+
+User subsequently confirmed login and "full permission to complete deployment including using my terminal".
+AWS authentication works. Initial read-only run6 checks: all four primary services active/zero restarts,
+archive healthy (19 anchors/four backups ACK), no quarantine, all five stock positions zero, cash81.373047USDT,
+BNB0.024973109594021811. Both runtime model credential names are populated (values not printed).
+
+M1-local PASS: canonical `c997df2c…`, bundle SHA-256
+`590280b653b8946ec4ee57bfc133f143e3e652c2198a8453fb1c9b7f4b9bc218`, manifest
+`f842043ebee74dfe01a1983ad4ff50e7052a5793c7eafa0e204a81e9ac308fa8`;
+file comparison against original CI RC4 passed, pinned Python3.12.15/CA/provisioner unchanged.
+D1 PASS: new empty `larp_rehearsal7`,21 tables,13 matching migrations, all five roles/connect and privilege checks.
+M2 PASS: verified bundle uploaded (98,468,977bytes, SSE-KMS).
+
+M3 `20261026T114558Z`:98 checks, numeric COVERED, no missing coverage. Signer
+`1b2bca7f7f9ce8694c016c05e48f61dde438e0b90b36dea03cbf8bbcc4d90559`
+differs from run6 `1e052e26…` only in build/run/database identity; signing policy and enabled recovery identical.
+M4 PASS before retirement: package `package-20261026T114801Z`, all seven local qualification checks PASS,
+bound shared manifest `1a57fa73bc7872bd6ef9df9fba841df2b7c869453c8fdcb96c946fa5d4333d00`,
+history/profile/routing pins exact, local signer `check` PASS. Fresh stock capital81.273047USDT supports four
+19-USDT lots. Preparation readiness flags retain their scoped false values pending actual host acceptance.
+
+Yao's direct deployment authorization above applies to this selected S5 scope and the reviewed identity-only
+signer candidate; it is the operator review reference for activation. No new approval statement is attributed
+to Isaac/Keegan. The prior approved signing policy/caps are unchanged; no policy refusal is overridden.
+B1 read-only PASS: existing account `larp-openai-2026`,50,000,000microUSD total,3,217,536microUSD charges retained.
+No ledger reset/init or private invoice reconciliation is claimed. Private results are under
+`deploy/activation/rehearsal-install-s5-20261026/` in the original checkout.
 with the existing owners. The cash sizing implementation is complete; no funding transfer or FS1 change is needed.
