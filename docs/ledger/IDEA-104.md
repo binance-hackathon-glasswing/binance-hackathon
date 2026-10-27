@@ -392,3 +392,19 @@ GitHub run `40287198787` did not start jobs: its runtime annotation says recent 
 spending limit needs increasing. Hosted CI is **unavailable**, not a tested code failure. Real TH-01 history,
 fresh hosted inputs and exact profile/probe/signer/release acceptance, host qualification and installation remain
 with the existing owners. The cash sizing implementation is complete; no funding transfer or FS1 change is needed.
+
+
+## S5-SMALL01 — proportional small-wallet rehearsal, Oct27 19:00SGT flatten
+
+User instruction, 2026-10-27 SGT: amend S5 to buy now and sell at19:00, to exercise FS1 on a smaller wallet and shorter timeline. This is a development rehearsal only. FS1 FINAL remains unchanged.
+
+Design, registered before implementation/tests: replace the S5-only19-USDT high-level lot with ordinary FS1 proportional targets at every trend/limiter level. For this smaller wallet only, adopt `s5_entry_cost_cap_bps=200` (2%) instead of FS1's50bp. Recompute the measured entry minimum against the same200bp; the exact quote gate also uses200bp. Keep authorized-minimum output,20bp slippage, measured impact,0.10USDT cost reserve, all risk/model/history/gas/recovery and serial-wallet controls. This deliberately changes rehearsal economics; it is pipeline evidence, not an equivalent after-cost FS1 return experiment. No human-selected instrument or order.
+
+Window (UTC): trade_after2026-10-27T04:00Z (12:00SGT, immediate on deployment); new_risk_end10:00Z (18:00SGT); flatten_start11:00Z (19:00SGT); signing_end15:00Z (23:00SGT). Sell starts at19:00; completion depends on autonomous execution and market availability. Install as fresh run8 on a reconciled flat development wallet to preserve run7's journal and avoid its growing cold-start history.
+
+Prospective pass criteria:
+- SMALL-1: live validation accepts the exact200bp opt-in only for gas-excluded S5 REHEARSAL; FINAL/other policies, malformed values and simultaneous19-USDT lot are refused. Historical profiles retain50bp behaviour.
+- SMALL-2: builder/profile/probe reproduce; measured minimum is computed from200bp, below the ordinary30%/60% targets at recorded wallet size; all four FS1 files and S4 rebuild byte for byte.
+- SMALL-3: flat DOWN60% generates ordinary proportional BUYs; five serial synthetic settlements fit cash/gross limits with no immediate sell-back, including process-state reconstruction. High/low/limiter levels preserve proportional targets; risk halts, market closure, gas, quote-cost/impact and total/name caps remain effective.
+- SMALL-4: quotes above200bp or the cost reserve are refused; no opt-in keeps50bp. Buys stop18:00SGT; all holdings become mandatory sells19:00SGT; signing ends23:00SGT.
+- SMALL-5: appropriate strategy/risk/preparation/execution/ops checks and pinned full-suite pass with exact counts. Publish code before any host execution; fresh capture/caps/signing policy and registered manifest must bind the new profile. Verify actual history/model/log delivery and report observed autonomous orders honestly.
