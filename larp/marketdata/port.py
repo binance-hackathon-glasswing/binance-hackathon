@@ -204,8 +204,11 @@ class MarketPort:
         elif slippage is None:
             slippage = '0.5'  # Unqualified read-only measurements retain the legacy sampling setting.
         pay, receive = (USDT, TOKENS[symbol]) if side == 'BUY' else (TOKENS[symbol], USDT)
+        # IDEA-104 OBS03-B2-RQ02: no RFQ routes (their maker orders live ~1.5 s), so planning and execution quote
+        # the same route family.
         return self.call('aggregator/quote-and-swap', dict(amount=str(pay_units), fromTokenAddress=pay,
-                        toTokenAddress=receive, userWalletAddress=self.wallet, vendor='LiquidMesh', slippagePercent=slippage))
+                        toTokenAddress=receive, userWalletAddress=self.wallet, vendor='LiquidMesh', slippagePercent=slippage,
+                        enableRFQ='false'))
 
     @observation_boundary
     def observe(self, request):

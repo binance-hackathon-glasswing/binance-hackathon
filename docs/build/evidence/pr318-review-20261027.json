@@ -1,0 +1,67 @@
+{
+  "id": "PR318-RV01",
+  "pr": 318,
+  "runtime_tool_test_source": "a857d03df4882d4bbe4ea9c366b8174e591f299e",
+  "canonical_base": "305bccfa05d2b9db61c4284648b15d8d3d14ecc9",
+  "source_acceptance": "PASS_FOR_MERGE",
+  "repairs": [
+    "New private raw output outside checkout before credentials/network, including symlink/existing/default TMPDIR refusals",
+    "Preserve native gas-top-up scope; RFQ hint/refusal only for bStock intents",
+    "Correct unverified official parameter/default claims; retain empirical RV02 evidence and RFQ refusal"
+  ],
+  "environment": {
+    "system": "Linux",
+    "python": "3.12.15",
+    "postgres": "14.24-bookworm"
+  },
+  "full_suite": {
+    "passed": 3108,
+    "subtests_passed": 4154,
+    "skipped": 8,
+    "failed": 0,
+    "seconds": 301.84,
+    "command": "python -m pytest -q -rs -p no:cacheprovider --junitxml=/results/full-final.xml",
+    "junit_sha256": "9a31ba65655a90d8116ff0a17155f346d7b77a18f5eded353a2ba6eb376ddcf8"
+  },
+  "focused": {
+    "passed": 24,
+    "subtests_passed": 30
+  },
+  "nonroot_permission_rerun": {
+    "passed": 1,
+    "skipped": 0
+  },
+  "combined_distinct_passed": 3109,
+  "remaining_unrun": {
+    "systemd": 5,
+    "optional_external_private_fixtures": 2
+  },
+  "demo": "PASS",
+  "pip_check": "PASS",
+  "diff_check": "PASS",
+  "hosted_ci": "Jobs did not start: account payments/spending limits; run40529179769",
+  "original_evidence_unchanged": true,
+  "packets": {
+    "RV01": {
+      "sha256": "ea2884c81bc41a9a472e9ff61f5b1a3999a5a32073deb5b8c9ffd8e2cd2954ec",
+      "quotes": 30,
+      "rfq_routes": 3,
+      "successful_simulations": 246,
+      "simulations": 258
+    },
+    "RV02": {
+      "sha256": "47430483765c0e7f3c2cffd1fee1fe277c2a6eab71490916fd4b12b7a10d29f0",
+      "quotes": 30,
+      "rfq_routes": 0,
+      "successful_simulations": 270,
+      "simulations": 270
+    }
+  },
+  "documentation_check": {
+    "page": "https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/trading-api",
+    "schema": "https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/1.0.0/schema.json",
+    "finding": "Available web snapshots did not include the claimed parameter/defaults; older crawl dates. Direct HTML download was empty and is not current-source verification. No backend rejection/support guarantee inferred."
+  },
+  "deployment": "NOT_PERFORMED",
+  "remaining": "Exact release/systemd/bundle, registered both-host/live RQ-5/RQ-8, actual AMM entry-cost admission; independent PR317 remains separate"
+}

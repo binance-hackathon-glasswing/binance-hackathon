@@ -744,6 +744,184 @@ IAM GetInstanceProfile read is AccessDenied. T1 restoration needs the authorized
 plan/apply. No service, key, signer policy, wallet or hosted run state was changed; local SDK/test dependencies and
 disposable PostgreSQL were used. Exact release/systemd/host qualification and run8 cleanup remain prerequisites.
 
+### OBS03-B2-RV01 — read-only RFQ validity measurement (2026-10-27; criteria before code)
+
+Authorization: Keith (user) asked on 2026-10-27 for a read-only collector, built off the integration branch and run
+locally with the read-only Web3 key pair. Question: how long a fresh quote's swap calldata stays executable, measured
+as actual elapsed time since the quote response, and whether RFQ-routed quotes already fail at the first probe
+(upstream order arrives expired) or after a measurable window. LD02c could not answer this (nominal delays only, see
+the IDEA-070 correction); run 8 saw `RFQ_OrderExpired` about 5 s after fresh post-approval quotes.
+
+Method: `tools/deploy/rfq_validity_check.py`, run on a workstation, never a host. BUY 15 USDT (run 8's per-name
+size) USDT → each of the five bStocks, from the public dev wallet address, `slippagePercent` 0.2 (S5's 20 bp). One
+quote at a time. Each quote's exact calldata is simulated with `eth_estimateGas` on the public read RPC
+(`BSC_BNBCHAIN_PUBLIC`) with a USDT balance and router-allowance state override (LD02c's slots 1 and 2), immediately
+after the response and then at target ages 1, 2, 3, 5, 8, 12, 20 and 30 s. Probing stops after an RFQ failure is seen
+twice in a row, or after the 30 s probe. Six rounds over the five symbols (30 quotes, about 15 minutes). The calldata's
+32-byte words are also scanned for Unix-second values within ±1 h of the latest block time and reported as offsets,
+to look for an encoded RFQ expiry. The simulation is the same chain check the API's `pre-transaction/gas-limit`
+performs, but not that endpoint itself.
+
+Tool criteria (offline, before the live run):
+- RV-1 read-only: the Web3 client allows only `GET aggregator/quote-and-swap`; the RPC allows only `eth_chainId`,
+  `eth_getBlockByNumber`, `eth_call` (USDT `balanceOf`/`allowance` only, with exactly the override) and
+  `eth_estimateGas` (from the dev wallet, to the pinned router, value 0, exactly a fresh quote's calldata, exactly the
+  override). Every other call is refused before any network access. No signer, private key, submit endpoint, AWS or
+  database is loaded.
+- RV-2 timing: every probe records its actual start age since the quote response was received (monotonic ms) and
+  its target; result keys are never nominal-only.
+- RV-3 override proof: before any simulation, `eth_call` with the override must return the overridden balance and
+  allowance; otherwise the packet is NOT_RUN with no simulation.
+- RV-4 output: the committed packet holds no credentials, RPC URL, wallet or calldata (fingerprints only); the
+  sanitizer refuses otherwise. Raw quote responses stay in a private directory outside the checkout.
+- RV-5 offline tests cover RV-1..RV-4 and the classification below; they and `tests/execution/test_quote_check.py`
+  pass.
+
+Interpretation rules (fixed before the live run):
+- A quote is RFQ-failing if any probe returns an `RFQ_*` revert. It "arrived expired" if its first probe (actual age
+  ≤ 2 s) returns `RFQ_OrderExpired`. Otherwise its validity is bounded by (last success age, first failure age].
+- If every RFQ-failing quote arrived expired: the inner order is unusable as quoted; no client latency reduction can
+  fix it, and the remedy is to treat it as a route refusal (re-quote or skip the leg within existing bounds) and raise
+  it with the provider. If bounds exist: compare the lower bound with run 8's measured ~5 s from re-quote to gas
+  estimate, plus the signer and broadcast path.
+- If no quote is RFQ-failing: INCONCLUSIVE for RFQ validity (routing is chosen per quote, IDEA-070 LD09), not a fix.
+- Results are observed outcomes for this window and size, not a guaranteed TTL. Non-RFQ reverts are reported
+  separately and not counted as RFQ expiry.
+
+Criteria amendment after a 1-round smoke run (2026-10-27 13:13Z, tool `d5871635`, recorded before the full run).
+The smoke run proved the override (RV-3) and probed all five symbols. MSFTB's quote was executable at 0.37 s, reverted
+at 1.0 s and 2.0 s, and returned `RFQ_OrderExpired` at 3.0 s. Inspecting its raw response locally showed two things the
+criteria had not anticipated:
+- The quote response does mark the route: `routerResult.dexRouterList[].dexProtocol.dexName` = `Rfq Neptunex`
+  (100 %). The tool now records each leg's `dexProtocol` name and percentage and flags `rfq_route` for names starting
+  "Rfq". This contradicts the LD02c R1 conclusion (IDEA-070) that nothing in the response marks an RFQ route; that
+  collector read only top-level scalar fields of each `dexRouterList` item, not the nested `dexProtocol`.
+- The calldata carries a packed (not 32-byte-aligned) 4-byte Unix time 1.55 s after the quote response, twice, next
+  to the outer deadline at +499.6 s. The scan now covers every byte offset (4-byte seconds and 6-byte ms values with a
+  non-zero leading byte, within ±1 h of block time) and reports offsets from both the block time and the response.
+- Non-RFQ revert messages now keep the provider's short `Error(...)` reason (letters, digits, underscore and space;
+  60 characters at most), still subject to the public-packet scan.
+Interpretation rules are unchanged; an encoded short time is evidence about the order's intended lifetime, while the
+probe outcomes remain the measurement.
+
+### OBS03-B2-RV01 results (2026-10-27, live read-only)
+
+Tool `cd7cce73`, run 13:15:51–13:29:54Z from a workstation (`BSC_BNBCHAIN_PUBLIC`, 6 rounds × 5 symbols, BUY
+15 USDT). Packet: [rfq-validity-rv01-20261027.json](../build/evidence/rfq-validity-rv01-20261027.json), SHA-256
+`ea2884c81bc41a9a472e9ff61f5b1a3999a5a32073deb5b8c9ffd8e2cd2954ec`. No signature, approval, broadcast, host, wallet or
+profile change; raw quote responses were kept outside the repo.
+
+- RV-1..RV-5 PASS: 9 offline tests plus `test_quote_check.py` (19 passed, 17 subtests); the override proof held;
+  the packet holds no credential, RPC URL, wallet or calldata.
+- First probes ran 0.32–0.43 s after the quote response; quote requests took 138–247 ms.
+- **Verdict `RFQ_VALIDITY_WINDOW_OBSERVED`.** 3 of 30 quotes were RFQ-routed, all MSFTB, all named `Rfq Neptunex`
+  (100 %). Each was executable at its first probe (0.33, 0.35 and 0.33 s), reverted at 1.0 s and 2.0 s (no reason
+  string), and returned `RFQ_OrderExpired` at 3.0 s and 5.0 s. Observed validity bounds: (0.33, 1.0] s. None arrived
+  expired.
+- Each RFQ calldata carried a packed Unix time 1.49–1.61 s after the quote response, which matches the observed
+  window: the maker's order is built to live about 1.5 s (time resolution is whole seconds).
+- The other 27 quotes (all five symbols, including MSFTB three times through Pancakeswap V3 or Uniswap V3) used AMM
+  routes (Tessera V, Metric V2, Pancakeswap V3, Uniswap V3/V4, Elfomofi) and simulated successfully at every probe
+  through 30 s. The route name matched the failures exactly: every `Rfq` quote failed and no other did.
+
+Conclusions (observations for owners, not adopted decisions):
+- The RFQ order lives about 1.5 s from the quote response. Run 8 needed about 5 s from re-quote to gas estimate, and
+  the signed path adds signing and broadcast, so no realistic latency reduction makes an RFQ route usable. NEXT01-R1's
+  retry of the whole quote/gas step can only help when the next quote happens to be an AMM route.
+- RFQ routes are detectable at quote time from `dexProtocol.dexName`, which corrects IDEA-070 LD02c R1/R4. Treating
+  an `Rfq` route as a refused quote (re-quote within the existing probe budget, else skip the leg) would avoid the
+  approve-then-expire pattern; refusing it before the approve also avoids the open allowance seen in run 8. That is an
+  execution change needing its own criteria and Isaac/Keegan's acceptance.
+- Scope: one 14-minute window on a Tuesday (US market hours), one size, BUY only. The maker's lifetime and how often
+  RFQ is chosen may differ at other times, sizes or for SELL. This is not a guaranteed TTL.
+
+### OBS03-B2-RQ01 — refuse RFQ-maker quotes in execution (2026-10-27; criteria before code)
+
+Authorization: Keith (user) asked on 2026-10-27 for the change, written for Isaac/Keegan's review. **Not adopted until
+Isaac (execution/signer policy) and Keegan (execution owner) accept it**; no host, profile, signer policy or release
+changes here.
+
+Design: `LiveVenue._quote` (the execution re-quote used before the approve and again before the swap, including
+IDEA-090's tighter second request) inspects every `dexName` under the response's `routerResult`. If any name contains
+`rfq` (case-insensitive; covers `Rfq Neptunex` from RV01 and `PcsXRfq` from E-12), it raises
+`DependencyUnavailable('fresh quote uses an RFQ maker route')`. That reuses the executor's existing semantics: the
+probe is already persisted, nothing is prepared or signed, and the next `prepare` re-quotes inside the original probe
+budget and authority (NEXT01-R1). If every remaining quote is RFQ, the existing budget-exhaustion and zero-only cleanup
+paths apply unchanged. A response with no `dexName` anywhere is not refused by this check; every other quote check,
+the decoder and the pre-sign simulation still apply. Planning quotes (`MarketPort`) are unchanged.
+
+Pass criteria:
+- RQ-1 venue: a quote with an `rfq` name in any leg (only leg, partial leg, any letter case, nested anywhere under
+  `routerResult`) is refused with `DependencyUnavailable` and leaves no vendor recorded, so `approve` stays refused.
+  The same applies when the RFQ route first appears on IDEA-090's tighter second request. AMM names (the seven seen in
+  RV01) and responses without names pass as before.
+- RQ-2 before the approve: an RFQ quote consumes one prepare probe and produces no attempt, payload or signature; the
+  intent stays ACTIVE without `abort_pending`. A following AMM quote prepares the APPROVE normally.
+- RQ-3 after the approve: an RFQ quote keeps the confirmed approval and the original intent (no cleanup); a following
+  AMM quote completes the swap. RFQ quotes on every remaining probe exhaust the budget and the existing
+  `abort_unsigned` clean-up starts; no extra probe or authority is created.
+- RQ-4 regression: the venue, re-quote, pre-sign simulation, allowance-recovery and execution suites pass, plus
+  the pinned full suite where the local environment allows (exact counts and any environment skips recorded).
+- RQ-5 (live, not claimed here): the next rehearsal shows an RFQ quote refused before the approve, or reports that
+  none occurred.
+
+### OBS03-B2-RQ02 — request quotes without RFQ (`enableRFQ=false`) (2026-10-27; criteria before the run and code)
+
+Keith asked on 2026-10-27 that the change actually fix the RFQ issue; refusal alone only skips RFQ quotes.
+The original preparation note claimed the official Web3 trading-API page documented `enableRFQ`, its defaults,
+`excludeDexes` and a short-deadline warning. **PR318-RV01 correction:** the web-readable page, Flash API query table
+and linked schema snapshots available to this reviewer could not reproduce any of those entries. Their crawl dates
+were older; a direct HTML download returned an empty body and is not usable verification of current documentation.
+Those documentation/default claims are unverified and are
+not the basis for adoption. `enableRFQ=false` is retained as an empirically tested request hint from the RV02
+packet below, with RFQ-name refusal as the execution backstop; provider support and a route/TTL guarantee are not
+inferred. Neither parameter appears in the verbatim kit. The endpoint, vendor, local signing and router stay the
+same; native gas-top-up quote parameters are preserved without this unqualified hint.
+
+Live read-only check (RV02), before any code change: the RV01 collector with `--disable-rfq` sends `enableRFQ=false`
+on each probed quote, after an unprobed default quote for the same symbol and size for comparison. 6 rounds × 5
+symbols, BUY 15 USDT, same probes and override.
+- RV02-1 PASS requires: every `enableRFQ=false` quote is answered and routes through no `rfq`-named DEX; no probe
+  returns an `RFQ_*` revert; every quote simulates successfully at every probe through 30 s (non-RFQ failures are
+  reported and examined, not counted as RFQ).
+- RV02-2 (cost, recorded not gated): for each pair, whether the default quote chose RFQ and the output difference in
+  bp `(default − no-RFQ) / default`. A material RFQ price advantage goes to the owners as a trade-off.
+- If RV02-1 fails (RFQ still chosen or expiries still seen), the parameter is not effective and only RQ01 applies.
+
+Code criteria if RV02-1 passes:
+- RQ-6: execution's `LiveVenue` quote and the planner's `MarketPort.quote` both send `enableRFQ="false"` for bStock
+  quotes, so the authorized minimum and the execution re-quote come from the same route family (no repeat of the
+  IDEA-090 S2-F6 shortfall). RQ01's refusal stays as the backstop. Gas top-up quote parameters are unchanged;
+  RV02 only qualified bStock BUY requests, not provider behavior for native top-ups.
+- RQ-7: request-binding and replay checks (quote verifier, router replay, caps review) accept the parameter; affected
+  suites and the pinned full suite pass with exact counts.
+- RQ-8 (live, not claimed here): the next rehearsal shows no RFQ route and no `RFQ_OrderExpired`.
+
+### OBS03-B2-RQ01/RQ02 results (2026-10-27)
+
+**RV02 live read-only** (tool `0a863816`, 13:45:40–14:01:11Z, `BSC_BNBCHAIN_PUBLIC`, 6 rounds × 5 symbols, BUY 15 USDT):
+[rfq-validity-rv02-20261027.json](../build/evidence/rfq-validity-rv02-20261027.json), SHA-256
+`47430483765c0e7f3c2cffd1fee1fe277c2a6eab71490916fd4b12b7a10d29f0`. Override proof held. The packet's `verdict`
+label (`INCONCLUSIVE_NO_RFQ_FAILURE_OBSERVED`) is RV01's wording for "no RFQ failure"; RV02 is judged by RV02-1.
+- **RV02-1 PASS.** All 30 `enableRFQ=false` quotes were answered; none routed through an `rfq`-named DEX; all 270
+  probes simulated successfully, the last at 30.0 s for every quote. MSFTB routed through Pancakeswap V3 every time.
+- **RV02-2 (cost).** The paired default quote chose `Rfq Neptunex` for MSFTB in all 6 rounds (3 of 6 in RV01), and
+  its quoted output was 30.6–44.2 bp above the no-RFQ quote. That price was not executable (RV01: expired by 1 s). For
+  the other four symbols the default and no-RFQ quotes differed by −2.0 to +1.7 bp, with no RFQ route chosen.
+- Observation for owners: MSFTB's executable price is the AMM route's. If its cost against the reference price
+  exceeds a profile's entry-cost gate (FS1 50 bp; S5 rehearsal 200 bp), the gate refuses MSFTB entries as designed.
+  Not measured against the gate here.
+
+**Code** (`f285b859`, `larp/execution_live/venue.py`, `larp/marketdata/port.py`): execution and planning bStock
+quotes send `enableRFQ="false"`; any `rfq`-named route that still appears is refused with `DependencyUnavailable`, and a
+quote that fails any check clears the recorded vendor, so `approve` needs a passing quote. Gas top-up quotes unchanged.
+- RQ-1..RQ-3, RQ-6 PASS: `tests/execution/test_rfq_route_refusal.py` 10 tests / 9 subtests. The 8 RQ-1..RQ-3 tests
+  run against the pre-fix venue gave 11 failures and 2 passes, counting subtests.
+- RQ-7: no binding or replay check compares exact parameter sets (quote verifier, router replay, caps review read
+  named keys). Execution, marketdata and signer suites with PostgreSQL 14.24: **676 passed, 1 skipped,
+  1471 subtests**. Full suite on `f285b859` (macOS, Python 3.12.14, PostgreSQL 14.24): **3096 passed, 10 skipped, 4150 subtests, 1 failed**. The failure, `test_archive_budget.py::test_ar7…`, needs Linux `/proc/self/clear_refs` and fails the same way without this change (3093 passed on the RQ01-only tree). Not run here: the pinned Linux image.
+- Not claimed: RQ-5/RQ-8 (live rehearsal), Isaac/Keegan acceptance, and a release built from this commit.
+
 ## S5-COST01 — separate cash cushion from discretionary cost admission (proposal)
 
 Yao requested a new review PR on 2026-10-27 after confirming gas is already
@@ -1042,3 +1220,54 @@ merge and exact-release qualification; approved operator retains fresh holdings/
 registered same-run both-host upgrade and temporary-access teardown. No host, key, paid model/provider, real
 signature/broadcast, wallet or historical-attempt mutation. [Report](../build/PREPARE_FENCE_REPAIR_20261027.md) /
 [review receipt](../build/evidence/fence01-review-20261027.json).
+
+### PR318-RV01 — review criteria (2026-10-27, before regression runs)
+
+User authorizes review, fixes and merge of PR318. Canonical `305bccfa` was merged normally into the PR branch.
+Keep fixes in one additive commit; do not amend/rewrite the already-pushed history.
+
+Review findings and prospective pass criteria:
+- RV318-1: the collector promises private raw output outside the checkout, but `--out` currently accepts an
+  in-repository, existing or symlinked target. Reject checkout paths (including linked worktree source roots),
+  symlink aliases and existing directories before credential/network access; create a new private directory
+  outside the checkout. Offline refusal tests must prove no credentials or network calls occur.
+- RV318-2: the available web-readable official trading-API query table did not contain `enableRFQ`,
+  `excludeDexes` or the claimed default/short-deadline statement. Correct the unverified documentation claim;
+  retain RV02 as observed parameter/route evidence, not an independently verified vendor contract or TTL guarantee.
+  Keep the RFQ-name refusal and all economic/gas/nonce/signer limits. Do not change native gas-top-up quote
+  parameters, which RV02 did not qualify; add a synthetic request-scope regression.
+- Recompute the two committed packets' summaries, counts and hashes without changing original evidence.
+  Run collector/execution/marketdata/signer regressions and full pinned Linux/Python3.12.15/PG14.24 checks.
+  Any environment failures remain explicit. No new live quote, key, model, AWS, host or wallet action.
+  Keep exact release/host/live RQ-5/RQ-8 acceptance open; this is source acceptance for merge only.
+
+Official page checked: https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/trading-api
+(visible Flash API query table and linked OpenAPI1.0 schema, inspected 2026-10-27; available web snapshots had
+older crawl dates). A direct HTML download produced an empty body, so it is not usable current-source evidence.
+Absence from the readable snapshots does not prove the backend refuses the parameter; it prevents presenting the
+documentation/default claim as independently verified.
+
+### PR318-RV01 results — source accepted for merge
+
+User delegated conditional review/fix/merge. Canonical `305bccfa` was merged normally; reviewed runtime/tool/test
+source is `a857d03d`. Collector raw output now refuses checkout paths/symlink aliases, existing targets and a
+repository-local default TMPDIR before credentials/network access; successful new targets are private0700.
+The RFQ hint/backstop applies only to bStock intents, preserving native gas-top-up request/route behavior.
+Unverified official-documentation/default claims are corrected; RV02 remains empirical evidence, not a provider
+contract or route/TTL guarantee. Original execution/signing/economic limits and captured packets are unchanged.
+
+Meaningful red regressions reached credentials for forbidden output paths, failed new-directory creation and
+showed the unintended native request parameter; final focused24 tests/30 subtests pass. Full pinned
+Linux/Python3.12.15/PG14.24:3108 passed/4154 subtests,8 skipped,zero failures in301.84seconds. One skipped
+root-directory-mode case passes separately as non-root, giving3109 distinct passes and7 unrun (5 systemd,
+2 optional external/private fixtures). Earlier author macOS clear_refs failure passes here. Preliminary full run
+was stopped for the default-temp guard follow-up; final results above are on the pushed final source. Demo,
+pip/diff checks pass. Hosted Actions40529179769 did not start due account payments/spending limits.
+
+Original RV01/RV02 hashes and summaries/classification/actual-age/cost arithmetic reproduce. RV01:30 quotes,
+3 RFQ routes,246 successful simulations/258 total. RV02:30 quotes,zero RFQ routes,270/270 simulations successful.
+No private raw replay or new live provider measurement. Release owner retains exact release/systemd/bundle;
+approved operator retains registered both-host and live RQ-5/RQ-8 acceptance; strategy owners retain actual AMM
+cost admission. PR317's preparation repair remains separate. No host/key/wallet/profile/policy/deployment or
+whole GAP closure. [Review](../build/PR318_REVIEW_20261027.md) /
+[receipt](../build/evidence/pr318-review-20261027.json).

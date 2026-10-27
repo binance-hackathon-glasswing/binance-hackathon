@@ -19,6 +19,19 @@ def boundary(fn):
     return wrapped
 
 
+def dex_names(value):
+    """Every `dexName` string under a quote's `routerResult` (route legs sit at `dexRouterList[].dexProtocol`)."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key == 'dexName' and isinstance(item, str):
+                yield item
+            else:
+                yield from dex_names(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from dex_names(item)
+
+
 class LiveVenue:
     mode='live'
     periodic_reconciliation = True
@@ -26,13 +39,22 @@ class LiveVenue:
         self.client,self.chain,self.decoder,self.release=client,chain,decoder,release
         self.vendors = {}
     def _quote(self,intent,slippage_bps):
-        r=self.client.request('GET','aggregator/quote-and-swap',dict(binanceChainId='56',amount=str(intent.amount),
+        params=dict(binanceChainId='56',amount=str(intent.amount),
              fromTokenAddress=intent.pay_token,toTokenAddress=intent.receive_token,userWalletAddress=intent.wallet,
-             vendor='LiquidMesh',slippagePercent=slippage_percent(slippage_bps)))
+             vendor='LiquidMesh',slippagePercent=slippage_percent(slippage_bps))
+        stock = intent.kind == 'BSTOCK_TRADE'
+        if stock:
+            params['enableRFQ'] = 'false'
+        r=self.client.request('GET','aggregator/quote-and-swap',params)
         d=single(r);tx=d['tx']
         if d.get('executionMode')!='SWAP' or d.get('rfq') is not None:raise Blocked('unknown execution mode')
         vendor = d.get('routerResult', {}).get('vendorName')
         if vendor != 'LiquidMesh':raise Blocked('unexpected quote vendor')
+        # IDEA-104 OBS03-B2: an RFQ maker's order lives about 1.5 s from the quote (RV01), far less than the
+        # approve/gas/sign path. Quotes ask for no RFQ (RQ02); one that still routes to RFQ is refused as a dependency
+        # outcome (RQ01), so the next probe re-quotes within the same authority.
+        if stock and any('rfq' in name.lower() for name in dex_names(d.get('routerResult'))):
+            raise DependencyUnavailable('fresh quote uses an RFQ maker route')
         received = integer(d['routerResult']['toTokenAmount'])
         minimum = integer(tx['minReceiveAmount'])
         if not 0 < minimum <= received or minimum < received * (10000 - intent.max_slippage_bps) // 10000:
@@ -40,6 +62,7 @@ class LiveVenue:
         return d,tx,vendor,received,minimum
     @boundary
     def quote(self,intent,nonce):
+        self.vendors.pop(intent.key, None)  # only a quote that passes every check below may enable approve
         d,tx,vendor,received,minimum=self._quote(intent,intent.max_slippage_bps)
         # IDEA-090 (S2-F6): at the plan's slippage, a fresh output below the planning quote's gives a minimum under the
         # intent's authorized one, which validate_payload refuses. While the output still clears that minimum, ask once
