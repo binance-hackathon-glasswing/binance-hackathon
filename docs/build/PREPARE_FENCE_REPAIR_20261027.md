@@ -1,5 +1,10 @@
 # FENCE01 — preparation refreshes current authorization before committing
 
+FENCE02 update (PR319-RV01): bounded retries now tolerate transient races across refresh/pure validation/PREPARED,
+and re-fence non-authorizing records including guard-acquisition races. Refusal/clean-cleanup records retain actual
+completion time and never grant expired cleanup. The FENCE01 descriptions/results below are historical to their
+named source; current combined-stack review and remaining gates are in [PR319 review](PR319_REVIEW_20261027.md).
+
 A successful venue preparation can overlap ordinary runtime journal commits. The executor had persisted its work
 probe before that I/O, but saved the prepared payload using the old run version. A stale CAS then consumed the probe
 without leaving a prepared attempt. Repeated retries could exhaust the bounded preparation budget without signing.
