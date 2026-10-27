@@ -54,6 +54,10 @@ else:
         c.execute('CREATE DATABASE ' + NEW)
 dsn = psycopg.conninfo.make_conninfo(**kw(NEW))
 PostgresStore(dsn).migrate()
+# User-authorized F0d: preload must already be active after planned maintenance.
+with psycopg.connect(dsn, autocommit=True) as c:
+    c.execute('CREATE EXTENSION IF NOT EXISTS pg_stat_statements')
+    result['query_monitoring_rows'] = c.execute('SELECT count(*) FROM pg_stat_statements').fetchone()[0]
 roles = (REL / 'deploy/postgres/roles.sql').read_text()
 assert roles.count('ON DATABASE larp TO') == 1
 roles_new = roles.replace('ON DATABASE larp TO', 'ON DATABASE ' + NEW + ' TO')

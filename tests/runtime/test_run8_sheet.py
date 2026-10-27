@@ -94,3 +94,8 @@ def test_scripts_parse():
         assert subprocess.run(['bash', '-n', str(path)]).returncode == 0, path
     for path in sorted(SHEET.rglob('*.py')):
         compile(path.read_text(), str(path), 'exec')
+
+
+def test_run8_initialization_enables_query_monitoring_after_maintenance():
+    assert "CREATE EXTENSION IF NOT EXISTS pg_stat_statements" in text('mac/setup_rehearsal_db.py')
+    assert "SELECT count(*) FROM pg_stat_statements" in text('mac/setup_rehearsal_db.py')
