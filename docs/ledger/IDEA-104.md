@@ -972,3 +972,21 @@ with no signature or broadcast. An otherwise identical no-race control must prep
 failure visible; do not count this negative characterization as an end-to-end live signing PASS. Compare existing
 COST03 hosted approval/swap evidence only to its recorded build `3ae83098`; current host identity/health is
 unverified without fresh approved operator readback. Record results and remaining merge/release/host gates.
+
+### SIGN-CHECK01 results — signer checks pass; canonical preparation stall reproduced
+
+Canonical remained `305bccfa` on a second fetch; PR317 remained OPEN at `8e20a208` (FENCE01 repair absent).
+Pinned Linux/Python3.12.15/PG14.24 execution/signer plus journal-backed round-driver/HALT tests pass528 tests,
+1294 subtests,zero skips/failures in39.09seconds. Exact-byte/recovered-wallet signing, PostgreSQL request/response,
+immutable recovery, signer-local policy, current run/build/manifest/HALT/epoch, expiry/nonce and possible-send
+recovery checks pass with disposable accounts. No registered key/.env/private config/live signing table access.
+
+Separate synthetic PostgreSQL characterization: no-race control PREPARED in one probe; benign journal writes
+during three gas estimates reproduce three stale-CAS refusals, three consumed probes,zero attempts/signatures/
+broadcasts,then `prepare probe budget exhausted`. Two characterization tests pass in0.350seconds; this confirms
+the defect and is not an end-to-end PASS. No additional signer defect found within the inspected/tested scope.
+
+Recorded COST03 approval+swap on3ae83098 is historical evidence only; this audit did not read current hosts.
+Release owner retains PR317 merge and exact release/systemd/bundle qualification; approved operator retains
+state-preserving both-host binding and live request/signature/receipt/ACK acceptance under normal journal load.
+No application/config/policy/host/wallet changes. [Full audit](../build/SIGNING_CHECK_20261027.md).
