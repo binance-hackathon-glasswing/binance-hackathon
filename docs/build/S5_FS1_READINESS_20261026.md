@@ -82,8 +82,9 @@ FS1 can be prepared independently of S5.
 - F0d/F0p: required database monitoring/parameters and registered final release,
   database/configuration/host checks remain. Record actual self-check BUY/SELL,
   reason summaries and delivered trace before scored handover (J-SC/GAP-74).
-  Complete startup before the self-check buy cutoff **Oct29 02:00SGT**
-  (`2026-10-28T18:00Z`); no self-check result is inferred from synthetic tests.
+  Complete startup by `2026-10-28T02:00Z` so the self-check is done and ACKed by 09:30Z, before the F-127
+  pause at `2026-10-28T10:00Z` (the profile's later `buy_until` 18:00Z is not usable);
+  no self-check result is inferred from synthetic tests.
 
 Authoritative remaining work: [TH-01, IDEA-093/104, GAP-29/62/73/74/75 and
 account/host gates](../INCOMPLETE_WORK.md). Keep their partially completed items

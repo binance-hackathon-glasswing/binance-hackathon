@@ -583,6 +583,8 @@ that named only one of the two cost gates, and the S4-6 list of deliberate FS1 k
 **Live, not testable offline:** the actual final-wallet trade, its `tx_hash` in delivered round logs, and the
 uploader ack (run sheet J-SC). The install must finish before 2026-10-28T18:00Z for the buy to happen.
 
+**2026-10-27 (after F-127):** the organiser pause at 2026-10-28T10:00Z is earlier than SC's `buy_until` (18:00Z) and `flat_by` (23:00Z). The profile is unchanged (`b8ba06e2…`); the run sheet now requires the install by 2026-10-28T02:00Z and DONE by 09:30Z (IDEA-109 addendum), since a self-check position still held at the pause blocks the Oct 29 late flat day roll. Tightening the two profile times is an open decision (GAP-74).
+
 ## PR278-RV03 — merge into canonical (2026-10-25)
 
 Merged at the user's request ("Can you fix and merge 278"), in a Claude Code session. Earlier notes in this entry
