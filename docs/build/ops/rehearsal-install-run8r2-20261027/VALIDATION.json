@@ -1,0 +1,50 @@
+{
+  "runtime_build": "a22527603ad34c545ff30b5ef996f575b3435b53",
+  "python": "3.12.15",
+  "postgres_image": "postgres:14.24-bookworm@sha256:5a05f61a534e50e679d27fb45953afec7821f2ffc2aa6c738b94515ca0891ac2",
+  "verified_bundle_files": 256,
+  "host_bundle": {
+    "primary": "PASS",
+    "signer": "PASS",
+    "repeat_install": true,
+    "network_during_provisioning": false,
+    "systemd_pid1": false,
+    "scope": "offline AL2023 installation, permissions, entrypoints, key loader and bound manifest",
+    "harness_note": "Only Docker build CA mount and dnf sslcacert configured for session proxy; provisioning checks unchanged"
+  },
+  "operator_refusals": {
+    "passed": 5,
+    "scope": "corrupt archive, unsafe link, wrong manifest build, intact checksums, SSM AccessDenied fast exit"
+  },
+  "stage_smoke": "PASS: actual delivered bundle extracted and exact detached checkout created; no AWS call",
+  "offline_demo": "BLOCKED: isolated worker produced no entry record under this sandbox; no pass claimed",
+  "pip_check": "PASS",
+  "full_regression": {
+    "passed": 3056,
+    "skipped": 7,
+    "failed": 3,
+    "subtests_passed": 4124,
+    "elapsed_seconds": 960.12,
+    "scope": "Full runtime release suite before the five new operator tests were added; runtime source identical to a2252760",
+    "failures": [
+      {
+        "test": "tests/runtime/test_archive_budget.py::Budget::test_ar7_full_verification_memory_does_not_grow_with_the_journal",
+        "evidence": "OSError30: /proc/self/clear_refs is read-only"
+      },
+      {
+        "test": "tests/runtime/test_worker_release.py::Sandbox::test_no_home_network_or_inherited_credentials",
+        "evidence": "Worker rejected or failed; independent bwrap probe cannot set uid map (read-only filesystem)"
+      },
+      {
+        "test": "tests/runtime/test_worker_release.py::Sandbox::test_valid_assessment",
+        "evidence": "Worker rejected or failed; namespace restriction"
+      }
+    ],
+    "status": "NOT_FULLY_QUALIFIED: three environment-dependent cases need supported Linux rerun; original failures retained"
+  },
+  "live_acceptance": "NOT_RUN",
+  "deployed": false,
+  "systemd": "NOT_RUN: PID1 is not systemd",
+  "real_systemd": "NOT_RUN: PID1 is not systemd",
+  "rerun_requirement": "On a disposable supported Linux runner, use the pinned workflow commands, full pytest, LARP_TEST_SYSTEMD=1 systemd tests and offline demo before host acceptance."
+}

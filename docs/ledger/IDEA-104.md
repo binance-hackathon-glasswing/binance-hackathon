@@ -764,3 +764,37 @@ Criteria before package implementation:
 - Verify template rendering, script syntax, source/profile/manifest/bundle pins and refusal paths; run meaningful
   execution/signer/runtime/strategy and database tests as available. Deliver a locally usable checksummed operator
   archive and a PR targeting canonical. No AWS host/service/key/transaction write in this preparation task.
+
+### S5-RUN8R2-PKG01 results (2026-10-27)
+
+Prepared the portable Yao operator folder `docs/build/ops/rehearsal-install-run8r2-20261027/`, a complete local
+operator delivery archive with original a2252760 x86_64 bundle, public pins/profile/history/probe and instructions.
+A new run/database (run8r2) preserves original run8. No AWS write, service restart, signer-key read or transaction.
+
+Source audit verifies18 ancestor PR merges (278,280,282,283,286,287,290,291,292,295,296,297,298,303,305,306,310,311).
+All listed merged FS1 corrections are in the fixed runtime release; ARCH-01, DB/host measurements, BNB valuation,
+FINAL pause/self-check and real live acceptance remain uncompleted requirements. The package's FS1_FIX_AUDIT.md
+is explicit that the repository is not fully FINAL ready.
+
+M3 correctly permits inherited allowance under existing reviewed zero-only recovery and the reserved gas envelope;
+positive held reservations/possible submissions still refuse. The previous blanket "clear allowance first" wording
+was overly restrictive; the already-implemented PR284/286 tooling supports this authorized path. No manual
+transaction or journal reset is needed or provided. M4 restricts source signer differences to the three new identity
+fields, requires a fresh <=300-second numeric review, and binds one manifest for both hosts. Scripts refuse wrong
+source/target identity, dirty source checkouts, modified pins and expired buy window; results/private files stay local.
+SSM transport now uses unique temporary scripts and stops promptly on AccessDenied rather than polling for30minutes.
+
+Verification: exact Python3.12.15 from the original bundle; deploy/requirements-test.lock; exact CI PostgreSQL14.24
+image digest5a05f61a…; pip check PASS. Full suite **3056 passed/7 skipped/4124 subtests/3 failures**,960.12s.
+AR7's failure is read-only /proc/self/clear_refs; the two worker-release failures are unavailable uid namespaces
+(independent bwrap probe: read-only filesystem). Original failures retained. Offline demo attempted and failed to
+produce its entry record under that worker restriction; no pass claimed. Real-systemd tests NOT_RUN (PID1 not systemd).
+Both primary/signer offline AL2023 provisioning checks PASS, including repeat installation, permissions, key loader
+and bound-manifest verification. Only test image build proxy-CA trust adapted; provisioning ran network-off and
+checks unchanged. Five operator refusal tests PASS. Actual delivered-bundle staging PASS;256 member checksums,
+profile/history/probe and fixed-source pins verified. Shell/Python syntax and git diff whitespace checks PASS.
+
+Remaining launch owner Yao: supported native qualification rerun, existing private selectors, temporary T1 signer
+provisioning, source pending/reservation reconciliation, new database/fresh caps/Isaac exact signer acceptance,
+DB/host/model/history/log acceptance, then P4 -> S2 -> P5 -> P6 and T2/M9 cleanup. Exact workflow and commands
+are in the package README/QUALIFICATION.md; it does not claim launch-ready or successful real buys/sells.
