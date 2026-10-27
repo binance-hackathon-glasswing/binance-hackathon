@@ -155,6 +155,10 @@ def route_names(quote):
     return names
 
 
+def is_rfq(quote):
+    return any('rfq' in r['dex'].lower() for r in route_names(quote))
+
+
 def classify(probes):
     """Observed bounds per quote; a probe result is a gas integer or a reason string."""
     ok = [p['age_s'] for p in probes if isinstance(p['result'], int)]
@@ -255,7 +259,8 @@ def run(args, *, client=None, rpc_factory=None, credentials_source=credentials, 
     packet = dict(schema='RfqValidityCheck.v1', generated_utc=utc_iso(), signing_enabled=False,
                   claims='Read-only quotes and override simulations; observed outcomes, not a guaranteed TTL.',
                   side='BUY', pay_units=args.pay_units, slippage_percent='0.2', targets_s=list(TARGETS),
-                  rpc_fingerprint=fingerprint(args.rpc_url), rounds=args.rounds)
+                  rpc_fingerprint=fingerprint(args.rpc_url), rounds=args.rounds,
+                  enable_rfq='false' if args.disable_rfq else 'default')
     proof = prove_override(rpc, wallet)
     packet['override_proof'] = proof
     if not all(proof.values()):
@@ -266,12 +271,19 @@ def run(args, *, client=None, rpc_factory=None, credentials_source=credentials, 
         for symbol, token in TOKENS.items():
             row = dict(round=round_no, symbol=symbol, quoted_utc=utc_iso())
             quotes.append(row)
-            begin = clock()
+            params = dict(binanceChainId='56', amount=str(args.pay_units * 10**12), fromTokenAddress=USDT,
+                          toTokenAddress=token, userWalletAddress=wallet, vendor='LiquidMesh', slippagePercent='0.2')
             try:
-                q = single(client.request('GET', 'aggregator/quote-and-swap', dict(
-                    binanceChainId='56', amount=str(args.pay_units * 10**12), fromTokenAddress=USDT,
-                    toTokenAddress=token, userWalletAddress=wallet, vendor='LiquidMesh', slippagePercent='0.2')))
-            except Unavailable as error:
+                if args.disable_rfq:
+                    # RV02-2: an unprobed default quote first, for the route choice and output comparison.
+                    default = single(client.request('GET', 'aggregator/quote-and-swap', params))
+                    row['default_quote'] = dict(route_names=route_names(default), rfq_route=is_rfq(default),
+                                                to_amount=int(default['routerResult']['toTokenAmount']))
+                    params = dict(params, enableRFQ='false')
+                begin = clock()
+                q = single(client.request('GET', 'aggregator/quote-and-swap', params))
+                int(q['routerResult']['toTokenAmount'])
+            except (Unavailable, KeyError, TypeError, ValueError) as error:
                 row['quote_error'] = re.sub(r'[^ -~]', '?', str(error))[:80]
                 continue
             t0 = clock()
@@ -289,8 +301,11 @@ def run(args, *, client=None, rpc_factory=None, credentials_source=credentials, 
                        execution_mode=q.get('executionMode'), rfq_field_null=q.get('rfq') is None,
                        route_names=route_names(q), quoted_gas=int(tx['gas']) if tx.get('gas') else None,
                        block_age_at_quote_s=round(wallclock() - chain_ts, 3),
-                       rfq_route=any(r['dex'].lower().startswith('rfq') for r in route_names(q)),
+                       rfq_route=is_rfq(q), to_amount=int(q['routerResult']['toTokenAmount']),
                        timestamp_values=timestamp_offsets(data, chain_ts, response_ts))
+            if 'default_quote' in row:
+                base = row['default_quote']['to_amount']
+                row['default_minus_no_rfq_bp'] = round((base - row['to_amount']) * 10000 / base, 2) if base else None
             row['probes'] = probe_quote(rpc, wallet, data, t0, clock=clock, sleep=sleep)
             row['classification'] = classify(row['probes'])
             scope['calldata'].discard(data)
@@ -309,6 +324,8 @@ def parse(argv):
     parser.add_argument('--rpc-url', default=PUBLIC_RPC)
     parser.add_argument('--out', help='new private directory for raw quote responses')
     parser.add_argument('--packet', help='also write the public packet here')
+    parser.add_argument('--disable-rfq', action='store_true',
+                        help='RV02: probe quotes requested with enableRFQ=false, each after an unprobed default quote')
     args = parser.parse_args(argv)
     if not 1 <= args.rounds <= 12 or not 1_000_000 <= args.pay_units <= 100_000_000:
         parser.error('rounds must be 1..12 and pay units 1..100 USDT')

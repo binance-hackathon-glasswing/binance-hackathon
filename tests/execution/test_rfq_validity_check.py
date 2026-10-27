@@ -44,8 +44,9 @@ class FakeClient:
         self.n += 1
         return dict(response=dict(data=dict(executionMode='SWAP', rfq=None, tx=dict(
             to=rv.ROUTER, data=calldata(self.n), gas='450000'), routerResult=dict(
-            vendorName='LiquidMesh', dexRouterList=[dict(dexProtocol=dict(
-            dexName=('Rfq Maker' if symbol == 'NVDAB' else 'Pool-' + symbol), percent='100.00'))]))))
+            vendorName='LiquidMesh', toTokenAmount=str(1000 if params.get('enableRFQ') == 'false' else 1001),
+            dexRouterList=[dict(dexProtocol=dict(
+            dexName=('Rfq Maker' if symbol == 'NVDAB' and params.get('enableRFQ') != 'false' else 'Pool-' + symbol), percent='100.00'))]))))
 
 
 class FakeRpc:
@@ -88,6 +89,7 @@ class Args:
     rpc_url = 'https://rpc.fixture.example'
     out = None
     packet = None
+    disable_rfq = False
 
 
 class RfqValidityTests(unittest.TestCase):
@@ -95,7 +97,7 @@ class RfqValidityTests(unittest.TestCase):
         self.scope = dict(wallet=WALLET, calldata={calldata(1)})
         self.state = rv.override(WALLET)
 
-    def run_tool(self, expiry, *, proof=True, fail=(), rounds=1):
+    def run_tool(self, expiry, *, proof=True, fail=(), rounds=1, disable_rfq=False):
         clock = Clock()
         client = FakeClient(clock, fail=fail)
         holder = {}
@@ -105,6 +107,7 @@ class RfqValidityTests(unittest.TestCase):
             return holder['rpc']
         args = Args()
         args.rounds = rounds
+        args.disable_rfq = disable_rfq
         code, raw = rv.run(args, client=client, rpc_factory=rpc_factory, credentials_source=fixture_credentials,
                            clock=clock, sleep=clock.sleep, wallclock=lambda: 1_800_000_001.5)
         return code, json.loads(raw), client, holder['rpc'], raw
@@ -216,6 +219,18 @@ class RfqValidityTests(unittest.TestCase):
         self.assertEqual(len(p['quotes'][0]['calldata']), 16)
         with self.assertRaises(Exception):
             rv.public_bytes(dict(leak=WALLET), [WALLET, WALLET[2:]])
+
+    def test_rv02_disable_rfq_pairs_a_default_quote_and_probes_only_the_no_rfq_quote(self):
+        code, p, client, rpc, _ = self.run_tool(lambda n: None, disable_rfq=True)
+        self.assertEqual((code, p['enable_rfq']), (0, 'false'))
+        self.assertEqual(len(client.calls), 10)
+        for default, probed in zip(client.calls[::2], client.calls[1::2]):
+            self.assertNotIn('enableRFQ', default[2])
+            self.assertEqual(probed[2], dict(default[2], enableRFQ='false'))
+        nv = p['quotes'][0]
+        self.assertEqual((nv['default_quote']['rfq_route'], nv['rfq_route']), (True, False))
+        self.assertEqual(nv['default_minus_no_rfq_bp'], 9.99)
+        self.assertEqual(rpc.calls.count('eth_estimateGas'), 5 * len(rv.TARGETS))  # default quotes are never probed
 
     def test_main_refuses_with_code(self):
         stdout = io.StringIO()
