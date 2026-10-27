@@ -523,7 +523,7 @@ def plan(snapshot, proposal_or_none):
             result["rejections"].append({"symbol": symbol, "reason": "COST_RESERVE_INSUFFICIENT"})
             continue
         if not mandatory and side == "BUY":
-            if cost * 10000 > mark * 50:
+            if cost * 10000 > mark * p.get("s5_entry_cost_cap_bps", 50):
                 result["rejections"].append({"symbol": symbol, "reason": "ENTRY_COST_CAP"})
                 continue
             if p.get("mode") == "LIVE":

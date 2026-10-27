@@ -43,11 +43,9 @@ def fs1_review_options(p):
 S4_WINDOW = dict(trade_after='2026-10-25T10:00:00Z', new_risk_end='2026-10-25T10:30:00Z',
                  flatten_start='2026-10-25T10:30:00Z', signing_end='2026-10-26T20:00:00Z')
 S4_POLICY_ID = 'larp-s4-rehearsal-v1'
-# IDEA-104 S5 (R2): FS1-R (FS1's block, 20 bp, review refinements, recovery gas) running to Tue Oct 27 12:00 SGT:
-# buys from Mon 14:00 to Tue 07:00 SGT, flatten from Tue 08:00 SGT, signing to Tue 12:00 SGT (Oct 27 04:00 UTC, inside
-# the development time extended to Oct 28, F-126). FS1 itself is unchanged.
-S5_WINDOW = dict(trade_after='2026-10-26T06:00:00Z', new_risk_end='2026-10-26T23:00:00Z',
-                 flatten_start='2026-10-27T00:00:00Z', signing_end='2026-10-27T04:00:00Z')
+# IDEA-104 S5-SMALL01: immediate small-wallet FS1 rehearsal, sell from Oct27 19:00SGT.
+S5_WINDOW = dict(trade_after='2026-10-27T04:00:00Z', new_risk_end='2026-10-27T10:00:00Z',
+                 flatten_start='2026-10-27T11:00:00Z', signing_end='2026-10-27T15:00:00Z')
 S5_POLICY_ID = 'larp-s5-rehearsal-v1'
 # IDEA-096 AL-IMPL01 (tools/deploy/enable_allowance_recovery.py): eight signed children per intent at the configured
 # execution envelope (max_gas 1200000 x max_gas_price 160000000), so S4 runs with allowance recovery on.
@@ -126,7 +124,7 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
     `scheduled_flatten_at` makes it S3 (IDEA-092): everything sold at that time, then S2 again; `fs1_rehearsal` makes it
     FS1-R (IDEA-093): the final FS1 block and slippage in S2's dev scope, on the FS1-R window. `carry_over` makes it
     S4 (IDEA-097): run 5 starts from run 4's exported book inside the terminal flatten, with allowance recovery gas.
-    `s5` makes FS1-R with recovery into S5 (IDEA-104): the same profile on a window ending Tue Oct 27 12:00 SGT."""
+    `s5` makes FS1-R with recovery into S5 (IDEA-104): the same profile on a window selling Tue Oct 27 19:00 SGT."""
     if exit_children not in (1, 2):
         raise ValueError('exit_children must be 1 (historical Q01) or 2 (LD10-P03)')
     if (s1_raw is None) != (s1_decision is None) or (
@@ -202,17 +200,26 @@ def build(exit_children=1, *, s1_raw=None, s1_decision=None, scheduled_flatten_a
         with_recovery_gas(p)
     if s5:
         p.update(S5_WINDOW, policy_id=S5_POLICY_ID)
-        p['s5_entry_lot_units'] = 19_000_000
-        p['provenance']['s5_entry_lot_units'] = dict(decision_id='IDEA-104 S5-SIZE01 (Keith request, 2026-10-26)',
-            formula='19 USDT high-level opening lots, within existing allocation/hard-name/gross/cash caps; '
-                    'gas excluded; measured entry minimum and exact quote costs unchanged')
+        decision = 'IDEA-104 S5-SMALL01 (Yao request, 2026-10-27)'
+        p['s5_entry_cost_cap_bps'] = 200
+        p['provenance']['s5_entry_cost_cap_bps'] = dict(decision_id=decision,
+            formula='S5-only 200bp entry-cost allowance for proportional small-wallet targets; FS1 stays 50bp')
+        summary = p['quote_cost_summary']
+        gas_value = ceil(Fraction(p['gas_sizing_budget_units'] * summary['bnb_price_units'],
+                                  10**summary['bnb_decimals']))
+        p['minimum_trade_units'] = max(ceil(Fraction(gas_value * 10000,
+            200 - row['spread_bps'] - min(50, 2 * row['median_impact_bps']) - row['fee_bps']))
+            for row in summary['symbols'].values())
+        p['provenance']['minimum_trade_units'] = dict(decision_id=decision,
+            data_hash=p['provenance']['gas_sizing_budget_units']['data_hash'],
+            formula='max_symbol ceil(10000*sizing_gas_value/(200-spread-min(50,2*median_impact)-fee_bp))')
+        p['provenance']['entry_cost_basis'] = dict(decision_id=decision,
+            formula='Authorized minimum output plus fees and expected gas; S5 200bp, existing cost reserve applies')
         for key in S5_WINDOW:
-            p['provenance'][key] = dict(decision_id='IDEA-104 S5 R2 (team request, 2026-10-26)',
-                formula='Dev test of FS1: buys from Mon 14:00 SGT to Tue 07:00 SGT, flatten from Tue 08:00 SGT, signing '
-                        'to Tue 12:00 SGT (Oct 27 04:00 UTC, inside the development time extended to Oct 28, F-126)')
-        p['provenance']['policy_id'] = dict(decision_id='IDEA-104 S5 R2 (team request, 2026-10-26)',
-            formula='FS1-R with recovery and FS1 token history, selling everything from Tue 08:00 SGT; REHEARSAL-only '
-                    'on the dev wallet; never installed for the final run (FS1 stays the final strategy)')
+            p['provenance'][key] = dict(decision_id=decision,
+                formula='Buy on deployment from Oct27 12:00SGT; buys stop18:00; sell all19:00; signing ends23:00SGT')
+        p['provenance']['policy_id'] = dict(decision_id=decision,
+            formula='Small-wallet FS1 rehearsal with proportional targets and scoped200bp entry economics; dev only')
         # IDEA-104 R3: FS1 FINAL's evidence authority, so AIand/ChatGPT findings act on S5 as they do on FS1.
         p.update(evidence_mode='BOUNDED_FALSIFIER', falsifier_authority='DISCRETIONARY_EXIT')
         for key in ('evidence_mode', 'falsifier_authority'):
@@ -258,7 +265,7 @@ def main(argv=None):
     parser.add_argument('--allowance-recovery', action='store_true',
                         help='IDEA-098: FS1-R with the IDEA-096 recovery gas envelope at the CAP-02 ceilings')
     parser.add_argument('--s5', action='store_true',
-                        help='S5 (IDEA-104): FS1-R with recovery on a window ending Tue Oct 27 12:00 SGT')
+                        help='S5 (IDEA-104): FS1-R with recovery on a window selling Tue Oct 27 19:00 SGT')
     parser.add_argument('--carry-over', action='store_true',
                         help='S4 (IDEA-097): start from the previous run\'s exported book, flatten only, recovery gas')
     args = parser.parse_args(argv)

@@ -19,7 +19,7 @@ def text(name):
 
 def test_profile_and_probe_pins_match_the_committed_profile():
     from tools.deploy.ld10_readonly_packet import script
-    raw = (ROOT / PROFILE).read_bytes()
+    raw = (ROOT / PROFILE).with_name('rehearsal-s5-size01.json').read_bytes()
     m3, m4 = text('mac/m3-recapture-assemble.sh'), text('mac/m4-prepare.py')
     assert 'PROFILE=' + PROFILE + '\n' in m3 and m3.count('--profile "$WT/$PROFILE"') == 2
     assert 'PROBE_SHA=' + hashlib.sha256(script(raw).encode()).hexdigest() + '\n' in m3
