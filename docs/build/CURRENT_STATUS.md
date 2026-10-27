@@ -1,6 +1,6 @@
 # Current shared build and remaining work
 
-FENCE01 code repair (Oct27, not deployed): preparation refreshes current guards/time after external I/O and revalidates before the unchanged CAS fence; guard reads use epoch/version scalars and stale-version refusals are logged. Affected suites1258 passed/1540 subtests,1 opt-in recorded-data skip;14 new fence tests pass. Review/merge, exact release/native/systemd/bundle qualification and same-run host acceptance remain. No counter reset or host action. [Repair](PREPARE_FENCE_REPAIR_20261027.md).
+FENCE01 / PR317 source review complete (FENCE01-RV01, Oct27; source `1e90c26f`, not deployed): preparation refreshes guards/time after I/O before the unchanged CAS fence. Review fixed stale completion time on refused preparation, preventing expired authority/margin from granting cleanup or resetting probes. Full pinned Linux/PG plus corrected-environment reruns cover3101 distinct passing tests,zero unresolved failures;5 systemd and2 optional fixture checks remain unrun. Merge, exact release/systemd/bundle qualification and registered same-run host acceptance remain with the release/operator owners. No host or historical counter reset. [Repair and results](PREPARE_FENCE_REPAIR_20261027.md).
 
 S5-COST01 (Oct27, review candidate): opt-in initial-gas S5 cash/cost separation
 permits a zero USDT cushion with an independently sourced positive cost ceiling.

@@ -38,6 +38,28 @@ The new tests fail on the previous implementation. No live operational evidence 
 
 ## Validation
 
+PR317 independent review **FENCE01-RV01** is complete at runtime/test source `1e90c26f` (not deployed).
+The review fixed one remaining failure-path defect: completion time was assigned after final validation, so
+an expiry refusal could decide cleanup using the original cycle time and reset its probe counter. The executor
+now retains each valid completion-time observation before validation and persists that time on refusal.
+Expired authority/margin ends the approved intent without granting cleanup; an expired route with remaining
+parent authority still permits only the existing bounded zero-only cleanup. Confirmed approvals are preserved.
+
+New regressions reproduced all four post-approval expiry/margin cases on the original PR head, plus stale
+timestamps for a route-deadline refusal and an unapproved intent. The final Linux fence/cleanup/worker check
+passes **37 tests / 44 subtests**, including actual bubblewrap isolation.
+
+Pinned Linux/Python3.12.15/PostgreSQL14.24 full run: **3094 passed, 4136 subtests, 9 skipped**, with five
+environment failures (three checks lacked the worktree's Git metadata; two bubblewrap checks could not mount
+`/proc` in the default container). All five pass with Git metadata mounted and the required namespace/proc
+permissions. Two initially skipped origin/non-root permission checks also pass in the corrected environment.
+Combined coverage is **3101 distinct tests passed**, zero unresolved failures, **7 remaining skips**: five real
+systemd tests, one optional recorded-market fixture and one optional private source fixture. This is a full run
+plus targeted reruns, not a single all-green full-suite invocation. Offline demo, all four dependency lockfiles,
+pip and diff checks pass. [Review receipt](evidence/fence01-review-20261027.json).
+
+The earlier author validation below applies to `d7318f71`, before this review repair:
+
 Python3.12.15/PostgreSQL14.24: affected execution, signer, strategy, risk and marketdata suites **1258 passed,
 1540 subtests passed,1 opt-in external-artifact skip**. All14 new fence regressions pass (8 subtests).
 An earlier focused execution/signer/runtime check passed561 tests/1306 subtests. Composition fixtures were updated

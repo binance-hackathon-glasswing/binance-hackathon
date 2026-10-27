@@ -1013,3 +1013,32 @@ Pass criteria:
 - New synthetic regressions fail on the PR317 head and pass after the repair. Run execution/signer and full
   Linux/Python3.12.15/PostgreSQL14.24 regression suites; classify platform/private-artifact skips explicitly.
   No live signer, provider, wallet or host operation; exact release/systemd/bundle/host acceptance stays separate.
+
+### FENCE01-RV01 results — PR317 source review complete
+
+Source/test commit `1e90c26f` fixes the refused-preparation clock. Each valid completion observation is retained
+before validation, and refusal records persist that time. Expired authority/margin after a confirmed approval
+now ends the intent without creating cleanup authority or resetting the work budget. A route-only deadline
+refusal with remaining parent authority still uses the original bounded zero-only cleanup. Existing final CAS,
+owner/release, nonce, router preflight, signer and gas checks remain unchanged.
+
+Red evidence on `aed8cd3f` (original application bytes `d7318f71`): all four new post-approval expiry/margin
+subcases returned ACTIVE instead of ABORTED; the route-deadline and unapproved-expiry cases retained old timestamps.
+The first failed unapproved-expiry assertion also left the fixture's wallet barrier occupied for its second
+subcase; cleanup was moved before those assertions. Final fence/cleanup tests pass32/44 subtests on macOS;
+pinned Linux fence/cleanup plus real sandbox-worker isolation pass37/44 subtests.
+
+Full Linux/Python3.12.15/PostgreSQL14.24 at `1e90c26f`:3094 passed/4136 subtests,9 skipped,5 environment failures
+in299seconds. Three failures were missing linked-worktree Git metadata; all three pass when metadata is mounted.
+Two were bubblewrap's /proc mount refusal; both pass with namespace/proc permissions. The skipped Git-origin
+and non-root directory-permission checks pass with metadata and an unprivileged user. Combined distinct coverage:
+3101 passing tests,zero unresolved failures;5 real-systemd and2 optional external/private-fixture checks remain
+unrun. Full suite was not repeated after those targeted environment corrections. Offline demo passes with real
+bubblewrap; four dependency lockfiles match the installed packages, pip check and diff check pass.
+
+GitHub run40513655410 did not start its jobs because account payments/spending limits blocked Actions; this is
+not a code failure. No exact new release/bundle/systemd or host acceptance is claimed. Release owner retains
+merge and exact-release qualification; approved operator retains fresh holdings/caps/owner acceptance, the
+registered same-run both-host upgrade and temporary-access teardown. No host, key, paid model/provider, real
+signature/broadcast, wallet or historical-attempt mutation. [Report](../build/PREPARE_FENCE_REPAIR_20261027.md) /
+[review receipt](../build/evidence/fence01-review-20261027.json).
