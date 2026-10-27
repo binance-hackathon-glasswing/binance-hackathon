@@ -1,5 +1,7 @@
 # Current shared build and remaining work
 
+S5-SMALL01 (2026-10-27, in preparation): user authorized proportional small-wallet targets (including actual DOWN60% case), scoped200bp entry cost cap/minimum3.192045USDT, buys on deployment until18:00SGT, automatic sells from19:00SGT and signing until23:00SGT today. FS1 profiles are unchanged. Before run8: required DB monitoring/backoff, maintenance, pinned windows, database sizing and both host-credit alarms. New deployment is not claimed until host acceptance. See [IDEA-104](../ledger/IDEA-104.md) and [run8 procedure](ops/rehearsal-install-s5-small-20261027/). Earlier deployment-status paragraphs below are historical.
+
 TH-CONFIG01 (2026-10-26 SGT): [actual token-history.json](evidence/th01-live-20261026/token-history.json)
 generated and reproduced byte for byte from Keith's verified live evidence;
 SHA-256 `5e572570bc24fb2ca7b692dccf71f67a37c5fac3d75330e4558634cf45417be9`.

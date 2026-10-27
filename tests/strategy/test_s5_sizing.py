@@ -21,11 +21,15 @@ from tests.strategy.test_s1_plan import settled
 
 
 def profile():
-    return json.loads(s5.S5.read_bytes())
+    return json.loads(s5.S5.with_name('rehearsal-s5-size01.json').read_bytes())
 
 
 def snapshot(cash=s5.RUN6_CASH):
-    s, _ = s5.round_at('2026-10-26T16:00:00Z', cash_units=cash, bnb_units=s5.RUN6_BNB, sizing=True)
+    s, _ = s5.round_at('2026-10-27T05:00:00Z', cash_units=cash, bnb_units=s5.RUN6_BNB, sizing=True)
+    legacy = s.context.read()['profile']
+    legacy.pop('s5_entry_cost_cap_bps', None)
+    legacy.update({k: profile()[k] for k in ('minimum_trade_units', 's5_entry_lot_units')})
+    s = replace(changed(s, profile=legacy), policy_profile_hash=Document.from_dict(legacy).digest("StrategyProfile.v1"))
     markets = s.context.read()['markets']
     ledger = s.context.read()['portfolio']
     for m in markets:
@@ -139,7 +143,7 @@ def test_health_and_terminal_requirements_are_not_bypassed():
     unhealthy = changed(s, health=health)
     result = plan(unhealthy, decide(unhealthy, unhealthy.policy_state)).read()
     assert not result['intents'] and not result['quote_requests']
-    _, terminal = s5.round_at('2026-10-27T00:00:00Z', held=dict(GOOGLB=1900, NVDAB=1900),
+    _, terminal = s5.round_at('2026-10-27T11:00:00Z', held=dict(GOOGLB=1900, NVDAB=1900),
                             cash_units=s5.RUN6_CASH - 38_000_000, bnb_units=s5.RUN6_BNB, sizing=True)
     assert terminal['requirements']
     assert terminal['intents'] and all(i['side'] == 'SELL' and i['mandatory'] for i in terminal['intents'])

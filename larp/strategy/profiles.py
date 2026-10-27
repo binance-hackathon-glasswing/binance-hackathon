@@ -166,7 +166,7 @@ def validate_live(p):
             pair = action
         gas_value = ceil(Fraction(sizing * summary["bnb_price_units"], 10**summary["bnb_decimals"]))
         minimum = max(ceil(Fraction(gas_value * 10000,
-            50 - row["spread_bps"] - min(50, 2 * row["median_impact_bps"]) - row["fee_bps"]))
+            p.get("s5_entry_cost_cap_bps", 50) - row["spread_bps"] - min(50, 2 * row["median_impact_bps"]) - row["fee_bps"]))
             for row in summary["symbols"].values())
         largest_minimum = int(smallest) if s1 else p["expected_equity_units"] // 5
         if not minimum <= p["minimum_trade_units"] <= largest_minimum:

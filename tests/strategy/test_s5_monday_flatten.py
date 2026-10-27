@@ -22,7 +22,7 @@ FS1 = EVIDENCE / 'fs1-final-20261025/fs1-final-recovery.json'
 S5 = EVIDENCE / 's5-rehearsal-profile-20261026/rehearsal-s5.json'
 ROUTING = ROOT / 'config/intelligence/aiand-routing.fs1.json'
 WINDOW = ('trade_after', 'new_risk_end', 'flatten_start', 'signing_end')
-S5_WINDOW = ['2026-10-26T06:00:00Z', '2026-10-26T23:00:00Z', '2026-10-27T00:00:00Z', '2026-10-27T04:00:00Z']
+S5_WINDOW = ['2026-10-27T04:00:00Z', '2026-10-27T10:00:00Z', '2026-10-27T11:00:00Z', '2026-10-27T15:00:00Z']
 DECISION = ("IDEA-104 S5 (2026-10-26): the FS1 final block (S2's block: IDEA-084 PF-01 values; weights 1/5, start UP, "
             "legs 3, expiry 3, deterministic limiter; hours KIT_OPEN_STATE, 5 attempts per leg) on the dev wallet, "
             "selling everything from Tuesday Oct 27 08:00 SGT")
@@ -35,7 +35,7 @@ UNCHANGED = {
 }
 # S5R3-1: the only non-provenance keys in which S5 may differ from FS1 FINAL (with recovery).
 FS1_DIFFERENCES = sorted(('environment', 'cost_reserve_units', 'expected_equity_units', 'per_trade_cap_units', *WINDOW,
-                          'policy_id', 'activation_self_check', 's5_entry_lot_units'))
+                          'policy_id', 'activation_self_check', 's5_entry_cost_cap_bps', 'minimum_trade_units'))
 
 
 def build(**options):
@@ -64,12 +64,12 @@ def test_s5r3_1_s5_is_fs1_at_rehearsal_size():
     assert s5['policy_id'] == 'larp-s5-rehearsal-v1'
 
 
-def test_s5r2_2_the_window_ends_tuesday_12_sgt():
+def test_s5_small_window_sells_tuesday_19_sgt():
     s5 = build().read()
     assert [s5[k] for k in WINDOW] == S5_WINDOW
     times = [milliseconds(v) for v in S5_WINDOW]
     assert times == sorted(times) and len(set(times)) == 4
-    assert s5['signing_end'] == '2026-10-27T04:00:00Z'  # Tue Oct 27 12:00 SGT
+    assert s5['signing_end'] == '2026-10-27T15:00:00Z'  # Tue Oct27 23:00SGT
     assert times[-1] < milliseconds('2026-10-28T00:00:00Z')  # inside the extended development time (F-126)
 
 
@@ -124,8 +124,9 @@ def round_at(value, held=None, *, cash_units=None, bnb_units=None, sizing=False)
     if sizing:
         changes.update({k: p[k] for k in ('cost_reserve_units', 'minimum_trade_units', 'per_trade_cap_units',
                                           'entry_cost_basis', 's1_reduction_cost_cap_bps', 'slippage_bps',
-                                          's5_entry_lot_units', 'policy_id', 'environment')})
+                                          'policy_id', 'environment')})
         changes['s1_capital_basis'] = p['s1_capital_basis']
+        changes.update({k: p[k] for k in ('s5_entry_lot_units', 's5_entry_cost_cap_bps') if k in p})
     s = at(value, held=held, profile_changes=changes, risk=dict(day=value[:10]),
            execution_session=dict(index=session, open_ms=milliseconds('2026-10-26T13:30:00Z'),
                                   close_ms=milliseconds('2026-10-26T20:00:00Z'),
@@ -142,13 +143,13 @@ def round_at(value, held=None, *, cash_units=None, bnb_units=None, sizing=False)
     return s, run(with_quotes(s))
 
 
-def test_s5r3_5_buys_until_tue_07_sgt_and_sells_everything_from_08_sgt():
-    _, before = round_at('2026-10-26T22:59:00Z')
+def test_s5_small_buys_until_18_sgt_and_sells_from_19_sgt():
+    _, before = round_at('2026-10-27T09:59:00Z')
     assert [(i['side'], i['mandatory']) for i in before['intents']] == [('BUY', False)], before['rejections']
-    _, stopped = round_at('2026-10-26T23:00:00Z')
+    _, stopped = round_at('2026-10-27T10:00:00Z')
     assert not [i for i in stopped['intents'] if i['side'] == 'BUY']
     assert not [q for q in stopped['quote_requests'] if q['side'] == 'BUY']
-    _, flatten = round_at('2026-10-27T00:00:00Z', held=dict(NVDAB=AT_95, SKHYB=AT_95))
+    _, flatten = round_at('2026-10-27T11:00:00Z', held=dict(NVDAB=AT_95, SKHYB=AT_95))
     assert {r['symbol']: r['reasons'] for r in flatten['requirements']} == {
         'NVDAB': ['TERMINAL_FLATTEN'], 'SKHYB': ['TERMINAL_FLATTEN']}
     assert flatten['intents'] and all((i['side'], i['mandatory']) == ('SELL', True) for i in flatten['intents'])
@@ -160,10 +161,11 @@ RUN6_CASH, RUN6_BNB = 81_373_047, 24_973_000_000_000_000
 
 def test_s5_size01_recorded_cash_funds_an_opening_lot_without_counting_gas():
     p = json.loads(S5.read_bytes())
-    s, short = round_at('2026-10-26T16:00:00Z', cash_units=RUN6_CASH, bnb_units=RUN6_BNB, sizing=True)
+    s, short = round_at('2026-10-27T05:00:00Z', cash_units=RUN6_CASH, bnb_units=RUN6_BNB, sizing=True)
     assert [t for t in decide(s, s.policy_state).targets if t.kind is TargetKind.TARGET_WEIGHT]
-    assert [(i['side'], i['cash_units']) for i in short['intents']] == [('BUY', 19_000_000)]
-    _, funded = round_at('2026-10-26T16:00:00Z', cash_units=RUN6_CASH + 20_000_000, bnb_units=RUN6_BNB, sizing=True)
+    assert len(short['intents']) == 1 and short['intents'][0]['side'] == 'BUY'
+    assert p['minimum_trade_units'] <= short['intents'][0]['cash_units'] < 19_000_000
+    _, funded = round_at('2026-10-27T05:00:00Z', cash_units=RUN6_CASH + 20_000_000, bnb_units=RUN6_BNB, sizing=True)
     buys = [i for i in funded['intents'] if i['side'] == 'BUY']
     assert len(buys) == 1 and int(buys[0]['cash_units']) >= p['minimum_trade_units'], funded['intents']
 

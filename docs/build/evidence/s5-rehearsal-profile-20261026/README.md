@@ -56,3 +56,7 @@ python -m tools.deploy.build_rehearsal_candidate --exit-children 2 --fs1-rehears
 
 The committed builder reproduces the digest above and `rehearsal-s5.json` byte for byte (SZ1). Exact quotes,
 qualified history and the new release/signer/host acceptance are still required before installation.
+
+## S5-SMALL01 replacement (2026-10-27)
+
+Current `rehearsal-s5.json` uses proportional targets, scoped200bp entry economics, minimum3.192045USDT, buy cutoff18:00SGT / sell19:00SGT / signing end23:00SGT onOct27. SHA256 `10882b9aec1bf6f2a265cb17359dd95cc74789ff18392fcc05e30acceaabf0db`; numeric probe `62e41fdeb18afc7b523fcee66a64a83a57a64c8315ee3170bd0394e2ae9a7c13`. `rehearsal-s5-size01.json` preserves the original run7 input bytes. See IDEA-104 SMALL01 and the run8 sheet. FS1 unchanged.

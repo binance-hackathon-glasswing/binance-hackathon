@@ -1,7 +1,7 @@
-"""IDEA-104 S5-SIZE01: cash-funded opening lots, scoped to the S5 rehearsal.
+"""IDEA-104: S5-only small-wallet preparation and historical SIZE01 lots.
 
-The measured entry minimum and all exact-quote gates remain unchanged. A larger
-opening lot makes a smaller wallet's targets executable without counting gas.
+SMALL01 uses ordinary proportional targets with its declared rehearsal cost cap.
+Historical SIZE01 profiles retain their bounded high-level lot behavior.
 """
 from fractions import Fraction
 
@@ -33,6 +33,15 @@ def opening_cash_check(p, cash_units):
     from .profiles import validate_live
     from .s1 import config
     validate_live(p)
+    if 's5_entry_cost_cap_bps' in p:
+        cfg = config(p)
+        cash = integer(cash_units)
+        stock = max(0, cash - p['cost_reserve_units'])
+        entry = floor(cfg['low'] * min(cfg['weights'].values()) * stock)
+        if entry < p['minimum_trade_units'] or entry + p['cost_reserve_units'] > cash:
+            raise ContractError('S5 cash cannot fund its smallest proportional target')
+        return dict(stock_capital_units=stock, opening_lot_units=entry,
+                    maximum_opening_lots=len(cfg['weights']))
     if 's5_entry_lot_units' not in p:
         raise ContractError('S5 sizing check requires its opening-lot profile')
     cash = integer(cash_units)
