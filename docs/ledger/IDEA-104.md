@@ -1042,3 +1042,32 @@ merge and exact-release qualification; approved operator retains fresh holdings/
 registered same-run both-host upgrade and temporary-access teardown. No host, key, paid model/provider, real
 signature/broadcast, wallet or historical-attempt mutation. [Report](../build/PREPARE_FENCE_REPAIR_20261027.md) /
 [review receipt](../build/evidence/fence01-review-20261027.json).
+
+### FENCE02 — residual preparation fence races (2026-10-27, criteria before implementation/tests)
+
+User request (Keith): find the root cause of the 12 aborted intents after planning resumed on the pre-FENCE01
+release, fix it and open a PR. Root cause, confirmed in deployed source `305bccfa`: every executor commit fences on
+the run-wide `version`, which every runtime/planner `CommitBatch` advances (`larp/storage/postgres.py`). `prepare()`
+snapshots once, persists PREPARE_PROBE, performs seconds of quote/approve/gas I/O, then commits PREPARED with the old
+version. Because execution `Conflict` subclasses `Blocked`, the PREPARE_BLOCKED fallback reuses the same stale version
+and is refused too; the loop records only the type name and retries, so three probes end in `abort_unsigned` with no
+PREPARED/PREPARE_BLOCKED event. FENCE01 (PR317) removes the multi-second window. Residual windows remain on its head
+`8e20a208`, as a stacked change:
+- R1: a runtime commit between FENCE01's fresh snapshot (including its authorization read) and the PREPARED commit
+  still raises `StateVersionConflict` and burns the probe.
+- R2: PREPARE_BLOCKED after slow I/O (validation/dependency refusal before the refresh) still commits with the first
+  snapshot's version, so the refusal record is lost exactly as in the incident.
+- R3: ABORT_CLEAN commits after the allowance RPC with the first snapshot's version.
+
+Pass criteria:
+- F2-1: after preparation I/O, a stale version during refresh, pure revalidation or the PREPARED commit retries only
+  refresh + pure checks + fenced commit, at most a fixed small number of times (3), with no further quote, approve,
+  gas, revoke or router-preflight call. Exhaustion still raises `StateVersionConflict` with no PREPARED attempt.
+- F2-2: each retry requires unchanged owner epoch and release authority, re-reads the explicit clock (no regression),
+  and revalidates against the newest guards; adverse changes still refuse. The final commit's locked CAS/version
+  check is unchanged; nothing is ever committed under a stale version.
+- F2-3: PREPARE_BLOCKED and ABORT_CLEAN records that meet a stale version are re-fenced on refreshed guards (same
+  owner/release, bounded retries) and are journaled; an owner/release change still raises `Conflict` unjournaled.
+- F2-4: probe/gas/authority limits, schema, signer policy and historical counters unchanged; no signature or
+  broadcast in prepare. New synthetic regressions fail on `8e20a208` and pass after the change; existing
+  `tests/execution` (PostgreSQL) pass, with environment limits stated.
