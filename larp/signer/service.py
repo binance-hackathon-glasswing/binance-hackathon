@@ -40,6 +40,7 @@ from larp.execution_live import signing
 from larp.execution_live.store import ExecutionStore
 from larp.execution_live.venue import UnverifiedRouter
 from larp.runtime import faults
+from larp.runtime.exits import refuses_start
 from larp.signer.keyfile import load_key_file
 from larp.signer.local import LocalSigner
 from larp.signer.policy import EXAMPLE_CAP_BASIS, SigningPolicy
@@ -233,6 +234,8 @@ def load_config(args, *, with_manifest=False):
         if manifest['build_id'] != config['build_id']:
             raise ContractError('Configured build differs from the verified release')
     except (ContractError, ValueError, OSError) as refused:
+        if not refuses_start(refused):
+            raise  # transient: exit 1, systemd restarts (IDEA-109 F2)
         raise StartRefused(type(refused).__name__) from None
     return (config, document) if with_manifest else config
 
@@ -255,7 +258,9 @@ def main(argv=None, *, environ=os.environ, clock_s=lambda: int(time.time()), sle
         policy = SigningPolicy.from_config(config['signing_policy'])
         try:
             decoder = router_decoder(config, policy)
-        except (ContractError, OSError, ValueError):
+        except (ContractError, OSError, ValueError) as refused:
+            if not refuses_start(refused):
+                raise  # transient: exit 1, systemd restarts (IDEA-109 F2)
             raise StartRefused('router evidence refused') from None
         if args.command == 'check':
             print(json.dumps(dict(configuration_valid=True, signing_enabled=False, **_decoder_identity(decoder),

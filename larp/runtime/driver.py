@@ -445,12 +445,21 @@ class DayRoll:
     (`risk.day` is not today). One DAY_ROLLED event per day; replay recommits it as a recorded fact.
 
     A price-jump hold inside the window defers the roll; the deferred day then rolls on the first cycle after the hold
-    clears or expires, even past the window (IDEA-055 R2). The deferred day is journaled so a process restart cannot lose it."""
+    clears or expires, even past the window (IDEA-055 R2). The deferred day is journaled so a process restart cannot lose it.
+
+    A flat run (no stock units, nothing reserved) also rolls past the window, with `late_flat` on its event (IDEA-109
+    F1, the F-127 pause across midnight). Its equity is cash plus BNB at the ledger's own price, so no mark taken after
+    midnight can move the anchor; a run holding stock still never re-anchors from a post-midnight mark (#31, WR-T3b)."""
 
     def __init__(self, coordinator, *, window_ms):
         if type(window_ms) is not int or not 0 < window_ms < DAY_MS:
             raise ContractError('Invalid day-roll window')
         self.coordinator, self.window = coordinator, window_ms
+
+    @staticmethod
+    def flat(current):
+        positions = current['projection']['portfolio'].get('positions') or {}
+        return not current['reservations'] and not any(p.get('units') for p in positions.values())
 
     def due(self, current, now_ms):
         projection = current['projection']
@@ -466,7 +475,8 @@ class DayRoll:
         midnight = now_ms - now_ms % DAY_MS
         projection = current['projection']
         deferred = projection.get('day_roll_deferred_ms')
-        if now_ms - midnight > self.window and deferred != midnight:
+        late_flat = now_ms - midnight > self.window and deferred != midnight
+        if late_flat and not self.flat(current):
             return 'OUTSIDE_WINDOW'
         if active_holds(current['projection'], now_ms):
             return self._defer(current, midnight, now_ms)
@@ -498,6 +508,8 @@ class DayRoll:
         marks = sorted((m['symbol'], m.get('content_hash')) for m in observations if type(m) is dict)
         event = dict(kind='DAY_ROLLED', day=rolled['day'], boundary=boundary, anchor_units=anchor,
                      decided_ms=now_ms, marks=[list(m) for m in marks])
+        if late_flat:
+            event['late_flat'] = True
         c.store.commit(batch_for(Document.from_dict(current), 'day:' + rolled['day'], event, projection=projection))
         return 'ROLLED'
 
