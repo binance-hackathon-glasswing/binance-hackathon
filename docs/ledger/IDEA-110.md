@@ -105,3 +105,36 @@ How the checks were run:
 - Linux, pinned-image and hosted CI have not been run.
 
 Remaining, unchanged from the criteria section: review and merge, then release and registration (F-125). Owners also need to decide on this extra version event and on FS1's own 32-USDT self-check. Before install, the signer's CAP-02 must accept a sub-1-USDT leg, and fresh final-wallet quotes/caps are needed. The install must finish inside the stamped hour. Live evidence is then needed: both `tx_hash` values, DONE, and a flat wallet with no allowance before FS1 preparation.
+
+## Amendment W2 — fixed buy window 12:00–14:00 SGT Oct 28 (registered before code, 2026-10-28 01:46 SGT)
+
+Keith asked (2026-10-28 SGT): "can you extend the buy window to 12 to 2pm today and create another release". "Today" means Tue Oct 28 SGT, so the buy window is 2026-10-28T04:00Z to 06:00Z. This replaces the 1-hour window stamped at preparation. Everything else is unchanged: the size, floor, symbol, policy and sell rules.
+
+New fixed times:
+
+| Field | Time (UTC) | SGT |
+|---|---|---|
+| buy_after | 2026-10-28T04:00:00Z | 12:00 |
+| buy_until | 2026-10-28T06:00:00Z | 14:00 |
+| flat_by = trade_after | 2026-10-28T07:00:00Z | 15:00 |
+| new_risk_end = flatten_start | 2026-10-28T07:01:00Z | 15:01 |
+| signing_end | 2026-10-28T08:00:00Z | 16:00 |
+
+Signing ends before the F-127 pause (10:00Z).
+
+Because the profile no longer depends on when it is prepared, `--temp-stamp` is removed. Preparation is refused at or after buy_until.
+
+Pass criteria:
+- **W2-1.** The generator gives exactly these times. Its output is byte-identical whatever the preparation time. Preparation at or after 06:00Z is refused.
+- **W2-2.** TS-2 to TS-6 still pass with the fixed window. The temp-stamp tests are replaced by a test that preparation at two different times produces identical profile bytes.
+- **W2-3.** The full suite has no new failures compared with `47ccf11b`.
+
+### W2 results (2026-10-28 SGT; PR #322)
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| W2-1 | PASS | The generator gives exactly the registered times. Output is byte-identical when prepared at 2026-10-27T18:00:30Z and at 2026-10-28T05:59:59Z. Preparation at 06:00Z or 09:00Z is refused ("window closed"). |
+| W2-2 | PASS | 19 IDEA-110 tests pass. Preparing at two different times gives identical profile bytes. |
+| W2-3 | PASS | Full suite, local macOS, Python 3.12.14, PostgreSQL 14.24: 3149 passed, 10 skipped, 1 failed, 4172 subtests. The failure is the same pre-existing `test_ar7_full_verification_memory_does_not_grow_with_the_journal`, which also fails on `c1e23729`. |
+
+A scratch run (not committed) of the FINAL caps/signer assembly with the W2 profile gave `numeric_status: COVERED`, and the runtime built from the profile.

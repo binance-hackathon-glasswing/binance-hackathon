@@ -10,7 +10,7 @@ from larp.strategy import self_check
 from tests.runtime import test_fs1_standalone as standalone, test_gate_a
 from tests.runtime.test_fs1_standalone import FINAL, prepare
 from tests.runtime.test_gate_a import WALLET, terraform_output
-from tools.deploy.build_selfcheck_temp import iso, stamp
+from tools.deploy.build_selfcheck_temp import WINDOW
 import render_host_configs
 
 TEMP = dict(temp_self_check=True, run_id='larp-final-selfcheck-temp', database_name='larp_final_selfcheck')
@@ -34,7 +34,7 @@ def test_ts6_temp_preparation_uses_its_own_run_database_directories_and_stamped_
     directory = '/var/lib/larp-runtime/final-' + WALLET[2:] + '-selfcheck-temp'
     assert (runtime['ai_seeds_dir'], runtime['nonce_dir']) == (directory + '/ai-seeds', directory + '/nonce')
     assert profile['policy_id'] == self_check.TEMP_POLICY_ID
-    assert profile['activation_self_check']['buy_after'] == iso(stamp(NOW))  # stamped at preparation
+    assert {k: profile['activation_self_check'][k] for k in WINDOW} == WINDOW  # W2 fixed window
     assert profile['activation_self_check']['pay_units'] < 1_000_000
     assert gate_a.digest(files['strategy-profile.json']) != gate_a.digest(FINAL.read_bytes())
     gate_a_check.check_scope(values, values['preparation-report.json'])
@@ -75,18 +75,13 @@ def test_ts6_cli_temp_mode_prints_the_stamped_window(tmp_path, monkeypatch, caps
     report = json.loads(capsys.readouterr().out)
     assert report['status'] == 'TEMP_SELF_CHECK_PREPARED_REQUIRES_APPROVAL' and report['signing_enabled'] is False
     assert report['run_id'] == 'larp-final-selfcheck-temp' and report['activation_self_check']['pay_units'] == 900_000
+    assert report['activation_self_check']['buy_after'] == '2026-10-28T04:00:00Z'
     written = (tmp_path / 'prepared/strategy-profile.json').read_bytes()
     assert report['profile_sha256'] == gate_a.digest(written) and written == prepared['strategy-profile.json']
 
 
-def test_ts6_a_reused_stamp_reproduces_the_profile_and_is_bounded():
+def test_w2_2_preparation_at_different_times_gives_identical_profile_bytes():
     first = prepare(**TEMP)['strategy-profile.json']
-    later = prepare(**TEMP, now='2026-10-27T18:04:00Z', temp_stamp=NOW)['strategy-profile.json']
-    assert later == first  # the caps/services rerun installs exactly the approved profile bytes
-    assert prepare(**TEMP, now='2026-10-27T18:04:00Z')['strategy-profile.json'] != first  # restamped otherwise
-    with pytest.raises(ContractError, match='30 minutes'):
-        prepare(**TEMP, now='2026-10-27T18:31:00Z', temp_stamp=NOW)
-    with pytest.raises(ContractError, match='30 minutes'):
-        prepare(**TEMP, temp_stamp='2026-10-27T18:05:00Z')  # a future stamp
-    with pytest.raises(ContractError, match='only to the temp'):
-        prepare(temp_stamp=NOW)
+    assert prepare(**TEMP, now='2026-10-27T18:04:00Z')['strategy-profile.json'] == first
+    with pytest.raises(ContractError, match='window closed'):
+        prepare(**TEMP, now='2026-10-28T06:00:00Z')

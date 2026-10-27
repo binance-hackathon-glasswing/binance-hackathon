@@ -16,7 +16,7 @@ from larp.strategy.policy import decide
 from larp.strategy.profiles import validate_live
 from tests.strategy import test_fs1_self_check as sc
 from tests.strategy.test_execution_bounds import run
-from tools.deploy.build_selfcheck_temp import PAY_UNITS, build, stamp
+from tools.deploy.build_selfcheck_temp import PAY_UNITS, build
 from tools.deploy.prepare_fs1 import PROFILE
 
 NOW = datetime(2026, 10, 27, 18, 0, 30, tzinfo=timezone.utc)
@@ -43,29 +43,29 @@ def reasons(result):
 
 # --- TS-1: the generator ---------------------------------------------------------------------------------------------
 
-def test_ts1_generator_stamps_the_window_and_is_deterministic():
+def test_w2_1_generator_gives_the_fixed_window_whenever_prepared():
     p = build(fs1_raw=PROFILE.read_bytes(), now=NOW).read()
     validate_live(p)
-    assert p['activation_self_check'] == dict(symbol='SKHYB', pay_units=900_000, buy_after='2026-10-27T18:01:00Z',
-        buy_until='2026-10-27T19:01:00Z', flat_by='2026-10-27T20:01:00Z')
+    assert p['activation_self_check'] == dict(symbol='SKHYB', pay_units=900_000, buy_after='2026-10-28T04:00:00Z',
+        buy_until='2026-10-28T06:00:00Z', flat_by='2026-10-28T07:00:00Z')
     assert (p['trade_after'], p['new_risk_end'], p['flatten_start'], p['signing_end']) == (
-        '2026-10-27T20:01:00Z', '2026-10-27T20:02:00Z', '2026-10-27T20:02:00Z', '2026-10-27T21:01:00Z')
+        '2026-10-28T07:00:00Z', '2026-10-28T07:01:00Z', '2026-10-28T07:01:00Z', '2026-10-28T08:00:00Z')
+    later = datetime(2026, 10, 28, 5, 59, 59, tzinfo=timezone.utc)
+    assert build(fs1_raw=PROFILE.read_bytes(), now=later).payload == build(fs1_raw=PROFILE.read_bytes(), now=NOW).payload
     assert p['policy_id'] == self_check.TEMP_POLICY_ID and p[self_check.TEMP_COST_KEY] == 1000
     assert self_check.temp_floor(p) == 588_951
     changed = {k for k in set(p) | set(FS1) if p.get(k) != FS1.get(k)}
     assert changed == {'activation_self_check', 'policy_id', self_check.TEMP_COST_KEY, 'trade_after', 'new_risk_end',
                        'flatten_start', 'signing_end', 'provenance'}
     assert all(p['provenance'][k]['decision_id'].startswith('IDEA-110') for k in changed - {'provenance'})
-    assert build(fs1_raw=PROFILE.read_bytes(), now=NOW).payload == build(fs1_raw=PROFILE.read_bytes(), now=NOW).payload
-    assert stamp(datetime(2026, 10, 27, 18, 1, tzinfo=timezone.utc)).isoformat() == '2026-10-27T18:01:00+00:00'
 
 
-def test_ts1_generator_refuses_other_sources_and_late_stamps():
+def test_w2_1_generator_refuses_other_sources_and_a_closed_window():
     with pytest.raises(ContractError, match='reviewed FS1'):
         build(fs1_raw=PROFILE.read_bytes() + b' ', now=NOW)
-    with pytest.raises(ContractError, match='F-127'):
-        build(fs1_raw=PROFILE.read_bytes(), now=datetime(2026, 10, 28, 7, 0, 1, tzinfo=timezone.utc))
-    build(fs1_raw=PROFILE.read_bytes(), now=datetime(2026, 10, 28, 7, 0, tzinfo=timezone.utc))  # ends exactly at 10:00Z
+    for late in ('2026-10-28T06:00:00Z', '2026-10-28T09:00:00Z'):
+        with pytest.raises(ContractError, match='window closed'):
+            build(fs1_raw=PROFILE.read_bytes(), now=late)
 
 
 # --- TS-2: validation scope ------------------------------------------------------------------------------------------
