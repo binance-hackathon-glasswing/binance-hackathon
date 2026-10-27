@@ -953,3 +953,31 @@ Prospective fix criteria before implementation/tests:
   preserving its newly filled book and shared budgets. Fresh holdings/caps and
   both-host manifest binding remain required; no reset of terminal attempts.
   Resume only after host checks, then complete T2 removal of temporary access.
+
+### COST03 user handoff — leave deployed release running
+
+Yao asked to let the deployed version run and have friends investigate the
+conflict. The draft fencing repair is therefore intentionally UNDEPLOYED.
+Draft scope: refresh guards after prepare I/O, reject ownership change,
+locally revalidate exact payload/nonce/sequence and commit at the fresh
+version. Six synthetic regressions/5 subtests pass locally; broader tests,
+completion-clock treatment across guard I/O, independent review and live
+validation remain. Do not merge or deploy this draft without that work.
+
+Current deployment remains3ae83098 on run
+`larp-dev-rehearsal-20261027-s5-cost01`/`larp_rehearsal8cost01`, profilef26c332a,
+zero extra USDT cushion/separate0.40USDT ceiling/200bp limit, same model/gas
+policy. Confirmed BUY approval4ff96b28 and swap79158e6a both FINAL_SUCCESS.
+Current reconciliation03cb17ab ingested4 facts, closed1 round, refused0,
+held rows0/open rounds0, preserving actual filled holdings and cost basis.
+Executor then planner are resumed under Yao's instruction. T2 removes only
+temporary access; final apply/readback is recorded separately. Existing
+22:00/23:00/00:00SGT buy/flatten/signing gates remain.
+
+Friend investigation evidence: private execution journal at
+`/private/tmp/larp-s5-cost01-deploy/execution-journal.json` and
+`execution-after-pause.json`; old/public proposal and criteria above. Multiple
+PREPARE_PROBE-only3-probe aborts had successful approve/gas API responses,
+no signing request and no persistent reason. The draft reproduction changes
+the run journal version during gas estimation and reproduces a stale-CAS
+refusal on base. Upstream RFQ validity remains separately unguaranteed.

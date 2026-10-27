@@ -180,7 +180,7 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
                           timeout_s=config.get('signer_timeout_seconds', 20))
     try:
         executor = Executor(registry, guards, venue, signer, decoder,
-                            allowance_recovery=config.get('allowance_recovery', False))
+                            allowance_recovery=config.get('allowance_recovery', False), clock_s=clock_s)
     except Blocked:
         raise NotIntegrated('EXECUTOR_CAPABILITY_GATE') from None
     terminal = RoundTerminal(store, run_id=run_id)
