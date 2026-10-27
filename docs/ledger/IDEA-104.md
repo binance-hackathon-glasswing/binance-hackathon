@@ -869,3 +869,87 @@ Public package:docs/build/ops/rehearsal-install-s5-cost01-20261027/.
 Bundle SHA`46f8bc3310df88a373ef078a9087d5cc13e9dacd286bb64366263f1a556160e0`;
 manifest SHA`e7a367b64fbca764864c5f12156303e30a85215c6b2aca4881f97792d5780453`.
 Private inputs/results/credentials remain outside tracked source.
+
+### COST02 source reconciliation prerequisite
+
+Fresh M3 refused correctly: source run8 still holds15.441878USDT,1.536e15wei
+BNB and an incoming TSLAB reservation for open quote round
+`safety:1793077901702:136/quote1`, despite3/3 execution records terminal.
+All holdings match finalized chain and latest/pending nonce39. The old
+planner was stopped before its `ServiceExecution.expire` path could end this
+unclaimed command; the execution service deliberately never journals that
+runtime expiry itself. Do not skip the held-reservation gate.
+
+Recovery criterion before execution: published q1 helper verifies the old
+installed release/config/registered manifest, refuses a running planner or
+executor and any nonterminal execution, then calls only that release's
+`ServiceExecution.settle_open(now)` and `Coordinator.recover(now)`. No planner,
+signer or broadcaster is constructed. Existing registered code emits truthful
+NOT_SUBMITTED expiry and closes the audit round. Require zero held units and
+zero open rounds, deliver the new audit chunks using the old uploader, then
+recapture fresh M3. User all-steps authorization covers this recovery.
+
+### COST02 source closure and exact package binding
+
+Source reconciliation command5153e139 ingested one existing terminal observation
+(expired count0), closed one round, and released every held reservation through
+the old registered bdd515f8 code. Source readback command6ff89ea0:67 CLOSED
+rounds,67 audit events,97 ACK chunks,zero held rows. Initial wrapper attempts
+refused before committing due protected config access, profile canonicalization
+and a missing pure settlement bridge; corrected public helper is idempotent and
+uses only old registered code, with no signing or planner construction.
+
+Fresh M3 at09:58:47UTC is COVERED; signer SHA
+`69f2e3d75e8f3a5212c7a5d99588afa11b4e6b0252ebf5852bb5e7379e4ca599`,
+changing only build/run/database. Yao's all-steps approval is recorded locally
+with that hash, unchanged policy/caps and the adopted profile. M4 initially
+refused the detached source checkout (PR313 staging issue); selecting its
+already-pushed exact branch fixes it without bypassing the gate. Updated stage
+now verifies/selects that pinned branch. Local Gate A, bound manifest and signer
+check pass; both hosts bind the same release JSON SHA
+`c4d8c23fefc73d00d04ab68897fc45a246b9fc5e1e1953f36c2b7de35e97d73f`.
+Private package-20261027T100020Z uploaded under its dedicated transfer prefix.
+Source configs retired and preserved on both hosts; original database, model
+budget/evidence and protected signer key remain intact. New release installation
+and live start checks follow; no completed BUY is claimed here.
+
+## S5-COST03 — preparation CAS interference found during live acceptance
+
+The combined3ae83098 release is installed and registered on both hosts;
+protected-key, routes/clock/role, model-budget, archive/backup ACK and all
+startup checks pass. First BUY completed on chain: approval
+`0x4ff96b287fbd351590904ee406e3c7750cc48db2bb76e194a22d66ef00b05af9`,
+swap`0x79158e6a010298fad07440749b1d25469cb874976c67f91a242d44589b8246f0`,
+both FINAL_SUCCESS. Do not describe the source wallet as flat after this.
+
+However, five earlier intents ended after PREPARE_PROBE repeated3 times with
+no PREPARED/PREPARE_BLOCKED event, despite successful approve construction
+and exact-payload gas estimation. Preparation performs network I/O after its
+initial journal-version snapshot; concurrent planner/assessment journal writes
+can invalidate the final CAS and consume the preparation budget without a
+prepared attempt. After pausing planner writes, preparation progressed and a
+BUY completed. Fencing remains necessary; never ignore a stale CAS.
+
+Yao's all-steps approval covers finishing the repair/deployment. Planning is
+paused; execution is stopped after all observed records terminal, pending
+truthful receipt ingestion using current registered code. q2 helper verifies
+that exact current release and database, refuses any nonterminal execution,
+and uses only existing settlement/recovery APIs. Preserve filled holdings,
+original orders, journals and all cost basis; no flatten/manual transaction.
+
+Prospective fix criteria before implementation/tests:
+- CAS1: after slow prepare I/O, reacquire fresh guards, reject owner change and
+  revalidate payload economics/nonce/sequence/risk/version/reservation/clock
+  and remaining authority before committing PREPARED at the fresh version.
+  Router preflight remains checked; no signature or broadcast during prepare.
+- CAS2: harmless journal advancement during I/O no longer burns the entire
+  prepare budget. HALT, nonce/owner change, revoked reservation/version,
+  elapsed authority and a race after refresh remain fail closed. Explicit
+  injected live clock supplies fresh completion time; fixture clocks stay
+  deterministic. No fresh quote cached across execution phases.
+- CAS3: meaningful failing regression on base, focused execution/signer/runtime
+  and complete pinned Linux/PG plus systemd/bundle qualification before deploy.
+- CAS4: apply as a registered dev-version upgrade of this same run/database,
+  preserving its newly filled book and shared budgets. Fresh holdings/caps and
+  both-host manifest binding remain required; no reset of terminal attempts.
+  Resume only after host checks, then complete T2 removal of temporary access.
