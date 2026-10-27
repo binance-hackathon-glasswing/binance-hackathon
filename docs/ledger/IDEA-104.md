@@ -575,6 +575,49 @@ instance class or memory (IDEA-109 S-07); (3) apply DB1/DB2 so the next stall na
 (4) re-size the backup bound or the first-segment strategy for a run of this volume; (5) restart pacing so
 crash loops do not repeat full verification.
 
+## S5-OBS03 — run 8's first BUY aborts on RFQ expiry after the approve; the zero-amount revoke is rejected (2026-10-27, live observation)
+
+Read-only evidence from the run-7/8 monitoring session (SSM reads of API artifacts, execution records and events on
+the primary; public BNB Chain RPC reads of the receipt, allowance and nonce). No host, run, profile or wallet change
+by that session apart from the manual runtime stop below. Full timeline and read-only methods:
+[handoff](../build/S5_RUN8_FS1_HANDOFF_20261027.md). Run 8 = `larp-dev-rehearsal-20261027-s5-small`, build
+`bdd515f8` (S5-SMALL01, includes IDEA-109 PR #303), dev wallet `0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479`.
+
+Observed (UTC):
+- 05:01: run 8 starts; trend UP, limiter NORMAL, targets about 15.44 USDT/name (SMALL01 proportional targets work).
+- 05:03:47: `aggregator/approve-transaction` ok, `approveAmount` `15441878000000000000`, vendor LiquidMesh.
+- 05:04:12: approve confirmed, nonce 38, tx `0x5e67cc065517f252d4cbe97c7b00b0d514e5f65a06edfd2bb19b482597403b74`,
+  USDT → `approve(0xb44446b0c8e56988c34f7ff73ae904982b5fdda5, 15.441878)`, status 1.
+- 05:04:31, 05:04:39: `pre-transaction/gas-limit` code 40435, `execution reverted … RFQ_OrderExpired`. No swap sent;
+  record `0e22df21…` ABORTED.
+- 05:04:50, 05:04:58, 05:05:05: the allowance clean-up's `approve-transaction` with `approveAmount: "0"` is rejected,
+  code 40001, "invalid approveAmount, must be a positive integer string" (`larp/execution_live/venue.py` `revoke`).
+- From 05:05: `DIRTY_ROUTER_ALLOWANCE` (LOW) every ~2 min. Records `e639da05…` and `e813dcea…` got approve payloads
+  (05:06–05:12) but were never signed (`signing_requests` = 1 in total) and ended ABORTED. Last plan
+  `EXECUTION_BLOCKED`, gate `WALLET_PENDING`; reason summaries `LEG_ATTEMPT_LIMIT (GOOGLB)`,
+  `BUY_RECEIVE_TARGET_REQUOTE (NVDAB)`.
+- 05:12: manual `systemctl stop larp-runtime` (`PLANNING_PAUSED`). At ~06:35: book flat, cash 81.3730 USDT,
+  BNB 0.024971, **on-chain USDT allowance to the router 15.441878 (open)**, next nonce 39 (one transaction sent).
+
+Findings:
+- **OBS03-B1 (defect, high confidence):** the zero-amount revoke cannot work against the live API. FS1's recovery
+  profile `b8ba06e2…` (IDEA-098/AL9) and the FS1 flatten (all router allowances 0) depend on it. Fixing it needs a
+  signer-policy decision (Isaac) before code (Keegan): another revoke route, or accepting a minimal non-zero
+  allowance. Criteria must be written before code (AGENTS.md).
+- **OBS03-B2 (defect, high confidence in the effect):** the RFQ order had expired by the gas estimate (about 25 s
+  from the approve request to its confirmation; the quote time is not recorded), and the leg aborted instead of
+  re-quoting. The cause of the expiry is open (see below). Similar to run 4's S2-F6; likely to hit FS1's first
+  entries (Keegan, Keith).
+
+Open, not findings (to be confirmed read-only; methods in the handoff, items 9 and 10):
+- Whether a fresh quote was fetched between the approve and the reverted gas estimates. If not, the executor
+  estimated gas on the stale pre-approve quote, against the kit order approve → confirm → re-quote → gas estimate
+  (F-105); if yes, the fresh RFQ order expired again. This decides the B2 fix.
+- Why attempts 2 and 3 were never broadcast. Likely, unconfirmed: the open allowance plus the attempt limit.
+
+Run 8 status: no trade, so SMALL-5's live acceptance (autonomous buy/sell) is not met by run 8 so far. Restart,
+clean-up or retirement before the FS1 install is Yao's decision.
+
 ## S5-SMALL01 — proportional small-wallet rehearsal, Oct27 19:00SGT flatten
 
 User instruction, 2026-10-27 SGT: amend S5 to buy now and sell at19:00, to exercise FS1 on a smaller wallet and shorter timeline. This is a development rehearsal only. FS1 FINAL remains unchanged.

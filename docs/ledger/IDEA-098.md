@@ -5,6 +5,7 @@
   (signer policy, profile approval), Keith (strategy values unchanged), Yao (install).
 - Status: **open — pre-registered (criteria RC1–RC7 below committed before any criterion test was run).**
 - 2026-10-25 status (Claude Code): **supported offline with two recorded deviations** (results below); owner approval, M3 and AL9 open.
+- 2026-10-27 live evidence (IDEA-104 [S5-OBS03](IDEA-104.md#s5-obs03--run-8s-first-buy-aborts-on-rfq-expiry-after-the-approve-the-zero-amount-revoke-is-rejected-2026-10-27-live-observation)): AL9's zero-approve clean-up fails against the live Web3 API (`approveAmount: "0"` rejected, code 40001), so AL9 is not merely untested; see backlog OBS03-B1.
 - Related: IDEA-096 (PR282, allowance recovery, implemented with defaults off), IDEA-093 (PR278, FS1 final candidate,
   cleanup disabled), IDEA-090 S2-F6 (post-approve requote aborts; fix merged), IDEA-089 (run 4), LD06, LD10.
 
