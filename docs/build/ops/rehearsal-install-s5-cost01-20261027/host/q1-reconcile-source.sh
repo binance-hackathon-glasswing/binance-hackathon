@@ -16,6 +16,7 @@ from larp.runtime.service import validate_config,open_store,verify_registered_ma
 from larp.runtime.preflight import verify_release,verify_runtime_config
 from larp.runtime.coordinator import Coordinator
 from larp.runtime.driver import ServiceExecution
+from larp.integration.settlement import ExecutionBridge
 raw=Path('/etc/larp/runtime.json').read_bytes();c=validate_config(json.loads(raw))
 assert (c['run_id'],c['database_name'],c['build_id']) == ('larp-dev-rehearsal-20261027-s5-small','larp_rehearsal8','bdd515f80dbc57e80ffeb60c6001091d6e1d7c08')
 manifest=Document(Path('/etc/larp/release.json').read_bytes());m=verify_release(manifest,Path.cwd())
@@ -25,7 +26,7 @@ with s.transaction() as db:
  assert db.execute('SELECT count(*) FROM execution_records WHERE run_id=%s AND NOT terminal',(c['run_id'],)).fetchone()[0]==0
 praw=Path(c['driver']['strategy_profile_file']).read_bytes()
 assert hashlib.sha256(praw).hexdigest()==c['driver']['strategy_profile_sha256']
-coordinator=Coordinator(s,None,None,None,execution=None,run_id=c['run_id'],version_id=c['build_id'],
+coordinator=Coordinator(s,None,None,None,execution=ExecutionBridge(),run_id=c['run_id'],version_id=c['build_id'],
  profile_hash=Document.from_dict(json.loads(praw)).digest('StrategyProfile.v1'),address=c['wallet_address'],test_rounds=True,require_version=True)
 execution=ServiceExecution(coordinator,wallet=c['wallet_address'],grace_ms=c['driver']['expiry_grace_ms'])
 now=time.time_ns()//1000000
