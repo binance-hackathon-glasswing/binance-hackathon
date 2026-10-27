@@ -1,7 +1,10 @@
 """Offline checks for the OBS03-B2-RV01 RFQ validity collector (IDEA-104 RV-1..RV-5); no network calls."""
 import io
 import json
+from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import Mock
 
 from larp.execution import USDT
 from larp.marketdata.port import TOKENS
@@ -97,7 +100,7 @@ class RfqValidityTests(unittest.TestCase):
         self.scope = dict(wallet=WALLET, calldata={calldata(1)})
         self.state = rv.override(WALLET)
 
-    def run_tool(self, expiry, *, proof=True, fail=(), rounds=1, disable_rfq=False):
+    def run_tool(self, expiry, *, proof=True, fail=(), rounds=1, disable_rfq=False, out=None):
         clock = Clock()
         client = FakeClient(clock, fail=fail)
         holder = {}
@@ -108,6 +111,7 @@ class RfqValidityTests(unittest.TestCase):
         args = Args()
         args.rounds = rounds
         args.disable_rfq = disable_rfq
+        args.out = out
         code, raw = rv.run(args, client=client, rpc_factory=rpc_factory, credentials_source=fixture_credentials,
                            clock=clock, sleep=clock.sleep, wallclock=lambda: 1_800_000_001.5)
         return code, json.loads(raw), client, holder['rpc'], raw
@@ -154,6 +158,36 @@ class RfqValidityTests(unittest.TestCase):
                                  ('POST', 'pre-transaction/gas-limit'), ('GET', 'market/rwa/tokens')]:
             with self.subTest(endpoint=endpoint), self.assertRaisesRegex(Unavailable, 'allowlist'):
                 client.request(method, endpoint, {})
+
+    def test_private_output_refuses_checkout_existing_and_symlink_targets_before_credentials(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            existing = parent / 'existing'
+            existing.mkdir()
+            alias = parent / 'checkout-alias'
+            checkout = Path(rv.__file__).resolve().parents[2]
+            alias.symlink_to(checkout, target_is_directory=True)
+            direct_alias = parent / 'existing-alias'
+            direct_alias.symlink_to(existing, target_is_directory=True)
+            for output in (checkout / 'raw-rfq-private', alias / 'raw-rfq-private', existing, direct_alias):
+                with self.subTest(output=str(output)):
+                    args = Args()
+                    args.out = output
+                    credentials_source = Mock(side_effect=AssertionError('credentials reached'))
+                    rpc_factory = Mock(side_effect=AssertionError('network boundary reached'))
+                    with self.assertRaises(ValueError):
+                        rv.run(args, credentials_source=credentials_source, rpc_factory=rpc_factory)
+                    credentials_source.assert_not_called()
+                    rpc_factory.assert_not_called()
+
+    def test_private_output_is_new_and_owner_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / 'new'
+            code, packet, *_ = self.run_tool(lambda n: None, out=output)
+            self.assertEqual((code, packet['status']), (0, 'DONE'))
+            self.assertEqual(output.stat().st_mode & 0o777, 0o700)
+            with self.assertRaises(ValueError):
+                self.run_tool(lambda n: None, out=output)
 
     def test_rv2_actual_ages_bounds_and_stop_rule(self):
         # NVDAB (n=1) RFQ order valid 4 s; GOOGLB (n=2) arrives expired; others AMM.

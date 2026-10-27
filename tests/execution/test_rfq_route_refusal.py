@@ -7,7 +7,7 @@ from dataclasses import replace
 import tempfile
 import unittest
 
-from larp.execution import Blocked, DependencyUnavailable
+from larp.execution import Blocked, DependencyUnavailable, NATIVE_BNB
 from larp.execution_live.venue import LiveVenue, dex_names
 from larp.marketdata.port import TOKENS, MarketPort
 from tests.execution import test_allowance_recovery as recovery
@@ -115,6 +115,13 @@ class VenueRefusal(unittest.TestCase):
         for method, endpoint, params in client.calls:
             self.assertEqual((method, endpoint, params['enableRFQ'], params['vendor']),
                              ('GET', 'aggregator/quote-and-swap', 'false', 'LiquidMesh'))
+
+    def test_native_gas_topup_quote_parameters_are_unchanged(self):
+        i = replace(authorized_intent(), kind='GAS_TOP_UP', receive_token=NATIVE_BNB)
+        client = RoutedWire(i, [1_000_000], [['Pancakeswap V3']])
+        LiveVenue(client, None, decoder=FakeDecoder()).quote(i, 0)
+        self.assertTrue(client.params)
+        self.assertTrue(all('enableRFQ' not in p for p in client.params))
 
     def test_dex_names_reads_nested_legs_only_as_strings(self):
         rr = dict(vendorName='LiquidMesh', dexRouterList=[dict(dexProtocol=dict(dexName='A')),

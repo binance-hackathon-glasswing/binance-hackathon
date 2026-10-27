@@ -44,6 +44,24 @@ OVERRIDE_BALANCE, OVERRIDE_ALLOWANCE = 10**30, 2**255
 TARGETS = (0, 1, 2, 3, 5, 8, 12, 20, 30)
 ARRIVED_EXPIRED_AGE_S = 2.0
 TIMESTAMP_WINDOW_S = 3600
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def private_output(value):
+    """Reserve a new private raw-artifact directory before reading credentials or making requests."""
+    if value is None:
+        return Path(tempfile.mkdtemp(prefix='larp-rfq-validity-'))
+    original = Path(value)
+    target = original.resolve()
+    if target == ROOT or ROOT in target.parents:
+        raise ValueError('PRIVATE_OUTPUT_IN_CHECKOUT')
+    if original.is_symlink() or target.exists():
+        raise ValueError('PRIVATE_OUTPUT_EXISTS')
+    try:
+        target.mkdir(mode=0o700, parents=True)
+    except FileExistsError:
+        raise ValueError('PRIVATE_OUTPUT_EXISTS') from None
+    return target
 
 
 class QuoteOnlyClient(Web3Client):
@@ -246,7 +264,7 @@ def utc_iso():
 
 
 def run(args, *, client=None, rpc_factory=None, credentials_source=credentials, clock=time.monotonic, sleep=time.sleep, wallclock=time.time):
-    out = Path(args.out) if args.out else Path(tempfile.mkdtemp(prefix='larp-rfq-validity-'))
+    out = private_output(args.out)
     wallet = DEV_WALLET
     scope = dict(wallet=wallet, calldata=set())
     selected = credentials_source(args.env_file, environ={})  # the Web3 key pair only; never a wallet key
