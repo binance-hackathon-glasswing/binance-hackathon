@@ -788,6 +788,22 @@ Interpretation rules (fixed before the live run):
 - Results are observed outcomes for this window and size, not a guaranteed TTL. Non-RFQ reverts are reported
   separately and not counted as RFQ expiry.
 
+Criteria amendment after a 1-round smoke run (2026-10-27 13:13Z, tool `d5871635`, recorded before the full run).
+The smoke run proved the override (RV-3) and probed all five symbols. MSFTB's quote was executable at 0.37 s, reverted
+at 1.0 s and 2.0 s, and returned `RFQ_OrderExpired` at 3.0 s. Inspecting its raw response locally showed two things the
+criteria had not anticipated:
+- The quote response does mark the route: `routerResult.dexRouterList[].dexProtocol.dexName` = `Rfq Neptunex`
+  (100 %). The tool now records each leg's `dexProtocol` name and percentage and flags `rfq_route` for names starting
+  "Rfq". This contradicts the LD02c R1 conclusion (IDEA-070) that nothing in the response marks an RFQ route; that
+  collector read only top-level scalar fields of each `dexRouterList` item, not the nested `dexProtocol`.
+- The calldata carries a packed (not 32-byte-aligned) 4-byte Unix time 1.55 s after the quote response, twice, next
+  to the outer deadline at +499.6 s. The scan now covers every byte offset (4-byte seconds and 6-byte ms values with a
+  non-zero leading byte, within ±1 h of block time) and reports offsets from both the block time and the response.
+- Non-RFQ revert messages now keep the provider's short `Error(...)` reason (letters, digits, underscore and space;
+  60 characters at most), still subject to the public-packet scan.
+Interpretation rules are unchanged; an encoded short time is evidence about the order's intended lifetime, while the
+probe outcomes remain the measurement.
+
 ## S5-COST01 — separate cash cushion from discretionary cost admission (proposal)
 
 Yao requested a new review PR on 2026-10-27 after confirming gas is already

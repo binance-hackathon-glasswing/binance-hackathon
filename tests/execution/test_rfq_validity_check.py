@@ -14,7 +14,8 @@ KEY, SECRET = 'fixture-api-key-0001', 'fixture-secret-0002'
 
 
 def calldata(n):
-    return rv.SWAP_SELECTOR + '%064x' % n + '%064x' % 1_800_000_500  # second word: a Unix time 500 s ahead
+    # second word: the outer deadline 500 s ahead; then a packed 4-byte time 1 s ahead (an RFQ order expiry)
+    return rv.SWAP_SELECTOR + '%064x' % n + '%064x' % 1_800_000_500 + 'abcd' + '%08x' % 1_800_000_001 + 'ef'
 
 
 class Clock:
@@ -43,7 +44,8 @@ class FakeClient:
         self.n += 1
         return dict(response=dict(data=dict(executionMode='SWAP', rfq=None, tx=dict(
             to=rv.ROUTER, data=calldata(self.n), gas='450000'), routerResult=dict(
-            vendorName='LiquidMesh', dexRouterList=[dict(dexName='Pool-' + symbol, ratio='1')]))))
+            vendorName='LiquidMesh', dexRouterList=[dict(dexProtocol=dict(
+            dexName=('Rfq Maker' if symbol == 'NVDAB' else 'Pool-' + symbol), percent='100.00'))]))))
 
 
 class FakeRpc:
@@ -169,8 +171,14 @@ class RfqValidityTests(unittest.TestCase):
         self.assertEqual(p['verdict'], 'MIXED')
         self.assertEqual(p['by_symbol']['NVDAB']['bounds'], [[3.0, 5.0]])
         self.assertEqual(p['by_symbol']['TSLAB']['max_success_age_s_non_rfq'], ts['probes'][-1]['age_s'])
-        self.assertEqual(nv['timestamp_words'], [dict(word=1, unit='s', offset_s=500)])
-        self.assertEqual(nv['route_names'], ['Pool-NVDAB'])
+        # the response wall time is the fixture wallclock 1_800_000_001.5 (read before the block call)
+        self.assertEqual(nv['timestamp_values'], [
+            dict(byte_offset=64, unit='s', offset_vs_block_s=500, offset_vs_response_s=498.5),
+            dict(byte_offset=70, unit='s', offset_vs_block_s=1, offset_vs_response_s=-0.5)])
+        self.assertEqual(nv['route_names'], [dict(dex='Rfq Maker', percent='100.00')])
+        self.assertEqual((nv['rfq_route'], ts['rfq_route']), (True, False))
+        self.assertEqual(p['by_symbol']['NVDAB']['short_encoded_times_vs_response_s'], [-0.5])
+        self.assertEqual(p['by_symbol']['TSLAB']['short_encoded_times_vs_response_s'], [])
         self.assertEqual(client.calls[0][2]['slippagePercent'], '0.2')
         self.assertEqual(client.calls[0][2]['amount'], str(15 * 10**18))
 
@@ -184,6 +192,9 @@ class RfqValidityTests(unittest.TestCase):
         c = rv.classify(probes)
         self.assertEqual((c['rfq_failing'], c['other_failures']), (False, ['REVERTED']))
         self.assertEqual(rv.RpcRefused(dict(message='execution reverted: Min return not reached')).reason(), 'REVERTED')
+        self.assertEqual(rv.RpcRefused(dict(message='execution reverted: adapter:0x1:Error(Expired order x)')).reason(),
+                         'REVERTED:Expired order x')
+        self.assertEqual(rv.RpcRefused(dict(message='header not found')).reason(), 'RPC_ERROR')
 
     def test_rv3_no_simulation_without_the_override_proof(self):
         code, p, client, rpc, _ = self.run_tool(lambda n: None, proof=False)

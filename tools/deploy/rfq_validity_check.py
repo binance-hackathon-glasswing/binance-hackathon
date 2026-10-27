@@ -7,6 +7,8 @@ For each round and each of the five bStocks: one BUY quote (USDT -> bStock, dev 
 then `eth_estimateGas` of that quote's exact calldata on a public read RPC, with a USDT balance and router-allowance
 state override, immediately and at target ages 1, 2, 3, 5, 8, 12, 20 and 30 s after the quote response. Probing
 stops after two RFQ failures in a row or after the 30 s probe. Every probe records its actual start age (monotonic).
+Each quote also records its route legs' `dexProtocol.dexName` (RFQ makers are named "Rfq ...") and any packed or
+word-aligned calldata value that reads as a Unix time within ±1 h, as offsets from the block and response times.
 
 Read-only: the Web3 client allows only `aggregator/quote-and-swap`; the RPC refuses every call shape except the
 reads and override simulations listed in `allowed_call`, before any network access. Only the Web3 key pair is
@@ -59,7 +61,10 @@ class RpcRefused(ValueError):
         found = re.search(r'RFQ_[A-Za-z]+', self.message)
         if found:
             return found.group(0)
-        return 'REVERTED' if 'revert' in self.message.lower() else 'RPC_ERROR'
+        if 'revert' not in self.message.lower():
+            return 'RPC_ERROR'
+        reason = re.findall(r'Error\(([A-Za-z][A-Za-z0-9_ ]{0,59})', self.message)
+        return 'REVERTED:' + reason[-1].strip() if reason else 'REVERTED'
 
 
 def word(value):
@@ -125,26 +130,28 @@ def fingerprint(value):
     return hashlib.sha256(str(value).encode()).hexdigest()[:16]
 
 
-def timestamp_offsets(data, chain_ts):
-    """Offsets (s) from the latest block time of calldata words that read as Unix seconds or ms within ±1 h."""
-    hexdata = data[10:] if data.startswith('0x') else data[8:]
+def timestamp_offsets(data, chain_ts, response_ts):
+    """Packed or word-aligned values in the calldata that read as Unix seconds (4 bytes) or ms (6 bytes) within ±1 h of
+    the latest block time; offsets are from that block time and from the quote response's wall-clock time."""
+    raw = bytes.fromhex(data[2:] if data.startswith('0x') else data)
     found = []
-    for i in range(0, len(hexdata) - 63, 64):
-        value = int(hexdata[i:i + 64], 16)
-        for unit, scaled in (('s', value), ('ms', value / 1000)):
-            if abs(scaled - chain_ts) <= TIMESTAMP_WINDOW_S:
-                found.append(dict(word=i // 64, unit=unit, offset_s=round(scaled - chain_ts, 3)))
+    for size, unit, scale in ((4, 's', 1), (6, 'ms', 1000)):
+        for i in range(4, len(raw) - size + 1):
+            value = int.from_bytes(raw[i:i + size], 'big') / scale
+            if raw[i] != 0 and abs(value - chain_ts) <= TIMESTAMP_WINDOW_S:
+                found.append(dict(byte_offset=i, unit=unit, offset_vs_block_s=round(value - chain_ts, 3),
+                                  offset_vs_response_s=round(value - response_ts, 3)))
     return found
 
 
 def route_names(quote):
-    rr = quote.get('routerResult') or {}
+    """Each route leg's `dexProtocol.dexName` (an RFQ maker shows as e.g. "Rfq ...") and percentage."""
     names = []
-    for value in rr.values():
-        if isinstance(value, list):
-            for item in value[:8]:
-                if isinstance(item, dict) and isinstance(item.get('dexName'), str):
-                    names.append(re.sub(r'[^ -~]', '?', item['dexName'])[:40])
+    for leg in ((quote.get('routerResult') or {}).get('dexRouterList') or [])[:8]:
+        protocol = leg.get('dexProtocol') if isinstance(leg, dict) else None
+        if isinstance(protocol, dict) and isinstance(protocol.get('dexName'), str):
+            names.append(dict(dex=re.sub(r'[^ -~]', '?', protocol['dexName'])[:40],
+                              percent=re.sub(r'[^0-9.]', '', str(protocol.get('percent', '')))[:8]))
     return names
 
 
@@ -200,9 +207,14 @@ def prove_override(rpc, wallet):
 def summarize(quotes):
     by_symbol = {}
     for q in quotes:
-        s = by_symbol.setdefault(q['symbol'], dict(quotes=0, rfq_failing=0, arrived_expired=0, bounds=[],
+        s = by_symbol.setdefault(q['symbol'], dict(quotes=0, rfq_routes=0, rfq_failing=0, arrived_expired=0, bounds=[],
+                                                    short_encoded_times_vs_response_s=[],
                                                     max_success_age_s_non_rfq=None))
         s['quotes'] += 1
+        if q.get('rfq_route'):
+            s['rfq_routes'] += 1
+            s['short_encoded_times_vs_response_s'] += [v['offset_vs_response_s'] for v in q['timestamp_values']
+                                                       if v['offset_vs_response_s'] < 60]
         c = q.get('classification')
         if not c:
             continue
@@ -270,13 +282,15 @@ def run(args, *, client=None, rpc_factory=None, credentials_source=credentials, 
                 row['quote_error'] = 'NOT_PINNED_ROUTER'
                 continue
             scope['calldata'].add(data)
+            response_ts = wallclock() - (clock() - t0)
             block = rpc('eth_getBlockByNumber', ['latest', False])
             chain_ts = int(block['timestamp'], 16)
             row.update(calldata=fingerprint(data), calldata_bytes=(len(data) - 2) // 2,
                        execution_mode=q.get('executionMode'), rfq_field_null=q.get('rfq') is None,
                        route_names=route_names(q), quoted_gas=int(tx['gas']) if tx.get('gas') else None,
                        block_age_at_quote_s=round(wallclock() - chain_ts, 3),
-                       timestamp_words=timestamp_offsets(data, chain_ts))
+                       rfq_route=any(r['dex'].lower().startswith('rfq') for r in route_names(q)),
+                       timestamp_values=timestamp_offsets(data, chain_ts, response_ts))
             row['probes'] = probe_quote(rpc, wallet, data, t0, clock=clock, sleep=sleep)
             row['classification'] = classify(row['probes'])
             scope['calldata'].discard(data)
