@@ -744,6 +744,50 @@ IAM GetInstanceProfile read is AccessDenied. T1 restoration needs the authorized
 plan/apply. No service, key, signer policy, wallet or hosted run state was changed; local SDK/test dependencies and
 disposable PostgreSQL were used. Exact release/systemd/host qualification and run8 cleanup remain prerequisites.
 
+### OBS03-B2-RV01 — read-only RFQ validity measurement (2026-10-27; criteria before code)
+
+Authorization: Keith (user) asked on 2026-10-27 for a read-only collector, built off the integration branch and run
+locally with the read-only Web3 key pair. Question: how long a fresh quote's swap calldata stays executable, measured
+as actual elapsed time since the quote response, and whether RFQ-routed quotes already fail at the first probe
+(upstream order arrives expired) or after a measurable window. LD02c could not answer this (nominal delays only, see
+the IDEA-070 correction); run 8 saw `RFQ_OrderExpired` about 5 s after fresh post-approval quotes.
+
+Method: `tools/deploy/rfq_validity_check.py`, run on a workstation, never a host. BUY 15 USDT (run 8's per-name
+size) USDT → each of the five bStocks, from the public dev wallet address, `slippagePercent` 0.2 (S5's 20 bp). One
+quote at a time. Each quote's exact calldata is simulated with `eth_estimateGas` on the public read RPC
+(`BSC_BNBCHAIN_PUBLIC`) with a USDT balance and router-allowance state override (LD02c's slots 1 and 2), immediately
+after the response and then at target ages 1, 2, 3, 5, 8, 12, 20 and 30 s. Probing stops after an RFQ failure is seen
+twice in a row, or after the 30 s probe. Six rounds over the five symbols (30 quotes, about 15 minutes). The calldata's
+32-byte words are also scanned for Unix-second values within ±1 h of the latest block time and reported as offsets,
+to look for an encoded RFQ expiry. The simulation is the same chain check the API's `pre-transaction/gas-limit`
+performs, but not that endpoint itself.
+
+Tool criteria (offline, before the live run):
+- RV-1 read-only: the Web3 client allows only `GET aggregator/quote-and-swap`; the RPC allows only `eth_chainId`,
+  `eth_getBlockByNumber`, `eth_call` (USDT `balanceOf`/`allowance` only, with exactly the override) and
+  `eth_estimateGas` (from the dev wallet, to the pinned router, value 0, exactly a fresh quote's calldata, exactly the
+  override). Every other call is refused before any network access. No signer, private key, submit endpoint, AWS or
+  database is loaded.
+- RV-2 timing: every probe records its actual start age since the quote response was received (monotonic ms) and
+  its target; result keys are never nominal-only.
+- RV-3 override proof: before any simulation, `eth_call` with the override must return the overridden balance and
+  allowance; otherwise the packet is NOT_RUN with no simulation.
+- RV-4 output: the committed packet holds no credentials, RPC URL, wallet or calldata (fingerprints only); the
+  sanitizer refuses otherwise. Raw quote responses stay in a private directory outside the checkout.
+- RV-5 offline tests cover RV-1..RV-4 and the classification below; they and `tests/execution/test_quote_check.py`
+  pass.
+
+Interpretation rules (fixed before the live run):
+- A quote is RFQ-failing if any probe returns an `RFQ_*` revert. It "arrived expired" if its first probe (actual age
+  ≤ 2 s) returns `RFQ_OrderExpired`. Otherwise its validity is bounded by (last success age, first failure age].
+- If every RFQ-failing quote arrived expired: the inner order is unusable as quoted; no client latency reduction can
+  fix it, and the remedy is to treat it as a route refusal (re-quote or skip the leg within existing bounds) and raise
+  it with the provider. If bounds exist: compare the lower bound with run 8's measured ~5 s from re-quote to gas
+  estimate, plus the signer and broadcast path.
+- If no quote is RFQ-failing: INCONCLUSIVE for RFQ validity (routing is chosen per quote, IDEA-070 LD09), not a fix.
+- Results are observed outcomes for this window and size, not a guaranteed TTL. Non-RFQ reverts are reported
+  separately and not counted as RFQ expiry.
+
 ## S5-COST01 — separate cash cushion from discretionary cost admission (proposal)
 
 Yao requested a new review PR on 2026-10-27 after confirming gas is already
