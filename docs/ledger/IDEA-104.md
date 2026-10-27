@@ -776,3 +776,33 @@ must generate fresh profile/probe/config pins and numeric coverage and obtain
 exact acceptance before installation. PR313's already-packaged release does
 not gain this feature by merging a later PR. Owners: teammate reviewer for
 policy/numeric adoption; package owner for bindings/qualification/install.
+
+### S5-COST01 implementation and verification (2026-10-27)
+
+The implementation adds a positive optional `discretionary_cost_limit_units`
+to the scoped initial-only-gas S5 REHEARSAL. Only discretionary economic cost
+admission reads it; `cost_reserve_units` retains its capital/sizing and
+mandatory post-cost-bound roles. Absence falls back to the historical reserve.
+No builder defaults, shipped profiles, PR313 package pins, signer policy, BNB
+reserves, host services or Terraform settings were changed. The 0/0.40USDT
+values appear only as synthetic review examples, not an adopted profile.
+
+Red evidence before implementation: the initial17 synthetic cases gave
+7 failures/10 passes, including the positive-cost zero-cushion refusal and
+invalid-limit acceptance. Final21 new cases cover the independent absolute
+ceiling,200bp and LIVE per-name impact refusals, initial-gas scope, integer
+and provenance validation, sizing independence, gas availability/exit reserve
+and mandatory exit invariance (economic IDs correctly change on rebinding).
+
+Final affected suites on Linux/Python3.12.15 with disposable PostgreSQL14.24:
+`tests/strategy tests/risk` **588 passed,87 subtests passed,zero skips,zero
+failures**. Existing FS1/S5 rebuild/hash checks pass in that suite. Earlier
+macOS run before the final4 cases:582 passed,2 PostgreSQL skips,87 subtests.
+`git diff --check` passes and `config/` plus existing profile/evidence bytes
+are unchanged relative to canonical `fd6b6719`. This is affected-suite
+qualification, not a full release/systemd/host or live-trading acceptance.
+
+COST1–COST4 implemented/tested for review. Remaining: teammate policy/value
+review and adoption, package owner fresh profile/probe/config pins and numeric
+coverage/exact signer acceptance, newly qualified release and host acceptance.
+The current deployment and temporary T1 access are unaffected by this PR.

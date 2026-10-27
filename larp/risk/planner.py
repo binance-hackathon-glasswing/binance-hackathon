@@ -8,7 +8,7 @@ sell proceeds. The runtime stores requests atomically and execution revalidates.
 from fractions import Fraction
 
 from larp.contracts import ContractError, Document, TargetKind, validate_proposal
-from larp.strategy.schema import (ceil, equity, floor, fraction, instant, integer,
+from larp.strategy.schema import (ceil, discretionary_cost_limit, equity, floor, fraction, instant, integer,
                                   markets, profile, ratio, value, stock_capital_scale)
 from .accounting import update_risk
 from .gas import plan_top_up
@@ -184,7 +184,8 @@ def plan(snapshot, proposal_or_none):
     else:
         result["rejections"].append({"reason": "NO_POLICY_PROPOSAL"})
     terminal = now >= instant(p["flatten_start"])
-    cost_reserve = p["cost_reserve_units"]
+    cost_reserve = p["cost_reserve_units"]  # USDT cushion: capital, sizing and mandatory post-cost bounds
+    cost_limit = discretionary_cost_limit(p)
     safe_equity = max(0, E - cost_reserve)
     # IDEA-076 (S1): its top level, five names, its hard name line and no gross trim line except the 12% deep cut
     # replace the proposal's 80% / four-name / 20% limits, which bind every other baseline unchanged.
@@ -519,7 +520,7 @@ def plan(snapshot, proposal_or_none):
         if costed_reduction and cost * 10000 > mark * p['s1_reduction_cost_cap_bps']:
             result['rejections'].append({'symbol': symbol, 'reason': 'S1_REDUCTION_COST_CAP'})
             continue
-        if cost > cost_reserve and not mandatory:
+        if cost > cost_limit and not mandatory:
             result["rejections"].append({"symbol": symbol, "reason": "COST_RESERVE_INSUFFICIENT"})
             continue
         if not mandatory and side == "BUY":

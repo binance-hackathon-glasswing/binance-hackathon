@@ -94,6 +94,24 @@ use it. Mandatory sells still obey their exit slippage and per-trade limits.
 An over-cap executable quote requests a strictly smaller exact input; the next
 snapshot can follow that observed quote chain. No scaled quote/proceeds are invented.
 
+S5-COST01 adds an optional `discretionary_cost_limit_units` for the proportional
+S5 REHEARSAL with initial-only gas and the existing 200bp entry check. It is a
+positive USDT micro-unit ceiling on discretionary economic costs (including gas
+valued in USDT). `cost_reserve_units` then serves as the USDT cash cushion for
+capital/sizing; it may be zero without making the economic ceiling zero. With
+no explicit limit, the historical coupled behavior is unchanged. The existing
+`COST_RESERVE_INSUFFICIENT` reason identifies exceeding that effective ceiling.
+Mandatory exit/post-cost bounds still use the cash cushion, since it is the
+amount excluded from investable capital. BNB gas and exit reserves are separate.
+
+No shipped profile enables this option. For review only, a zero cash cushion
+and 400000-unit (0.40USDT) cost ceiling can exercise S5's 200bp economics. This
+requires sourced values/provenance, independent profile validation, sizing and
+gas/caps coverage, updated profile/probe/config/package pins, owner acceptance
+and a newly qualified release. Review the per-trade cap: BUY sizing subtracts
+the cash cushion from it, so reducing the cushion can increase the input cap.
+PR313's pinned package and every existing FINAL profile remain unchanged.
+
 An unavailable held-name mark blocks that name's exits and all entries, while
 healthy names can still reduce or flatten. `valuation_status=LOWER_BOUND` identifies
 risk-only equity with unvalued holdings omitted; `worst_case_gross_units=null`

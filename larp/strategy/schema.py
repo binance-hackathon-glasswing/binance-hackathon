@@ -47,6 +47,22 @@ def ratio(value):
     return [value.numerator, value.denominator]
 
 
+def discretionary_cost_limit(p):
+    """S5-COST01: an explicit economic ceiling independent of the legacy USDT cash cushion.
+
+    Without the opt-in, historical profiles keep cost_reserve_units for both purposes.
+    """
+    if 'discretionary_cost_limit_units' not in p:
+        return integer(p['cost_reserve_units'])
+    if (p.get('baseline') != 'TREND_GUARDED_VOL' or p.get('environment') != 'REHEARSAL'
+            or p.get('policy_id') != 'larp-s5-rehearsal-v1' or not initial_gas_only(p)
+            or p.get('s1_capital_basis') != 'EXCLUDE_GAS' or p.get('entry_cost_basis') != 'AUTHORIZED_MINIMUM'
+            or type(p.get('s5_entry_cost_cap_bps')) is not int or p['s5_entry_cost_cap_bps'] != 200
+            or 's5_entry_lot_units' in p):
+        raise ContractError('Independent cost limit requires initial-gas proportional S5 REHEARSAL at 200bp')
+    return integer(p['discretionary_cost_limit_units'], 1)
+
+
 def review_options(p):
     """IDEA-093 PR278-RV01: explicit S1 opt-ins; absence preserves historical policy behavior."""
     if 's1_capital_basis' in p and (p.get('baseline') != 'TREND_GUARDED_VOL'
@@ -65,6 +81,7 @@ def review_options(p):
                 or p.get('entry_cost_basis') != 'AUTHORIZED_MINIMUM' or 's5_entry_lot_units' in p
                 or type(p['s5_entry_cost_cap_bps']) is not int or p['s5_entry_cost_cap_bps'] != 200):
             raise ContractError('S5 small-wallet cost cap requires exact 200bp, proportional gas-excluded S5 REHEARSAL')
+    discretionary_cost_limit(p)
     if 's5_entry_lot_units' in p:
         if (p.get('baseline') != 'TREND_GUARDED_VOL' or p.get('environment') != 'REHEARSAL'
                 or p.get('policy_id') != 'larp-s5-rehearsal-v1' or p.get('s1_capital_basis') != 'EXCLUDE_GAS'
