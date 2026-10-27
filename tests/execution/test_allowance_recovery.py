@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import unittest
 
 from larp.contracts import ContractError, Document
-from larp.execution import (Attempt, Blocked, Conflict, Execution, Executor, Payload, REVOKE_TOKENS,
+from larp.execution import (Attempt, Blocked, Conflict, DependencyUnavailable, Execution, Executor, Payload, REVOKE_TOKENS,
                             USDT, NATIVE_BNB, validate_payload, validate_sequence, possible_swap_hashes)
 from larp.execution_live.service import ExecutionService, broadcast_observation
 from larp.execution_live.venue import LiveVenue
@@ -106,6 +106,58 @@ class AllowanceRecovery(unittest.TestCase):
         h = Harness(tmp.name)
         self.addCleanup(h.close)
         return h
+
+    def test_post_approval_gas_dependency_requotes_with_original_authority(self):
+        h = self.harness(); i = h.intent()
+        h.executor.create(i, h.now)
+        h.finish_step(i)
+        estimate = h.venue.estimate_gas
+        def unavailable(payload):
+            raise DependencyUnavailable('venue dependency unavailable')
+        h.venue.estimate_gas = unavailable
+        h.now += 1
+        state = h.executor.prepare(i.key, h.now)
+        self.assertFalse(state.abort_pending)
+        self.assertEqual(state.status, 'ACTIVE')
+        self.assertEqual(state.prepare_probes, 1)
+        self.assertEqual(len(state.attempts), 1)
+        self.assertEqual(len(h.venue.broadcasts), 1)
+        self.assertEqual(state.intent, i)
+        quotes = h.venue.quote_calls
+        h.venue.estimate_gas = estimate
+        state = h.finish_step(i)
+        self.assertGreater(h.venue.quote_calls, quotes)
+        self.assertEqual([a.step for a in state.attempts], ['APPROVE', 'SWAP'])
+        self.assertEqual(state.status, 'COMPLETED')
+        self.assertEqual(state.prepare_probes, 2)
+
+    def test_post_approval_dependency_retry_budget_still_exhausts(self):
+        h = self.harness(); i = h.intent()
+        h.executor.create(i, h.now); h.finish_step(i)
+        def unavailable(payload):
+            raise DependencyUnavailable('venue dependency unavailable')
+        h.venue.estimate_gas = unavailable
+        for _ in range(i.max_prepare_probes):
+            h.now += 1
+            state = h.executor.prepare(i.key, h.now)
+            self.assertFalse(state.abort_pending)
+            self.assertEqual(len(state.attempts), 1)
+        with self.assertRaisesRegex(Blocked, 'prepare probe budget exhausted'):
+            h.executor.prepare(i.key, h.now + 1)
+        state = h.executor.abort_unsigned(i.key, h.now + 1)
+        self.assertTrue(state.abort_pending)
+        self.assertEqual(state.intent, i)
+        self.assertEqual(len(h.venue.broadcasts), 1)
+
+    def test_post_approval_hard_validation_failure_still_starts_cleanup(self):
+        h = self.harness(); i = h.intent()
+        h.executor.create(i, h.now); h.finish_step(i)
+        def invalid(payload):
+            raise Blocked('invalid route')
+        h.venue.estimate_gas = invalid
+        state = h.executor.prepare(i.key, h.now + 1)
+        self.assertTrue(state.abort_pending)
+        self.assertEqual(len(state.attempts), 1)
 
     def test_abandoned_reverted_and_expired_approval_allow_fresh_cross_token_exit(self):
         for cause in ('no_swap', 'revert', 'expired'):

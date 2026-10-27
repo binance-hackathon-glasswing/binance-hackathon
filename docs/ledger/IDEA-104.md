@@ -730,3 +730,16 @@ Infrastructure constraint: AWS rejected db.t4g.small with FreeTierRestrictionErr
 Application source includes canonical PR303 (e3105689) via normal merge3869f8e1; no history rewrite. Pinned Linux/Python3.12.15/PostgreSQL14.24 suite on integrated runtime: **3038 passed,11 environment skips,4114 subtests,0 failures**. All3 operating-system sandbox cases pass separately in existing bubblewrap-enabled image. Offline demo passes in that image (base image lacks bubblewrap and cannot run the isolated demo). Final separate tests after two test/setup additions: **23 passed** (15 SMALL01 plus8 run8 sheet checks); recovery-focused PostgreSQL set **73 passed/106subtests**. Terraform validate and22 mock tests pass. The earlier three Git-sensitive failures were container metadata access, corrected by read-only Git metadata mounting; no ignored/private files were made tracked.
 
 SMALL-1..4 PASS offline: exact REHEARSAL scope, minimum3192045 microUSDT, unchanged FS1 hashes, DOWN requote/execution, all5 serial settlements at95/60/30 with reconstructed state, independent200bp rejection boundary, prior50bp refusal, risk/gas/market/integrity gates and18:00/19:00/23:00 window checks. SMALL-5 source verification PASS; fresh host/caps/deployment/order acceptance remains in progress. Source and ops are pushed before execution.
+
+### S5-NEXT01 targeted validation
+
+NEXT01-R1 retains DependencyUnavailable during quote/gas preparation inside the original probe budget;
+hard validation failures still enter cleanup. Three regressions cover successful fresh retry, exhausted probes,
+and hard failure cleanup. Two retry regressions failed before implementation. Python3.12.14 and disposable pinned
+PostgreSQL14.24: execution, signer and existing S5 profile suites **503 passed /1279 subtests /zero skips**.
+Next profile file SHA `1dbb52b12b6b8e379a1b3996d427b2ab83b520f98ec6275d29f536600f327e4c`,
+StrategyProfile.v1 `b4719c230f41a28883d268fac77fe44bdcad23fb36355dbaec4af23a3536e7af`.
+Host readback: both x86_64; signer EC2 running but SSM ConnectionLost since04:59:46UTC. Current AWS identity's
+IAM GetInstanceProfile read is AccessDenied. T1 restoration needs the authorized operator's reviewed Terraform
+plan/apply. No service, key, signer policy, wallet or hosted run state was changed; local SDK/test dependencies and
+disposable PostgreSQL were used. Exact release/systemd/host qualification and run8 cleanup remain prerequisites.
