@@ -128,3 +128,13 @@ Pass criteria:
 - **W2-1.** The generator gives exactly these times. Its output is byte-identical whatever the preparation time. Preparation at or after 06:00Z is refused.
 - **W2-2.** TS-2 to TS-6 still pass with the fixed window. The temp-stamp tests are replaced by a test that preparation at two different times produces identical profile bytes.
 - **W2-3.** The full suite has no new failures compared with `47ccf11b`.
+
+### W2 results (2026-10-28 SGT; PR #322)
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| W2-1 | PASS | The generator gives exactly the registered times. Output is byte-identical when prepared at 2026-10-27T18:00:30Z and at 2026-10-28T05:59:59Z. Preparation at 06:00Z or 09:00Z is refused ("window closed"). |
+| W2-2 | PASS | 19 IDEA-110 tests pass. Preparing at two different times gives identical profile bytes. |
+| W2-3 | PASS | Full suite, local macOS, Python 3.12.14, PostgreSQL 14.24: 3149 passed, 10 skipped, 1 failed, 4172 subtests. The failure is the same pre-existing `test_ar7_full_verification_memory_does_not_grow_with_the_journal`, which also fails on `c1e23729`. |
+
+A scratch run (not committed) of the FINAL caps/signer assembly with the W2 profile gave `numeric_status: COVERED`, and the runtime built from the profile.
