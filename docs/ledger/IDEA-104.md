@@ -953,3 +953,22 @@ Prospective fix criteria before implementation/tests:
   preserving its newly filled book and shared budgets. Fresh holdings/caps and
   both-host manifest binding remain required; no reset of terminal attempts.
   Resume only after host checks, then complete T2 removal of temporary access.
+
+### SIGN-CHECK01 — canonical signing audit criteria (2026-10-27, before tests)
+
+User asks whether signing works on the shared integration build. Fetched canonical source is
+`305bccfa`; PR133 names `codex/system-testing-20261012`, and PR317 is still OPEN, so its FENCE01 repair
+and FENCE01-RV01 follow-up are absent. This audit changes no runtime/config/policy/host state.
+
+Pass criteria: run the canonical execution/signer suites and journal-backed round-driver/HALT/lifetime
+integration checks on pinned Linux/Python3.12.15/PostgreSQL14.24. Require exact-byte/recovered-wallet binding,
+immutable durable signature recovery, request/role checks, independent policy and current run/version/HALT/
+expiry/nonce refusal, at-most-once attempts and possible-send recovery. Use test-only ephemeral accounts;
+never read .env, the registered wallet key, private host config or live signing tables.
+
+Separately reproduce the known pre-signing preparation fence defect on this canonical source: three benign
+journal writes during slow estimation must show the existing stale-CAS/probe exhaustion (not a signer refusal),
+with no signature or broadcast. An otherwise identical no-race control must prepare successfully. Keep the
+failure visible; do not count this negative characterization as an end-to-end live signing PASS. Compare existing
+COST03 hosted approval/swap evidence only to its recorded build `3ae83098`; current host identity/health is
+unverified without fresh approved operator readback. Record results and remaining merge/release/host gates.
