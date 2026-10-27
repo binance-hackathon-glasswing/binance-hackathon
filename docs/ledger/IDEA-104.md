@@ -953,3 +953,23 @@ Prospective fix criteria before implementation/tests:
   preserving its newly filled book and shared budgets. Fresh holdings/caps and
   both-host manifest binding remain required; no reset of terminal attempts.
   Resume only after host checks, then complete T2 removal of temporary access.
+
+### FENCE01 — preparation CAS repair criteria (2026-10-27)
+
+User requests implementation. Code-only repair with synthetic regression tests; no live operational evidence,
+credentials or transaction data is exported in this change. No host, service, counter, policy or wallet mutation.
+
+Before implementation/tests, follow COST03 CAS1–CAS4 and refine:
+- Bind guard authorization to a stable run version after external metadata/nonce I/O. Reject ownership changes
+  during acquisition and any version race across the final authorization read.
+- After quote, approval, gas and router preflight work, reacquire current guards and explicit live time, preserve
+  original epoch/release authority, and revalidate payload economics/nonce/sequence/prerequisites/expiry/margin
+  without new external I/O before PREPARED CAS. Keep the final version fence unchanged.
+- Existing fixtures retain deterministic time. Preserve venue work/probe limits, schema and original intent;
+  do not reset historical attempts or broaden signer authority.
+- Synthetic PostgreSQL regression matrix: benign journal advancement succeeds with one probe; changed risk,
+  reservation, version, clock, nonce or owner refuses; elapsed authority/margin refuses; a race after final
+  refresh remains fenced; LiveGuards owner/version acquisition races refuse. No signature/broadcast in prepare.
+- Classify stale version conflicts with fixed error types, and log blocked execution-cycle summaries without
+  arbitrary exception strings. Run focused execution/guard/signer/runtime PostgreSQL checks and relevant broader
+  checks, retaining explicit environment limits. Exact release/host acceptance and deployment remain separate.
