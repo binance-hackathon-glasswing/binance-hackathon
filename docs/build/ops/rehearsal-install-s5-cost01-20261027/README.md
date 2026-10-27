@@ -53,7 +53,7 @@ Stop at any nonzero exit or missing DONE marker. Keep `results/` and `private/` 
 as one unattended batch. Exact signer/config acceptance follows the fresh M3 assembly, before retirement.
 
 1. **Stage / verify locally.** `"$LARP_PY" stage.py` verifies the delivered archive and all256 member hashes,
-   profile/history pins and exact ancestor fixes, extracts the bundle, and creates a detached release checkout.
+   profile/history pins and exact ancestor fixes, extracts the bundle, and creates the exact release checkout and selects its pinned pushed branch (required by input capture).
    It does not rebuild the bundle or contact AWS. Run `source pins.sh` afterward, then
    `"$LARP_PY" -I mac/00-inputs-check.py` to check private input selectors and source-run metadata without printing them.
 2. **Operator/environment checks.** `bash mac/signer-reach.sh`; primary and signer must both be SSM Online for

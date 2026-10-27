@@ -888,3 +888,27 @@ signer or broadcaster is constructed. Existing registered code emits truthful
 NOT_SUBMITTED expiry and closes the audit round. Require zero held units and
 zero open rounds, deliver the new audit chunks using the old uploader, then
 recapture fresh M3. User all-steps authorization covers this recovery.
+
+### COST02 source closure and exact package binding
+
+Source reconciliation command5153e139 ingested one existing terminal observation
+(expired count0), closed one round, and released every held reservation through
+the old registered bdd515f8 code. Source readback command6ff89ea0:67 CLOSED
+rounds,67 audit events,97 ACK chunks,zero held rows. Initial wrapper attempts
+refused before committing due protected config access, profile canonicalization
+and a missing pure settlement bridge; corrected public helper is idempotent and
+uses only old registered code, with no signing or planner construction.
+
+Fresh M3 at09:58:47UTC is COVERED; signer SHA
+`69f2e3d75e8f3a5212c7a5d99588afa11b4e6b0252ebf5852bb5e7379e4ca599`,
+changing only build/run/database. Yao's all-steps approval is recorded locally
+with that hash, unchanged policy/caps and the adopted profile. M4 initially
+refused the detached source checkout (PR313 staging issue); selecting its
+already-pushed exact branch fixes it without bypassing the gate. Updated stage
+now verifies/selects that pinned branch. Local Gate A, bound manifest and signer
+check pass; both hosts bind the same release JSON SHA
+`c4d8c23fefc73d00d04ab68897fc45a246b9fc5e1e1953f36c2b7de35e97d73f`.
+Private package-20261027T100020Z uploaded under its dedicated transfer prefix.
+Source configs retired and preserved on both hosts; original database, model
+budget/evidence and protected signer key remain intact. New release installation
+and live start checks follow; no completed BUY is claimed here.

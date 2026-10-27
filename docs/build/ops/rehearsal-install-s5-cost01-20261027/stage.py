@@ -78,6 +78,22 @@ def main():
             == package['build_id'], 'release checkout build')
     require(not subprocess.check_output(['git', '-C', str(source), 'status', '--porcelain'], text=True).strip(),
             'release checkout dirty')
+    # Input capture independently requires HEAD at a pushed branch, not a detached checkout.
+    branch = package['source_branch']
+    subprocess.run(['git', 'check-ref-format', '--branch', branch], check=True, capture_output=True)
+    remote = subprocess.check_output(['git', '-C', str(source), 'ls-remote', '--exit-code',
+                                     'origin', 'refs/heads/' + branch], text=True).split()
+    require(remote and remote[0] == package['build_id'], 'release branch moved')
+    subprocess.run(['git', '-C', str(source), 'fetch', 'origin',
+                    'refs/heads/' + branch + ':refs/remotes/origin/' + branch], check=True)
+    exists = subprocess.run(['git', '-C', str(source), 'show-ref', '--verify', '--quiet',
+                             'refs/heads/' + branch]).returncode == 0
+    if exists:
+        require(subprocess.check_output(['git', '-C', str(source), 'rev-parse', branch], text=True).strip()
+                == package['build_id'], 'local release branch moved')
+        subprocess.run(['git', '-C', str(source), 'switch', branch], check=True)
+    else:
+        subprocess.run(['git', '-C', str(source), 'switch', '-c', branch, '--track', 'origin/' + branch], check=True)
     for number, commit in package['included_pr_merge_commits'].items():
         require(subprocess.run(['git', '-C', str(source), 'merge-base', '--is-ancestor',
                                 commit, package['build_id']], capture_output=True).returncode == 0,
