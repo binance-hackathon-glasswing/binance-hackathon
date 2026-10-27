@@ -1,0 +1,89 @@
+{
+  "ancestry": {
+    "310": {
+      "commit": "05b7aa6d2e4d9e0aaaa19b2381007083d8490a94",
+      "included_in_canonical": true
+    },
+    "311": {
+      "commit": "a22527603ad34c545ff30b5ef996f575b3435b53",
+      "included_in_canonical": true
+    },
+    "314": {
+      "commit": "3ae830981b9ce1c4b80a46dbeb086825d91ae7ec",
+      "included_in_canonical": true
+    },
+    "317_with_319": {
+      "commit": "7484274ac876ae57a7587fbdbe8713f72d5c0105",
+      "included_in_canonical": false
+    },
+    "318": {
+      "commit": "3f8e16506a61d8995257054e997aae2ef1fb32ec",
+      "included_in_canonical": true
+    }
+  },
+  "canonical_commit": "3f8e16506a61d8995257054e997aae2ef1fb32ec",
+  "changes": "Documentation only: repair FS1 PR278-only release selection and record source/merge/release distinctions. Runtime, profiles, routing and history unchanged.",
+  "date_sgt": "2026-10-28",
+  "full_suite_rerun": false,
+  "id": "FS1-ALIGN01",
+  "live_actions": false,
+  "pins": {
+    "config/intelligence/aiand-routing.fs1.json": "9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4",
+    "docs/build/evidence/fs1-final-20261025/fs1-final-recovery.json": "b8ba06e248b48b6406d77c1bda4110001324382e91bb63c71a27ce514731892f",
+    "docs/build/evidence/th01-live-20261026/token-history.json": "5e572570bc24fb2ca7b692dccf71f67a37c5fac3d75330e4558634cf45417be9"
+  },
+  "pr_state_observed": {
+    "317": {
+      "base": "codex/system-testing-20261012",
+      "head": "7484274ac876ae57a7587fbdbe8713f72d5c0105",
+      "state": "OPEN"
+    },
+    "319": {
+      "base": "codex/fence-investigation-20261027",
+      "merge_commit": "7484274ac876ae57a7587fbdbe8713f72d5c0105",
+      "state": "MERGED"
+    }
+  },
+  "prior_combined_fence_evidence": {
+    "distinct_passes": 3134,
+    "record": "docs/build/PR319_REVIEW_20261027.md on PR317 branch",
+    "source": "65e6ed91b4c94f432086c8d40ece9a98503d6837",
+    "unrun": 7
+  },
+  "remaining": [
+    "PR317 canonical merge including PR319",
+    "Exact FINAL source/bundle/systemd/manifest and both-host qualification",
+    "Fresh FINAL AMM economics, caps, gas and signer acceptance; live recovery/RQ-5/RQ-8",
+    "Existing history/model/funding/self-check/DB/archive owner gates",
+    "Runtime receipt-reconciliation and command-claim follow-up disposition"
+  ],
+  "scope": "source and run-sheet alignment; no live-host/release acceptance",
+  "validation": {
+    "environment": "Linux aarch64 / Python 3.12.15 / PostgreSQL 14.24",
+    "errors": 0,
+    "failed": 0,
+    "files": [
+      "tests/strategy/test_fs1_final.py",
+      "tests/strategy/test_fs1_review.py",
+      "tests/strategy/test_fs1_self_check.py",
+      "tests/runtime/test_fs1_standalone.py",
+      "tests/runtime/test_fs1_recovery.py",
+      "tests/runtime/test_fs1_self_check_pg.py",
+      "tests/runtime/test_fs1_review.py",
+      "tests/runtime/test_fs1_pause_restart_pg.py",
+      "tests/runtime/test_fs1_start_order.py",
+      "tests/execution/test_allowance_recovery.py",
+      "tests/execution/test_rfq_route_refusal.py",
+      "tests/strategy/test_s5_cost_limit.py",
+      "tests/runtime/test_cadence_every_slot.py"
+    ],
+    "image": "larp-consolidation-test:20261019",
+    "junit_cases_including_subtests": 220,
+    "junit_path_outside_repo": "/private/tmp/larp-fs1-align-evidence/fs1-alignment.xml",
+    "junit_sha256": "322e0d42f3b3c89f8bf2dc3b071b9199882c27153469ec62516d8c5ac95257d2",
+    "passed_subtests": 52,
+    "passed_tests": 168,
+    "seconds": 30.061,
+    "skipped": 0
+  }
+}

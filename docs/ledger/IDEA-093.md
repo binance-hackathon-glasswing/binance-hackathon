@@ -616,3 +616,67 @@ No install, version event, model request, transaction or policy-value change occ
 
 - 2026-10-26 publication follow-up: user authorized committing/pushing the standalone FS1 review fixes to
   PR296; scope and expected remote head are recorded in IDEA-104 PR296-RV01. No merge or installation.
+
+## FS1-ALIGN01 — recent-PR alignment audit (2026-10-28; criteria before checks)
+
+User asks whether FS1 is aligned with the recent PRs. Audit canonical `3f8e1650`, the selected FINAL recovery
+profile and standalone preparation/install path. This is a source/package review, not a live-host receipt.
+
+Pass criteria:
+- Trace PR310/311/318 through the actual FS1 planning/execution builders and recovery opt-in; verify exact
+  profile/routing/history pins and byte-for-byte profile rebuilds. Run the existing FS1 strategy, preparation,
+  recovery, persistence, pause/restart and startup-order regressions on pinned Linux/Python3.12.15/PG14.24.
+- Verify PR305/314 rehearsal-only cost options cannot leak into FINAL; run existing S5 scope/refusal checks.
+  Retain FS1's strategy, cost/slippage/gas limits and hashes.
+- Check current PR317/319 ancestry explicitly. Do not describe the stacked fence fix as canonical or installed.
+  Reuse the recorded PR319 full-suite evidence for the combined stack; no new live rehearsal or transaction.
+- Repair stale FS1 release-selection wording if it permits an older build lacking the recent fixes. Record the
+  remaining source-merge, exact-bundle and owner/host gates with existing owners. Do not close incomplete
+  backlog items merely because their source code is merged.
+
+No credentials, `.env`, provider/model requests, AWS/host operations, signer start, release registration or
+wallet action. No strategy/profile change or PR317 merge is part of this audit.
+
+### FS1-ALIGN01 results
+
+Canonical `3f8e1650` includes PR310/311/318 through FS1's actual shared planning/execution path. PR305/314
+small-wallet economics remain S5-only. Selected FINAL recovery/routing/history hashes reproduce unchanged;
+focused pinned Linux/Python3.12.15/PG14.24 checks pass168 tests/52 subtests with zero failures/skips (30.06s).
+The profile rebuild, standalone FINAL/caps/signer, recovery, PostgreSQL persistence/replay, pause/restart,
+startup order, cadence, post-approval retries, RFQ and cost-scope regressions are included.
+
+PR319 is merged only into still-open PR317 (`7484274a`), outside canonical. The FS1 sheet's PR278-only
+Build/M1 selection was stale and is repaired to require a qualified canonical release containing the recent
+fixes after PR317 merges. No runtime/profile change, fence merge, live run or deployment. Keegan/Yao retain
+integration/exact-release/both-host qualification; existing strategy, signing, funding, model/history,
+self-check and DB/archive owners retain their acceptance. No incomplete-work item is fully closed.
+[Audit](../build/FS1_ALIGNMENT_20261028.md) / [receipt](../build/evidence/fs1-alignment-20261028.json).
+
+
+## FS1-ALIGN02 — PR320 update after canonical fence merge (2026-10-28)
+
+User requested getting PR320 and updating FS1. Before verification: fetch canonical and PR320, preserve
+unrelated checkout files, merge canonical into the PR branch without rewriting history, and resolve status
+text retaining both execution review records. GitHub confirms PR317 merged at
+`c1e237297d7b51c124c76e8559b6ce243ab12d6e` on 2026-10-27T16:47:49Z; PR319 is included via `7484274a`.
+
+Pass criteria: verify ancestry of PR310/311/318/317/319; keep FINAL recovery, routing and history hashes
+unchanged; rerun the FS1-ALIGN01 focused matrix plus preparation-fence regressions using synthetic inputs
+and disposable local PostgreSQL. Require zero failures/skips. Update active release-selection text to the
+merged canonical source without changing the original FS1-ALIGN01 historical receipt. Exact bundle,
+systemd/both-host, fresh FINAL economics/caps/signer and existing owner gates remain open. No deployment,
+provider/model request, credential use, signing or wallet action is authorized by this source update.
+
+
+### FS1-ALIGN02 results
+
+Merged canonical source is incorporated locally in PR320's branch; the status conflict is resolved while
+preserving PR317/319 review records. FS1 Build/M1 now names `c1e23729` or a verified descendant. Ancestry
+and all three selected input hashes pass. Pinned Linux/Python3.12.15/PG14.24 focused matrix plus preparation
+fencing: **193 tests / 70 subtests passed, zero failures/skips**, 69.09s. No full-suite rerun or hosted CI
+claim. Synthetic tests use a credential-free tracked-file snapshot and disposable local PostgreSQL;
+Python socket connections are restricted to localhost fixtures. No live actions occurred.
+
+[Refresh receipt](../build/evidence/fs1-alignment-refresh-20261028.json). Exact FINAL release/both-host and
+remaining owner acceptance are still open. The user authorized committing and pushing this PR320 update
+in the follow-up; unrelated untracked files are preserved. No whole backlog item is closed.
