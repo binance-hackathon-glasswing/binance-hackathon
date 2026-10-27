@@ -60,7 +60,8 @@ def decide(snapshot, state):
     check = self_check.config(p)
     check_phase = self_check.phase(p, ledger.get("risk"), ledger, now)
     window_open = (instant(p["trade_after"]) <= now < instant(p["new_risk_end"])
-                   and c["remaining_sessions"] >= p["minimum_remaining_sessions"])
+                   and c["remaining_sessions"] >= p["minimum_remaining_sessions"]
+                   and not self_check.temp(p))  # IDEA-110: the temp policy buys only its self-check
     held = [s for s, pos in ledger["positions"].items() if pos["units"]]
     gross = sum((value(ledger["positions"][s]["units"], market[s]) / E for s in held), Fraction(0))
     candidates = []

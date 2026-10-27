@@ -393,6 +393,10 @@ def plan(snapshot, proposal_or_none):
                 continue
             side, q = ("BUY", desired - current) if desired > current else ("SELL", current - desired)
             if side == "BUY":
+                if self_check.temp(p) and not (check_phase == "BUY" and symbol == check["symbol"]):
+                    # IDEA-110: the temporary policy's only BUY is its self-check, in its BUY phase.
+                    result["rejections"].append({"symbol": symbol, "reason": "TEMP_SELF_CHECK_ONLY"})
+                    continue
                 if interim:
                     # A held name that cannot be sold this round must not let the book grow before it is flat.
                     result["rejections"].append({"symbol": symbol, "reason": "SCHEDULED_FLATTEN_PENDING"})
@@ -462,12 +466,15 @@ def plan(snapshot, proposal_or_none):
         else:
             q = min(quantity, floor(Fraction(notional_cap) * 10**m["decimals"] / m["price_units"]))
         req = next((r for r in result["requirements"] if r["symbol"] == symbol), None)
+        # IDEA-110: the temp policy's only BUY is the self-check, sized and costed on its own floor.
+        temp_buy = side == "BUY" and self_check.temp(p)
+        minimum = self_check.temp_floor(p) if temp_buy else p["minimum_trade_units"]
         if q <= p["dust_units"] or q <= 0:
             if req is not None:
                 req["status"] = "DUST_OR_UNEXECUTABLE"
             result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_UNEXECUTABLE"})
             continue
-        if not mandatory and not costed_reduction and value(q, m) < p["minimum_trade_units"]:
+        if not mandatory and not costed_reduction and value(q, m) < minimum:
             result["rejections"].append({"symbol": symbol, "reason": "MINIMUM_TRADE"})
             continue
         if m.get("token_open") is not True or m.get("underlying_open") is not True:
@@ -503,7 +510,7 @@ def plan(snapshot, proposal_or_none):
             continue
         cash, fee, gas, q = [quote[k] for k in ("cash_units", "fee_units", "gas_bnb_units", "token_units")]
         if q <= p["dust_units"] or (not mandatory and not costed_reduction
-                                    and value(q, m) < p["minimum_trade_units"]):
+                                    and value(q, m) < minimum):
             if req is not None:
                 req["status"] = "DUST_OR_UNEXECUTABLE"
             result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_MINIMUM_TRADE"})
@@ -524,7 +531,8 @@ def plan(snapshot, proposal_or_none):
             result["rejections"].append({"symbol": symbol, "reason": "COST_RESERVE_INSUFFICIENT"})
             continue
         if not mandatory and side == "BUY":
-            if cost * 10000 > mark * p.get("s5_entry_cost_cap_bps", 50):
+            entry_cap = p[self_check.TEMP_COST_KEY] if temp_buy else p.get("s5_entry_cost_cap_bps", 50)
+            if cost * 10000 > mark * entry_cap:
                 result["rejections"].append({"symbol": symbol, "reason": "ENTRY_COST_CAP"})
                 continue
             if p.get("mode") == "LIVE":
@@ -544,6 +552,9 @@ def plan(snapshot, proposal_or_none):
             continue
         if side == "BUY":
             spend = cash + fee
+            if temp_buy and spend > self_check.TEMP_MAX_PAY_UNITS:
+                result["rejections"].append({"symbol": symbol, "reason": "TEMP_SELF_CHECK_SIZE"})
+                continue
             # The 20% uninvested floor counts free gas BNB, so four 20% names fit beside a gas reserve (IDEA-037).
             free_bnb = max(0, floor(Fraction((ledger["bnb_units"] - reserved_bnb - gas) * ledger["bnb_price_units"],
                                              10**ledger["bnb_decimals"])))
