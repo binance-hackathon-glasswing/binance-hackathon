@@ -604,8 +604,9 @@ Findings:
   profile `b8ba06e2…` (IDEA-098/AL9) and the FS1 flatten (all router allowances 0) depend on it. Fixing it needs a
   signer-policy decision (Isaac) before code (Keegan): another revoke route, or accepting a minimal non-zero
   allowance. Criteria must be written before code (AGENTS.md).
-- **OBS03-B2 (defect, high confidence in the effect):** about 25 s from quote to approve confirmation let the RFQ
-  order expire, and the leg aborted instead of re-quoting. Similar to run 4's S2-F6; likely to hit FS1's first
+- **OBS03-B2 (defect, high confidence in the effect):** the RFQ order had expired by the gas estimate (about 25 s
+  from the approve request to its confirmation; the quote time is not recorded), and the leg aborted instead of
+  re-quoting. The cause of the expiry is open (see below). Similar to run 4's S2-F6; likely to hit FS1's first
   entries (Keegan, Keith).
 
 Open, not findings (to be confirmed read-only; methods in the handoff, items 9 and 10):

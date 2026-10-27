@@ -1,6 +1,6 @@
 # Handoff — S5 run 7/8 monitoring and FS1 readiness (2026-10-27, ~06:40 UTC)
 
-Linked from `docs/build/CURRENT_STATUS.md` and the IDEA-104 S5-OBS03 item in `docs/INCOMPLETE_WORK.md`.
+Linked from `docs/build/CURRENT_STATUS.md` and the IDEA-104 OBS03-B1, OBS03-B2 and S5-OBS03 run-8 follow-up items in `docs/INCOMPLETE_WORK.md`. S5-OBS03 itself is recorded in [IDEA-104](../ledger/IDEA-104.md#s5-obs03--run-8s-first-buy-aborts-on-rfq-expiry-after-the-approve-the-zero-amount-revoke-is-rejected-2026-10-27-live-observation).
 
 ## Readiness check (AGENTS.md "Thread handoff")
 | Check | Result |
@@ -12,11 +12,11 @@ Linked from `docs/build/CURRENT_STATUS.md` and the IDEA-104 S5-OBS03 item in `do
 
 ## Deadlines (UTC)
 - **Run 8:** new buys stop 2026-10-27 10:00, flatten from 11:00, signing ends 15:00.
-- **IDEA-109 S-01 (proposed, not confirmed):** freeze 2026-10-27 12:00, install by 2026-10-28 06:00.
+- **IDEA-109 (proposed, not confirmed):** freeze 2026-10-27 12:00; install 2026-10-27 22:00, latest 2026-10-28 02:00 (IDEA-109 "Revised dated plan", which replaces S-01's 2026-10-28 06:00).
 - **F-127 (organiser):** code changes end and the project pauses 2026-10-28 10:00. The scored phase restarts 2026-10-29 02:00.
 
-## First task for the next session: record S5-OBS03 (new PR into `codex/system-testing-20261012`)
-Branch from canonical, then append an S5-OBS03 section to IDEA-104. Add backlog lines for bugs 1–2, update the IDEA-104 ledger row, and open the PR. Evidence gathered (read-only SSM, public BNB Chain RPC):
+## Run-8 evidence (done: recorded as IDEA-104 S5-OBS03, its ledger row and backlog items)
+Evidence gathered (read-only SSM, public BNB Chain RPC):
 
 Run 8 = `larp-dev-rehearsal-20261027-s5-small`, build `bdd515f8` (PR305 S5-SMALL01; includes IDEA-109 #303). Dev wallet `0x62b8ed6c1b3bcae61d9bfa5551dfd77b6e7bd479`.
 
@@ -35,7 +35,7 @@ State at ~06:35 UTC:
 - 67 rounds / 66 audit events; 96 chunks ACK 200; archive healthy; 0 restarts.
 - **On-chain USDT allowance to `0xb444…dda5` = 15.441878 (still open).** Next nonce 39, so only one tx was sent.
 
-Not yet determined (my last read-only query was cancelled). These are open items 9 and 10 below; write them into S5-OBS03 as open, not as findings:
+Not yet determined (my last read-only query was cancelled). These are open items 9 and 10 below, recorded in S5-OBS03 as open, not as findings:
 - Whether a fresh quote was fetched between the approve and the reverted gas estimates.
 - Why attempts 2 and 3 were never broadcast. Likely cause, unconfirmed: the dirty allowance plus the attempt limit.
 
@@ -43,8 +43,8 @@ Not yet determined (my last read-only query was cancelled). These are open items
 | # | Item | Owner (per backlog) | Recorded? |
 |---|---|---|---|
 | 1 | **Bug: allowance clean-up cannot work.** `larp/execution_live/venue.py:72-73` revokes with `approveAmount='0'`; the live API rejects zero. FS1 recovery profile `b8ba06e2…` (IDEA-098/AL9) relies on it, and the FS1 flatten requires all router allowances to be 0. A fix needs Isaac's signer-policy decision, e.g. another revoke route or accepting a 1-unit allowance. | Isaac (signer policy), Keegan (code) | Yes: IDEA-104 S5-OBS03 + backlog |
-| 2 | **Bug: first buy aborts when the RFQ quote expires during the approve.** About 25 s from quote to approve confirmation; the gas estimate reverted `RFQ_OrderExpired` and the leg aborted instead of re-quoting. Similar to run 4's S2-F6. Likely to hit FS1's first entries. | Keegan, Keith | Yes: IDEA-104 S5-OBS03 + backlog |
-| 3 | **Run 8 decision:** the runtime is stopped and a 15.44 USDT allowance is open. Restart, clean up, or retire before FS1 install (R1p/R1s). | Yao (run owner) | No |
+| 2 | **Bug: first buy aborts when the RFQ quote expires during the approve.** About 25 s from the approve request (05:03:47) to its confirmation (the quote time is not recorded); the gas estimate reverted `RFQ_OrderExpired` and the leg aborted instead of re-quoting. Similar to run 4's S2-F6. Likely to hit FS1's first entries. | Keegan, Keith | Yes: IDEA-104 S5-OBS03 + backlog |
+| 3 | **Run 8 decision:** the runtime is stopped and a 15.44 USDT allowance is open. Restart, clean up, or retire before FS1 install (R1p/R1s). | Yao (run owner) | Yes: `docs/INCOMPLETE_WORK.md` S5-OBS03 run-8 follow-up |
 | 4 | **Database (S5-OBS02):** ARCH-01 trigger (b) is met, so slim per-event rows before final activation. `db.t4g.small` is refused on the free-plan account (PR305), so the instance stays `db.t4g.micro`. Read RDS Monitoring 22:30–04:00Z (2026-10-26/27) to name the starved resource. Restart pacing (full journal re-verification per restart). | Keegan (ARCH-01), Yao (RDS) | Yes: `docs/INCOMPLETE_WORK.md` DB-01, ARCH-01, IDEA-109; IDEA-104 S5-OBS02 / S5-SMALL01 |
 | 5 | **FS1 release** must be built from a commit containing all fixes, including any for items 1–2. The FS1 profile hash `b8ba06e2…` is unaffected by code-only fixes. | Keegan | Yes: IDEA-093 / IDEA-099 backlog items |
 | 6 | Close `claude/fs1-integration-20261026` (superseded by PR296). | Branch owner | PR #304 body only |
