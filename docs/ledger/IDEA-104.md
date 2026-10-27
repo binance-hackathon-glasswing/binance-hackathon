@@ -892,6 +892,31 @@ Code criteria if RV02-1 passes:
   suites and the pinned full suite pass with exact counts.
 - RQ-8 (live, not claimed here): the next rehearsal shows no RFQ route and no `RFQ_OrderExpired`.
 
+### OBS03-B2-RQ01/RQ02 results (2026-10-27)
+
+**RV02 live read-only** (tool `0a863816`, 13:45:40–14:01:11Z, `BSC_BNBCHAIN_PUBLIC`, 6 rounds × 5 symbols, BUY 15 USDT):
+[rfq-validity-rv02-20261027.json](../build/evidence/rfq-validity-rv02-20261027.json), SHA-256
+`47430483765c0e7f3c2cffd1fee1fe277c2a6eab71490916fd4b12b7a10d29f0`. Override proof held. The packet's `verdict`
+label (`INCONCLUSIVE_NO_RFQ_FAILURE_OBSERVED`) is RV01's wording for "no RFQ failure"; RV02 is judged by RV02-1.
+- **RV02-1 PASS.** All 30 `enableRFQ=false` quotes were answered; none routed through an `rfq`-named DEX; all 270
+  probes simulated successfully, the last at 30.0 s for every quote. MSFTB routed through Pancakeswap V3 every time.
+- **RV02-2 (cost).** The paired default quote chose `Rfq Neptunex` for MSFTB in all 6 rounds (3 of 6 in RV01), and
+  its quoted output was 30.6–44.2 bp above the no-RFQ quote. That price was not executable (RV01: expired by 1 s). For
+  the other four symbols the default and no-RFQ quotes differed by −2.0 to +1.7 bp, with no RFQ route chosen.
+- Observation for owners: MSFTB's executable price is the AMM route's. If its cost against the reference price
+  exceeds a profile's entry-cost gate (FS1 50 bp; S5 rehearsal 200 bp), the gate refuses MSFTB entries as designed.
+  Not measured against the gate here.
+
+**Code** (`f285b859`, `larp/execution_live/venue.py`, `larp/marketdata/port.py`): execution and planning bStock
+quotes send `enableRFQ="false"`; any `rfq`-named route that still appears is refused with `DependencyUnavailable`, and a
+quote that fails any check clears the recorded vendor, so `approve` needs a passing quote. Gas top-up quotes unchanged.
+- RQ-1..RQ-3, RQ-6 PASS: `tests/execution/test_rfq_route_refusal.py` 10 tests / 9 subtests. The 8 RQ-1..RQ-3 tests
+  run against the pre-fix venue gave 11 failures and 2 passes, counting subtests.
+- RQ-7: no binding or replay check compares exact parameter sets (quote verifier, router replay, caps review read
+  named keys). Execution, marketdata and signer suites with PostgreSQL 14.24: **676 passed, 1 skipped,
+  1471 subtests**. Full suite on `f285b859` (macOS, Python 3.12.14, PostgreSQL 14.24): **3096 passed, 10 skipped, 4150 subtests, 1 failed**. The failure, `test_archive_budget.py::test_ar7…`, needs Linux `/proc/self/clear_refs` and fails the same way without this change (3093 passed on the RQ01-only tree). Not run here: the pinned Linux image.
+- Not claimed: RQ-5/RQ-8 (live rehearsal), Isaac/Keegan acceptance, and a release built from this commit.
+
 ## S5-COST01 — separate cash cushion from discretionary cost admission (proposal)
 
 Yao requested a new review PR on 2026-10-27 after confirming gas is already
