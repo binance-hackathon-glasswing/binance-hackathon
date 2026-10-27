@@ -1,0 +1,33 @@
+{
+  "runtime_build": "3ae830981b9ce1c4b80a46dbeb086825d91ae7ec",
+  "python": "3.12.15",
+  "postgres_version": "14.24",
+  "full_regression": {
+    "passed": 3079,
+    "skipped": 8,
+    "subtests_passed": 4124,
+    "failed": 0,
+    "elapsed_seconds": 309.55
+  },
+  "real_systemd": {
+    "passed": 5,
+    "subtests_passed": 5,
+    "failed": 0
+  },
+  "worker_isolation": {
+    "passed": 5,
+    "failed": 0
+  },
+  "host_bundle": {
+    "primary": "PASS",
+    "signer": "PASS",
+    "repeat_install": true,
+    "platform": "linux/amd64 under QEMU",
+    "network_during_provisioning": false
+  },
+  "bundle_members_verified": 256,
+  "audited_merge_commits": 19,
+  "deployed": false,
+  "initial_environment_failures": "Retained: noexec temporary storage/read-only ignored outputs/missing worker namespaces; corrected supported systemd runner passes the suite. Prior host-test run lacked amd64 emulation; QEMU setup then both-role checks pass.",
+  "remaining": "Fresh source capture/numeric coverage, exact signer/config binding, DB/host acceptance, version registration and live orders"
+}
