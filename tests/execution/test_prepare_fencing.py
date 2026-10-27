@@ -94,10 +94,10 @@ class PrepareFencing(DatabaseCase):
                 self.executor.create(i, 10)
                 self.executor.clock_s = lambda: end
                 state = self.executor.prepare(i.key, 11)
+                self.executor.abort_unsigned(i.key, end)
                 self.assertFalse(state.attempts)
                 self.assertIsNotNone(state.blocked_reason)
                 self.assertEqual(state.last_observed_at, end)
-                self.executor.abort_unsigned(i.key, end)
 
     def test_clock_passes_expiry_during_final_guard_io(self):
         i = intent(); self.executor.create(i, 10)

@@ -529,6 +529,7 @@ class Executor:
             integer(completed)
             if completed < now:
                 raise Blocked('preparation clock regression')
+            now = completed
             fresh = self.guards.snapshot(state.intent, completed)
             if (fresh.epoch, fresh.authority_version) != (gates.epoch, gates.authority_version):
                 raise Conflict('preparation ownership or release authority changed')
@@ -537,24 +538,27 @@ class Executor:
             integer(finished)
             if finished < completed:
                 raise Blocked('preparation clock regression')
+            now = finished
             # The router preflight above already ran. Only pure byte/sequence/current-fact
             # checks may follow this refresh; further network I/O would recreate the race.
-            self._validate(state, step, payload, gates, finished, router_preflight=False)
-            now = finished
+            self._validate(state, step, payload, gates, now, router_preflight=False)
         except Conflict:
             raise  # never journal or accept a result under a new owner or a stale fence
         except DependencyUnavailable as error:
             # NEXT01-R1: transient quote/gas failures may consume the remaining original probes.
             # Never discard a confirmed approval on the first port failure; the next prepare re-quotes.
             # The service still aborts into cleanup at the original probe/authority boundary.
-            return self._save(state, replace(state, blocked_reason=str(error)), "PREPARE_BLOCKED", gates)
+            return self._save(state, replace(state, blocked_reason=str(error), last_observed_at=now),
+                              "PREPARE_BLOCKED", gates)
         except Blocked as error:
-            state = self._save(state, replace(state, blocked_reason=str(error)), "PREPARE_BLOCKED", gates)
+            state = self._save(state, replace(state, blocked_reason=str(error), last_observed_at=now),
+                               "PREPARE_BLOCKED", gates)
             if approved and self.allowance_recovery and not state.abort_pending:
                 return self.abort_unsigned(key, now)
             return state
         except (TimeoutError, ConnectionError):
-            return self._save(state, replace(state, blocked_reason="quote/gas dependency unavailable"),
+            return self._save(state, replace(state, blocked_reason="quote/gas dependency unavailable",
+                                             last_observed_at=now),
                               "PREPARE_BLOCKED", gates)
         attempt = Attempt(digest([key, step]), step, "PREPARED", payload, gates.epoch, gates.authority_version)
         return self._save(state, replace(state, attempts=state.attempts + (attempt,), blocked_reason=None,
