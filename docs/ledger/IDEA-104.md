@@ -515,3 +515,62 @@ FS1 implication [our arithmetic, not run]: at 170 USDT cash (GAP-73) and a 0.20 
 target is 0.6 × 1/5 × 169.8 ≈ 20.38 USDT. That is above the 18.637 USDT minimum, so FS1 can still enter in a
 downtrend, by about 1.7 USDT before costs. Lower funding (fees, the self-check) narrows that margin. At the
 limiter `SEVERE` level (30%) the target is about 10.19 USDT, so FS1 makes no new entries there.
+
+S5-OBS01 outcome (team's read-only checks, 2026-10-27 02:51Z): the trend was re-evaluated for session 204 and
+stayed **DOWN**; at 02:39Z run 7 still had 0 execution records/signatures. Run 7 made no trade before
+`new_risk_end` and did not exercise the swap/sell path. Correction to S5-OBS01: the signer's SSM `ConnectionLost` is expected. The run sheet checks the
+signer once (C1, the 12:10Z check), then removes signer SSM access (T2).
+
+## S5-OBS02 — database stalls crash-loop run 7's services; first daily backup over its bound (2026-10-27, live observation)
+
+Read-only diagnosis, requested by the user: `journalctl`/`systemctl` and read-only database connections on the
+primary over SSM at 03:56–03:58Z (Claude session), plus the outputs of the team's read-only SSM checks of
+02:39–02:57Z. No host, run, profile or wallet change. Run 7 ran build `c997df2c`, which includes PR280
+(`Backup.v2`, IDEA-094/095) and IDEA-100 DB5. IDEA-109 fixes 1 and 2 (PR #303) are not in that build.
+
+Observed:
+- **Two crash bursts.** Runtime, execution and uploader exited `status=1` together at **23:32–23:59Z**
+  (runtime 62, execution 33, uploader 58 restarts) and again from **03:41Z**. At 03:57:49Z the runtime was
+  crash-looping at 80 restarts, with execution at 36 and uploader at 60. `larp-evidence` had 0 restarts.
+  Every exit logs only the fixed `RUNTIME_FAILED`/`EXECUTION_FAILED`/`UPLOADER_FAILED` line; exception text is
+  withheld by design (`larp/runtime/service.py`, broad `except Exception`). No OOM kill or timeout marker;
+  host memory 1,909 MB total, 1,106 MB available, no swap (03:56Z).
+- **The database accepts TCP but not logins.** At 03:57:28/38/49Z the database port connected in 0.0 s, but each
+  login failed with `Unavailable` caused by psycopg `ConnectionTimeout` after 5.34 s (`connect_timeout=5`,
+  `larp/storage/postgres.py`), 3 of 3. That means a reachable but starved server: the DB-01 failure mode of 2026-10-25.
+- **Size at 02:56Z** (12:09Z start + 14.8 h): database 687,517,019 bytes; `events` 7,437 rows /
+  1,044,522,587 raw bytes (largest 4,906,883); `audit_events` 3,709 rows / 512,349,747 raw bytes (largest
+  4,895,047). That is about 71 MB of raw `events` per hour, about **1.7 GB per day**, from hold-only safety rounds
+  every ~13 s. `pg_stat_statements` is not installed (IDEA-100 DB2 not applied).
+- **First daily backup refused.** Archive health `healthy: false`, `backup_failure` `BackupOverBound` for the
+  00:00Z and 00:05:35Z slots, `PERMANENT` 2, `ACK` 18; no durable backup since. The run database was new and
+  single-run (S5-DEPLOY01 D1), so this is the first segment of a fresh chain, about 12 h into the run.
+- Each runtime restart consumed about 1 minute of CPU before exiting.
+
+**Cause (high confidence that it is the database; the starved resource is not yet confirmed).** The 1 GB
+`db.t4g.micro` instance cannot serve this journal volume: every database client fails together, and the
+server stops completing logins. CPU-credit exhaustion versus memory pressure is unconfirmed:
+this session's AWS identity cannot read CloudWatch or RDS. Owner check: RDS Monitoring for 22:30–04:00Z
+(`CPUCreditBalance`, `CPUUtilization`, `FreeableMemory`, `DatabaseConnections`, latency) and RDS events.
+Likely amplifier [inference, not measured]: ARCH-01 item (1). Each automatic restart re-verifies the whole journal
+before deciding, so a crash loop adds reads to a starved database.
+
+**Consequences.**
+- Run 7: no trade affected (flat book, no orders), but rounds stopped during each outage; those gaps may be
+  published as diagnostics (F-51).
+- **ARCH-01's 2026-10-25 trigger (b) is met:** health reported a `BackupOverBound` refusal on a build with the
+  PR280 fix. By that pre-registered rule, ARCH-01 (per-event payload) must be implemented before final activation;
+  Keegan decides.
+- ARCH-01's growth projection is falsified: it put the 64 MiB daily-segment bound around day 11, but run 7 passed
+  it on its first segment.
+- **FS1 is exposed:** the same instance and the same round cadence would reach this state within its first day of
+  the 14-day run. During a stall FS1 cannot plan, log, sell or flatten. Automatic restarts help only after the
+  database answers again.
+- IDEA-109 S-06/S-07 (DB1/DB2/DB5 applied, RDS reboot, maintenance/backup windows away from 00:00Z, optional
+  larger instance) are now required, not optional, before P4.
+
+No fix is implemented here. Options for the owners (Keegan, Yao; Keith for evidence-state content), each needing
+its own criteria before code (AGENTS.md): (1) slim per-event payloads (ARCH-01 / DB-01 R5); (2) a larger
+instance class or memory (IDEA-109 S-07); (3) apply DB1/DB2 so the next stall names its queries;
+(4) re-size the backup bound or the first-segment strategy for a run of this volume; (5) restart pacing so
+crash loops do not repeat full verification.
