@@ -996,3 +996,20 @@ Review/merge and exact release/host qualification before any same-run upgrade re
 owners. Preserve filled holdings/cost basis and historical attempts; this implementation performs no host/service,
 key, signer-policy, counter, funding or transaction change. [Repair](../build/PREPARE_FENCE_REPAIR_20261027.md) /
 [synthetic validation receipt](../build/evidence/fence01-repair-20261027.json).
+
+### FENCE01-RV01 — PR317 review criteria (2026-10-27, before regression runs)
+
+Review of `d7318f71` found that the fresh completion time is assigned only after final validation succeeds.
+If that validation refuses an expired authority/margin after a confirmed approval, PREPARE_BLOCKED and
+abort_unsigned still use the old cycle time; cleanup can be marked eligible after its authority has elapsed.
+This is a bookkeeping/recovery defect; later signer/broadcast expiry checks still refuse a transaction.
+
+Pass criteria:
+- Persist the observed completion time on refused preparation too, and use it when deciding bounded cleanup.
+  After an approved step, expiry or an exhausted submission margin during either preparation I/O or final guard
+  I/O must abort without resetting probes or granting an abort-cleanup phase. Preserve the confirmed approval.
+- Keep the existing CAS, owner/release checks, router preflight and all original probe/gas/authority limits.
+  A route deadline crossed during final guard I/O must never produce a PREPARED swap.
+- New synthetic regressions fail on the PR317 head and pass after the repair. Run execution/signer and full
+  Linux/Python3.12.15/PostgreSQL14.24 regression suites; classify platform/private-artifact skips explicitly.
+  No live signer, provider, wallet or host operation; exact release/systemd/bundle/host acceptance stays separate.
