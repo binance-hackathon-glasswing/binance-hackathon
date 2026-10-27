@@ -1,0 +1,3185 @@
+{
+  "by_symbol": {
+    "GOOGLB": {
+      "arrived_expired": 0,
+      "bounds": [],
+      "max_success_age_s_non_rfq": 30.007,
+      "quotes": 6,
+      "rfq_failing": 0,
+      "rfq_routes": 0,
+      "short_encoded_times_vs_response_s": []
+    },
+    "MSFTB": {
+      "arrived_expired": 0,
+      "bounds": [],
+      "max_success_age_s_non_rfq": 30.009,
+      "quotes": 6,
+      "rfq_failing": 0,
+      "rfq_routes": 0,
+      "short_encoded_times_vs_response_s": []
+    },
+    "NVDAB": {
+      "arrived_expired": 0,
+      "bounds": [],
+      "max_success_age_s_non_rfq": 30.005,
+      "quotes": 6,
+      "rfq_failing": 0,
+      "rfq_routes": 0,
+      "short_encoded_times_vs_response_s": []
+    },
+    "SKHYB": {
+      "arrived_expired": 0,
+      "bounds": [],
+      "max_success_age_s_non_rfq": 30.005,
+      "quotes": 6,
+      "rfq_failing": 0,
+      "rfq_routes": 0,
+      "short_encoded_times_vs_response_s": []
+    },
+    "TSLAB": {
+      "arrived_expired": 0,
+      "bounds": [],
+      "max_success_age_s_non_rfq": 30.012,
+      "quotes": 6,
+      "rfq_failing": 0,
+      "rfq_routes": 0,
+      "short_encoded_times_vs_response_s": []
+    }
+  },
+  "claims": "Read-only quotes and override simulations; observed outcomes, not a guaranteed TTL.",
+  "enable_rfq": "false",
+  "finished_utc": "2026-10-27T14:01:10.906Z",
+  "generated_utc": "2026-10-27T13:45:40.369Z",
+  "override_proof": {
+    "allowance_override_effective": true,
+    "balance_override_effective": true
+  },
+  "pay_units": 15000000,
+  "quotes": [
+    {
+      "block_age_at_quote_s": 1.076,
+      "calldata": "a021c9433080a5ee",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.002,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Elfomofi",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 68705915595657471
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.398,
+          "result": 605817,
+          "rpc_ms": 359,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.001,
+          "result": 605817,
+          "rpc_ms": 447,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.005,
+          "result": 605817,
+          "rpc_ms": 333,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 605836,
+          "rpc_ms": 356,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.003,
+          "result": 605836,
+          "rpc_ms": 390,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 605738,
+          "rpc_ms": 365,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.001,
+          "result": 605836,
+          "rpc_ms": 328,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.0,
+          "result": 605836,
+          "rpc_ms": 415,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.002,
+          "result": 605836,
+          "rpc_ms": 395,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 374,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:45:41.114Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 0,
+      "route_names": [
+        {
+          "dex": "Elfomofi",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.321,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 68705915595657471
+    },
+    {
+      "block_age_at_quote_s": 1.009,
+      "calldata": "ba05e3b7c1f44b6e",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.0,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Metric V2",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 46885721776904885
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.397,
+          "result": 554107,
+          "rpc_ms": 324,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.0,
+          "result": 554246,
+          "rpc_ms": 349,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.002,
+          "result": 554246,
+          "rpc_ms": 348,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.005,
+          "result": 554088,
+          "rpc_ms": 333,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 554265,
+          "rpc_ms": 382,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.0,
+          "result": 554246,
+          "rpc_ms": 457,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.004,
+          "result": 554246,
+          "rpc_ms": 352,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.001,
+          "result": 554246,
+          "rpc_ms": 411,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.0,
+          "result": 554246,
+          "rpc_ms": 366,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 392,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:46:12.075Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 0,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.387,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 46885721776904885
+    },
+    {
+      "block_age_at_quote_s": 1.028,
+      "calldata": "b71ef99390f57ef1",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.0,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.69,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Elfomofi",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 103058715954719959
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.479,
+          "result": 624053,
+          "rpc_ms": 346,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.004,
+          "result": 624053,
+          "rpc_ms": 436,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.001,
+          "result": 624073,
+          "rpc_ms": 365,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.003,
+          "result": 624073,
+          "rpc_ms": 344,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 624053,
+          "rpc_ms": 363,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 624073,
+          "rpc_ms": 447,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.003,
+          "result": 624073,
+          "rpc_ms": 333,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.0,
+          "result": 624073,
+          "rpc_ms": 405,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.0,
+          "result": 624053,
+          "rpc_ms": 374,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 405,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:46:42.978Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 0,
+      "route_names": [
+        {
+          "dex": "Elfomofi",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.451,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 103051635071422372
+    },
+    {
+      "block_age_at_quote_s": 0.874,
+      "calldata": "b9e4b49d406b3fca",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.002,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Uniswap V3",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 37143231287163733
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.399,
+          "result": 423275,
+          "rpc_ms": 326,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 423275,
+          "rpc_ms": 328,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.001,
+          "result": 423275,
+          "rpc_ms": 330,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 423275,
+          "rpc_ms": 335,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.005,
+          "result": 423275,
+          "rpc_ms": 357,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 423275,
+          "rpc_ms": 344,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.004,
+          "result": 423275,
+          "rpc_ms": 361,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.001,
+          "result": 423279,
+          "rpc_ms": 417,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.002,
+          "result": 423279,
+          "rpc_ms": 368,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 362,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:47:13.923Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 0,
+      "route_names": [
+        {
+          "dex": "Uniswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.524,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 37143231287163733
+    },
+    {
+      "block_age_at_quote_s": 0.81,
+      "calldata": "5e82a5f3a7a951dd",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.0,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 30.64,
+      "default_quote": {
+        "rfq_route": true,
+        "route_names": [
+          {
+            "dex": "Rfq Neptunex",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 28198914187451105
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.406,
+          "result": 460708,
+          "rpc_ms": 321,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.0,
+          "result": 460708,
+          "rpc_ms": 327,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.0,
+          "result": 460708,
+          "rpc_ms": 349,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 460708,
+          "rpc_ms": 361,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 460708,
+          "rpc_ms": 411,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 460708,
+          "rpc_ms": 353,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.0,
+          "result": 460708,
+          "rpc_ms": 341,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.001,
+          "result": 460708,
+          "rpc_ms": 419,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.0,
+          "result": 460708,
+          "rpc_ms": 387,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 391,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:47:44.845Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 0,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.595,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 28112499023695445
+    },
+    {
+      "block_age_at_quote_s": 0.741,
+      "calldata": "4e530b138a9762fc",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.003,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Elfomofi",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 69028180881477930
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.403,
+          "result": 605817,
+          "rpc_ms": 340,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.001,
+          "result": 605817,
+          "rpc_ms": 355,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.005,
+          "result": 605817,
+          "rpc_ms": 368,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.0,
+          "result": 605836,
+          "rpc_ms": 377,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 605836,
+          "rpc_ms": 377,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.0,
+          "result": 605738,
+          "rpc_ms": 451,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.0,
+          "result": 605836,
+          "rpc_ms": 345,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.001,
+          "result": 605836,
+          "rpc_ms": 415,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.003,
+          "result": 587825,
+          "rpc_ms": 385,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 373,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:48:15.791Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 1,
+      "route_names": [
+        {
+          "dex": "Elfomofi",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.661,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 69028180881477930
+    },
+    {
+      "block_age_at_quote_s": 1.582,
+      "calldata": "a1a61c5a46a800a3",
+      "calldata_bytes": 1924,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.0,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Uniswap V4",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 46987535425336408
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.308,
+          "result": 410947,
+          "rpc_ms": 426,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 410947,
+          "rpc_ms": 320,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.0,
+          "result": 410983,
+          "rpc_ms": 352,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.0,
+          "result": 410983,
+          "rpc_ms": 359,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.0,
+          "result": 410983,
+          "rpc_ms": 370,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.005,
+          "result": 410983,
+          "rpc_ms": 437,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.0,
+          "result": 410983,
+          "rpc_ms": 346,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.0,
+          "result": 410983,
+          "rpc_ms": 404,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.0,
+          "result": 410947,
+          "rpc_ms": 457,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 351,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:48:46.726Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 1,
+      "route_names": [
+        {
+          "dex": "Uniswap V4",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.725,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 46987535425336408
+    },
+    {
+      "block_age_at_quote_s": 1.605,
+      "calldata": "af6936c91cbc9458",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.005,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Elfomofi",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 103087049221417706
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.385,
+          "result": 624053,
+          "rpc_ms": 331,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 624053,
+          "rpc_ms": 329,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.0,
+          "result": 624073,
+          "rpc_ms": 329,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 624073,
+          "rpc_ms": 365,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.002,
+          "result": 623976,
+          "rpc_ms": 368,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.005,
+          "result": 624073,
+          "rpc_ms": 412,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.005,
+          "result": 624073,
+          "rpc_ms": 333,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.004,
+          "result": 624073,
+          "rpc_ms": 407,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.005,
+          "result": 624073,
+          "rpc_ms": 518,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 356,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:49:17.731Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 1,
+      "route_names": [
+        {
+          "dex": "Elfomofi",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.779,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 103087049221417706
+    },
+    {
+      "block_age_at_quote_s": 0.628,
+      "calldata": "646765462f2645fd",
+      "calldata_bytes": 2500,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.0,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Pancakeswap V3",
+            "percent": "100.00"
+          },
+          {
+            "dex": "Pancakeswap V3",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 37173241516959088
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.392,
+          "result": 639667,
+          "rpc_ms": 326,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 639667,
+          "rpc_ms": 345,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.0,
+          "result": 623401,
+          "rpc_ms": 398,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.005,
+          "result": 648471,
+          "rpc_ms": 326,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.0,
+          "result": 617546,
+          "rpc_ms": 364,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 648473,
+          "rpc_ms": 407,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.002,
+          "result": 639627,
+          "rpc_ms": 360,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.0,
+          "result": 639627,
+          "rpc_ms": 410,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.0,
+          "result": 639633,
+          "rpc_ms": 507,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 219,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:49:48.744Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 1,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        },
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.76,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 37173241516959088
+    },
+    {
+      "block_age_at_quote_s": 0.649,
+      "calldata": "5c73f5a10de8b9c5",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.0,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 38.03,
+      "default_quote": {
+        "rfq_route": true,
+        "route_names": [
+          {
+            "dex": "Rfq Neptunex",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 28247855062635773
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.376,
+          "result": 451842,
+          "rpc_ms": 367,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.0,
+          "result": 451842,
+          "rpc_ms": 359,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.0,
+          "result": 451842,
+          "rpc_ms": 409,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.0,
+          "result": 451842,
+          "rpc_ms": 365,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.0,
+          "result": 451842,
+          "rpc_ms": 317,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.0,
+          "result": 451830,
+          "rpc_ms": 419,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.0,
+          "result": 451830,
+          "rpc_ms": 358,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.005,
+          "result": 451830,
+          "rpc_ms": 376,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.0,
+          "result": 451830,
+          "rpc_ms": 479,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 133,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:50:19.767Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 1,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.726,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 28140440182912993
+    },
+    {
+      "block_age_at_quote_s": 1.585,
+      "calldata": "b60b6a5e400da0f0",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.0,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Metric V2",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 69122291872031568
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.349,
+          "result": 496987,
+          "rpc_ms": 362,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.003,
+          "result": 496987,
+          "rpc_ms": 419,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.0,
+          "result": 496987,
+          "rpc_ms": 379,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 496987,
+          "rpc_ms": 430,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.003,
+          "result": 496987,
+          "rpc_ms": 332,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.005,
+          "result": 496987,
+          "rpc_ms": 357,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.0,
+          "result": 496987,
+          "rpc_ms": 408,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.002,
+          "result": 496987,
+          "rpc_ms": 472,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.0,
+          "result": 497164,
+          "rpc_ms": 411,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 335,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:50:50.756Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 2,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.759,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 69122291872031568
+    },
+    {
+      "block_age_at_quote_s": 1.53,
+      "calldata": "4dfd85d7b29f00a3",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.003,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": -1.98,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Metric V2",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 47147556420481691
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.388,
+          "result": 430630,
+          "rpc_ms": 354,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.001,
+          "result": 430630,
+          "rpc_ms": 361,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.0,
+          "result": 430630,
+          "rpc_ms": 401,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.005,
+          "result": 430630,
+          "rpc_ms": 363,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.0,
+          "result": 430630,
+          "rpc_ms": 320,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.002,
+          "result": 430630,
+          "rpc_ms": 386,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.001,
+          "result": 430630,
+          "rpc_ms": 500,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.001,
+          "result": 430630,
+          "rpc_ms": 393,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.003,
+          "result": 430630,
+          "rpc_ms": 339,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 308,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:51:21.652Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 2,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.858,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 47156886226894707
+    },
+    {
+      "block_age_at_quote_s": 1.296,
+      "calldata": "5ba54df27ac239c1",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.0,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 1.72,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Elfomofi",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 103370893229317908
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.335,
+          "result": 624073,
+          "rpc_ms": 384,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 624073,
+          "rpc_ms": 470,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.0,
+          "result": 623976,
+          "rpc_ms": 428,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 624073,
+          "rpc_ms": 372,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 624053,
+          "rpc_ms": 389,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 624073,
+          "rpc_ms": 374,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.003,
+          "result": 624073,
+          "rpc_ms": 390,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.001,
+          "result": 624073,
+          "rpc_ms": 435,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.0,
+          "result": 624073,
+          "rpc_ms": 400,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 313,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:51:52.483Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 2,
+      "route_names": [
+        {
+          "dex": "Elfomofi",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.036,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 103353087239510260
+    },
+    {
+      "block_age_at_quote_s": 1.229,
+      "calldata": "e62ffb355e5123f6",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.005,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Tessera V",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 37188636194418195
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.381,
+          "result": 731515,
+          "rpc_ms": 323,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.0,
+          "result": 731515,
+          "rpc_ms": 326,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.001,
+          "result": 731515,
+          "rpc_ms": 355,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.0,
+          "result": 731515,
+          "rpc_ms": 326,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.002,
+          "result": 731092,
+          "rpc_ms": 456,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.003,
+          "result": 731092,
+          "rpc_ms": 408,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.005,
+          "result": 731092,
+          "rpc_ms": 327,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.005,
+          "result": 731092,
+          "rpc_ms": 396,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.005,
+          "result": 731111,
+          "rpc_ms": 355,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 348,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:52:23.363Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 2,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.152,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 37188636194418195
+    },
+    {
+      "block_age_at_quote_s": 1.16,
+      "calldata": "2da1e212fa69ebaf",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.005,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 35.65,
+      "default_quote": {
+        "rfq_route": true,
+        "route_names": [
+          {
+            "dex": "Rfq Neptunex",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 28249589158655559
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.391,
+          "result": 451823,
+          "rpc_ms": 381,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.002,
+          "result": 451823,
+          "rpc_ms": 340,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.002,
+          "result": 451823,
+          "rpc_ms": 335,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.005,
+          "result": 451823,
+          "rpc_ms": 322,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.002,
+          "result": 451823,
+          "rpc_ms": 463,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.004,
+          "result": 451823,
+          "rpc_ms": 431,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.002,
+          "result": 451823,
+          "rpc_ms": 333,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.002,
+          "result": 451823,
+          "rpc_ms": 413,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.005,
+          "result": 451823,
+          "rpc_ms": 356,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 357,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:52:54.207Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 2,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.229,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 28148885069120453
+    },
+    {
+      "block_age_at_quote_s": 1.092,
+      "calldata": "cfa07dba11a45273",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.005,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.06,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Metric V2",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 69242127641537504
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.403,
+          "result": 533970,
+          "rpc_ms": 350,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 533970,
+          "rpc_ms": 324,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.005,
+          "result": 536736,
+          "rpc_ms": 356,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 536736,
+          "rpc_ms": 362,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.005,
+          "result": 536893,
+          "rpc_ms": 359,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.004,
+          "result": 536903,
+          "rpc_ms": 445,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.005,
+          "result": 536893,
+          "rpc_ms": 354,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.001,
+          "result": 536657,
+          "rpc_ms": 425,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.005,
+          "result": 534008,
+          "rpc_ms": 453,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 399,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:53:25.131Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 3,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.308,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 69241735891087373
+    },
+    {
+      "block_age_at_quote_s": 1.028,
+      "calldata": "5ff9d6b691f22337",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.004,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Metric V2",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 47202408475334481
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.348,
+          "result": 554246,
+          "rpc_ms": 337,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.001,
+          "result": 554088,
+          "rpc_ms": 394,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.0,
+          "result": 554246,
+          "rpc_ms": 322,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.002,
+          "result": 554246,
+          "rpc_ms": 339,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.005,
+          "result": 554246,
+          "rpc_ms": 371,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.004,
+          "result": 554088,
+          "rpc_ms": 370,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.001,
+          "result": 554246,
+          "rpc_ms": 403,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.005,
+          "result": 554246,
+          "rpc_ms": 452,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.004,
+          "result": 554088,
+          "rpc_ms": 386,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 388,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:53:56.148Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 3,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.318,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 47202408475334481
+    },
+    {
+      "block_age_at_quote_s": 0.961,
+      "calldata": "0cd773466b7e399e",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.002,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Elfomofi",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 103329224316726850
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.395,
+          "result": 623955,
+          "rpc_ms": 334,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.003,
+          "result": 624053,
+          "rpc_ms": 436,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.001,
+          "result": 624073,
+          "rpc_ms": 362,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.003,
+          "result": 624073,
+          "rpc_ms": 370,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.004,
+          "result": 624073,
+          "rpc_ms": 352,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.002,
+          "result": 624053,
+          "rpc_ms": 445,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.003,
+          "result": 624053,
+          "rpc_ms": 441,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.001,
+          "result": 624053,
+          "rpc_ms": 422,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.002,
+          "result": 624053,
+          "rpc_ms": 376,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 292,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:54:27.072Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 3,
+      "route_names": [
+        {
+          "dex": "Elfomofi",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.431,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 103329224316726850
+    },
+    {
+      "block_age_at_quote_s": 1.063,
+      "calldata": "480e7f30d7a6595c",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.005,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Tessera V",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 37151869830743265
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.54,
+          "result": 731067,
+          "rpc_ms": 452,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.001,
+          "result": 731087,
+          "rpc_ms": 417,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.001,
+          "result": 731087,
+          "rpc_ms": 343,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.004,
+          "result": 731087,
+          "rpc_ms": 364,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.005,
+          "result": 731087,
+          "rpc_ms": 606,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.003,
+          "result": 731067,
+          "rpc_ms": 401,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.005,
+          "result": 731087,
+          "rpc_ms": 422,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.005,
+          "result": 731087,
+          "rpc_ms": 471,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.005,
+          "result": 731087,
+          "rpc_ms": 430,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 414,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:54:57.946Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 3,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.476,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 37151869830743265
+    },
+    {
+      "block_age_at_quote_s": 0.91,
+      "calldata": "7fd3abcc5e634c22",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.009,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 44.17,
+      "default_quote": {
+        "rfq_route": true,
+        "route_names": [
+          {
+            "dex": "Rfq Neptunex",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 28273776730970170
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.449,
+          "result": 451823,
+          "rpc_ms": 336,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.009,
+          "result": 451823,
+          "rpc_ms": 403,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.002,
+          "result": 451823,
+          "rpc_ms": 456,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.006,
+          "result": 451823,
+          "rpc_ms": 334,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.008,
+          "result": 451823,
+          "rpc_ms": 415,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.01,
+          "result": 451823,
+          "rpc_ms": 383,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.004,
+          "result": 451823,
+          "rpc_ms": 326,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.006,
+          "result": 451823,
+          "rpc_ms": 364,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.009,
+          "result": 451823,
+          "rpc_ms": 408,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 323,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:55:28.958Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 3,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.537,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 28148885069120453
+    },
+    {
+      "block_age_at_quote_s": 0.76,
+      "calldata": "e16f36ed9962922c",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.005,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Tessera V",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 69286208389585245
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.38,
+          "result": 713736,
+          "rpc_ms": 337,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.004,
+          "result": 713736,
+          "rpc_ms": 331,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.006,
+          "result": 713736,
+          "rpc_ms": 359,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.005,
+          "result": 713736,
+          "rpc_ms": 367,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 713755,
+          "rpc_ms": 474,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.004,
+          "result": 713736,
+          "rpc_ms": 414,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.008,
+          "result": 713736,
+          "rpc_ms": 428,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.006,
+          "result": 731064,
+          "rpc_ms": 390,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.005,
+          "result": 731064,
+          "rpc_ms": 443,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 280,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:55:59.880Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 4,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.618,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 69286208389585245
+    },
+    {
+      "block_age_at_quote_s": 1.693,
+      "calldata": "e60d5a7440c8e3ba",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.007,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Pancakeswap V3",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 47162134267770545
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.36,
+          "result": 461504,
+          "rpc_ms": 333,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.008,
+          "result": 461504,
+          "rpc_ms": 396,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.004,
+          "result": 430626,
+          "rpc_ms": 329,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.008,
+          "result": 430626,
+          "rpc_ms": 329,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.008,
+          "result": 430626,
+          "rpc_ms": 404,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.0,
+          "result": 430626,
+          "rpc_ms": 394,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.009,
+          "result": 430626,
+          "rpc_ms": 406,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.003,
+          "result": 430640,
+          "rpc_ms": 364,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.007,
+          "result": 430640,
+          "rpc_ms": 414,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 335,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:56:30.830Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 4,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.664,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 47162134267770545
+    },
+    {
+      "block_age_at_quote_s": 0.629,
+      "calldata": "52ac941790f40684",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.003,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Elfomofi",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 103182789119910355
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.368,
+          "result": 624073,
+          "rpc_ms": 399,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.01,
+          "result": 624073,
+          "rpc_ms": 402,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.009,
+          "result": 624073,
+          "rpc_ms": 341,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.006,
+          "result": 624073,
+          "rpc_ms": 350,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.003,
+          "result": 623955,
+          "rpc_ms": 415,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.007,
+          "result": 624053,
+          "rpc_ms": 428,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.01,
+          "result": 624053,
+          "rpc_ms": 412,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.007,
+          "result": 623976,
+          "rpc_ms": 370,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.003,
+          "result": 624073,
+          "rpc_ms": 433,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 367,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:57:01.756Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 4,
+      "route_names": [
+        {
+          "dex": "Elfomofi",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.737,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 103182789119910355
+    },
+    {
+      "block_age_at_quote_s": 0.641,
+      "calldata": "443c403ce9509477",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.01,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Tessera V",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 37278735271928700
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.45,
+          "result": 731067,
+          "rpc_ms": 333,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.003,
+          "result": 731067,
+          "rpc_ms": 409,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.006,
+          "result": 731067,
+          "rpc_ms": 336,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.01,
+          "result": 731067,
+          "rpc_ms": 366,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.006,
+          "result": 731067,
+          "rpc_ms": 397,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.009,
+          "result": 731067,
+          "rpc_ms": 397,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.009,
+          "result": 731067,
+          "rpc_ms": 416,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.007,
+          "result": 731067,
+          "rpc_ms": 382,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.01,
+          "result": 731067,
+          "rpc_ms": 408,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 295,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:57:32.699Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 4,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.807,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 37278735271928700
+    },
+    {
+      "block_age_at_quote_s": 1.492,
+      "calldata": "400e9c96f9369d29",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.006,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 36.32,
+      "default_quote": {
+        "rfq_route": true,
+        "route_names": [
+          {
+            "dex": "Rfq Neptunex",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 28251481268214272
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.363,
+          "result": 451823,
+          "rpc_ms": 365,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.006,
+          "result": 451823,
+          "rpc_ms": 401,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.01,
+          "result": 451823,
+          "rpc_ms": 332,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.006,
+          "result": 451823,
+          "rpc_ms": 346,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.004,
+          "result": 451823,
+          "rpc_ms": 417,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.007,
+          "result": 451823,
+          "rpc_ms": 387,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.003,
+          "result": 451823,
+          "rpc_ms": 415,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.009,
+          "result": 451823,
+          "rpc_ms": 439,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.006,
+          "result": 451823,
+          "rpc_ms": 416,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 320,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:58:03.610Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 4,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.868,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 28148885069120453
+    },
+    {
+      "block_age_at_quote_s": 1.426,
+      "calldata": "715a1bdca75b5567",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.005,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Elfomofi",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 69254213757469400
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.381,
+          "result": 605621,
+          "rpc_ms": 367,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.008,
+          "result": 605621,
+          "rpc_ms": 415,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.01,
+          "result": 605621,
+          "rpc_ms": 368,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.007,
+          "result": 605640,
+          "rpc_ms": 335,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.005,
+          "result": 605640,
+          "rpc_ms": 438,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.004,
+          "result": 605542,
+          "rpc_ms": 486,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.007,
+          "result": 605542,
+          "rpc_ms": 430,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.008,
+          "result": 605640,
+          "rpc_ms": 395,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.005,
+          "result": 605621,
+          "rpc_ms": 435,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 350,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:58:34.554Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 5,
+      "route_names": [
+        {
+          "dex": "Elfomofi",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.953,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 69254213757469400
+    },
+    {
+      "block_age_at_quote_s": 1.358,
+      "calldata": "dd072c42624e8325",
+      "calldata_bytes": 2532,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.001,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.86,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Metric V2",
+            "percent": "100.00"
+          },
+          {
+            "dex": "Uniswap V4",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 47135507845542469
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.381,
+          "result": 718387,
+          "rpc_ms": 359,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 718387,
+          "rpc_ms": 419,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.004,
+          "result": 718230,
+          "rpc_ms": 362,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.009,
+          "result": 718230,
+          "rpc_ms": 336,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.003,
+          "result": 718230,
+          "rpc_ms": 453,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.005,
+          "result": 718230,
+          "rpc_ms": 404,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.007,
+          "result": 718387,
+          "rpc_ms": 430,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.004,
+          "result": 718387,
+          "rpc_ms": 388,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.001,
+          "result": 718387,
+          "rpc_ms": 447,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 261,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:59:05.486Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 5,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        },
+        {
+          "dex": "Uniswap V4",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.019,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 47131440616581963
+    },
+    {
+      "block_age_at_quote_s": 1.29,
+      "calldata": "4c39dbe39eb787a3",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.001,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Tessera V",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 103321247759149575
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.352,
+          "result": 748469,
+          "rpc_ms": 351,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 748489,
+          "rpc_ms": 404,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.008,
+          "result": 748489,
+          "rpc_ms": 439,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 748489,
+          "rpc_ms": 341,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.003,
+          "result": 748489,
+          "rpc_ms": 388,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 748469,
+          "rpc_ms": 380,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.003,
+          "result": 748469,
+          "rpc_ms": 407,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.006,
+          "result": 748469,
+          "rpc_ms": 450,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.001,
+          "result": 748469,
+          "rpc_ms": 422,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 351,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:59:36.428Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 5,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.061,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 103321247759149575
+    },
+    {
+      "block_age_at_quote_s": 1.296,
+      "calldata": "23773d4fb61b2808",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.012,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 0.0,
+      "default_quote": {
+        "rfq_route": false,
+        "route_names": [
+          {
+            "dex": "Metric V2",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 37236160685149900
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.427,
+          "result": 544704,
+          "rpc_ms": 333,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.004,
+          "result": 554321,
+          "rpc_ms": 395,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.009,
+          "result": 548065,
+          "rpc_ms": 328,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 551565,
+          "rpc_ms": 336,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.006,
+          "result": 554271,
+          "rpc_ms": 381,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.003,
+          "result": 554271,
+          "rpc_ms": 379,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.004,
+          "result": 554321,
+          "rpc_ms": 404,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.0,
+          "result": 554243,
+          "rpc_ms": 369,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.012,
+          "result": 554419,
+          "rpc_ms": 1466,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 354,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T14:00:07.362Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 5,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.129,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 37236160685149900
+    },
+    {
+      "block_age_at_quote_s": 1.01,
+      "calldata": "80ddf5dfb9807f43",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.0,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "default_minus_no_rfq_bp": 34.84,
+      "default_quote": {
+        "rfq_route": true,
+        "route_names": [
+          {
+            "dex": "Rfq Neptunex",
+            "percent": "100.00"
+          }
+        ],
+        "to_amount": 28247292650800483
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.611,
+          "result": 451823,
+          "rpc_ms": 1055,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.666,
+          "result": 451823,
+          "rpc_ms": 1381,
+          "target_s": 1
+        },
+        {
+          "age_s": 3.046,
+          "result": 451823,
+          "rpc_ms": 539,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.585,
+          "result": 451823,
+          "rpc_ms": 604,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.01,
+          "result": 451823,
+          "rpc_ms": 396,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.007,
+          "result": 451823,
+          "rpc_ms": 430,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.007,
+          "result": 451823,
+          "rpc_ms": 446,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.007,
+          "result": 451823,
+          "rpc_ms": 410,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.0,
+          "result": 451823,
+          "rpc_ms": 504,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 525,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T14:00:39.348Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 5,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.599,
+          "unit": "s"
+        }
+      ],
+      "to_amount": 28148885069120453
+    }
+  ],
+  "rounds": 6,
+  "rpc_fingerprint": "2e478f4aa0413423",
+  "schema": "RfqValidityCheck.v1",
+  "side": "BUY",
+  "signing_enabled": false,
+  "slippage_percent": "0.2",
+  "status": "DONE",
+  "targets_s": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    8,
+    12,
+    20,
+    30
+  ],
+  "verdict": "INCONCLUSIVE_NO_RFQ_FAILURE_OBSERVED"
+}
