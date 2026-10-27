@@ -1221,6 +1221,60 @@ registered same-run both-host upgrade and temporary-access teardown. No host, ke
 signature/broadcast, wallet or historical-attempt mutation. [Report](../build/PREPARE_FENCE_REPAIR_20261027.md) /
 [review receipt](../build/evidence/fence01-review-20261027.json).
 
+### FENCE02 — residual preparation fence races (2026-10-27, criteria before implementation/tests)
+
+User request (Keith): find the root cause of the 12 reported aborted intents after planning resumed on the pre-FENCE01
+release, fix it and open a PR. Root cause in inspected canonical source `305bccfa` (COST03 records deployed build
+`3ae83098`; this is not a fresh host check): every executor commit fences on
+the run-wide `version`, which every runtime/planner `CommitBatch` advances (`larp/storage/postgres.py`). `prepare()`
+snapshots once, persists PREPARE_PROBE, performs seconds of quote/approve/gas I/O, then commits PREPARED with the old
+version. Because execution `Conflict` subclasses `Blocked`, the PREPARE_BLOCKED fallback reuses the same stale version
+and is refused too; the loop records only the type name and retries, so three probes end in `abort_unsigned` with no
+PREPARED/PREPARE_BLOCKED event. FENCE01 (PR317) removes the multi-second window. Residual windows remain on its head
+`8e20a208`, as a stacked change:
+- R1: a runtime commit between FENCE01's fresh snapshot (including its authorization read) and the PREPARED commit
+  still raises `StateVersionConflict` and burns the probe.
+- R2: PREPARE_BLOCKED after slow I/O (validation/dependency refusal before the refresh) still commits with the first
+  snapshot's version, so the refusal record is lost exactly as in the incident.
+- R3: ABORT_CLEAN commits after the allowance RPC with the first snapshot's version.
+
+Pass criteria:
+- F2-1: after preparation I/O, a stale version during refresh, pure revalidation or the PREPARED commit retries only
+  refresh + pure checks + fenced commit, at most a fixed small number of times (3), with no further quote, approve,
+  gas, revoke or router-preflight call. Exhaustion still raises `StateVersionConflict` with no PREPARED attempt.
+- F2-2: each retry requires unchanged owner epoch and release authority, re-reads the explicit clock (no regression),
+  and revalidates against the newest guards; adverse changes still refuse. The final commit's locked CAS/version
+  check is unchanged; nothing is ever committed under a stale version.
+- F2-3: PREPARE_BLOCKED and ABORT_CLEAN records that meet a stale version are re-fenced on refreshed guards (same
+  owner/release, bounded retries) and are journaled; an owner/release change still raises `Conflict` unjournaled.
+- F2-4: probe/gas/authority limits, schema, signer policy and historical counters unchanged; no signature or
+  broadcast in prepare. New synthetic regressions fail on `8e20a208` and pass after the change; existing
+  `tests/execution` (PostgreSQL) pass, with environment limits stated.
+
+### FENCE02 results — residual preparation fence races closed (stacked on PR317)
+
+Commit `32302aad`. `Executor.prepare()` now wraps FENCE01's refresh, pure revalidation and PREPARED commit in a
+bounded loop (`FENCE_REFRESHES = 3`): a `StateVersionConflict` from the guard refresh or the fenced commit repeats
+only those steps against the newest guards; quote, approve, gas, revoke and router preflight run once. `_refreshed`
+requires an unchanged owner epoch and release authority (else `Conflict`). `_record` journals PREPARE_BLOCKED and
+ABORT_CLEAN on refreshed guards when the first snapshot's version is stale; neither record grants signing authority.
+Persistent races and owner/release changes still raise unjournaled. No limit, schema, policy or counter change.
+
+Evidence (synthetic only, no host/key/wallet/provider): seven new regressions failed on PR317's `execution.py`
+(`8e20a208`) for the intended reasons — `StateVersionConflict` on one/two late races and lost PREPARE_BLOCKED/ABORT_CLEAN
+records — and pass after the change; the owner-change guard test passes on both. `tests/execution/test_prepare_fencing.py`
+19 passed/12 subtests. `tests/execution`, `tests/signer`, W04/W08: 561 passed/1315 subtests with 9 environment
+failures, which became 1 after granting the local test role PG16 role-membership (`createrole_self_grant`); the
+remaining signer preflight test checks installed packages against the runtime lock and fails identically on the base.
+Broad run (`tests/runtime`, `integration`, `storage`, `execution`, `signer`, `redteam`, W04/W08): 1539 passed,
+9 skipped, 2141 subtests; 54 failures, all identical on `8e20a208` and caused by the deliberately minimal venv
+(`boto3`/`botocore` absent, runtime-lock preflight). Environment: Python 3.13.17 and PostgreSQL 16 locally, not the
+pinned 3.12.15/14.24; pinned-environment and exact-release/host qualification remain with the release owner.
+
+Open, recorded separately: `reconcile()` commits receipt outcomes after `venue.outcome` with the pre-RPC version (same
+class; delays settlement and burns recovery probes, no signing risk). Commands are claimable only at their issuing run
+version (`loop.py` `_commands`), unchanged here and not implicated in the 12 created-then-aborted intents.
+
 ### PR318-RV01 — review criteria (2026-10-27, before regression runs)
 
 User authorizes review, fixes and merge of PR318. Canonical `305bccfa` was merged normally into the PR branch.
@@ -1246,6 +1300,48 @@ Official page checked: https://web3.binance.com/en/dev-docs/catalog/web3-wallet/
 older crawl dates). A direct HTML download produced an empty body, so it is not usable current-source evidence.
 Absence from the readable snapshots does not prove the backend refuses the parameter; it prevents presenting the
 documentation/default claim as independently verified.
+
+### PR319-RV01 — review criteria (2026-10-27, before regression runs)
+
+User authorizes PR319 review/fix/merge into its declared PR317 base. Both branches are synced with canonical
+`3f8e1650` using normal merges, preserving FENCE01/FENCE02 and PR318 records. PR317 itself is not merged here.
+
+Review findings and pass criteria:
+- RV319-1: `_record` catches a stale save but its subsequent guard acquisition is outside the retry catch.
+  A transient StateVersionConflict during that acquisition still loses the refusal. Include acquisition in the
+  same bounded retry budget; persistent races and ownership/release changes still refuse without a stale save.
+- RV319-2: slow preparation failures before the success-path clock refresh, and ABORT_CLEAN after allowance I/O,
+  still record the old tick. Observe a valid fresh clock for non-authorizing records and use the persisted time
+  for cleanup eligibility after a hard refusal. Expired authority/margin must not create cleanup/reset probes;
+  backwards time must refuse. Preserve confirmed approvals and dependency retries, original budgets and CAS.
+- Reproduce the cases with synthetic guards/venue/PostgreSQL only, then pass fence/allowance and broad pinned
+  Linux/Python3.12.15/PostgreSQL14.24 tests. No repeated venue/router preparation work, real key/provider/host or
+  transaction action. Exact release/systemd/bundle and registered same-run host acceptance stay open.
+
+### PR319-RV01 results — accepted for stacked merge into PR317
+
+Runtime/test source `65e6ed91` repairs both review findings. `_record` includes stale-version guard acquisition
+inside its bounded retry handling (initial save plus at most3 refreshes), and observes/persists a valid completion
+clock. Hard-refusal cleanup uses the resulting state's time; expired authority/margin cannot start cleanup or
+reset probes. Backwards record time refuses unjournaled rather than publishing misleading fresh time. Existing
+confirmed approvals, dependency retries, final CAS/owner/release checks and all original work/authority limits stay.
+
+Red tests on the original implementation reproduce transient/persistent acquisition behavior, stale clean-cleanup
+and dependency timestamps, and2 expired hard-refusal subcases. Final fence/allowance matrix41 tests/50 subtests PASS.
+Finite fixture clocks repeat the last observation for the new non-authorizing record read; expiry/no-signature
+assertions remain. Combined stack includes canonical3f8e1650/PR318 via normal parent/child merges; documentation
+conflicts retained both records. PR319 merges into PR317's branch; PR317's canonical merge is not authorized here.
+
+Pinned Linux/Python3.12.15/PG14.24 full suite:3133 passed/4172 subtests,8 skipped,zero failed in297.78seconds.
+One root-only permission skip separately passes as non-root:3134 distinct passing tests;5 real-systemd and2
+optional external/private fixtures unrun. Prior author minimal-environment failures do not occur. Demo, pip/diff
+checks pass. Hosted CI40525933798 jobs did not start due account payments/spending limits. No live provider/key,
+model, host, wallet or deployment operation. Source accepted under the user's delegated review/fix/merge instruction.
+
+Release owner retains PR317 canonical merge and exact release/systemd/bundle qualification; approved operator
+retains fresh holdings/caps/owner acceptance and state-preserving registered same-run both-host upgrade. Runtime
+owner retains `reconcile()`'s receipt-outcome stale-version follow-up and command-claim gate disposition. No whole
+GAP closure. [Review](../build/PR319_REVIEW_20261027.md) / [receipt](../build/evidence/pr319-review-20261027.json).
 
 ### PR318-RV01 results — source accepted for merge
 

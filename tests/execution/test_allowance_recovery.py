@@ -107,6 +107,37 @@ class AllowanceRecovery(unittest.TestCase):
         self.addCleanup(h.close)
         return h
 
+    def test_slow_hard_refusal_uses_completion_time_for_cleanup(self):
+        for end in (980, 1000):
+            with self.subTest(end=end):
+                h = self.harness(); i = replace(h.intent(), authority_margin=30)
+                h.executor.create(i, h.now)
+                approved = h.finish_step(i)
+                h.executor.clock_s = lambda: end
+                def refuse(payload):
+                    raise Blocked('synthetic slow validation failure')
+                h.venue.estimate_gas = refuse
+                state = h.executor.prepare(i.key, h.now + 1)
+                self.assertEqual(state.status, 'ABORTED')
+                self.assertFalse(state.abort_pending)
+                self.assertEqual(state.last_observed_at, end)
+                self.assertEqual(state.prepare_probes, approved.prepare_probes + 1)
+                self.assertEqual(state.attempts, approved.attempts)
+                self.assertEqual(len(h.venue.broadcasts), 1)
+
+    def test_slow_dependency_refusal_records_completion_without_discarding_approval(self):
+        h = self.harness(); i = h.intent()
+        h.executor.create(i, h.now); approved = h.finish_step(i)
+        h.executor.clock_s = lambda: 40
+        def unavailable(payload):
+            raise DependencyUnavailable('synthetic slow dependency failure')
+        h.venue.estimate_gas = unavailable
+        state = h.executor.prepare(i.key, h.now + 1)
+        self.assertEqual(state.last_observed_at, 40)
+        self.assertEqual(state.status, 'ACTIVE')
+        self.assertFalse(state.abort_pending)
+        self.assertEqual(state.attempts, approved.attempts)
+
     def test_expiry_during_prepare_never_grants_cleanup_from_the_old_tick(self):
         for end in (980, 1000):
             for during_guards in (False, True):
@@ -117,7 +148,7 @@ class AllowanceRecovery(unittest.TestCase):
                     approved = h.finish_step(i)
                     probes = approved.prepare_probes
                     ticks = iter((20 if during_guards else end, end))
-                    h.executor.clock_s = lambda: next(ticks)
+                    h.executor.clock_s = lambda: next(ticks, end)
                     state = h.executor.prepare(i.key, h.now + 1)
                     self.assertEqual(state.status, 'ABORTED')
                     self.assertFalse(state.abort_pending)
@@ -137,7 +168,7 @@ class AllowanceRecovery(unittest.TestCase):
             return replace(payload, data=u.u._set_word(payload.data, u.u.INNER_DEADLINE, 25, inner=True))
         h.venue.quote = expiring
         ticks = iter((20, 25))
-        h.executor.clock_s = lambda: next(ticks)
+        h.executor.clock_s = lambda: next(ticks, 25)
         state = h.executor.prepare(i.key, h.now + 1)
         self.assertEqual(state.last_observed_at, 25)
         self.assertEqual(state.attempts, approved.attempts)
