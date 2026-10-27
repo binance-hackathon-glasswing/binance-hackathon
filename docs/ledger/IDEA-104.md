@@ -973,3 +973,26 @@ Before implementation/tests, follow COST03 CAS1–CAS4 and refine:
 - Classify stale version conflicts with fixed error types, and log blocked execution-cycle summaries without
   arbitrary exception strings. Run focused execution/guard/signer/runtime PostgreSQL checks and relevant broader
   checks, retaining explicit environment limits. Exact release/host acceptance and deployment remain separate.
+
+### FENCE01 code-only implementation and validation
+
+Guard metadata/nonce I/O now precedes a stable authorization version. Prepare completes venue/router I/O, refreshes
+current guards/time, requires unchanged owner/release authority, and reruns pure payload/sequence/prerequisite and
+remaining-authority checks before the original fenced commit. No further market/RPC I/O follows that refresh.
+A later race still refuses. Scalar epoch/version reads avoid repeatedly decoding the projection; actual commits
+retain locked run/chain/ownership/version and execution CAS checks. StateVersionConflict classifies stale fences;
+the daemon retains blocked-cycle summaries without arbitrary exception text. No limit/schema/policy/counter change.
+
+Fourteen synthetic fence regressions pass (8 subtests), covering harmless writes, adverse prerequisites, changed
+nonce/owner, expiry/margin/regressed clock, late CAS races, acquisition races, explicit native-route authorization,
+scalar reads and safe classification. Relevant regressions failed before the implementation. Final affected
+execution/signer/strategy/risk/marketdata suite:1258 passed,1540 subtests,1 opt-in external recorded-data skip,
+231.05seconds, Python3.12.15/PG14.24. Earlier focused execution/signer/runtime suite561 passed/1306 subtests.
+A composition double needed the narrow transaction read; capability-gate assertions stayed intact. Final rerun
+passes; original local failure logs retained. pip, compile and diff checks pass. No full new native/systemd/bundle
+or live acceptance claimed. No production-derived investigation evidence exported; local evidence remains local.
+
+Review/merge and exact release/host qualification before any same-run upgrade remain with the release/operator
+owners. Preserve filled holdings/cost basis and historical attempts; this implementation performs no host/service,
+key, signer-policy, counter, funding or transaction change. [Repair](../build/PREPARE_FENCE_REPAIR_20261027.md) /
+[synthetic validation receipt](../build/evidence/fence01-repair-20261027.json).

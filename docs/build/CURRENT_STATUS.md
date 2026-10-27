@@ -1,5 +1,7 @@
 # Current shared build and remaining work
 
+FENCE01 code repair (Oct27, not deployed): preparation refreshes current guards/time after external I/O and revalidates before the unchanged CAS fence; guard reads use epoch/version scalars and stale-version refusals are logged. Affected suites1258 passed/1540 subtests,1 opt-in recorded-data skip;14 new fence tests pass. Review/merge, exact release/native/systemd/bundle qualification and same-run host acceptance remain. No counter reset or host action. [Repair](PREPARE_FENCE_REPAIR_20261027.md).
+
 S5-COST01 (Oct27, review candidate): opt-in initial-gas S5 cash/cost separation
 permits a zero USDT cushion with an independently sourced positive cost ceiling.
 Affected Linux/Python3.12.15/PostgreSQL14.24 suites:588 passed/87 subtests,zero

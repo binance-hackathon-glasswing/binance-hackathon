@@ -43,6 +43,10 @@ class Conflict(Blocked):
     """Stale revision, ownership or wallet-wide concurrency conflict."""
 
 
+class StateVersionConflict(Conflict):
+    """The run changed since the guard snapshot; current facts must be reacquired."""
+
+
 class DependencyUnavailable(Blocked):
     """A sanitized transient port failure, never evidence of transaction absence."""
 
@@ -391,7 +395,7 @@ def validate_sequence(state, step, payload, gates):
 
 class Executor:
     def __init__(self, store: Store, guards: GuardPort, venue: Venue, signer: Signer, decoder: Decoder,
-                 *, allowance_recovery=False):
+                 *, allowance_recovery=False, clock_s=None):
         # A bundle is all fake (offline fixtures), or all live with a swap decoder built from pinned router
         # evidence (IDEA-070; GAP-29) or an untrusted-router policy bound to a live RPC for its preflight (B02-U).
         # Never a mix, and never live with UnverifiedRouter.
@@ -407,6 +411,9 @@ class Executor:
             raise Blocked("live execution needs live ports and a decoder pinned to router evidence")
         if type(allowance_recovery) is not bool or allowance_recovery and getattr(decoder, 'mode', None) != 'untrusted':
             raise Blocked('allowance recovery must explicitly select the untrusted router')
+        if clock_s is not None and not callable(clock_s):
+            raise Blocked('execution clock must be callable')
+        self.clock_s = clock_s
         self.allowance_recovery = allowance_recovery
         self.store, self.guards, self.venue, self.signer, self.decoder = store, guards, venue, signer, decoder
 
@@ -445,7 +452,7 @@ class Executor:
         new = replace(old, attempts=old.attempts[:-1] + (attempt,), **changes)
         return self._save(old, new, event_type, gates)
 
-    def _validate(self, state, step, payload, gates, now):
+    def _validate(self, state, step, payload, gates, now, *, router_preflight=True):
         if now < state.last_observed_at:
             raise Blocked("clock regression")
         validate_payload(state.intent, step, payload, gates, now, self.decoder)
@@ -453,8 +460,9 @@ class Executor:
         if step in REVOKE_TOKENS:
             if not self.allowance_recovery:
                 raise Blocked('allowance recovery is disabled')
-            self.decoder.allowances(state.intent)  # current code/facet pins; no relaxed swap preflight
-        if step == "SWAP" and getattr(self.decoder, "mode", None) == "untrusted":
+            if router_preflight:
+                self.decoder.allowances(state.intent)  # current code/facet pins; no relaxed swap preflight
+        if router_preflight and step == "SWAP" and getattr(self.decoder, "mode", None) == "untrusted":
             # The live router state still bounds the swap (B02-U); before this execution's approve, the approve will
             # overwrite the pay token's allowance.
             approved = any(a.step == "APPROVE" and a.state == "FINAL_SUCCESS" for a in state.attempts)
@@ -515,6 +523,26 @@ class Executor:
             self._validate(state, step, payload, gates, now)
             if step == "SWAP" and payload.to != state.intent.router:
                 raise Blocked("requoted router differs from approved spender")
+            # Quote/estimate/router work can outlast several ordinary runtime commits. Bind
+            # the prepared result to current guards, rather than that earlier journal version.
+            completed = now if self.clock_s is None else self.clock_s()
+            integer(completed)
+            if completed < now:
+                raise Blocked('preparation clock regression')
+            fresh = self.guards.snapshot(state.intent, completed)
+            if (fresh.epoch, fresh.authority_version) != (gates.epoch, gates.authority_version):
+                raise Conflict('preparation ownership or release authority changed')
+            gates = fresh
+            finished = completed if self.clock_s is None else self.clock_s()
+            integer(finished)
+            if finished < completed:
+                raise Blocked('preparation clock regression')
+            # The router preflight above already ran. Only pure byte/sequence/current-fact
+            # checks may follow this refresh; further network I/O would recreate the race.
+            self._validate(state, step, payload, gates, finished, router_preflight=False)
+            now = finished
+        except Conflict:
+            raise  # never journal or accept a result under a new owner or a stale fence
         except DependencyUnavailable as error:
             # NEXT01-R1: transient quote/gas failures may consume the remaining original probes.
             # Never discard a confirmed approval on the first port failure; the next prepare re-quotes.
@@ -529,8 +557,8 @@ class Executor:
             return self._save(state, replace(state, blocked_reason="quote/gas dependency unavailable"),
                               "PREPARE_BLOCKED", gates)
         attempt = Attempt(digest([key, step]), step, "PREPARED", payload, gates.epoch, gates.authority_version)
-        return self._save(state, replace(state, attempts=state.attempts + (attempt,), blocked_reason=None),
-                          "PREPARED", gates)
+        return self._save(state, replace(state, attempts=state.attempts + (attempt,), blocked_reason=None,
+                                         last_observed_at=now), "PREPARED", gates)
 
     def authorize(self, key, now):
         state = self._load(key)
