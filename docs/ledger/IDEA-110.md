@@ -1,7 +1,7 @@
 # IDEA-110 — Micro activation self-check: a sub-1-USDT FS1 self-check buy, then the mandatory sell
 
 - Date / author: 2026-10-28 SGT (2026-10-27 UTC) / drafted with Claude Code at the user's request
-- Status: open (criteria registered before implementation and tests; candidate profile not approved, installed or bound)
+- Status: open (MSC-1..8 PASS offline; candidate profile not approved, installed or bound)
 - What: an opt-in variant of the IDEA-093 SC activation self-check (GAP-74, F-125) whose BUY pays less than 1 USDT,
   so the final-wallet end-to-end check costs cents instead of a 32 USDT round trip. The same pipeline runs: the
   runtime gathers market/quote/evidence data each round, the policy decides the self-check BUY, the independent
@@ -59,6 +59,19 @@
   `activation_self_check` and its provenance, and is reproducible byte for byte.
 - MSC-8: the full strategy and risk test directories pass.
 
-## 3. Results
+## 3. Results (2026-10-28 01:00 SGT, offline, Python 3.12 venv from `requirements.lock`, no PostgreSQL)
 
-(not run yet)
+- MSC-1 PASS: the FS1 and FS1-recovery builders reproduce `fs1-final.json` (`19176e6c…`) and
+  `fs1-final-recovery.json` (`b8ba06e2…`) byte for byte; `tests/strategy/test_fs1_self_check.py` passes unchanged.
+- MSC-2..MSC-6 PASS: `tests/strategy/test_micro_self_check.py` (8 tests). Reverting only the planner change fails 3 of
+  them (the micro BUY is refused as `MINIMUM_TRADE`), so they exercise it. MSC-5 relabels the same sub-minimum BUY
+  with any other reason and the planner refuses it as `MINIMUM_TRADE`/`DUST_OR_MINIMUM_TRADE`.
+- MSC-7 PASS: [`fs1-final-recovery-micro.json`](../build/evidence/fs1-micro-self-check-20261028/README.md)
+  `a9c06756…` (StrategyProfile.v1 digest `1d16eb13…`) passes `validate_live`, rebuilds byte for byte and differs
+  from the recovery profile only in `activation_self_check` and its provenance.
+- MSC-8 PASS: whole `tests/` 2521 passed, 603 skipped, 0 failed, 3768 subtests. Skips are environment-only (592
+  disposable PostgreSQL, 3 bubblewrap, 3 systemd runner, 2 systemd + PostgreSQL); the pinned Linux/PostgreSQL 14.24
+  run is still to do.
+
+Not tested: a real 0.9 USDT Web3 Open API quote and the day's gas price (README "Not yet known"), exact release,
+signer binding and host install.

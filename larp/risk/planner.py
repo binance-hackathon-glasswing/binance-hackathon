@@ -455,6 +455,9 @@ def plan(snapshot, proposal_or_none):
             continue
         costed_reduction = (s1 is not None and side == 'SELL' and not mandatory
                             and why == ['S1_LEVEL_CHANGE'] and p.get('s1_reduction_cost_cap_bps') == 50)
+        # IDEA-110: the micro self-check BUY replaces the minimum trade and bps entry cap with an absolute cost cap.
+        micro_check = (side == 'BUY' and not mandatory and why == ['ACTIVATION_SELF_CHECK_BUY'] and check_phase == 'BUY'
+                       and symbol == check['symbol'] and 'max_cost_units' in check)
         notional_cap = max(0, p["per_trade_cap_units"] - (cost_reserve if side == "BUY" else 0))
         if side == "SELL" and mandatory:
             # LD10-P03: balanced children; every child of a split exit stays economically executable.
@@ -467,7 +470,8 @@ def plan(snapshot, proposal_or_none):
                 req["status"] = "DUST_OR_UNEXECUTABLE"
             result["rejections"].append({"symbol": symbol, "reason": "DUST_OR_UNEXECUTABLE"})
             continue
-        if not mandatory and not costed_reduction and value(q, m) < p["minimum_trade_units"]:
+        if (not mandatory and not costed_reduction and not micro_check
+                and value(q, m) < p["minimum_trade_units"]):
             result["rejections"].append({"symbol": symbol, "reason": "MINIMUM_TRADE"})
             continue
         if m.get("token_open") is not True or m.get("underlying_open") is not True:
@@ -502,7 +506,7 @@ def plan(snapshot, proposal_or_none):
                     break
             continue
         cash, fee, gas, q = [quote[k] for k in ("cash_units", "fee_units", "gas_bnb_units", "token_units")]
-        if q <= p["dust_units"] or (not mandatory and not costed_reduction
+        if q <= p["dust_units"] or (not mandatory and not costed_reduction and not micro_check
                                     and value(q, m) < p["minimum_trade_units"]):
             if req is not None:
                 req["status"] = "DUST_OR_UNEXECUTABLE"
@@ -523,8 +527,11 @@ def plan(snapshot, proposal_or_none):
         if cost > cost_limit and not mandatory:
             result["rejections"].append({"symbol": symbol, "reason": "COST_RESERVE_INSUFFICIENT"})
             continue
+        if micro_check and cost > check['max_cost_units']:
+            result["rejections"].append({"symbol": symbol, "reason": "SELF_CHECK_COST_CAP"})
+            continue
         if not mandatory and side == "BUY":
-            if cost * 10000 > mark * p.get("s5_entry_cost_cap_bps", 50):
+            if not micro_check and cost * 10000 > mark * p.get("s5_entry_cost_cap_bps", 50):
                 result["rejections"].append({"symbol": symbol, "reason": "ENTRY_COST_CAP"})
                 continue
             if p.get("mode") == "LIVE":

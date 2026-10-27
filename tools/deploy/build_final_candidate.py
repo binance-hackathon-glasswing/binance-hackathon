@@ -28,6 +28,10 @@ SLIPPAGE_BPS = 20
 F125_GAS_UNITS = 30_000_000  # the organiser-directed 30 USDT -> BNB seed (F-125)
 SELF_CHECK_WINDOW = dict(buy_after='2026-10-27T00:00:00Z', buy_until='2026-10-28T18:00:00Z',
                          flat_by='2026-10-28T23:00:00Z')
+# IDEA-110: the micro self-check, a sub-1-USDT round trip inside the F-127 schedule (pause 2026-10-28T10:00Z).
+# Buys from 01:00 SGT Oct 28, after the server components and signer are installed; flat by 17:30 SGT.
+MICRO_SELF_CHECK = dict(buy_after='2026-10-27T17:00:00Z', buy_until='2026-10-28T08:00:00Z',
+                        flat_by='2026-10-28T09:30:00Z', pay_units=900_000, max_cost_units=150_000)
 POLICY_ID = 'larp-fs1-final-v1'
 EXIT_CHILDREN = 2
 
@@ -55,9 +59,9 @@ def fs1_block(raw):
     return block
 
 
-def build(*, s1_raw, s1_decision, allowance_recovery=False):
+def build(*, s1_raw, s1_decision, allowance_recovery=False, micro_self_check=False):
     """`allowance_recovery` (IDEA-098): the IDEA-096 eight-child gas envelope and exit reserve at the CAP-02 ceilings;
-    everything else is FS1's."""
+    `micro_self_check` (IDEA-110): the sub-1-USDT self-check; everything else is FS1's."""
     if type(s1_decision) is not str or not s1_decision.strip():
         raise ContractError('An FS1 block and the decision behind it go together')
     block = fs1_block(s1_raw)
@@ -94,6 +98,13 @@ def build(*, s1_raw, s1_decision, allowance_recovery=False):
                 'pay_units = an ordinary FS1 entry: floor(0.95*1/5*(expected equity - 30 USDT F-125 gas - cost reserve)) '
                 'in whole USDT, so it passes the same authorized-minimum 50 bp cost gate; '
                 'buy Oct 27 00:00 to Oct 28 18:00, flat by Oct 28 23:00 UTC')
+    if micro_self_check:
+        p['activation_self_check'] = dict(p['activation_self_check'], **MICRO_SELF_CHECK)
+        p['provenance']['activation_self_check'] = dict(decision_id='IDEA-110 (2026-10-28 SGT, proposed)',
+            formula='micro self-check in the cheapest measured round trip: pay 0.9 USDT; that BUY skips the minimum '
+                    'trade and 50 bp entry cap but its authorized-minimum cost must be <= 0.15 USDT (expected about '
+                    '0.056 USDT gas+spread+slippage); buy 2026-10-27T17:00Z (01:00 SGT) to 2026-10-28T08:00Z, flat by '
+                    '2026-10-28T09:30Z, before the F-127 pause at 10:00Z')
     validate_live(p)
     return Document.from_dict(p)
 
@@ -117,9 +128,11 @@ def main(argv=None):
     parser.add_argument('--s1-decision', required=True, help='decision ID for the supplied block')
     parser.add_argument('--allowance-recovery', action='store_true',
                         help='IDEA-098: the IDEA-096 recovery gas envelope at the CAP-02 ceilings')
+    parser.add_argument('--micro-self-check', action='store_true',
+                        help='IDEA-110: a 0.9 USDT self-check round trip, buying from 01:00 SGT Oct 28')
     args = parser.parse_args(argv)
     p = build(s1_raw=args.s1_config.read_bytes(), s1_decision=args.s1_decision,
-              allowance_recovery=args.allowance_recovery)
+              allowance_recovery=args.allowance_recovery, micro_self_check=args.micro_self_check)
     with args.output.open('xb') as stream:
         stream.write(p.payload + b'\n')
     print(p.digest('StrategyProfile.v1'))

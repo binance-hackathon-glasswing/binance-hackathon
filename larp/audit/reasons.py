@@ -34,6 +34,7 @@ REJECTION = {
     'DUST_OR_MINIMUM_TRADE': 'below the minimum trade size',
     'DUST_OR_UNEXECUTABLE': 'dust or not executable',
     'ENTRY_COST_CAP': 'entry cost above its cap',
+    'SELF_CHECK_COST_CAP': 'micro self-check cost above its cap',
     'ENTRY_IMPACT_CAP': 'price impact above its cap',
     'S1_REDUCTION_COST_CAP': 'reduction cost above its cap',
     'COST_RESERVE_INSUFFICIENT': 'cost reserve too low',

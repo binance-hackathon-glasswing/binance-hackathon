@@ -4,12 +4,16 @@ Before `trade_after`, one BUY of about `pay_units` of `symbol`, then a mandatory
 comes from the profile, the persisted risk state, the ledger and the time, so the policy and the independent planner
 agree. The planner commits BOUGHT and DONE (or EXPIRED) to the risk state; DONE and EXPIRED are never undone. Profiles
 without the key are unaffected (phase None).
+
+IDEA-110: an optional `max_cost_units` makes it a micro self-check: `pay_units` may lie below the minimum trade, and
+the planner bounds that one BUY's cost absolutely instead of by the bps entry-cost cap.
 """
 from larp.contracts import ContractError
 from .schema import SYMBOLS, instant, integer
 
 KEY = 'activation_self_check'
 FIELDS = frozenset({'symbol', 'buy_after', 'buy_until', 'flat_by', 'pay_units'})
+OPTIONAL = frozenset({'max_cost_units'})  # IDEA-110 micro self-check
 SCOPE = 'An activation self-check needs a FINAL TREND_GUARDED_VOL profile (IDEA-093 SC, GAP-74)'
 REASON = 'ACTIVATION_SELF_CHECK'
 
@@ -19,8 +23,9 @@ def config(profile):
     if KEY not in profile:
         return None
     value = profile[KEY]
-    if type(value) is not dict or set(value) != FIELDS or value['symbol'] not in SYMBOLS:
-        raise ContractError('activation_self_check needs exactly: ' + ','.join(sorted(FIELDS)))
+    if type(value) is not dict or not FIELDS <= set(value) <= FIELDS | OPTIONAL or value['symbol'] not in SYMBOLS:
+        raise ContractError('activation_self_check needs exactly: ' + ','.join(sorted(FIELDS))
+                            + ' (optional: ' + ','.join(sorted(OPTIONAL)) + ')')
     try:
         buy_after, buy_until, flat_by = (instant(value[k]) for k in ('buy_after', 'buy_until', 'flat_by'))
     except (ContractError, TypeError, ValueError, AttributeError):
@@ -28,9 +33,16 @@ def config(profile):
     if not buy_after < buy_until < flat_by <= instant(profile['trade_after']):
         raise ContractError('activation_self_check must satisfy buy_after < buy_until < flat_by <= trade_after')
     pay = integer(value['pay_units'], 1)
-    if not profile['minimum_trade_units'] <= pay <= profile['per_trade_cap_units'] - profile['cost_reserve_units']:
+    micro = 'max_cost_units' in value
+    if micro and not 0 < integer(value['max_cost_units'], 1) <= profile['cost_reserve_units']:
+        raise ContractError('activation_self_check max_cost_units must lie in (0, cost_reserve_units]')
+    floor_units = 1 if micro else profile['minimum_trade_units']
+    if not floor_units <= pay <= profile['per_trade_cap_units'] - profile['cost_reserve_units']:
         raise ContractError('activation_self_check pay_units must lie between the minimum trade and the cap')
-    return dict(symbol=value['symbol'], buy_after=buy_after, buy_until=buy_until, flat_by=flat_by, pay_units=pay)
+    cfg = dict(symbol=value['symbol'], buy_after=buy_after, buy_until=buy_until, flat_by=flat_by, pay_units=pay)
+    if micro:
+        cfg['max_cost_units'] = value['max_cost_units']
+    return cfg
 
 
 def require_scope(profile):
