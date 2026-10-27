@@ -1,6 +1,6 @@
 # P4 (primary, host mutation; IDEA-110 TEMP-SC run sheet): create and activate the temporary self-check run in
 # larp_final_selfcheck, then start evidence and delivery only. Runtime stays off until S2 -> P5 -> P6.
-# The profile's buy window was stamped at preparation (T..T+1h); a start after T+1h buys nothing (EXPIRED).
+# The profile buys 04:00-06:00Z Oct 28 (12:00-14:00 SGT); a start after 06:00Z buys nothing (EXPIRED).
 #   ssm_run.py host/p4-init-activate-start.sh "<reviewer>" "<IDEA-110 record of the A1 approval>"
 set -euo pipefail
 RUN=larp-final-selfcheck-temp
