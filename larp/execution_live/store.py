@@ -8,7 +8,7 @@ Public events contain no signed bytes. Production release/round integration is s
 from dataclasses import asdict, replace
 import json
 
-from larp.execution import (Attempt, Conflict, StateVersionConflict, Execution, Intent, Payload, Signed,
+from larp.execution import (Attempt, Conflict, Execution, Intent, Payload, Signed,
                             TERMINAL, canonical, digest)
 from larp.storage.backup import without_signed_bytes
 from larp.storage.postgres import IntegrityError
@@ -67,20 +67,13 @@ class ExecutionStore:
     def _authority(self, db, epoch, version):
         run = self.store._run(db, self.run_id)
         self.store._owned(run, epoch)
-        if run['chain_id'] != 56:
+        if run['version'] != version or run['chain_id'] != 56:
             raise Conflict('execution authority changed')
-        if run['version'] != version:
-            raise StateVersionConflict('execution authority changed')
         return run
 
     def authority(self):
-        # Guard fencing needs two scalar columns, not the growing portfolio/journal
-        # projection. Current authorization and the locked commit check those facts.
-        with self.store.transaction() as db:
-            row = db.execute('SELECT epoch,version FROM runs WHERE run_id=%s', (self.run_id,)).fetchone()
-            if row is None:
-                raise Conflict('unknown execution run')
-            return tuple(row)
+        run = self.store.load(self.run_id).read()
+        return run['epoch'], run['version']
 
     def check_authority(self, epoch, version):
         with self.store.transaction() as db:
@@ -100,8 +93,8 @@ class ExecutionStore:
         return run
 
     def execution_authority(self):
-        epoch, _ = self.authority()
-        return epoch, epoch
+        run = self.store.load(self.run_id).read()
+        return run['epoch'], run['epoch']
 
     def _attempt(self, db, attempt_id):
         keys = db.execute('SELECT economic_key FROM execution_records WHERE run_id=%s', (self.run_id,)).fetchall()

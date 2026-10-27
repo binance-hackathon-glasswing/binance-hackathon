@@ -5,7 +5,7 @@ Guards run at every execution step, so they read the market's open state only (W
 the steps of an attempt while it is fresher than `market_freshness_s` and belongs to the same round; after that, or
 in a new round, both are read again. The wallet nonce is read fresh at every step.
 """
-from larp.execution import Blocked, Conflict, StateVersionConflict, Gates, integer
+from larp.execution import Blocked, Gates, integer
 from larp.marketdata.port import TOKENS
 from larp.marketdata.web3 import Unavailable, single
 
@@ -45,11 +45,15 @@ class LiveGuards:
         return open_state[symbol]
 
     def snapshot(self, intent, now):
-        original_authority = self.store.execution_authority()
+        epoch, state_version = self.store.authority()
+        owner_epoch, execution_version = self.store.execution_authority()
+        if epoch != owner_epoch:
+            raise Blocked('ownership changed while acquiring guards')
+        facts = self.authorization(intent, epoch, state_version, now)
         # Gas top-ups have no stock market; the authorization source must explicitly
         # authorize the native resource route. No unconditional market-open default.
         if intent.kind == 'GAS_TOP_UP':
-            token_open = underlying_open = False
+            token_open = underlying_open = facts.get('native_resource_route_valid') is True
         else:
             try:
                 token_open, underlying_open = self._open_state(intent, now)
@@ -60,19 +64,6 @@ class LiveGuards:
             nonce = self.chain.nonce(intent.wallet)
         except Blocked:
             nonce = None  # Missing signing evidence must not prevent receipt reconciliation.
-        # External observations precede the journal fence. Authorization must describe
-        # one stable version, with no market/RPC operation left before returning it.
-        epoch, state_version = self.store.authority()
-        owner_epoch, execution_version = self.store.execution_authority()
-        if epoch != owner_epoch or original_authority != (owner_epoch, execution_version):
-            raise Conflict('ownership changed while acquiring guards')
-        facts = self.authorization(intent, epoch, state_version, now)
-        if intent.kind == 'GAS_TOP_UP':
-            token_open = underlying_open = facts.get('native_resource_route_valid') is True
-        if self.store.execution_authority() != (owner_epoch, execution_version):
-            raise Conflict('ownership changed while authorizing guards')
-        if self.store.authority() != (epoch, state_version):
-            raise StateVersionConflict('execution facts changed while acquiring guards')
         return Gates(epoch, state_version, nonce, now,
                      integer(facts['expires_at'], positive=True),
                      **{k: facts.get(k) is True for k in ('audit_durable', 'reservation_valid', 'version_valid',
