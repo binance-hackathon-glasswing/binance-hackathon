@@ -743,3 +743,24 @@ Host readback: both x86_64; signer EC2 running but SSM ConnectionLost since04:59
 IAM GetInstanceProfile read is AccessDenied. T1 restoration needs the authorized operator's reviewed Terraform
 plan/apply. No service, key, signer policy, wallet or hosted run state was changed; local SDK/test dependencies and
 disposable PostgreSQL were used. Exact release/systemd/host qualification and run8 cleanup remain prerequisites.
+
+### S5-RUN8R2-PKG01 — operator package criteria (2026-10-27)
+
+Keegan requests everything Yao needs for a new run8, with integrated FS1 fixes. Prepare only; do not deploy.
+Use run `larp-dev-rehearsal-20261027-s5-small-r2`, fresh database `larp_rehearsal8r2`, selected NEXT01 profile
+and 22:00/23:00/00:00 SGT gates. Preserve the original run8 history and all provider budgets.
+The selected exact runtime release is `a22527603ad34c545ff30b5ef996f575b3435b53` (PR310+311).
+
+Criteria before package implementation:
+- Complete portable operator scripts for bundle verification/upload, source-run8 capture and fresh numeric/signer
+  assembly, new-database setup, configuration/manifest binding, both-host retirement/install, checks/start and T2 cleanup.
+- All scripts name the new identity consistently, pin source/profile/router/routing/history hashes, refuse expired
+  windows and mismatched/occupied targets, keep private inputs/results outside source control, and start execution
+  before planning. No implicit latest-head build or overwrite of run8 state/config history.
+- Approved zero-only allowance recovery may inherit the old allowance: review_rehearsal_caps already permits this
+  when opted in. Positive held reservation units or execution_pending still refuse; nine zero rows alone do not.
+- Audit exact release ancestry/features against FS1 corrections. Record unresolved production requirements including
+  ARCH-01, fixed-price BNB valuation, exact host/systemd acceptance and self-check/pause bindings; do not call them fixed.
+- Verify template rendering, script syntax, source/profile/manifest/bundle pins and refusal paths; run meaningful
+  execution/signer/runtime/strategy and database tests as available. Deliver a locally usable checksummed operator
+  archive and a PR targeting canonical. No AWS host/service/key/transaction write in this preparation task.
