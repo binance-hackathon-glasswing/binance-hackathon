@@ -393,6 +393,187 @@ spending limit needs increasing. Hosted CI is **unavailable**, not a tested code
 fresh hosted inputs and exact profile/probe/signer/release acceptance, host qualification and installation remain
 with the existing owners. The cash sizing implementation is complete; no funding transfer or FS1 change is needed.
 
+## S5-DEPLOY01 — authorized run-7 deployment (2026-10-26 SGT)
+
+User request: "ok can merge and lets deploy s5" after TH-CONFIG01. PR298 merged at `c997df2c`.
+Selected build: canonical `c997df2c19cf1c0d17b18b83b5bb0d38015879fc`; S5-SIZE01 profile `6dadc196…`,
+probe `68e49922…`, history input `5e572570…`, routing `9b86c732…`. Use the existing S5 sheet and its
+local-bundle route, as requested in the S2 comparison; record actual source/checks without claiming hosted CI.
+The user authorizes operator deployment of this selected S5 scope; do not attribute any new statement to Isaac
+or Keegan. No profile/window changes, funding transfers, manual wallet transactions or FINAL activation.
+
+Before execution, acceptance: preserve run6 history/accounting and verify current state before retirement;
+new run `larp-dev-rehearsal-20261026-s5` / DB `larp_rehearsal7`; local bundle integrity/reference comparison;
+fresh M3 numeric COVERED/chain reconciliation and exact signer identity-only difference; explicit selected
+history/routing/profile pins and valid model-budget/credential-name checks; both-role preflight and signer-key
+match; initialize before signer/execution/runtime (P4/S2/P5/P6); verify active units, five-token history/status,
+reason summaries and trace delivery. Record live J checks honestly, with no inferred fill or profitability PASS.
+Readiness flags remain tied to actual results. Keep signer provisioning temporary and remove uploaded config
+packages after installation. Stop at an actual refusal and preserve its evidence; do not bypass safety checks.
+
+Initial AWS identity check refused because the `larp` login expired. User asked to run `aws login --profile larp`;
+local preparation continues while authentication is pending. No host change has occurred at this point.
+
+### S5-DEPLOY01 preparation / authorization binding
+
+User subsequently confirmed login and "full permission to complete deployment including using my terminal".
+AWS authentication works. Initial read-only run6 checks: all four primary services active/zero restarts,
+archive healthy (19 anchors/four backups ACK), no quarantine, all five stock positions zero, cash81.373047USDT,
+BNB0.024973109594021811. Both runtime model credential names are populated (values not printed).
+
+M1-local PASS: canonical `c997df2c…`, bundle SHA-256
+`590280b653b8946ec4ee57bfc133f143e3e652c2198a8453fb1c9b7f4b9bc218`, manifest
+`f842043ebee74dfe01a1983ad4ff50e7052a5793c7eafa0e204a81e9ac308fa8`;
+file comparison against original CI RC4 passed, pinned Python3.12.15/CA/provisioner unchanged.
+D1 PASS: new empty `larp_rehearsal7`,21 tables,13 matching migrations, all five roles/connect and privilege checks.
+M2 PASS: verified bundle uploaded (98,468,977bytes, SSE-KMS).
+
+M3 `20261026T114558Z`:98 checks, numeric COVERED, no missing coverage. Signer
+`1b2bca7f7f9ce8694c016c05e48f61dde438e0b90b36dea03cbf8bbcc4d90559`
+differs from run6 `1e052e26…` only in build/run/database identity; signing policy and enabled recovery identical.
+M4 PASS before retirement: package `package-20261026T114801Z`, all seven local qualification checks PASS,
+bound shared manifest `1a57fa73bc7872bd6ef9df9fba841df2b7c869453c8fdcb96c946fa5d4333d00`,
+history/profile/routing pins exact, local signer `check` PASS. Fresh stock capital81.273047USDT supports four
+19-USDT lots. Preparation readiness flags retain their scoped false values pending actual host acceptance.
+
+Yao's direct deployment authorization above applies to this selected S5 scope and the reviewed identity-only
+signer candidate; it is the operator review reference for activation. No new approval statement is attributed
+to Isaac/Keegan. The prior approved signing policy/caps are unchanged; no policy refusal is overridden.
+B1 read-only PASS: existing account `larp-openai-2026`,50,000,000microUSD total,3,217,536microUSD charges retained.
+No ledger reset/init or private invoice reconciliation is claimed. Private results are under
+`deploy/activation/rehearsal-install-s5-20261026/` in the original checkout.
+
+### S5-DEPLOY01 startup refusal / preserving transition criteria
+
+P3, P4, signer provisioning/check/routes/S1b/key-match/S2 and execution P5 passed. P6 refused with START_REFUSED;
+runtime is stopped, so no new planning/trade was made. Actual read-only diagnosis: the budget's base pacing
+matches FS1 exactly, but its trial binding remains `larp-unsigned-v3-20261018`, expired end_ms1792627200000.
+Trial stopped=false/reason empty; global account latch=false/reason empty. Historical104 SETTLED/2,880,356microUSD
+and three UNKNOWN/337,180microUSD remain. This is the preserving-migration gap previously recorded in IDEA-066.
+
+Before implementing/running a migration: require exact expected ledger/routing hashes, existing private file,
+no live trial/model workers, an expired trial, no RESERVED charges, no trial/global safety stop or clock rollback,
+unchanged account/total/reserve/initial charge and identical base pacing. Refuse any mismatch atomically.
+Make an exact private pre-migration backup, archive rather than discard trial policy/dispatch attribution, preserve
+every charge/state/amount/request identity, account/switch/clock row, and record source/target hashes. Only retire
+the expired trial binding for the explicitly selected non-trial S5 routing. Old trial-aware workers must refuse
+afterward; current ModelBudget must load without replenishing spent credit or clearing UNKNOWN.
+Code/tests must be committed/pushed before execution. Verify negative cases and atomic preservation against
+synthetic ledgers, plus existing budget/trial/routing checks, before applying to the stopped host runtime.
+No runtime release/profile/routing bytes are changed by this administrative transition.
+
+Transition verification:84 tests/288 subtests PASS offline (migration preservation/refusals plus existing
+trial caps, assessment budget and routing). The operation requires an expired unlatched trial and no reserved
+requests, rejects changed pacing/account/hash/attribution or safety/clock stops, saves the exact original bytes,
+retains all trial rows under archived table names, and preserves every charge/switch/account/clock field.
+The deployed release remains byte-identical to `c997df2c`; only an explicitly versioned administrative helper
+will perform this configuration-state transition. Host wrapper must refuse any other runtime-user process.
+
+## S5-OBS01 — run 7 makes no entries while the trend guard is DOWN (2026-10-26, live observation)
+
+Read-only observation, not an experiment: no code, profile, host or wallet change. Sources: the team's SSM
+`primary-status`/`trading-status`/`signer-status` outputs of 12:10–12:17Z (read back with `ssm:GetCommandInvocation`)
+and read-only Session Manager queries run by the user (in a Claude session) on the primary between about 12:40Z and 13:00Z
+(`SET TRANSACTION READ ONLY`, as `larp-execution`). Code citations are to the deployed build `c997df2c`.
+
+Observed state of `larp-dev-rehearsal-20261026-s5` (mode `dev`, build `c997df2c`):
+- `larp-execution` active since 11:58:16Z, `larp-runtime` since 12:09:02Z, both `NRestarts=0`; evidence/uploader
+  active; run not quarantined; archive health `healthy: true`. The journal holds only start-up JSON lines.
+- 205 rounds planned and closed by about 13:00Z, all `safety:` ticks about every 13 s; last decision 9 s before the
+  query. Event kinds: only VERSION_REGISTERED, RUN_ACTIVATED, BALANCE_CHECKED, ROUND_PLANNED, ROUND_CLOSED (no model
+  assessment events). Jobs: five `evidence` jobs, all `EXPIRED`.
+- 0 intents, 0 planner rejections, 0 execution records, 0 signing requests, 0 signatures, router allowances 0.
+- Every policy target in the last 40 rounds: `KEEP_QUANTITY / LOW_TURNOVER_HOLD` for all five names.
+- Policy state: `s1.trend_state` **DOWN** (`trend_evaluated_session` 203), limiter `NORMAL`.
+- Markets: all five `basis_verified`, `token_open` and `underlying_open` true; measured round trip 2–9 bp.
+- Signer at 12:10Z: `larp-signer` active, `signing_enabled: true`, `swap_decoder: "UNTRUSTED"` (DEV-23). SSM shows
+  the signer `ConnectionLost` since 12:10Z; its health after that was not checked.
+
+**Cause (from code; consistent with every observation above).** With trend DOWN the S1 level is
+min(mid 60%, limiter high 95%) = 60% (`s1.level_fraction`). Each name's target is 60% × 1/5 × stock capital
+81.273047 ≈ **9.75 USDT**, below `minimum_trade_units` **18.637420 USDT**. So the gap never reaches one step,
+and the policy emits `LOW_TURNOVER_HOLD` (a hold, not a rejection; `policy.py` S1 branch). The S5-SIZE01 lot
+does not apply: `rehearsal_sizing.name_target` returns the ordinary target unless the level is the high level,
+as S5-SIZE01 specified ("At lower exposure levels the ordinary targets apply"). The S5-SIZE01 cash check
+(`opening_cash_check`) and SZ2 tested the high level only. So **S5 cannot enter at the mid or low level on
+this wallet.** The trend signal is the five-name equal-weight basket's last close over its 5-session mean, minus
+one; below −100 bp is DOWN (`s1.evaluate_trend`). The two `S1_LEVEL_CHANGE` reasons seen at 12:17Z are probably
+the switch from `trend_start_state` UP to the evaluated DOWN [inference; not traced].
+
+Not the cause: market data/basis, quote cost, `trade_after` (06:00Z; KIT_OPEN_STATE hours), `assessment_required`
+(false in S5) and `minimum_remaining_sessions` (0). The expired evidence jobs are Friday Oct 23's
+`S1_SESSION_CLOSE` reviews (due 20:15Z, valid to Sat 20:15Z, `missed='expire'`): the run started on Monday, after
+their validity. That is a start-time effect, not a weekend rule. In a continuous run, Friday's review runs on
+Friday evening and covers the weekend (IDEA-093 "Weekend attempts").
+
+Consequence for run 7: the trend is re-evaluated after Monday's close, at about **20:15Z** (04:15 SGT). If it turns
+UP, 19-USDT lots are possible until `new_risk_end` 23:00Z, before the 00:00Z flatten. If it stays DOWN, run 7
+makes no trade and does not exercise the post-approve swap or sell that S5 was meant to test. No profile or
+window change is proposed here; any change needs a new profile hash and the existing owners' approval.
+
+FS1 implication [our arithmetic, not run]: at 170 USDT cash (GAP-73) and a 0.20 reserve, the FINAL mid-level
+target is 0.6 × 1/5 × 169.8 ≈ 20.38 USDT. That is above the 18.637 USDT minimum, so FS1 can still enter in a
+downtrend, by about 1.7 USDT before costs. Lower funding (fees, the self-check) narrows that margin. At the
+limiter `SEVERE` level (30%) the target is about 10.19 USDT, so FS1 makes no new entries there.
+
+S5-OBS01 outcome (team's read-only checks, 2026-10-27 02:51Z): the trend was re-evaluated for session 204 and
+stayed **DOWN**; at 02:39Z run 7 still had 0 execution records/signatures. Run 7 made no trade before
+`new_risk_end` and did not exercise the swap/sell path. Correction to S5-OBS01: the signer's SSM `ConnectionLost` is expected. The run sheet checks the
+signer once (C1, the 12:10Z check), then removes signer SSM access (T2).
+
+## S5-OBS02 — database stalls crash-loop run 7's services; first daily backup over its bound (2026-10-27, live observation)
+
+Read-only diagnosis, requested by the user: `journalctl`/`systemctl` and read-only database connections on the
+primary over SSM at 03:56–03:58Z (Claude session), plus the outputs of the team's read-only SSM checks of
+02:39–02:57Z. No host, run, profile or wallet change. Run 7 ran build `c997df2c`, which includes PR280
+(`Backup.v2`, IDEA-094/095) and IDEA-100 DB5. IDEA-109 fixes 1 and 2 (PR #303) are not in that build.
+
+Observed:
+- **Two crash bursts.** Runtime, execution and uploader exited `status=1` together at **23:32–23:59Z**
+  (runtime 62, execution 33, uploader 58 restarts) and again from **03:41Z**. At 03:57:49Z the runtime was
+  crash-looping at 80 restarts, with execution at 36 and uploader at 60. `larp-evidence` had 0 restarts.
+  Every exit logs only the fixed `RUNTIME_FAILED`/`EXECUTION_FAILED`/`UPLOADER_FAILED` line; exception text is
+  withheld by design (`larp/runtime/service.py`, broad `except Exception`). No OOM kill or timeout marker;
+  host memory 1,909 MB total, 1,106 MB available, no swap (03:56Z).
+- **The database accepts TCP but not logins.** At 03:57:28/38/49Z the database port connected in 0.0 s, but each
+  login failed with `Unavailable` caused by psycopg `ConnectionTimeout` after 5.34 s (`connect_timeout=5`,
+  `larp/storage/postgres.py`), 3 of 3. That means a reachable but starved server: the DB-01 failure mode of 2026-10-25.
+- **Size at 02:56Z** (12:09Z start + 14.8 h): database 687,517,019 bytes; `events` 7,437 rows /
+  1,044,522,587 raw bytes (largest 4,906,883); `audit_events` 3,709 rows / 512,349,747 raw bytes (largest
+  4,895,047). That is about 71 MB of raw `events` per hour, about **1.7 GB per day**, from hold-only safety rounds
+  every ~13 s. `pg_stat_statements` is not installed (IDEA-100 DB2 not applied).
+- **First daily backup refused.** Archive health `healthy: false`, `backup_failure` `BackupOverBound` for the
+  00:00Z and 00:05:35Z slots, `PERMANENT` 2, `ACK` 18; no durable backup since. The run database was new and
+  single-run (S5-DEPLOY01 D1), so this is the first segment of a fresh chain, about 12 h into the run.
+- Each runtime restart consumed about 1 minute of CPU before exiting.
+
+**Cause (high confidence that it is the database; the starved resource is not yet confirmed).** The 1 GB
+`db.t4g.micro` instance cannot serve this journal volume: every database client fails together, and the
+server stops completing logins. CPU-credit exhaustion versus memory pressure is unconfirmed:
+this session's AWS identity cannot read CloudWatch or RDS. Owner check: RDS Monitoring for 22:30–04:00Z
+(`CPUCreditBalance`, `CPUUtilization`, `FreeableMemory`, `DatabaseConnections`, latency) and RDS events.
+Likely amplifier [inference, not measured]: ARCH-01 item (1). Each automatic restart re-verifies the whole journal
+before deciding, so a crash loop adds reads to a starved database.
+
+**Consequences.**
+- Run 7: no trade affected (flat book, no orders), but rounds stopped during each outage; those gaps may be
+  published as diagnostics (F-51).
+- **ARCH-01's 2026-10-25 trigger (b) is met:** health reported a `BackupOverBound` refusal on a build with the
+  PR280 fix. By that pre-registered rule, ARCH-01 (per-event payload) must be implemented before final activation;
+  Keegan decides.
+- ARCH-01's growth projection is falsified: it put the 64 MiB daily-segment bound around day 11, but run 7 passed
+  it on its first segment.
+- **FS1 is exposed:** the same instance and the same round cadence would reach this state within its first day of
+  the 14-day run. During a stall FS1 cannot plan, log, sell or flatten. Automatic restarts help only after the
+  database answers again.
+- IDEA-109 S-06/S-07 (DB1/DB2/DB5 applied, RDS reboot, maintenance/backup windows away from 00:00Z, optional
+  larger instance) are now required, not optional, before P4.
+
+No fix is implemented here. Options for the owners (Keegan, Yao; Keith for evidence-state content), each needing
+its own criteria before code (AGENTS.md): (1) slim per-event payloads (ARCH-01 / DB-01 R5); (2) a larger
+instance class or memory (IDEA-109 S-07); (3) apply DB1/DB2 so the next stall names its queries;
+(4) re-size the backup bound or the first-segment strategy for a run of this volume; (5) restart pacing so
+crash loops do not repeat full verification.
 
 ## S5-SMALL01 — proportional small-wallet rehearsal, Oct27 19:00SGT flatten
 
