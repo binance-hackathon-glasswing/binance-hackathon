@@ -806,3 +806,66 @@ COST1–COST4 implemented/tested for review. Remaining: teammate policy/value
 review and adoption, package owner fresh profile/probe/config pins and numeric
 coverage/exact signer acceptance, newly qualified release and host acceptance.
 The current deployment and temporary T1 access are unaffected by this PR.
+
+## S5-COST02 — authorized combined release and new package (2026-10-27)
+
+Yao explicitly authorized merging PR314, generating a new package and all
+deployment steps, and required inclusion of all fixes. PR314 is merged at
+`3ae830981b9ce1c4b80a46dbeb086825d91ae7ec`; this is the fixed runtime release.
+The new package adapts PR313's public operator scripts and verifies all18
+previously audited merged fixes plus PR314 (19 merge ancestors). It does not
+claim that ARCH-01, fixed BNB valuation or every FINAL production backlog
+item has been implemented. The short S5 rehearsal retains those limits.
+
+Adopt for this dev run: zero additional USDT cushion, separate0.40USDT
+discretionary economic-cost ceiling, existing200bp entry check/20bp slippage,
+initial-only BNB gas/action/exit reserves, history/routing and approved signer
+policy/caps. Retain19.10USDT per-trade cap: removing the old0.10USDT cushion
+increases its maximum BUY sizing input by0.10USDT; fresh numeric coverage
+must verify it against the independent existing execution/signer ceilings.
+New run `larp-dev-rehearsal-20261027-s5-cost01`, database
+`larp_rehearsal8cost01`; source run8/database/history remain preserved.
+The selected22:00SGT buy cutoff,23:00 flatten and midnight signing end remain.
+
+Pre-launch acceptance criteria (before new-run host execution):
+- COST02-1: exact pushed runtime, new bundle hash/member verification, all19
+  audited merge ancestors and complete Linux/PG regression, systemd, isolation
+  and both-role offline installation qualify; retain failed environment runs.
+- COST02-2: original run8 idle/terminal, no held reservation units/possible send,
+  reconciled finalized chain holdings and fresh quotes, finite unchanged caps
+  and gas coverage. Inherited allowance only under existing agent recovery;
+  no manual transaction or reuse of expired intent authority.
+- COST02-3: new empty DB/migrations/grants/TLS, fresh profile/probe/config/signer
+  bindings with only permitted signer identity changes, same bound manifest
+  on both hosts, registered/pushed version, old configs preserved. Yao's
+  all-steps authorization is the deployment/adoption reference; never invent
+  a new Isaac approval.
+- COST02-4: actual DB/clock/routes/release/credentials checks; start signer and
+  execution before planner; verify services, first autonomous action, delivered
+  logs and health. Then T2 removes only the temporary8 access resources and
+  primary SSM remains usable. Preserve open acceptance if no trade occurs.
+
+COST02-1 PASS: Linux/Python3.12.15/PostgreSQL14.24 full suite3079 passed,8
+skipped,4124 subtests,zero failures; separate systemd5/5 and isolation5/5,
+both-role offline AL2023 provisioning/repeat installation/permissions/preflight
+PASS. Initial noexec/read-only/missing-namespace failures are retained, not
+relabelled. Supported corrected environment passes without weakened assertions.
+All256 member checksums and19 merge ancestors verify. See package VALIDATION.json.
+
+Read-only source preflight: both hosts still carrybdd515f8, planner stopped;
+source run8 flat (cash81.373047USDT/BNB0.024970602989216991),3/3 execution
+records terminal, one signature, USDT allowance15.441878 and other five zero.
+The9 reservation rows still require units-level M3 confirmation. RDS available,
+parameters in-sync, no pending modifications, backup16:00–16:30UTC and
+maintenanceSat16:30–17:00UTC. Last hour CPU9–11%, credits0, free memory
+~97–104MB,3 connections. Both host-credit alarms OK; RDS credit alarm ALARM.
+Reduce old client load during replacement and require new-run health before
+planner startup. Free-plan size limitation is unchanged.
+
+Public profile file SHA `f26c332aad317631ee7308a6d7669761104e2b4f8d1864300a5d6ff40e487dec`,
+profile hash`a40231c8f52e0185d0e45efaf75797b78ca769afc09b977c6b14bd40bccf63fb`,
+probe SHA`9000051b456b03e6eba3a6afaa6006154fdbaf3b288e77d57a986722c4fad614`.
+Public package:docs/build/ops/rehearsal-install-s5-cost01-20261027/.
+Bundle SHA`46f8bc3310df88a373ef078a9087d5cc13e9dacd286bb64366263f1a556160e0`;
+manifest SHA`e7a367b64fbca764864c5f12156303e30a85215c6b2aca4881f97792d5780453`.
+Private inputs/results/credentials remain outside tracked source.
