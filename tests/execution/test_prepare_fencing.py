@@ -167,9 +167,50 @@ class PrepareFencing(DatabaseCase):
             self.runtime_write('slow-allowance')
             return {value.pay_token: 0}
         self.executor.decoder.allowances = allowances
+        self.executor.clock_s = lambda: 1000
         state = self.executor.prepare(i.key, 11)
         self.assertEqual(state.status, 'ABORTED')
         self.assertEqual(self.executor._load(i.key).status, 'ABORTED')
+        self.assertEqual(state.last_observed_at, 1000)
+
+    def test_refusal_guard_acquisition_races_share_the_bounded_retry(self):
+        i = intent(); self.executor.create(i, 10)
+        snapshot = self.guards.snapshot
+        calls = [0]
+        def guards(value, now):
+            calls[0] += 1
+            if calls[0] == 2:
+                raise StateVersionConflict('synthetic acquisition race')
+            return snapshot(value, now)
+        self.guards.snapshot = guards
+        def slow(payload):
+            self.runtime_write('refusal-race')
+            raise DependencyUnavailable('synthetic estimate unavailable')
+        self.venue.estimate_gas = slow
+        state = self.executor.prepare(i.key, 11)
+        self.assertEqual(state.blocked_reason, 'synthetic estimate unavailable')
+        self.assertEqual(calls[0], 3)
+        self.assertEqual(state.prepare_probes, 1)
+        self.assertFalse(state.attempts)
+
+    def test_persistent_refusal_acquisition_race_is_bounded_and_not_journaled(self):
+        i = intent(); self.executor.create(i, 10)
+        snapshot = self.guards.snapshot
+        calls = [0]
+        def guards(value, now):
+            calls[0] += 1
+            if calls[0] > 1:
+                raise StateVersionConflict('synthetic persistent acquisition race')
+            return snapshot(value, now)
+        self.guards.snapshot = guards
+        def slow(payload):
+            self.runtime_write('persistent-refusal-race')
+            raise DependencyUnavailable('synthetic estimate unavailable')
+        self.venue.estimate_gas = slow
+        with self.assertRaises(StateVersionConflict):
+            self.executor.prepare(i.key, 11)
+        self.assertEqual(calls[0], 1 + self.executor.FENCE_REFRESHES)
+        self.assertIsNone(self.executor._load(i.key).blocked_reason)
 
     def test_owner_change_during_refusal_refresh_is_not_journaled(self):
         i = intent(); self.executor.create(i, 10)
@@ -196,7 +237,7 @@ class PrepareFencing(DatabaseCase):
     def test_clock_passes_expiry_during_final_guard_io(self):
         i = intent(); self.executor.create(i, 10)
         ticks = iter((20, 1000))
-        self.executor.clock_s = lambda: next(ticks)
+        self.executor.clock_s = lambda: next(ticks, 1000)
         state = self.executor.prepare(i.key, 11)
         self.assertFalse(state.attempts)
         self.assertIsNotNone(state.blocked_reason)
@@ -204,9 +245,11 @@ class PrepareFencing(DatabaseCase):
     def test_backwards_preparation_clock_refuses(self):
         i = intent(); self.executor.create(i, 10)
         self.executor.clock_s = lambda: 9
-        state = self.executor.prepare(i.key, 11)
+        with self.assertRaisesRegex(Blocked, 'clock regression'):
+            self.executor.prepare(i.key, 11)
+        state = self.executor._load(i.key)
         self.assertFalse(state.attempts)
-        self.assertIn('clock regression', state.blocked_reason)
+        self.assertEqual(state.last_observed_at, 11)
 
 
 class GuardAcquisition(unittest.TestCase):

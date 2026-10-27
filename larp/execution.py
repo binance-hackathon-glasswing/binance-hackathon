@@ -466,11 +466,17 @@ class Executor:
         authority, so a stale run version is re-fenced on refreshed guards rather than lost."""
         for refresh in range(self.FENCE_REFRESHES + 1):
             try:
-                return self._save(old, new, event_type, gates)
+                if refresh:
+                    gates = self._refreshed(old, gates, now)
+                finished = now if self.clock_s is None else self.clock_s()
+                integer(finished)
+                if finished < now:
+                    raise Blocked('preparation clock regression')
+                now = finished
+                return self._save(old, replace(new, last_observed_at=now), event_type, gates)
             except StateVersionConflict:
                 if refresh == self.FENCE_REFRESHES:
                     raise
-            gates = self._refreshed(old, gates, now)
 
     def _validate(self, state, step, payload, gates, now, *, router_preflight=True):
         if now < state.last_observed_at:
@@ -582,7 +588,7 @@ class Executor:
             state = self._record(state, replace(state, blocked_reason=str(error), last_observed_at=now),
                                  "PREPARE_BLOCKED", gates, now)
             if approved and self.allowance_recovery and not state.abort_pending:
-                return self.abort_unsigned(key, now)
+                return self.abort_unsigned(key, state.last_observed_at)
             return state
         except (TimeoutError, ConnectionError):
             return self._record(state, replace(state, blocked_reason="quote/gas dependency unavailable",
