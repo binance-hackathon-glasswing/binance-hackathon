@@ -2,6 +2,8 @@
 
 FENCE01 / PR317 source review complete (FENCE01-RV01, Oct27; source `1e90c26f`, not deployed): preparation refreshes guards/time after I/O before the unchanged CAS fence. Review fixed stale completion time on refused preparation, preventing expired authority/margin from granting cleanup or resetting probes. Full pinned Linux/PG plus corrected-environment reruns cover3101 distinct passing tests,zero unresolved failures;5 systemd and2 optional fixture checks remain unrun. Merge, exact release/systemd/bundle qualification and registered same-run host acceptance remain with the release/operator owners. No host or historical counter reset. [Repair and results](PREPARE_FENCE_REPAIR_20261027.md).
 
+PR318-RV01 source review accepted (Oct27; source `a857d03d`, not deployed): bStock planning/execution request the empirically tested non-RFQ hint and reject RFQ-named execution routes. Review repairs enforce private collector output (including default TMPDIR), preserve native quote scope and correct the unverified API-documentation claim. Pinned Linux/PG full suite3108 passed/4154 subtests,zero failures/8 skips; non-root rerun adds1 pass, leaving5 systemd/2 optional fixtures unrun. Exact release/host/live RQ-5/RQ-8 and AMM entry-cost acceptance remain with the release/operator/strategy owners. PR317 remains separate. [Review](PR318_REVIEW_20261027.md).
+
 S5-COST01 (Oct27, review candidate): opt-in initial-gas S5 cash/cost separation
 permits a zero USDT cushion with an independently sourced positive cost ceiling.
 Affected Linux/Python3.12.15/PostgreSQL14.24 suites:588 passed/87 subtests,zero
