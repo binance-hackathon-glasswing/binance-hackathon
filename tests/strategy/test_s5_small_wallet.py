@@ -109,3 +109,18 @@ def test_small_preparation_requires_fundable_low_level_target():
     p=json.loads(s5.S5.read_bytes())
     assert opening_cash_check(p,s5.RUN6_CASH)['opening_lot_units']==4_876_382
     with pytest.raises(ContractError):opening_cash_check(p,20_000_000)
+
+
+def test_exact_200bp_boundary_independently_of_reserve_and_impact():
+    s=with_state(snapshot(),settled([3,5],trend='DOWN'))
+    p=s.context.read()['profile'];p['cost_reserve_units']=400_000
+    s=replace(changed(s,profile=p),policy_profile_hash=Document.from_dict(p).digest('StrategyProfile.v1'))
+    for spread,accepted in ((100,True),(150,False)):
+        quoted=with_quotes(s,spread_bps=spread,gas=75_000_000_000_000)
+        markets=quoted.context.read()['markets']
+        for m in markets:
+            for q in m['quotes']:q['impact_bps']=1
+        quoted=changed(quoted,markets=markets)
+        result=plan(quoted,decide(quoted,quoted.policy_state)).read()
+        assert bool(result['intents']) is accepted
+        if not accepted:assert any(r['reason']=='ENTRY_COST_CAP' for r in result['rejections'])
