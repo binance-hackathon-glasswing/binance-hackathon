@@ -96,6 +96,7 @@ class PrepareFencing(DatabaseCase):
                 state = self.executor.prepare(i.key, 11)
                 self.assertFalse(state.attempts)
                 self.assertIsNotNone(state.blocked_reason)
+                self.assertEqual(state.last_observed_at, end)
                 self.executor.abort_unsigned(i.key, end)
 
     def test_clock_passes_expiry_during_final_guard_io(self):

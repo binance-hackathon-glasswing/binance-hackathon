@@ -107,6 +107,43 @@ class AllowanceRecovery(unittest.TestCase):
         self.addCleanup(h.close)
         return h
 
+    def test_expiry_during_prepare_never_grants_cleanup_from_the_old_tick(self):
+        for end in (980, 1000):
+            for during_guards in (False, True):
+                with self.subTest(end=end, during_guards=during_guards):
+                    h = self.harness()
+                    i = replace(h.intent(), authority_margin=30)
+                    h.executor.create(i, h.now)
+                    approved = h.finish_step(i)
+                    probes = approved.prepare_probes
+                    ticks = iter((20 if during_guards else end, end))
+                    h.executor.clock_s = lambda: next(ticks)
+                    state = h.executor.prepare(i.key, h.now + 1)
+                    self.assertEqual(state.status, 'ABORTED')
+                    self.assertFalse(state.abort_pending)
+                    self.assertEqual(state.last_observed_at, end)
+                    self.assertEqual(state.prepare_probes, probes + 1)
+                    self.assertEqual(state.attempts, approved.attempts)
+                    self.assertEqual(len(h.venue.broadcasts), 1)
+
+    def test_swap_deadline_crossed_during_guard_refresh_never_prepares(self):
+        h = self.harness()
+        i = h.intent()
+        h.executor.create(i, h.now)
+        approved = h.finish_step(i)
+        quote = h.venue.quote
+        def expiring(intent, nonce):
+            payload = quote(intent, nonce)
+            return replace(payload, data=u.u._set_word(payload.data, u.u.INNER_DEADLINE, 25, inner=True))
+        h.venue.quote = expiring
+        ticks = iter((20, 25))
+        h.executor.clock_s = lambda: next(ticks)
+        state = h.executor.prepare(i.key, h.now + 1)
+        self.assertEqual(state.last_observed_at, 25)
+        self.assertEqual(state.attempts, approved.attempts)
+        self.assertTrue(state.abort_pending)  # authority remains for the existing bounded zero-only cleanup
+        self.assertEqual(len(h.venue.broadcasts), 1)
+
     def test_post_approval_gas_dependency_requotes_with_original_authority(self):
         h = self.harness(); i = h.intent()
         h.executor.create(i, h.now)
