@@ -3,6 +3,12 @@
 Runtime release: `a22527603ad34c545ff30b5ef996f575b3435b53`. `package.json` records 18 verified ancestor merge
 commits; staging checks those exact commits against the selected source. No experimental S6/S7/S8 branch is used.
 
+Canonical advanced to `fd6b6719003795e21038947014de67f6de8808e2` via PR312 during preparation. Its six changed
+files are documentation only; no code, test, config or profile changed relative to the pinned runtime. The package
+branch includes those records: EXP-007 is INCONCLUSIVE and the trend guard ships under the pre-registered O2
+choice; S6/S7 are NOT SUPPORTED and S8 INCONCLUSIVE, all excluded from deployment. This records the latest
+research disposition without changing the tested release or adopting experimental strategy code.
+
 | Included PR | Correction or prerequisite |
 |---|---|
 | 278 | FS1 policy refinements, gas-excluded capital, execution and parallel assessment integration |

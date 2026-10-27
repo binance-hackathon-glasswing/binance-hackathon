@@ -46,5 +46,12 @@
   "deployed": false,
   "systemd": "NOT_RUN: PID1 is not systemd",
   "real_systemd": "NOT_RUN: PID1 is not systemd",
-  "rerun_requirement": "On a disposable supported Linux runner, use the pinned workflow commands, full pytest, LARP_TEST_SYSTEMD=1 systemd tests and offline demo before host acceptance."
+  "rerun_requirement": "On a disposable supported Linux runner, use the pinned workflow commands, full pytest, LARP_TEST_SYSTEMD=1 systemd tests and offline demo before host acceptance.",
+  "latest_canonical_audit": {
+    "head": "fd6b6719003795e21038947014de67f6de8808e2",
+    "pr": 312,
+    "changed_files": 6,
+    "documentation_only": true,
+    "runtime_code_config_profile_tests_unchanged": true
+  }
 }

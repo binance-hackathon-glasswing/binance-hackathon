@@ -798,3 +798,9 @@ Remaining launch owner Yao: supported native qualification rerun, existing priva
 provisioning, source pending/reservation reconciliation, new database/fresh caps/Isaac exact signer acceptance,
 DB/host/model/history/log acceptance, then P4 -> S2 -> P5 -> P6 and T2/M9 cleanup. Exact workflow and commands
 are in the package README/QUALIFICATION.md; it does not claim launch-ready or successful real buys/sells.
+
+S5-RUN8R2-PKG01 final canonical refresh: PR312 merged while the package was prepared. Canonical fd6b6719 differs
+from the selected a2252760 only in six documentation files, with no runtime/config/profile/test changes. Its updated
+EXP-007/S6/S7/S8 records were merged into this package branch without rewriting history. The fixed bundle remains
+applicable; the audit records that EXP-007's inconclusive O2 disposition retains the trend guard, and experimental
+S6/S7/S8 code is not deployed. Package PR313 targets canonical; all files are committed/pushed; no hosted action.
