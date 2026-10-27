@@ -1171,6 +1171,10 @@ Packet SHA-256 as printed on the host: `688b89efb35257d5b089469fd373b3545ef3539d
 - **R1 PASS.** Every quote response has the same shape: top level `executionMode`, `rfq`, `routerResult`, `tx`;
   `executionMode = SWAP`, `rfq = null`, vendor LiquidMesh, quoted gas 250,000. **Nothing in the response marks
   MSFTB's route as RFQ**: its single-hop `dexRouterList` looks like the others.
+  - **Correction (2026-10-27, IDEA-104 OBS03-B2-RV01):** the route is marked, one level deeper than this collector
+    read: `dexRouterList[].dexProtocol.dexName` is `Rfq Neptunex` on MSFTB's RFQ quotes. In 30 fresh quotes that name
+    matched exactly the quotes that hit `RFQ_OrderExpired`. So RFQ routes are detectable from the quote response, not
+    only by simulation (R4 below).
 - **R2/R3 PASS.** Allowance-override proof held. Observed bounds:
   - **MSFTB: `RFQ_OrderExpired` at every delay, including 0 s.** The route is not executable as quoted; this is not a
     short validity window.

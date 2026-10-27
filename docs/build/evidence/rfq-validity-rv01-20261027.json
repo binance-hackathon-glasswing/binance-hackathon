@@ -1,0 +1,2814 @@
+{
+  "by_symbol": {
+    "GOOGLB": {
+      "arrived_expired": 0,
+      "bounds": [],
+      "max_success_age_s_non_rfq": 30.007,
+      "quotes": 6,
+      "rfq_failing": 0,
+      "rfq_routes": 0,
+      "short_encoded_times_vs_response_s": []
+    },
+    "MSFTB": {
+      "arrived_expired": 0,
+      "bounds": [
+        [
+          0.325,
+          3.001
+        ],
+        [
+          0.348,
+          3.01
+        ],
+        [
+          0.331,
+          3.007
+        ]
+      ],
+      "max_success_age_s_non_rfq": 30.009,
+      "quotes": 6,
+      "rfq_failing": 3,
+      "rfq_routes": 3,
+      "short_encoded_times_vs_response_s": [
+        1.5,
+        1.5,
+        1.486,
+        1.486,
+        1.605,
+        1.605
+      ]
+    },
+    "NVDAB": {
+      "arrived_expired": 0,
+      "bounds": [],
+      "max_success_age_s_non_rfq": 30.01,
+      "quotes": 6,
+      "rfq_failing": 0,
+      "rfq_routes": 0,
+      "short_encoded_times_vs_response_s": []
+    },
+    "SKHYB": {
+      "arrived_expired": 0,
+      "bounds": [],
+      "max_success_age_s_non_rfq": 30.01,
+      "quotes": 6,
+      "rfq_failing": 0,
+      "rfq_routes": 0,
+      "short_encoded_times_vs_response_s": []
+    },
+    "TSLAB": {
+      "arrived_expired": 0,
+      "bounds": [],
+      "max_success_age_s_non_rfq": 30.007,
+      "quotes": 6,
+      "rfq_failing": 0,
+      "rfq_routes": 0,
+      "short_encoded_times_vs_response_s": []
+    }
+  },
+  "claims": "Read-only quotes and override simulations; observed outcomes, not a guaranteed TTL.",
+  "finished_utc": "2026-10-27T13:29:54.310Z",
+  "generated_utc": "2026-10-27T13:15:51.178Z",
+  "override_proof": {
+    "allowance_override_effective": true,
+    "balance_override_effective": true
+  },
+  "pay_units": 15000000,
+  "quotes": [
+    {
+      "block_age_at_quote_s": 1.561,
+      "calldata": "63e09ef04e081e5a",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.01,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.37,
+          "result": 713723,
+          "rpc_ms": 348,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.006,
+          "result": 713723,
+          "rpc_ms": 412,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.009,
+          "result": 713723,
+          "rpc_ms": 386,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.01,
+          "result": 713723,
+          "rpc_ms": 336,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.004,
+          "result": 713743,
+          "rpc_ms": 433,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.005,
+          "result": 713743,
+          "rpc_ms": 381,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.009,
+          "result": 713743,
+          "rpc_ms": 445,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.004,
+          "result": 713743,
+          "rpc_ms": 363,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.01,
+          "result": 713723,
+          "rpc_ms": 429,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 250,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:15:51.943Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 0,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.806,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.074,
+      "calldata": "2cc38be31d70101c",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.006,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.333,
+          "result": 554157,
+          "rpc_ms": 363,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.006,
+          "result": 554177,
+          "rpc_ms": 388,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.006,
+          "result": 554177,
+          "rpc_ms": 433,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.01,
+          "result": 554019,
+          "rpc_ms": 398,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 554019,
+          "rpc_ms": 416,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.006,
+          "result": 554177,
+          "rpc_ms": 381,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.002,
+          "result": 554265,
+          "rpc_ms": 408,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.003,
+          "result": 554265,
+          "rpc_ms": 446,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.006,
+          "result": 554107,
+          "rpc_ms": 401,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 164,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:16:22.578Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 0,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.257,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.678,
+      "calldata": "85cc65a3e044fb04",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.005,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.389,
+          "result": 554139,
+          "rpc_ms": 325,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.006,
+          "result": 554139,
+          "rpc_ms": 428,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.001,
+          "result": 554139,
+          "rpc_ms": 359,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 554139,
+          "rpc_ms": 330,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 554158,
+          "rpc_ms": 450,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.007,
+          "result": 554316,
+          "rpc_ms": 406,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.008,
+          "result": 554158,
+          "rpc_ms": 327,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.004,
+          "result": 554316,
+          "rpc_ms": 407,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.005,
+          "result": 554158,
+          "rpc_ms": 352,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 142,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:16:53.149Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 0,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.709,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.338,
+      "calldata": "00c4c9b5407abb6d",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.001,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.423,
+          "result": 748408,
+          "rpc_ms": 364,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.004,
+          "result": 748428,
+          "rpc_ms": 387,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.009,
+          "result": 748428,
+          "rpc_ms": 352,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.008,
+          "result": 748428,
+          "rpc_ms": 432,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.003,
+          "result": 748428,
+          "rpc_ms": 408,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.003,
+          "result": 748428,
+          "rpc_ms": 349,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.003,
+          "result": 748428,
+          "rpc_ms": 411,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.0,
+          "result": 748428,
+          "rpc_ms": 433,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.001,
+          "result": 748428,
+          "rpc_ms": 372,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 269,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:17:23.647Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 0,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.083,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.823,
+      "calldata": "c81fe216c18b2431",
+      "calldata_bytes": 2564,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": 3.001,
+        "first_rfq_reason": "RFQ_OrderExpired",
+        "last_success_age_s": 0.325,
+        "other_failures": [
+          "REVERTED"
+        ],
+        "rfq_failing": true
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.325,
+          "result": 516171,
+          "rpc_ms": 362,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.002,
+          "result": "REVERTED",
+          "rpc_ms": 357,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.004,
+          "result": "REVERTED",
+          "rpc_ms": 425,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": "RFQ_OrderExpired",
+          "rpc_ms": 372,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.003,
+          "result": "RFQ_OrderExpired",
+          "rpc_ms": 391,
+          "target_s": 5
+        }
+      ],
+      "quote_request_ms": 210,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:17:54.289Z",
+      "rfq_field_null": true,
+      "rfq_route": true,
+      "round": 0,
+      "route_names": [
+        {
+          "dex": "Rfq Neptunex",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.5,
+          "unit": "s"
+        },
+        {
+          "byte_offset": 1604,
+          "offset_vs_block_s": 2.0,
+          "offset_vs_response_s": 1.5,
+          "unit": "s"
+        },
+        {
+          "byte_offset": 2148,
+          "offset_vs_block_s": 2.0,
+          "offset_vs_response_s": 1.5,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.515,
+      "calldata": "940b5ef133da6491",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.004,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.427,
+          "result": 731064,
+          "rpc_ms": 360,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.0,
+          "result": 731064,
+          "rpc_ms": 404,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.005,
+          "result": 731064,
+          "rpc_ms": 358,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.009,
+          "result": 731064,
+          "rpc_ms": 422,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.009,
+          "result": 731064,
+          "rpc_ms": 456,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.008,
+          "result": 731064,
+          "rpc_ms": 377,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.0,
+          "result": 731064,
+          "rpc_ms": 399,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.004,
+          "result": 731064,
+          "rpc_ms": 408,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.004,
+          "result": 731064,
+          "rpc_ms": 383,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 196,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:17:59.893Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 1,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.91,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.054,
+      "calldata": "a35c7bf73ae2cea5",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.0,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.385,
+          "result": 553991,
+          "rpc_ms": 408,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.002,
+          "result": 553991,
+          "rpc_ms": 360,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.002,
+          "result": 553659,
+          "rpc_ms": 418,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.01,
+          "result": 554157,
+          "rpc_ms": 393,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.01,
+          "result": 554353,
+          "rpc_ms": 408,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 554353,
+          "rpc_ms": 387,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.003,
+          "result": 554353,
+          "rpc_ms": 413,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.009,
+          "result": 554107,
+          "rpc_ms": 338,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.0,
+          "result": 544471,
+          "rpc_ms": 422,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 195,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:18:30.476Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 1,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.329,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.696,
+      "calldata": "242c0cdb198747d2",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.001,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.358,
+          "result": 554272,
+          "rpc_ms": 433,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.001,
+          "result": 554272,
+          "rpc_ms": 403,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.002,
+          "result": 554272,
+          "rpc_ms": 356,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.002,
+          "result": 554272,
+          "rpc_ms": 405,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.009,
+          "result": 554360,
+          "rpc_ms": 325,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.005,
+          "result": 554105,
+          "rpc_ms": 364,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.001,
+          "result": 554105,
+          "rpc_ms": 416,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.006,
+          "result": 554263,
+          "rpc_ms": 456,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.001,
+          "result": 554360,
+          "rpc_ms": 420,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 247,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:19:01.092Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 1,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.66,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.243,
+      "calldata": "bab61538079b76e0",
+      "calldata_bytes": 2404,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.007,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.348,
+          "result": 750466,
+          "rpc_ms": 384,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 750466,
+          "rpc_ms": 401,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.005,
+          "result": 750466,
+          "rpc_ms": 394,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.004,
+          "result": 750466,
+          "rpc_ms": 361,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.007,
+          "result": 750466,
+          "rpc_ms": 446,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 750308,
+          "rpc_ms": 357,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.002,
+          "result": 750308,
+          "rpc_ms": 449,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.001,
+          "result": 750317,
+          "rpc_ms": 395,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.007,
+          "result": 750475,
+          "rpc_ms": 361,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 138,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:19:31.760Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 1,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        },
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.101,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.848,
+      "calldata": "65ac6c6b300ba4b9",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.009,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.425,
+          "result": 451829,
+          "rpc_ms": 411,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.006,
+          "result": 451829,
+          "rpc_ms": 358,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.005,
+          "result": 451829,
+          "rpc_ms": 404,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.003,
+          "result": 451829,
+          "rpc_ms": 391,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.009,
+          "result": 451829,
+          "rpc_ms": 388,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.01,
+          "result": 451829,
+          "rpc_ms": 374,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.009,
+          "result": 451829,
+          "rpc_ms": 352,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.003,
+          "result": 451829,
+          "rpc_ms": 434,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.009,
+          "result": 451829,
+          "rpc_ms": 391,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 159,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:20:02.266Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 1,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.575,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.436,
+      "calldata": "6871b75395bc8c83",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.001,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.413,
+          "result": 605817,
+          "rpc_ms": 340,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.006,
+          "result": 605718,
+          "rpc_ms": 371,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.005,
+          "result": 605718,
+          "rpc_ms": 419,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.003,
+          "result": 605817,
+          "rpc_ms": 368,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 605718,
+          "rpc_ms": 373,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.004,
+          "result": 605817,
+          "rpc_ms": 361,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.009,
+          "result": 605817,
+          "rpc_ms": 379,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.002,
+          "result": 605817,
+          "rpc_ms": 437,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.001,
+          "result": 605817,
+          "rpc_ms": 389,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 200,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:20:32.825Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 2,
+      "route_names": [
+        {
+          "dex": "Elfomofi",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.975,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.913,
+      "calldata": "87d0cb7a75190f29",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.007,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.356,
+          "result": 554107,
+          "rpc_ms": 370,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.001,
+          "result": 554107,
+          "rpc_ms": 426,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.0,
+          "result": 554107,
+          "rpc_ms": 402,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 554107,
+          "rpc_ms": 341,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.007,
+          "result": 554265,
+          "rpc_ms": 432,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 554265,
+          "rpc_ms": 398,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.001,
+          "result": 554265,
+          "rpc_ms": 426,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.007,
+          "result": 554107,
+          "rpc_ms": 452,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.007,
+          "result": 554107,
+          "rpc_ms": 422,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 145,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:21:03.414Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 2,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.44,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.513,
+      "calldata": "62c20b9abba82752",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.01,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.345,
+          "result": 554284,
+          "rpc_ms": 414,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.01,
+          "result": 554127,
+          "rpc_ms": 385,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.002,
+          "result": 554127,
+          "rpc_ms": 426,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.003,
+          "result": 554127,
+          "rpc_ms": 396,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.01,
+          "result": 554284,
+          "rpc_ms": 388,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 544509,
+          "rpc_ms": 379,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.003,
+          "result": 554304,
+          "rpc_ms": 394,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.004,
+          "result": 554137,
+          "rpc_ms": 442,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.01,
+          "result": 550864,
+          "rpc_ms": 391,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 183,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:21:33.988Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 2,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.829,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.192,
+      "calldata": "ecf5b37e15557d09",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.007,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.376,
+          "result": 748421,
+          "rpc_ms": 432,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.01,
+          "result": 748421,
+          "rpc_ms": 424,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.004,
+          "result": 748421,
+          "rpc_ms": 379,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.006,
+          "result": 748440,
+          "rpc_ms": 426,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.007,
+          "result": 748421,
+          "rpc_ms": 360,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.002,
+          "result": 748421,
+          "rpc_ms": 415,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.01,
+          "result": 748421,
+          "rpc_ms": 336,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.006,
+          "result": 748421,
+          "rpc_ms": 457,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.007,
+          "result": 748421,
+          "rpc_ms": 458,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 245,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:22:04.572Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 2,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.183,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.858,
+      "calldata": "02c61cef0fa57437",
+      "calldata_bytes": 2564,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": 3.01,
+        "first_rfq_reason": "RFQ_OrderExpired",
+        "last_success_age_s": 0.348,
+        "other_failures": [
+          "REVERTED"
+        ],
+        "rfq_failing": true
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.348,
+          "result": 516146,
+          "rpc_ms": 415,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.009,
+          "result": "REVERTED",
+          "rpc_ms": 345,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.01,
+          "result": "REVERTED",
+          "rpc_ms": 421,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.01,
+          "result": "RFQ_OrderExpired",
+          "rpc_ms": 378,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.006,
+          "result": "RFQ_OrderExpired",
+          "rpc_ms": 401,
+          "target_s": 5
+        }
+      ],
+      "quote_request_ms": 233,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:22:35.280Z",
+      "rfq_field_null": true,
+      "rfq_route": true,
+      "round": 2,
+      "route_names": [
+        {
+          "dex": "Rfq Neptunex",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.486,
+          "unit": "s"
+        },
+        {
+          "byte_offset": 1604,
+          "offset_vs_block_s": 2.0,
+          "offset_vs_response_s": 1.486,
+          "unit": "s"
+        },
+        {
+          "byte_offset": 2148,
+          "offset_vs_block_s": 2.0,
+          "offset_vs_response_s": 1.486,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.475,
+      "calldata": "fa46da439e3ebd12",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.01,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.404,
+          "result": 714869,
+          "rpc_ms": 417,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.004,
+          "result": 714869,
+          "rpc_ms": 425,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.008,
+          "result": 714869,
+          "rpc_ms": 388,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.001,
+          "result": 714869,
+          "rpc_ms": 345,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.012,
+          "result": 714869,
+          "rpc_ms": 433,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.01,
+          "result": 714869,
+          "rpc_ms": 385,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.01,
+          "result": 714869,
+          "rpc_ms": 431,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.009,
+          "result": 714869,
+          "rpc_ms": 386,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.01,
+          "result": 714869,
+          "rpc_ms": 455,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 152,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:22:40.921Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 3,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.927,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.036,
+      "calldata": "cb9aac842f8617ec",
+      "calldata_bytes": 1924,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.003,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.353,
+          "result": 410948,
+          "rpc_ms": 436,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.002,
+          "result": 410948,
+          "rpc_ms": 358,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.007,
+          "result": 410948,
+          "rpc_ms": 431,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.008,
+          "result": 410948,
+          "rpc_ms": 383,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.0,
+          "result": 410948,
+          "rpc_ms": 433,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.008,
+          "result": 410948,
+          "rpc_ms": 429,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.0,
+          "result": 410948,
+          "rpc_ms": 394,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.008,
+          "result": 410948,
+          "rpc_ms": 389,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.003,
+          "result": 410883,
+          "rpc_ms": 377,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 147,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:23:11.538Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 3,
+      "route_names": [
+        {
+          "dex": "Uniswap V4",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.314,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.634,
+      "calldata": "d7d6e2b4d55f70cb",
+      "calldata_bytes": 1700,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.009,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.323,
+          "result": 554139,
+          "rpc_ms": 331,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.01,
+          "result": 554139,
+          "rpc_ms": 361,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.01,
+          "result": 554316,
+          "rpc_ms": 332,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.007,
+          "result": 554395,
+          "rpc_ms": 363,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.004,
+          "result": 554395,
+          "rpc_ms": 433,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.01,
+          "result": 554139,
+          "rpc_ms": 355,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.002,
+          "result": 554316,
+          "rpc_ms": 391,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.003,
+          "result": 554316,
+          "rpc_ms": 332,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.009,
+          "result": 554316,
+          "rpc_ms": 380,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 249,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:23:42.065Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 3,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.686,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.181,
+      "calldata": "6eba7b0f9f448c8c",
+      "calldata_bytes": 2500,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.007,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.33,
+          "result": 639617,
+          "rpc_ms": 328,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.008,
+          "result": 639617,
+          "rpc_ms": 388,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.01,
+          "result": 639617,
+          "rpc_ms": 381,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.006,
+          "result": 639617,
+          "rpc_ms": 369,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.008,
+          "result": 618549,
+          "rpc_ms": 349,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.007,
+          "result": 639657,
+          "rpc_ms": 343,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.01,
+          "result": 639657,
+          "rpc_ms": 330,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.01,
+          "result": 639657,
+          "rpc_ms": 370,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.007,
+          "result": 639657,
+          "rpc_ms": 361,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 150,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:24:12.704Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 3,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        },
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.145,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.721,
+      "calldata": "07ebbf52a248f545",
+      "calldata_bytes": 2564,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": 3.007,
+        "first_rfq_reason": "RFQ_OrderExpired",
+        "last_success_age_s": 0.331,
+        "other_failures": [
+          "REVERTED"
+        ],
+        "rfq_failing": true
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.331,
+          "result": 516171,
+          "rpc_ms": 332,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.006,
+          "result": "REVERTED",
+          "rpc_ms": 361,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.008,
+          "result": "REVERTED",
+          "rpc_ms": 325,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.007,
+          "result": "RFQ_OrderExpired",
+          "rpc_ms": 379,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.01,
+          "result": "RFQ_OrderExpired",
+          "rpc_ms": 349,
+          "target_s": 5
+        }
+      ],
+      "quote_request_ms": 172,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:24:43.222Z",
+      "rfq_field_null": true,
+      "rfq_route": true,
+      "round": 3,
+      "route_names": [
+        {
+          "dex": "Rfq Neptunex",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.605,
+          "unit": "s"
+        },
+        {
+          "byte_offset": 1604,
+          "offset_vs_block_s": 2.0,
+          "offset_vs_response_s": 1.605,
+          "unit": "s"
+        },
+        {
+          "byte_offset": 2148,
+          "offset_vs_block_s": 2.0,
+          "offset_vs_response_s": 1.605,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.254,
+      "calldata": "21a0de5ff96b597c",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.009,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.328,
+          "result": 714159,
+          "rpc_ms": 362,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.008,
+          "result": 714159,
+          "rpc_ms": 344,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.001,
+          "result": 714869,
+          "rpc_ms": 346,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.005,
+          "result": 714889,
+          "rpc_ms": 343,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.005,
+          "result": 714179,
+          "rpc_ms": 338,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 714179,
+          "rpc_ms": 327,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.006,
+          "result": 731084,
+          "rpc_ms": 339,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.01,
+          "result": 731064,
+          "rpc_ms": 329,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.009,
+          "result": 713736,
+          "rpc_ms": 374,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 175,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:24:48.754Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 4,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.071,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.832,
+      "calldata": "1aa02a840825bc23",
+      "calldata_bytes": 2148,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.001,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.325,
+          "result": 449769,
+          "rpc_ms": 356,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 449769,
+          "rpc_ms": 349,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.01,
+          "result": 449769,
+          "rpc_ms": 367,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.01,
+          "result": 449769,
+          "rpc_ms": 332,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.009,
+          "result": 449769,
+          "rpc_ms": 334,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 449769,
+          "rpc_ms": 364,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.002,
+          "result": 450571,
+          "rpc_ms": 362,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.01,
+          "result": 450571,
+          "rpc_ms": 403,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.001,
+          "result": 450571,
+          "rpc_ms": 340,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 199,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:25:19.311Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 4,
+      "route_names": [
+        {
+          "dex": "Uniswap V4",
+          "percent": "100.00"
+        },
+        {
+          "dex": "Uniswap V4",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.489,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.372,
+      "calldata": "f66f4de721ebd04d",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.001,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.327,
+          "result": 748489,
+          "rpc_ms": 331,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.004,
+          "result": 748489,
+          "rpc_ms": 333,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.007,
+          "result": 748489,
+          "rpc_ms": 330,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.004,
+          "result": 748469,
+          "rpc_ms": 334,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.007,
+          "result": 748469,
+          "rpc_ms": 385,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.003,
+          "result": 748469,
+          "rpc_ms": 541,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.005,
+          "result": 748489,
+          "rpc_ms": 364,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.0,
+          "result": 748489,
+          "rpc_ms": 339,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.001,
+          "result": 748489,
+          "rpc_ms": 343,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 197,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:25:49.851Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 4,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 501.0,
+          "offset_vs_response_s": 499.952,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.9,
+      "calldata": "8fe6fc884c374571",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.001,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.346,
+          "result": 731111,
+          "rpc_ms": 342,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.004,
+          "result": 731111,
+          "rpc_ms": 369,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.01,
+          "result": 731111,
+          "rpc_ms": 335,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.005,
+          "result": 731111,
+          "rpc_ms": 335,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.006,
+          "result": 731111,
+          "rpc_ms": 335,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 731111,
+          "rpc_ms": 338,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.01,
+          "result": 731111,
+          "rpc_ms": 365,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.01,
+          "result": 731111,
+          "rpc_ms": 364,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.001,
+          "result": 731111,
+          "rpc_ms": 337,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 166,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:26:20.390Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 4,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.444,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.379,
+      "calldata": "bc38891406e19431",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.004,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.319,
+          "result": 451829,
+          "rpc_ms": 354,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.008,
+          "result": 451829,
+          "rpc_ms": 354,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.001,
+          "result": 451829,
+          "rpc_ms": 338,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.005,
+          "result": 451829,
+          "rpc_ms": 367,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 451829,
+          "rpc_ms": 330,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.008,
+          "result": 451829,
+          "rpc_ms": 327,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.002,
+          "result": 451829,
+          "rpc_ms": 358,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.008,
+          "result": 451829,
+          "rpc_ms": 372,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.004,
+          "result": 451829,
+          "rpc_ms": 364,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 169,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:26:50.894Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 4,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.937,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.936,
+      "calldata": "f6c4a885b386f8cc",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.005,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.329,
+          "result": 404433,
+          "rpc_ms": 356,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.003,
+          "result": 404433,
+          "rpc_ms": 367,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.004,
+          "result": 404433,
+          "rpc_ms": 329,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.01,
+          "result": 404433,
+          "rpc_ms": 332,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.001,
+          "result": 404433,
+          "rpc_ms": 382,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.006,
+          "result": 404433,
+          "rpc_ms": 353,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.006,
+          "result": 404433,
+          "rpc_ms": 1266,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.001,
+          "result": 404422,
+          "rpc_ms": 509,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.005,
+          "result": 404417,
+          "rpc_ms": 375,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 178,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:27:21.431Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 5,
+      "route_names": [
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "NVDAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.39,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.593,
+      "calldata": "18e443813e13767d",
+      "calldata_bytes": 1924,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.005,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.43,
+          "result": 410837,
+          "rpc_ms": 350,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.0,
+          "result": 410837,
+          "rpc_ms": 395,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.005,
+          "result": 410837,
+          "rpc_ms": 320,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.0,
+          "result": 410837,
+          "rpc_ms": 384,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.003,
+          "result": 410837,
+          "rpc_ms": 380,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.002,
+          "result": 410837,
+          "rpc_ms": 384,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.005,
+          "result": 410869,
+          "rpc_ms": 398,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.004,
+          "result": 410869,
+          "rpc_ms": 351,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.005,
+          "result": 410873,
+          "rpc_ms": 402,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 177,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:27:51.989Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 5,
+      "route_names": [
+        {
+          "dex": "Uniswap V4",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "GOOGLB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.834,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.078,
+      "calldata": "bb86d7cf9dcd4ace",
+      "calldata_bytes": 1636,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.003,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.349,
+          "result": 748457,
+          "rpc_ms": 365,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.004,
+          "result": 748476,
+          "rpc_ms": 405,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.003,
+          "result": 748476,
+          "rpc_ms": 380,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.003,
+          "result": 748476,
+          "rpc_ms": 429,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.004,
+          "result": 748457,
+          "rpc_ms": 429,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.004,
+          "result": 748457,
+          "rpc_ms": 401,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.002,
+          "result": 748457,
+          "rpc_ms": 448,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.004,
+          "result": 748457,
+          "rpc_ms": 347,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.003,
+          "result": 748457,
+          "rpc_ms": 419,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 160,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:28:22.571Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 5,
+      "route_names": [
+        {
+          "dex": "Tessera V",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "SKHYB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.269,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 0.683,
+      "calldata": "73deb2d9e29d237b",
+      "calldata_bytes": 2404,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.002,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.349,
+          "result": 746483,
+          "rpc_ms": 431,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.005,
+          "result": 746483,
+          "rpc_ms": 361,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.005,
+          "result": 746660,
+          "rpc_ms": 431,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.005,
+          "result": 749505,
+          "rpc_ms": 559,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.005,
+          "result": 749347,
+          "rpc_ms": 404,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.001,
+          "result": 742467,
+          "rpc_ms": 378,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.005,
+          "result": 749505,
+          "rpc_ms": 396,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.003,
+          "result": 743623,
+          "rpc_ms": 327,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.002,
+          "result": 747530,
+          "rpc_ms": 399,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 184,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:28:53.153Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 5,
+      "route_names": [
+        {
+          "dex": "Metric V2",
+          "percent": "100.00"
+        },
+        {
+          "dex": "Pancakeswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "TSLAB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.663,
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "block_age_at_quote_s": 1.262,
+      "calldata": "e142d1b7d2553785",
+      "calldata_bytes": 1796,
+      "classification": {
+        "arrived_expired": false,
+        "first_rfq_failure_age_s": null,
+        "first_rfq_reason": null,
+        "last_success_age_s": 30.003,
+        "other_failures": [],
+        "rfq_failing": false
+      },
+      "execution_mode": "SWAP",
+      "probes": [
+        {
+          "age_s": 0.353,
+          "result": 414751,
+          "rpc_ms": 350,
+          "target_s": 0
+        },
+        {
+          "age_s": 1.003,
+          "result": 414751,
+          "rpc_ms": 395,
+          "target_s": 1
+        },
+        {
+          "age_s": 2.005,
+          "result": 414751,
+          "rpc_ms": 341,
+          "target_s": 2
+        },
+        {
+          "age_s": 3.005,
+          "result": 414751,
+          "rpc_ms": 357,
+          "target_s": 3
+        },
+        {
+          "age_s": 5.004,
+          "result": 414751,
+          "rpc_ms": 384,
+          "target_s": 5
+        },
+        {
+          "age_s": 8.003,
+          "result": 414751,
+          "rpc_ms": 369,
+          "target_s": 8
+        },
+        {
+          "age_s": 12.005,
+          "result": 414751,
+          "rpc_ms": 397,
+          "target_s": 12
+        },
+        {
+          "age_s": 20.005,
+          "result": 414751,
+          "rpc_ms": 433,
+          "target_s": 20
+        },
+        {
+          "age_s": 30.003,
+          "result": 414751,
+          "rpc_ms": 395,
+          "target_s": 30
+        }
+      ],
+      "quote_request_ms": 175,
+      "quoted_gas": 250000,
+      "quoted_utc": "2026-10-27T13:29:23.737Z",
+      "rfq_field_null": true,
+      "rfq_route": false,
+      "round": 5,
+      "route_names": [
+        {
+          "dex": "Uniswap V3",
+          "percent": "100.00"
+        }
+      ],
+      "symbol": "MSFTB",
+      "timestamp_values": [
+        {
+          "byte_offset": 708,
+          "offset_vs_block_s": 500.0,
+          "offset_vs_response_s": 499.088,
+          "unit": "s"
+        }
+      ]
+    }
+  ],
+  "rounds": 6,
+  "rpc_fingerprint": "2e478f4aa0413423",
+  "schema": "RfqValidityCheck.v1",
+  "side": "BUY",
+  "signing_enabled": false,
+  "slippage_percent": "0.2",
+  "status": "DONE",
+  "targets_s": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    8,
+    12,
+    20,
+    30
+  ],
+  "verdict": "RFQ_VALIDITY_WINDOW_OBSERVED"
+}
