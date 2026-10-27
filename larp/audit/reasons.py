@@ -52,6 +52,8 @@ REJECTION = {
     'PARTIAL_VALUATION_NEW_RISK_BLOCKED': 'incomplete valuation blocks new risk',
     'QUOTE_PENDING': 'waiting for a quote',
     'MANDATORY_REDUCTION_PENDING': 'mandatory reduction pending',
+    'TEMP_SELF_CHECK_ONLY': 'temporary self-check run: no other buy',
+    'TEMP_SELF_CHECK_SIZE': 'temporary self-check buy would reach 1 USDT',
 }
 MAX_PHRASES = 3
 UNAVAILABLE = 'Reason summary unavailable: the round record has an unexpected shape.'

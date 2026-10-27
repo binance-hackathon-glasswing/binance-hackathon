@@ -65,3 +65,43 @@ Host qualification and owner approval are out of scope here and remain required:
 - the signer's CAP-02 policy for sub-1-USDT legs;
 - fresh final-wallet quotes and caps;
 - registration and version event.
+
+- 2026-10-28 correction (Claude Code): the zero-allowance revoke route (OBS03-B1) was merged in PR310 at `05b7aa6d` but has not been live-qualified. The Cost / risk line above calls the S5-OBS03 defect current; read it as "fixed in source, not yet confirmed live".
+
+## Results (offline, 2026-10-28 SGT; branch `claude/final-selfcheck-temp-20261028`, not pushed or merged)
+
+What changed:
+
+| Area | Change |
+|---|---|
+| `larp/strategy/self_check.py` | Temp policy scope, the 1000bp floor (`temp_floor`) and the pay bounds |
+| `larp/strategy/policy.py` | No S1 risk window under the temp policy |
+| `larp/risk/planner.py` | Its only BUY is the self-check, in its BUY phase (`TEMP_SELF_CHECK_ONLY`). The self-check BUY uses the temp floor and the 1000bp entry cap. Cash + fee ≥ 1 USDT is refused (`TEMP_SELF_CHECK_SIZE`) |
+| `larp/audit/reasons.py` | Both new rejection reasons |
+| `larp/marketdata/history.py` | The temp policy needs the token history, like FS1 |
+| `tools/deploy/build_selfcheck_temp.py` | The generator |
+| `tools/deploy/prepare_fs1.py` | `--temp-self-check`, plus `--temp-stamp` (at most 30 minutes old) so the caps/services rerun reproduces the same profile bytes |
+| `docs/build/ops/final-selfcheck-temp/` | Run sheet and a temp P4 |
+
+Results against the pass criteria:
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| TS-1 | PASS | Stamping at 2026-10-27T18:00:30Z gives a buy window of 18:01–19:01Z, flat by 20:01Z, a terminal flatten at 20:02Z and signing end at 21:01Z. The output is byte-identical across runs (StrategyProfile.v1 `a1a72380…`, file `1cd2142a…`). The floor is 588,951 units. A stamp after 2026-10-28T07:00Z is refused. |
+| TS-2 | PASS | Every out-of-scope variant listed is refused. FS1 `b8ba06e2…` still validates. |
+| TS-3 | PASS | At about 6% gas: exactly one non-mandatory SKHYB BUY with cash + fee < 1 USDT. The same buy without the temp policy is refused (`ENTRY_COST_CAP`). About 11% gas is refused. |
+| TS-4 | PASS | No BUY in the S1 window, after BOUGHT/DONE, or after the buy window. A forged S1 target is refused with `TEMP_SELF_CHECK_ONLY` both inside and outside the S1 window. |
+| TS-5 | PASS | A held position is sold whole by a mandatory SELL. After EXPIRED, the terminal flatten covers what's left. |
+| TS-6 | PASS | Preparation produces the temp run, database and directories. FS1 preparation is byte-for-byte unchanged. Mixed identities are refused. The CLI prints the stamp, and reusing it reproduces the profile. |
+| TS-7 | PASS with one environment failure | See below. |
+
+How the checks were run:
+- **New tests:** 19 in `tests/strategy/test_selfcheck_temp.py` and `tests/runtime/test_selfcheck_temp_prepare.py`.
+- **Red checks:** removing the planner or policy guard fails the forged-target and no-S1-risk tests.
+- **TS-7 full suite:** local Python 3.12.14 (not the pinned 3.12.15) on macOS, against a disposable PostgreSQL 14.24 container.
+  - Result: 3148 passed, 10 skipped, 1 failed, 4172 subtests passed.
+  - The one failure is `tests/runtime/test_archive_budget.py::Budget::test_ar7_full_verification_memory_does_not_grow_with_the_journal`. Its memory probe crashes on macOS. It fails identically on unmodified `c1e23729`, so it is not caused by this change.
+  - A focused rerun after the `--temp-stamp` change (strategy, risk, audit, FS1/S5 preparation) gave 648 passed and 45 skipped (PostgreSQL tests skipped).
+- Linux, pinned-image and hosted CI have not been run.
+
+Remaining, unchanged from the criteria section: review and merge, then release and registration (F-125). Owners also need to decide on this extra version event and on FS1's own 32-USDT self-check. Before install, the signer's CAP-02 must accept a sub-1-USDT leg, and fresh final-wallet quotes/caps are needed. The install must finish inside the stamped hour. Live evidence is then needed: both `tx_hash` values, DONE, and a flat wallet with no allowance before FS1 preparation.
