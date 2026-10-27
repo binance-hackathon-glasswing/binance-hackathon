@@ -804,6 +804,37 @@ criteria had not anticipated:
 Interpretation rules are unchanged; an encoded short time is evidence about the order's intended lifetime, while the
 probe outcomes remain the measurement.
 
+### OBS03-B2-RV01 results (2026-10-27, live read-only)
+
+Tool `cd7cce73`, run 13:15:51–13:29:54Z from a workstation (`BSC_BNBCHAIN_PUBLIC`, 6 rounds × 5 symbols, BUY
+15 USDT). Packet: [rfq-validity-rv01-20261027.json](../build/evidence/rfq-validity-rv01-20261027.json), SHA-256
+`ea2884c81bc41a9a472e9ff61f5b1a3999a5a32073deb5b8c9ffd8e2cd2954ec`. No signature, approval, broadcast, host, wallet or
+profile change; raw quote responses were kept outside the repo.
+
+- RV-1..RV-5 PASS: 9 offline tests plus `test_quote_check.py` (19 passed, 17 subtests); the override proof held;
+  the packet holds no credential, RPC URL, wallet or calldata.
+- First probes ran 0.32–0.43 s after the quote response; quote requests took 138–247 ms.
+- **Verdict `RFQ_VALIDITY_WINDOW_OBSERVED`.** 3 of 30 quotes were RFQ-routed, all MSFTB, all named `Rfq Neptunex`
+  (100 %). Each was executable at its first probe (0.33, 0.35 and 0.33 s), reverted at 1.0 s and 2.0 s (no reason
+  string), and returned `RFQ_OrderExpired` at 3.0 s and 5.0 s. Observed validity bounds: (0.33, 1.0] s. None arrived
+  expired.
+- Each RFQ calldata carried a packed Unix time 1.49–1.61 s after the quote response, which matches the observed
+  window: the maker's order is built to live about 1.5 s (time resolution is whole seconds).
+- The other 27 quotes (all five symbols, including MSFTB three times through Pancakeswap V3 or Uniswap V3) used AMM
+  routes (Tessera V, Metric V2, Pancakeswap V3, Uniswap V3/V4, Elfomofi) and simulated successfully at every probe
+  through 30 s. The route name matched the failures exactly: every `Rfq` quote failed and no other did.
+
+Conclusions (observations for owners, not adopted decisions):
+- The RFQ order lives about 1.5 s from the quote response. Run 8 needed about 5 s from re-quote to gas estimate, and
+  the signed path adds signing and broadcast, so no realistic latency reduction makes an RFQ route usable. NEXT01-R1's
+  retry of the whole quote/gas step can only help when the next quote happens to be an AMM route.
+- RFQ routes are detectable at quote time from `dexProtocol.dexName`, which corrects IDEA-070 LD02c R1/R4. Treating
+  an `Rfq` route as a refused quote (re-quote within the existing probe budget, else skip the leg) would avoid the
+  approve-then-expire pattern; refusing it before the approve also avoids the open allowance seen in run 8. That is an
+  execution change needing its own criteria and Isaac/Keegan's acceptance.
+- Scope: one 14-minute window on a Tuesday (US market hours), one size, BUY only. The maker's lifetime and how often
+  RFQ is chosen may differ at other times, sizes or for SELL. This is not a guaranteed TTL.
+
 ## S5-COST01 — separate cash cushion from discretionary cost admission (proposal)
 
 Yao requested a new review PR on 2026-10-27 after confirming gas is already
