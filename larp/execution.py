@@ -515,6 +515,11 @@ class Executor:
             self._validate(state, step, payload, gates, now)
             if step == "SWAP" and payload.to != state.intent.router:
                 raise Blocked("requoted router differs from approved spender")
+        except DependencyUnavailable as error:
+            # NEXT01-R1: transient quote/gas failures may consume the remaining original probes.
+            # Never discard a confirmed approval on the first port failure; the next prepare re-quotes.
+            # The service still aborts into cleanup at the original probe/authority boundary.
+            return self._save(state, replace(state, blocked_reason=str(error)), "PREPARE_BLOCKED", gates)
         except Blocked as error:
             state = self._save(state, replace(state, blocked_reason=str(error)), "PREPARE_BLOCKED", gates)
             if approved and self.allowance_recovery and not state.abort_pending:
