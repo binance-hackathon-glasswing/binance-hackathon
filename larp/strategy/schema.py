@@ -59,6 +59,12 @@ def review_options(p):
         if key in p and (p.get("baseline") != "TREND_GUARDED_VOL"
                          or type(p[key]) is not int or p[key] != decided):
             raise ContractError(key + " requires S1 and the exact PR278-RV01 value " + str(decided))
+    if 's5_entry_cost_cap_bps' in p:
+        if (p.get('baseline') != 'TREND_GUARDED_VOL' or p.get('environment') != 'REHEARSAL'
+                or p.get('policy_id') != 'larp-s5-rehearsal-v1' or p.get('s1_capital_basis') != 'EXCLUDE_GAS'
+                or p.get('entry_cost_basis') != 'AUTHORIZED_MINIMUM' or 's5_entry_lot_units' in p
+                or type(p['s5_entry_cost_cap_bps']) is not int or p['s5_entry_cost_cap_bps'] != 200):
+            raise ContractError('S5 small-wallet cost cap requires exact 200bp, proportional gas-excluded S5 REHEARSAL')
     if 's5_entry_lot_units' in p:
         if (p.get('baseline') != 'TREND_GUARDED_VOL' or p.get('environment') != 'REHEARSAL'
                 or p.get('policy_id') != 'larp-s5-rehearsal-v1' or p.get('s1_capital_basis') != 'EXCLUDE_GAS'

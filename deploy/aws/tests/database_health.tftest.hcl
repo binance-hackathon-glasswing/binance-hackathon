@@ -65,3 +65,19 @@ run "db2_query_and_lock_visibility" {
     error_message = "DB2: the preload library applies at the next reboot, never immediately."
   }
 }
+
+run "s5_maintenance_and_host_credit_coverage" {
+  command = plan
+  variables {
+    enable_hosts = true
+    ami_id       = "ami-0123456789abcdef0"
+  }
+  assert {
+    condition     = aws_db_instance.larp.backup_window == "16:00-16:30" && aws_db_instance.larp.maintenance_window == "sat:16:30-sat:17:00"
+    error_message = "Scheduled database work must avoid23:30-01:00UTC and S5/FS1 terminal flatten windows."
+  }
+  assert {
+    condition     = toset(keys(aws_cloudwatch_metric_alarm.host_cpu_credit)) == toset(["primary", "signer"]) && alltrue([for a in aws_cloudwatch_metric_alarm.host_cpu_credit : a.namespace == "AWS/EC2" && a.metric_name == "CPUCreditBalance" && a.threshold == 20 && a.period * a.evaluation_periods == 900 && length(a.alarm_actions) > 0])
+    error_message = "Both EC2 roles need notifying CPU-credit alarms."
+  }
+}

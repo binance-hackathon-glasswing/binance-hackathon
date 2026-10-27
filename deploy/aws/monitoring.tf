@@ -185,3 +185,20 @@ resource "aws_cloudwatch_metric_alarm" "service" {
   alarm_actions       = local.alarm_actions
   dimensions          = { Deployment = var.name, Service = each.value.service }
 }
+
+# S5-SMALL01: standard-credit EC2 hosts throttle when credits are exhausted.
+resource "aws_cloudwatch_metric_alarm" "host_cpu_credit" {
+  for_each            = aws_instance.host
+  alarm_name          = "${var.name}-${each.key}-cpu-credit-balance"
+  alarm_description   = "EC2 CPU credits below20 for15minutes on ${each.key}; standard credits may throttle. Inspect load and memory before resizing. ${local.alarm_footer}"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 3
+  metric_name         = "CPUCreditBalance"
+  namespace           = "AWS/EC2"
+  period              = 300
+  statistic           = "Minimum"
+  threshold           = 20
+  treat_missing_data  = "breaching"
+  alarm_actions       = local.alarm_actions
+  dimensions          = { InstanceId = each.value.id }
+}

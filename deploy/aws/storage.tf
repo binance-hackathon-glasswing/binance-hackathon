@@ -116,6 +116,8 @@ resource "aws_db_instance" "larp" {
   publicly_accessible                 = false
   multi_az                            = var.multi_az
   backup_retention_period             = var.backup_retention_days
+  backup_window                       = "16:00-16:30"
+  maintenance_window                  = "sat:16:30-sat:17:00"
   deletion_protection                 = !var.allow_teardown
   skip_final_snapshot                 = false
   final_snapshot_identifier           = "${var.name}-final"

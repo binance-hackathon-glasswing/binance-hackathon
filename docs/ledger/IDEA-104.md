@@ -574,3 +574,33 @@ its own criteria before code (AGENTS.md): (1) slim per-event payloads (ARCH-01 /
 instance class or memory (IDEA-109 S-07); (3) apply DB1/DB2 so the next stall names its queries;
 (4) re-size the backup bound or the first-segment strategy for a run of this volume; (5) restart pacing so
 crash loops do not repeat full verification.
+
+## S5-SMALL01 — proportional small-wallet rehearsal, Oct27 19:00SGT flatten
+
+User instruction, 2026-10-27 SGT: amend S5 to buy now and sell at19:00, to exercise FS1 on a smaller wallet and shorter timeline. This is a development rehearsal only. FS1 FINAL remains unchanged.
+
+Design, registered before implementation/tests: replace the S5-only19-USDT high-level lot with ordinary FS1 proportional targets at every trend/limiter level. For this smaller wallet only, adopt `s5_entry_cost_cap_bps=200` (2%) instead of FS1's50bp. Recompute the measured entry minimum against the same200bp; the exact quote gate also uses200bp. Keep authorized-minimum output,20bp slippage, measured impact,0.10USDT cost reserve, all risk/model/history/gas/recovery and serial-wallet controls. This deliberately changes rehearsal economics; it is pipeline evidence, not an equivalent after-cost FS1 return experiment. No human-selected instrument or order.
+
+Window (UTC): trade_after2026-10-27T04:00Z (12:00SGT, immediate on deployment); new_risk_end10:00Z (18:00SGT); flatten_start11:00Z (19:00SGT); signing_end15:00Z (23:00SGT). Sell starts at19:00; completion depends on autonomous execution and market availability. Install as fresh run8 on a reconciled flat development wallet to preserve run7's journal and avoid its growing cold-start history.
+
+Prospective pass criteria:
+- SMALL-1: live validation accepts the exact200bp opt-in only for gas-excluded S5 REHEARSAL; FINAL/other policies, malformed values and simultaneous19-USDT lot are refused. Historical profiles retain50bp behaviour.
+- SMALL-2: builder/profile/probe reproduce; measured minimum is computed from200bp, below the ordinary30%/60% targets at recorded wallet size; all four FS1 files and S4 rebuild byte for byte.
+- SMALL-3: flat DOWN60% generates ordinary proportional BUYs; five serial synthetic settlements fit cash/gross limits with no immediate sell-back, including process-state reconstruction. High/low/limiter levels preserve proportional targets; risk halts, market closure, gas, quote-cost/impact and total/name caps remain effective.
+- SMALL-4: quotes above200bp or the cost reserve are refused; no opt-in keeps50bp. Buys stop18:00SGT; all holdings become mandatory sells19:00SGT; signing ends23:00SGT.
+- SMALL-5: appropriate strategy/risk/preparation/execution/ops checks and pinned full-suite pass with exact counts. Publish code before any host execution; fresh capture/caps/signing policy and registered manifest must bind the new profile. Verify actual history/model/log delivery and report observed autonomous orders honestly.
+
+User-requested diagnosis included in SMALL01: the first BUY quote was valid, then completed history changed the trend from UP95% to DOWN60%. Ordinary targets became9.75USDT/name, below18.637420USDT; the old19USDT floor applied only at95%. No execution request reached the signer. DOWN persisted in sampled states. SMALL-3 explicitly covers UP quote followed by DOWN history and proportional requoting.
+Infrastructure before install (user request): apply IDEA-100 DB1/DB2/DB5, applicable pending maintenance, one planned RDS reboot and pg_stat_statements; set maintenance/backup windows outside23:30–01:00UTC and flatten; verify both EC2 CPU-credit alarms and primary memory. Preserve all old journals and shared budget.
+
+SMALL-INFRA prospective acceptance: two notifying EC2 CPU-credit alarms (20credits/15minutes); daily backup16:00–16:30UTC and maintenanceSat16:30–17:00UTC avoid23:30–01:00UTC, S5 sells11:00–15:00UTC and FS1's Tue19:00–Wed14:45UTC flatten. Use db.t4g.small (2GiB) for the memory-constrained database; primary/signing EC2 sizes stay unchanged when inspection shows adequate memory/credits. Pending OS maintenance is applied only after stopping all run7 database clients, with no in-flight transaction. Verify parameter preload, extension and monitoring after recovery. These windows constrain scheduled work and cannot prohibit urgent AWS maintenance.
+
+SMALL01 preliminary verification: focused strategy/risk/execution/FS1 preparation/archive checks862 passed,92 environment skips,1157 subtests; all14 new small-wallet regressions pass, including the valid UP quote -> DOWN history -> correctly resized requote -> BUY. Historical SIZE01 tests retain archived input bytes. New run8 and historical run7 pin/scope/static checks28 pass. Terraform validate and22 mock tests pass. Full pinned suite still running; no claim of host acceptance.
+
+Infrastructure constraint: AWS rejected db.t4g.small with FreeTierRestrictionError (free-plan account). No account-plan upgrade is authorized or attempted; retain db.t4g.micro and complete monitoring/windows/maintenance. Two host-credit alarms and query parameters applied before the resize refusal. Database size increase remains an explicit blocked optional improvement.
+
+### SMALL01 source acceptance (2026-10-27)
+
+Application source includes canonical PR303 (e3105689) via normal merge3869f8e1; no history rewrite. Pinned Linux/Python3.12.15/PostgreSQL14.24 suite on integrated runtime: **3038 passed,11 environment skips,4114 subtests,0 failures**. All3 operating-system sandbox cases pass separately in existing bubblewrap-enabled image. Offline demo passes in that image (base image lacks bubblewrap and cannot run the isolated demo). Final separate tests after two test/setup additions: **23 passed** (15 SMALL01 plus8 run8 sheet checks); recovery-focused PostgreSQL set **73 passed/106subtests**. Terraform validate and22 mock tests pass. The earlier three Git-sensitive failures were container metadata access, corrected by read-only Git metadata mounting; no ignored/private files were made tracked.
+
+SMALL-1..4 PASS offline: exact REHEARSAL scope, minimum3192045 microUSDT, unchanged FS1 hashes, DOWN requote/execution, all5 serial settlements at95/60/30 with reconstructed state, independent200bp rejection boundary, prior50bp refusal, risk/gas/market/integrity gates and18:00/19:00/23:00 window checks. SMALL-5 source verification PASS; fresh host/caps/deployment/order acceptance remains in progress. Source and ops are pushed before execution.
