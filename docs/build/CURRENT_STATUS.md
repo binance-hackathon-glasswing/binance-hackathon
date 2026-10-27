@@ -1,5 +1,7 @@
 # Current shared build and remaining work
 
+PR318-RV01 source review accepted (Oct27; source `a857d03d`, not deployed): bStock planning/execution request the empirically tested non-RFQ hint and reject RFQ-named execution routes. Review repairs enforce private collector output (including default TMPDIR), preserve native quote scope and correct the unverified API-documentation claim. Pinned Linux/PG full suite3108 passed/4154 subtests,zero failures/8 skips; non-root rerun adds1 pass, leaving5 systemd/2 optional fixtures unrun. Exact release/host/live RQ-5/RQ-8 and AMM entry-cost acceptance remain with the release/operator/strategy owners. PR317 remains separate. [Review](PR318_REVIEW_20261027.md).
+
 S5-COST01 (Oct27, review candidate): opt-in initial-gas S5 cash/cost separation
 permits a zero USDT cushion with an independently sourced positive cost ceiling.
 Affected Linux/Python3.12.15/PostgreSQL14.24 suites:588 passed/87 subtests,zero

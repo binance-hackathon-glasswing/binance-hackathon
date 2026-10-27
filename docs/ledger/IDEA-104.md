@@ -869,8 +869,10 @@ Pass criteria:
 
 Keith asked on 2026-10-27 that the change actually fix the RFQ issue; refusal alone only skips RFQ quotes.
 The original preparation note claimed the official Web3 trading-API page documented `enableRFQ`, its defaults,
-`excludeDexes` and a short-deadline warning. **PR318-RV01 correction:** a fresh read of that page and its Flash API
-query table could not reproduce any of those entries. Those documentation/default claims are unverified and are
+`excludeDexes` and a short-deadline warning. **PR318-RV01 correction:** the web-readable page, Flash API query table
+and linked schema snapshots available to this reviewer could not reproduce any of those entries. Their crawl dates
+were older; a direct HTML download returned an empty body and is not usable verification of current documentation.
+Those documentation/default claims are unverified and are
 not the basis for adoption. `enableRFQ=false` is retained as an empirically tested request hint from the RV02
 packet below, with RFQ-name refusal as the execution backstop; provider support and a route/TTL guarantee are not
 inferred. Neither parameter appears in the verbatim kit. The endpoint, vendor, local signing and router stay the
@@ -1140,8 +1142,8 @@ Review findings and prospective pass criteria:
   in-repository, existing or symlinked target. Reject checkout paths (including linked worktree source roots),
   symlink aliases and existing directories before credential/network access; create a new private directory
   outside the checkout. Offline refusal tests must prove no credentials or network calls occur.
-- RV318-2: the fresh official trading-API HTML and web-readable query table did not contain `enableRFQ`,
-  `excludeDexes` or the claimed default/short-deadline statement. Correct the unsupported documentation claim;
+- RV318-2: the available web-readable official trading-API query table did not contain `enableRFQ`,
+  `excludeDexes` or the claimed default/short-deadline statement. Correct the unverified documentation claim;
   retain RV02 as observed parameter/route evidence, not an independently verified vendor contract or TTL guarantee.
   Keep the RFQ-name refusal and all economic/gas/nonce/signer limits. Do not change native gas-top-up quote
   parameters, which RV02 did not qualify; add a synthetic request-scope regression.
@@ -1151,5 +1153,32 @@ Review findings and prospective pass criteria:
   Keep exact release/host/live RQ-5/RQ-8 acceptance open; this is source acceptance for merge only.
 
 Official page checked: https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/trading-api
-(fresh unauthenticated HTML and visible Flash API query table, 2026-10-27). Absence from this check does not prove
-the backend refuses the parameter; it prevents presenting the documentation/default claim as independently verified.
+(visible Flash API query table and linked OpenAPI1.0 schema, inspected 2026-10-27; available web snapshots had
+older crawl dates). A direct HTML download produced an empty body, so it is not usable current-source evidence.
+Absence from the readable snapshots does not prove the backend refuses the parameter; it prevents presenting the
+documentation/default claim as independently verified.
+
+### PR318-RV01 results — source accepted for merge
+
+User delegated conditional review/fix/merge. Canonical `305bccfa` was merged normally; reviewed runtime/tool/test
+source is `a857d03d`. Collector raw output now refuses checkout paths/symlink aliases, existing targets and a
+repository-local default TMPDIR before credentials/network access; successful new targets are private0700.
+The RFQ hint/backstop applies only to bStock intents, preserving native gas-top-up request/route behavior.
+Unverified official-documentation/default claims are corrected; RV02 remains empirical evidence, not a provider
+contract or route/TTL guarantee. Original execution/signing/economic limits and captured packets are unchanged.
+
+Meaningful red regressions reached credentials for forbidden output paths, failed new-directory creation and
+showed the unintended native request parameter; final focused24 tests/30 subtests pass. Full pinned
+Linux/Python3.12.15/PG14.24:3108 passed/4154 subtests,8 skipped,zero failures in301.84seconds. One skipped
+root-directory-mode case passes separately as non-root, giving3109 distinct passes and7 unrun (5 systemd,
+2 optional external/private fixtures). Earlier author macOS clear_refs failure passes here. Preliminary full run
+was stopped for the default-temp guard follow-up; final results above are on the pushed final source. Demo,
+pip/diff checks pass. Hosted Actions40529179769 did not start due account payments/spending limits.
+
+Original RV01/RV02 hashes and summaries/classification/actual-age/cost arithmetic reproduce. RV01:30 quotes,
+3 RFQ routes,246 successful simulations/258 total. RV02:30 quotes,zero RFQ routes,270/270 simulations successful.
+No private raw replay or new live provider measurement. Release owner retains exact release/systemd/bundle;
+approved operator retains registered both-host and live RQ-5/RQ-8 acceptance; strategy owners retain actual AMM
+cost admission. PR317's preparation repair remains separate. No host/key/wallet/profile/policy/deployment or
+whole GAP closure. [Review](../build/PR318_REVIEW_20261027.md) /
+[receipt](../build/evidence/pr318-review-20261027.json).
