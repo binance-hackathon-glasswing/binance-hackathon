@@ -59,7 +59,7 @@
   `activation_self_check` and its provenance, and is reproducible byte for byte.
 - MSC-8: the full strategy and risk test directories pass.
 
-## 3. Results (2026-10-28 01:00 SGT, offline, Python 3.12 venv from `requirements.lock`, no PostgreSQL)
+## 3. Results (2026-10-28 00:45 SGT, offline, Python 3.12 venv from `requirements.lock`, no PostgreSQL)
 
 - MSC-1 PASS: the FS1 and FS1-recovery builders reproduce `fs1-final.json` (`19176e6c…`) and
   `fs1-final-recovery.json` (`b8ba06e2…`) byte for byte; `tests/strategy/test_fs1_self_check.py` passes unchanged.
