@@ -1,0 +1,45 @@
+{
+  "id": "IDEA-080 OPS-T1-20261027",
+  "canonical_source": "a2252760",
+  "region": "ap-southeast-2",
+  "instance_id": "i-0f8fe5d5fe5ccba36",
+  "t1": {
+    "plan": {
+      "add": 8,
+      "change": 0,
+      "destroy": 0
+    },
+    "apply": {
+      "add": 8,
+      "change": 0,
+      "destroy": 0
+    },
+    "private_backend_reused": true,
+    "refreshing_operator_credentials": true,
+    "signer_ssm": "Online",
+    "last_ping_sgt": "2026-10-27T16:39:46.097000+08:00",
+    "reboot_required": false
+  },
+  "host_checks": {
+    "signer_command": "2369db2e-3551-4b84-89e6-7f7d762cd59c",
+    "primary_sa9_command": "353a848e-632d-4ad1-8ba7-089f6562c12f",
+    "both_ssm_commands": "Success",
+    "installed_build_both_hosts": "bdd515f80dbc57e80ffeb60c6001091d6e1d7c08",
+    "signer_service": "active",
+    "signer_restarts": 0,
+    "runtime_service": "inactive",
+    "execution_service": "active"
+  },
+  "provisioning": {
+    "owner": "Yao friend/package owner",
+    "package_location": "friend laptop, per Yao",
+    "new_package_installed_by_this_session": false
+  },
+  "t2": {
+    "status": "PENDING_PROVISIONING_COMPLETION",
+    "owner": "Yao/operator in this chat",
+    "authorized": true,
+    "required_final_flag": false
+  },
+  "private_evidence_location": "/private/tmp/larp-signer-20261027/"
+}

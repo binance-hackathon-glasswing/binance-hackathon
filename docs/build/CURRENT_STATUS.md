@@ -1,5 +1,13 @@
 # Current shared build and remaining work
 
+IDEA-080 OPS-T1-20261027 (Oct27 SGT): temporary signer SSM restored using the
+existing backend/operator profile; reviewed plan/apply **8 added, 0 changed,
+0 destroyed**. Signer Online (heartbeat 16:39:46SGT), both-host read-only SSM
+checks pass (SA9). Yao's friend will provision the package from his laptop;
+**T2/SA5 remains pending that completion**, with access intentionally open.
+Both hosts still carry `bdd515f8`, runtime paused; this is no new S5 deployment
+or successful-trade claim. [Receipt](evidence/signer-access-t1-20261027.json).
+
 S5-OBS03 / handoff (2026-10-27 ~06:40Z): run 8 made no trade. The approve confirmed, then the RFQ quote expired before the swap. The allowance clean-up's `approveAmount: "0"` is rejected by the live API, so a 15.44 USDT allowance remains, and FS1's AL9 recovery has the same defect. The runtime was paused by hand at 05:12Z. Open items, owners and evidence: [S5_RUN8_FS1_HANDOFF_20261027.md](S5_RUN8_FS1_HANDOFF_20261027.md).
 
 S5-SMALL01 (2026-10-27, in preparation): user authorized proportional small-wallet targets (including actual DOWN60% case), scoped200bp entry cost cap/minimum3.192045USDT, buys on deployment until18:00SGT, automatic sells from19:00SGT and signing until23:00SGT today. FS1 profiles are unchanged. Before run8: required DB monitoring/backoff, maintenance, pinned windows, database sizing and both host-credit alarms. New deployment is not claimed until host acceptance. See [IDEA-104](../ledger/IDEA-104.md) and [run8 procedure](ops/rehearsal-install-s5-small-20261027/). Earlier deployment-status paragraphs below are historical.

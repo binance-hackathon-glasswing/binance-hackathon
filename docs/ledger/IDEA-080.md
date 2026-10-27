@@ -115,3 +115,35 @@ worked (SA9). The access window was therefore about 3 hours on the dev rehearsal
 (SA7). Next window: the SJ-09 S1 swap (Oct 24), then the final-wallet key (Oct 26–29), torn down before
 Oct 29 00:00 UTC.
 
+
+## OPS-T1-20261027 — signer access restored for the packaged S5 run
+
+Yao explicitly requested T1/T2 on the configured Mac using the existing backend and
+`larp` operator profile, and clarified that his friend will provision the already
+packaged run from the friend's laptop. Existing SA1–SA9 and the requested exact
+eight-resource T1 plan are the acceptance criteria; no runtime changes were made.
+
+Private `deploy/aws/development.tfvars` now has `enable_signer_provisioning = true`.
+Terraform1.13.5 used canonical source `a2252760`, the existing private backend,
+and the runbook's temporary refreshing credential-process profile. Saved plan and
+apply both report **8 added, 0 changed, 0 destroyed**: three interface endpoints,
+their security group, two ingress rules, one signer egress rule and the signer
+SSM policy attachment. All three endpoints are available with private DNS.
+
+Signer `i-0f8fe5d5fe5ccba36` reconnected without a reboot; the observed Online
+heartbeat is 2026-10-27 16:39:46SGT. Read-only SSM commands succeed on both hosts
+(SA9 primary command `353a848e-632d-4ad1-8ba7-089f6562c12f`). Both still carry
+`bdd515f8`; signer is active with zero restarts, primary runtime remains paused,
+and execution/uploader/evidence remain active. No key was read, no wallet action
+was taken and no new package was installed by this session.
+
+**Pending:** Yao's friend/package owner provisions and reports completion.
+Then Yao/operator in this chat restores the private flag to false, reviews a T2
+saved plan removing only those eight resources, applies it and records SA5.
+The existing authorization covers T2; completion status is the dependency.
+Temporary access is intentionally still open for that work. S5 trading recovery
+and exact package/host acceptance remain with the package owner; Online alone
+does not establish a successful trade.
+
+Public receipt: [signer-access-t1-20261027.json](../build/evidence/signer-access-t1-20261027.json).
+Raw plans/logs remain private outside Git at `/private/tmp/larp-signer-20261027/`.
