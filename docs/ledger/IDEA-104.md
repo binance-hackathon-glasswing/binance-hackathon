@@ -1300,6 +1300,23 @@ older crawl dates). A direct HTML download produced an empty body, so it is not 
 Absence from the readable snapshots does not prove the backend refuses the parameter; it prevents presenting the
 documentation/default claim as independently verified.
 
+### PR319-RV01 — review criteria (2026-10-27, before regression runs)
+
+User authorizes PR319 review/fix/merge into its declared PR317 base. Both branches are synced with canonical
+`3f8e1650` using normal merges, preserving FENCE01/FENCE02 and PR318 records. PR317 itself is not merged here.
+
+Review findings and pass criteria:
+- RV319-1: `_record` catches a stale save but its subsequent guard acquisition is outside the retry catch.
+  A transient StateVersionConflict during that acquisition still loses the refusal. Include acquisition in the
+  same bounded retry budget; persistent races and ownership/release changes still refuse without a stale save.
+- RV319-2: slow preparation failures before the success-path clock refresh, and ABORT_CLEAN after allowance I/O,
+  still record the old tick. Observe a valid fresh clock for non-authorizing records and use the persisted time
+  for cleanup eligibility after a hard refusal. Expired authority/margin must not create cleanup/reset probes;
+  backwards time must refuse. Preserve confirmed approvals and dependency retries, original budgets and CAS.
+- Reproduce the cases with synthetic guards/venue/PostgreSQL only, then pass fence/allowance and broad pinned
+  Linux/Python3.12.15/PostgreSQL14.24 tests. No repeated venue/router preparation work, real key/provider/host or
+  transaction action. Exact release/systemd/bundle and registered same-run host acceptance stay open.
+
 ### PR318-RV01 results — source accepted for merge
 
 User delegated conditional review/fix/merge. Canonical `305bccfa` was merged normally; reviewed runtime/tool/test
