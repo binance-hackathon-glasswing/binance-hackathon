@@ -743,3 +743,64 @@ Host readback: both x86_64; signer EC2 running but SSM ConnectionLost since04:59
 IAM GetInstanceProfile read is AccessDenied. T1 restoration needs the authorized operator's reviewed Terraform
 plan/apply. No service, key, signer policy, wallet or hosted run state was changed; local SDK/test dependencies and
 disposable PostgreSQL were used. Exact release/systemd/host qualification and run8 cleanup remain prerequisites.
+
+### S5-RUN8R2-PKG01 — operator package criteria (2026-10-27)
+
+Keegan requests everything Yao needs for a new run8, with integrated FS1 fixes. Prepare only; do not deploy.
+Use run `larp-dev-rehearsal-20261027-s5-small-r2`, fresh database `larp_rehearsal8r2`, selected NEXT01 profile
+and 22:00/23:00/00:00 SGT gates. Preserve the original run8 history and all provider budgets.
+The selected exact runtime release is `a22527603ad34c545ff30b5ef996f575b3435b53` (PR310+311).
+
+Criteria before package implementation:
+- Complete portable operator scripts for bundle verification/upload, source-run8 capture and fresh numeric/signer
+  assembly, new-database setup, configuration/manifest binding, both-host retirement/install, checks/start and T2 cleanup.
+- All scripts name the new identity consistently, pin source/profile/router/routing/history hashes, refuse expired
+  windows and mismatched/occupied targets, keep private inputs/results outside source control, and start execution
+  before planning. No implicit latest-head build or overwrite of run8 state/config history.
+- Approved zero-only allowance recovery may inherit the old allowance: review_rehearsal_caps already permits this
+  when opted in. Positive held reservation units or execution_pending still refuse; nine zero rows alone do not.
+- Audit exact release ancestry/features against FS1 corrections. Record unresolved production requirements including
+  ARCH-01, fixed-price BNB valuation, exact host/systemd acceptance and self-check/pause bindings; do not call them fixed.
+- Verify template rendering, script syntax, source/profile/manifest/bundle pins and refusal paths; run meaningful
+  execution/signer/runtime/strategy and database tests as available. Deliver a locally usable checksummed operator
+  archive and a PR targeting canonical. No AWS host/service/key/transaction write in this preparation task.
+
+### S5-RUN8R2-PKG01 results (2026-10-27)
+
+Prepared the portable Yao operator folder `docs/build/ops/rehearsal-install-run8r2-20261027/`, a complete local
+operator delivery archive with original a2252760 x86_64 bundle, public pins/profile/history/probe and instructions.
+A new run/database (run8r2) preserves original run8. No AWS write, service restart, signer-key read or transaction.
+
+Source audit verifies18 ancestor PR merges (278,280,282,283,286,287,290,291,292,295,296,297,298,303,305,306,310,311).
+All listed merged FS1 corrections are in the fixed runtime release; ARCH-01, DB/host measurements, BNB valuation,
+FINAL pause/self-check and real live acceptance remain uncompleted requirements. The package's FS1_FIX_AUDIT.md
+is explicit that the repository is not fully FINAL ready.
+
+M3 correctly permits inherited allowance under existing reviewed zero-only recovery and the reserved gas envelope;
+positive held reservations/possible submissions still refuse. The previous blanket "clear allowance first" wording
+was overly restrictive; the already-implemented PR284/286 tooling supports this authorized path. No manual
+transaction or journal reset is needed or provided. M4 restricts source signer differences to the three new identity
+fields, requires a fresh <=300-second numeric review, and binds one manifest for both hosts. Scripts refuse wrong
+source/target identity, dirty source checkouts, modified pins and expired buy window; results/private files stay local.
+SSM transport now uses unique temporary scripts and stops promptly on AccessDenied rather than polling for30minutes.
+
+Verification: exact Python3.12.15 from the original bundle; deploy/requirements-test.lock; exact CI PostgreSQL14.24
+image digest5a05f61a…; pip check PASS. Full suite **3056 passed/7 skipped/4124 subtests/3 failures**,960.12s.
+AR7's failure is read-only /proc/self/clear_refs; the two worker-release failures are unavailable uid namespaces
+(independent bwrap probe: read-only filesystem). Original failures retained. Offline demo attempted and failed to
+produce its entry record under that worker restriction; no pass claimed. Real-systemd tests NOT_RUN (PID1 not systemd).
+Both primary/signer offline AL2023 provisioning checks PASS, including repeat installation, permissions, key loader
+and bound-manifest verification. Only test image build proxy-CA trust adapted; provisioning ran network-off and
+checks unchanged. Five operator refusal tests PASS. Actual delivered-bundle staging PASS;256 member checksums,
+profile/history/probe and fixed-source pins verified. Shell/Python syntax and git diff whitespace checks PASS.
+
+Remaining launch owner Yao: supported native qualification rerun, existing private selectors, temporary T1 signer
+provisioning, source pending/reservation reconciliation, new database/fresh caps/Isaac exact signer acceptance,
+DB/host/model/history/log acceptance, then P4 -> S2 -> P5 -> P6 and T2/M9 cleanup. Exact workflow and commands
+are in the package README/QUALIFICATION.md; it does not claim launch-ready or successful real buys/sells.
+
+S5-RUN8R2-PKG01 final canonical refresh: PR312 merged while the package was prepared. Canonical fd6b6719 differs
+from the selected a2252760 only in six documentation files, with no runtime/config/profile/test changes. Its updated
+EXP-007/S6/S7/S8 records were merged into this package branch without rewriting history. The fixed bundle remains
+applicable; the audit records that EXP-007's inconclusive O2 disposition retains the trend guard, and experimental
+S6/S7/S8 code is not deployed. Package PR313 targets canonical; all files are committed/pushed; no hosted action.
