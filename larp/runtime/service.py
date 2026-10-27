@@ -25,6 +25,7 @@ import uuid
 from larp.audit.protocol import ADDRESS
 from larp.contracts import ContractError, Document
 from larp.runtime.database import IAM_SETTINGS, check_iam_settings
+from larp.runtime.exits import refuses_start
 from larp.runtime.live import LiveStartRefused, check_live_start
 from larp.runtime.supervision import Guard, Sessions
 
@@ -543,6 +544,8 @@ def main(argv=None):
             if manifest['build_id'] != c['build_id']:
                 raise ContractError('Configured build differs from the verified release')
         except (ContractError, ValueError, OSError) as refused:
+            if not refuses_start(refused):
+                raise  # transient: exit 1, systemd restarts (IDEA-109 F2)
             raise StartRefused(type(refused).__name__) from None
         if args.command == 'check':
             print(json.dumps(dict(configuration_valid=True, signing_enabled=False)))
@@ -565,6 +568,8 @@ def main(argv=None):
             print(json.dumps(dict(started=False, reason='NOT_INTEGRATED', signing_enabled=False)))
             return EXIT_NOT_INTEGRATED
         except (ContractError, ValueError, OSError) as refused:
+            if not refuses_start(refused):
+                raise  # transient: exit 1, systemd restarts (IDEA-109 F2)
             raise StartRefused(type(refused).__name__) from None  # restarting the same inputs cannot cure it
         def start_check():
             check_live_start(mode=c.get('mode', 'offline'), ports=getattr(driver, 'ports', {}), secrets=secrets,
