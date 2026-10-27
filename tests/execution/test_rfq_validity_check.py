@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from larp.execution import USDT
 from larp.marketdata.port import TOKENS
@@ -188,6 +188,16 @@ class RfqValidityTests(unittest.TestCase):
             self.assertEqual(output.stat().st_mode & 0o777, 0o700)
             with self.assertRaises(ValueError):
                 self.run_tool(lambda n: None, out=output)
+
+    def test_default_private_output_rejects_a_checkout_tmpdir_before_creation(self):
+        checkout = Path(rv.__file__).resolve().parents[2]
+        credentials_source = Mock(side_effect=AssertionError('credentials reached'))
+        with patch.object(rv.tempfile, 'gettempdir', return_value=str(checkout)), \
+                patch.object(rv.tempfile, 'mkdtemp', side_effect=AssertionError('directory creation reached')) as create:
+            with self.assertRaises(ValueError):
+                rv.run(Args(), credentials_source=credentials_source)
+        create.assert_not_called()
+        credentials_source.assert_not_called()
 
     def test_rv2_actual_ages_bounds_and_stop_rule(self):
         # NVDAB (n=1) RFQ order valid 4 s; GOOGLB (n=2) arrives expired; others AMM.

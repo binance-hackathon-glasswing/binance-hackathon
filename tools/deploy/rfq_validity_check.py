@@ -50,7 +50,10 @@ ROOT = Path(__file__).resolve().parents[2]
 def private_output(value):
     """Reserve a new private raw-artifact directory before reading credentials or making requests."""
     if value is None:
-        return Path(tempfile.mkdtemp(prefix='larp-rfq-validity-'))
+        parent = Path(tempfile.gettempdir()).resolve()
+        if parent == ROOT or ROOT in parent.parents:
+            raise ValueError('PRIVATE_OUTPUT_IN_CHECKOUT')
+        return Path(tempfile.mkdtemp(prefix='larp-rfq-validity-', dir=parent))
     original = Path(value)
     target = original.resolve()
     if target == ROOT or ROOT in target.parents:
