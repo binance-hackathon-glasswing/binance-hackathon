@@ -668,6 +668,39 @@ fails on the old builder (it sent `"0"`) and passes on the fix.
 - Still open: Isaac's policy acceptance, Keegan's review and merge, the FS1 release built from a commit containing
   the fix, and B1-5 (live 0 allowance).
 
+### S5-NEXT01 — next rehearsal preparation (2026-10-27)
+
+Keegan requested a new run with the fixes integrated, relayed Isaac's acceptance of PR310's API-anchored zero
+calldata, and selected new SGT times: buy cutoff Oct27 22:00, flatten Oct27 23:00, signing end Oct28 00:00.
+Retain the development wallet and S5-SMALL01 strategy/risk/model/gas limits. This is not a FINAL activation.
+PR310 is merged at `05b7aa6d`; independent focused validation: 11 tests / 32 subtests pass, 2 PostgreSQL cases
+skipped locally (the PR separately records its PostgreSQL results). Deployment has not occurred.
+
+Fresh primary read-only SSM evidence, command `f3b6d83e-34e2-4fdf-9c6d-4355a1f23851`:
+- Build `bdd515f8`, dev run8, not quarantined, all five stock balances zero; cash 81.373047 USDT,
+  BNB 0.024970602989216991. USDT router allowance remains 15.441878; other five allowances zero.
+- All three execution records are terminal ABORTED. The first has one FINAL_SUCCESS approval; the other two
+  have no attempts. Each consumed three prepare probes. Nine reservation rows exist; their active/released
+  disposition is not established by a row count.
+- Crucially, fresh quote calls DID occur after the approval: 05:04:26.172/.522 before gas failure at
+  05:04:31.042, and 05:04:34.158/.508 before gas failure at 05:04:39.072 (UTC). Thus missing post-approval
+  re-quoting is disproved. The upstream RFQ still failed within seconds; provider route validity is unresolved.
+
+Pre-implementation criteria for the narrow retry correction (NEXT01-R1):
+1. A sanitized DependencyUnavailable during post-approval quote/gas preparation retains the original active
+   intent for a fresh next probe instead of immediately initiating allowance cleanup. No new signature or send.
+2. Original prepare-probe budget, expiry, authority, nonce and gas bounds remain. Exhaustion/expiry still enters
+   existing zero-only cleanup; hard Blocked validation failures still abort immediately.
+3. A retry that succeeds may finish the original swap; repeated dependency failures never create unbounded work.
+4. Targeted execution/recovery and service tests pass. This does not prove upstream RFQ success live.
+5. Generate and validate a separate next-run S5 profile for the selected times; historical run8/FINAL profiles
+   remain intact. Retain exact profile hash and source/release identity before any host installation.
+
+Launch prerequisites: qualify the resulting exact release; clear run8's allowance through registered agent recovery,
+reconcile reservations and ledger/chain, preserve run8 history, assemble fresh caps and a new run/database/signer
+binding, perform the authorized signer provisioning and host acceptance, then start execution before the planner.
+Do not reset terminal records or reuse expired intent authority to clear the allowance.
+
 ## S5-SMALL01 — proportional small-wallet rehearsal, Oct27 19:00SGT flatten
 
 User instruction, 2026-10-27 SGT: amend S5 to buy now and sell at19:00, to exercise FS1 on a smaller wallet and shorter timeline. This is a development rehearsal only. FS1 FINAL remains unchanged.
