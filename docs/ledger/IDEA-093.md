@@ -651,3 +651,32 @@ fixes after PR317 merges. No runtime/profile change, fence merge, live run or de
 integration/exact-release/both-host qualification; existing strategy, signing, funding, model/history,
 self-check and DB/archive owners retain their acceptance. No incomplete-work item is fully closed.
 [Audit](../build/FS1_ALIGNMENT_20261028.md) / [receipt](../build/evidence/fs1-alignment-20261028.json).
+
+
+## FS1-ALIGN02 — PR320 update after canonical fence merge (2026-10-28)
+
+User requested getting PR320 and updating FS1. Before verification: fetch canonical and PR320, preserve
+unrelated checkout files, merge canonical into the PR branch without rewriting history, and resolve status
+text retaining both execution review records. GitHub confirms PR317 merged at
+`c1e237297d7b51c124c76e8559b6ce243ab12d6e` on 2026-10-27T16:47:49Z; PR319 is included via `7484274a`.
+
+Pass criteria: verify ancestry of PR310/311/318/317/319; keep FINAL recovery, routing and history hashes
+unchanged; rerun the FS1-ALIGN01 focused matrix plus preparation-fence regressions using synthetic inputs
+and disposable local PostgreSQL. Require zero failures/skips. Update active release-selection text to the
+merged canonical source without changing the original FS1-ALIGN01 historical receipt. Exact bundle,
+systemd/both-host, fresh FINAL economics/caps/signer and existing owner gates remain open. No deployment,
+provider/model request, credential use, signing or wallet action is authorized by this source update.
+
+
+### FS1-ALIGN02 results
+
+Merged canonical source is incorporated locally in PR320's branch; the status conflict is resolved while
+preserving PR317/319 review records. FS1 Build/M1 now names `c1e23729` or a verified descendant. Ancestry
+and all three selected input hashes pass. Pinned Linux/Python3.12.15/PG14.24 focused matrix plus preparation
+fencing: **193 tests / 70 subtests passed, zero failures/skips**, 69.09s. No full-suite rerun or hosted CI
+claim. Synthetic tests use a credential-free tracked-file snapshot and disposable local PostgreSQL;
+Python socket connections are restricted to localhost fixtures. No live actions occurred.
+
+[Refresh receipt](../build/evidence/fs1-alignment-refresh-20261028.json). Exact FINAL release/both-host and
+remaining owner acceptance are still open. The user authorized committing and pushing this PR320 update
+in the follow-up; unrelated untracked files are preserved. No whole backlog item is closed.

@@ -1,4 +1,21 @@
-# FS1-ALIGN01 — recent-PR alignment (2026-10-28 SGT)
+# FS1 alignment (2026-10-28 SGT)
+
+## FS1-ALIGN02 — canonical merge refresh
+
+PR317 merged into canonical at `c1e237297d7b51c124c76e8559b6ce243ab12d6e` on
+2026-10-27T16:47:49Z, including stacked PR319 (`7484274a`) and PR310/311/318. PR320 now
+incorporates that source. Build/M1 selects this source or a verified canonical descendant, subject to
+exact bundle qualification and both-host manifest binding. No new FS1 feature flag or input hash is
+required. Keegan/Yao retain exact-release/host acceptance; all other owners below remain.
+Refresh verification: **193 tests / 70 subtests passed**, zero failures/skips, on pinned
+Linux/Python3.12.15/PG14.24 (69.09s). This repeats the original focused matrix and adds preparation-fence
+regressions; ancestry and all three input hashes pass. No full-suite rerun or live action.
+[Refresh receipt](evidence/fs1-alignment-refresh-20261028.json).
+
+The original audit and its receipt below describe the earlier `3f8e1650` snapshot; its pending-merge
+statements are superseded by this refresh.
+
+## FS1-ALIGN01 — historical pre-merge audit
 
 FS1's selected source/configuration is aligned with the merged cleanup, retry and RFQ changes, but the shared
 build still lacks the reviewed preparation-fence stack. It is not yet evidence of a qualified FINAL release.

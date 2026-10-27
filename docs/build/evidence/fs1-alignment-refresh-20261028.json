@@ -1,0 +1,53 @@
+{
+  "id": "FS1-ALIGN02",
+  "date_sgt": "2026-10-28",
+  "pr": 320,
+  "pr_head_before_update": "21ce36c0fa82f216ca26dfcf27de800680e84bf1",
+  "canonical_commit": "c1e237297d7b51c124c76e8559b6ce243ab12d6e",
+  "pr317_merged_at": "2026-10-27T16:47:49Z",
+  "pr319_merge_commit": "7484274ac876ae57a7587fbdbe8713f72d5c0105",
+  "recent_fix_ancestry": "PASS: PR310/311/318 and merged PR317/319",
+  "pins": {
+    "config/intelligence/aiand-routing.fs1.json": "9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4",
+    "docs/build/evidence/fs1-final-20261025/fs1-final-recovery.json": "b8ba06e248b48b6406d77c1bda4110001324382e91bb63c71a27ce514731892f",
+    "docs/build/evidence/th01-live-20261026/token-history.json": "5e572570bc24fb2ca7b692dccf71f67a37c5fac3d75330e4558634cf45417be9"
+  },
+  "pins_unchanged": true,
+  "validation": {
+    "environment": "Linux / Python3.12.15 / PostgreSQL14.24",
+    "image": "larp-ci:py31215",
+    "passed_tests": 193,
+    "passed_subtests": 70,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 69.09,
+    "files": [
+      "tests/strategy/test_fs1_final.py",
+      "tests/strategy/test_fs1_review.py",
+      "tests/strategy/test_fs1_self_check.py",
+      "tests/runtime/test_fs1_standalone.py",
+      "tests/runtime/test_fs1_recovery.py",
+      "tests/runtime/test_fs1_self_check_pg.py",
+      "tests/runtime/test_fs1_review.py",
+      "tests/runtime/test_fs1_pause_restart_pg.py",
+      "tests/runtime/test_fs1_start_order.py",
+      "tests/execution/test_allowance_recovery.py",
+      "tests/execution/test_rfq_route_refusal.py",
+      "tests/strategy/test_s5_cost_limit.py",
+      "tests/runtime/test_cadence_every_slot.py",
+      "tests/execution/test_prepare_fencing.py"
+    ],
+    "junit_sha256": "65a6dc6d5cdfcf9ec8893c75fffc148deb51a71af1ad56af93702374d5a66445",
+    "junit_path_outside_repo": "/private/tmp/fs1-align02/results/focused.xml",
+    "network": "Python socket guard permits only localhost fixture connections; no host credentials mounted"
+  },
+  "full_suite_rerun": false,
+  "live_actions": false,
+  "remaining": [
+    "Exact FINAL source/bundle/systemd/manifest and both-host qualification",
+    "Fresh FINAL AMM economics, caps, gas and signer acceptance; live recovery/RQ-5/RQ-8",
+    "Existing history/model/funding/self-check/DB/archive owner gates",
+    "Runtime receipt-reconciliation and command-claim follow-up disposition"
+  ],
+  "publication_authorization": "User follow-up explicitly authorizes pushing the PR320 update"
+}

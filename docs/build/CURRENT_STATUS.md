@@ -1,12 +1,17 @@
 # Current shared build and remaining work
 
-FS1-ALIGN01 (2026-10-28 SGT): canonical `3f8e1650` includes PR310/311/318 in FS1's shared execution path;
-S5's PR305/314 economics remain scoped away from FINAL. PR319 merged into PR317 at `7484274a`, and PR317
-is still OPEN: the combined fence fix is not canonical. FS1's stale PR278-only Build/M1 instructions now
-require the recent-fix canonical ancestry and exact release qualification after PR317 merges. Selected
-profile/routing/history hashes are unchanged. Focused pinned Linux/PG:168 passed/52 subtests, zero skips or
-failures. No FINAL build/host/deployment acceptance is claimed; existing owner gates remain.
+FS1-ALIGN02 (2026-10-28 SGT): PR317, including PR319, merged into canonical at
+`c1e237297d7b51c124c76e8559b6ce243ab12d6e` (2026-10-27T16:47:49Z). PR320 now incorporates that
+canonical source, including PR310/311/318 and the preparation-fence repairs. FS1's Build/M1 instructions
+require a qualified descendant of that exact source, with recorded bundle hashes and both-host manifest
+binding. Selected profile/routing/history hashes remain unchanged. Focused pinned Linux/PG checks pass
+193 tests/70 subtests, zero failures/skips (FS1 matrix plus preparation fencing). Exact FINAL release, owner and host
+acceptance remain open. The earlier FS1-ALIGN01 receipt records the pre-merge audit.
 [Audit and remaining owners](FS1_ALIGNMENT_20261028.md).
+
+PR319-RV01 / FENCE02 source accepted (Oct27; stack source `65e6ed91`, not deployed): bounded retries include refusal guard acquisition and preserve current completion time for failure/clean-cleanup records; hard-refusal cleanup uses that recorded time. Owner/release/final CAS and original work limits remain. Combined PR317/PR319 stack includes canonical `3f8e1650`/PR318; pinned full suite3133 passed/4172 subtests,zero failures/8 skips plus1 non-root pass. Five systemd/two optional fixtures remain unrun. PR319 targets PR317; canonical merge of PR317, exact release/host acceptance and the recorded receipt-fence follow-up remain. [Review](PR319_REVIEW_20261027.md).
+
+FENCE01 / PR317 source review complete (FENCE01-RV01, Oct27; source `1e90c26f`, not deployed): preparation refreshes guards/time after I/O before the unchanged CAS fence. Review fixed stale completion time on refused preparation, preventing expired authority/margin from granting cleanup or resetting probes. Full pinned Linux/PG plus corrected-environment reruns cover3101 distinct passing tests,zero unresolved failures;5 systemd and2 optional fixture checks remain unrun. Merge, exact release/systemd/bundle qualification and registered same-run host acceptance remain with the release/operator owners. No host or historical counter reset. [Repair and results](PREPARE_FENCE_REPAIR_20261027.md).
 
 PR318-RV01 source review accepted (Oct27; source `a857d03d`, not deployed): bStock planning/execution request the empirically tested non-RFQ hint and reject RFQ-named execution routes. Review repairs enforce private collector output (including default TMPDIR), preserve native quote scope and correct the unverified API-documentation claim. Pinned Linux/PG full suite3108 passed/4154 subtests,zero failures/8 skips; non-root rerun adds1 pass, leaving5 systemd/2 optional fixtures unrun. Exact release/host/live RQ-5/RQ-8 and AMM entry-cost acceptance remain with the release/operator/strategy owners. PR317 remains separate. [Review](PR318_REVIEW_20261027.md).
 
