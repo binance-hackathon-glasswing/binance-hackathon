@@ -274,3 +274,20 @@ recalculates usage (6–12 h), **no mirror run can upload a release bundle**, in
 PC-DEC01 makes the release of record. Old artifacts cited in receipts (e.g. 12352993133, kept otherwise only in a local
 scratch path per IDEA-083) must not be deleted without the release owner's decision. The bundle install test
 (`tools/test_host_bundle.sh`, needs Docker) was not run here.
+
+## Local CI of the PR head (2026-10-27, Claude Code; GitHub Actions billing exhausted)
+
+Every `runtime.yml` job reproduced in a cloud container on PR head `02cfa919` (code equals `53b79b4f` above):
+
+| Job / step | Result |
+|---|---|
+| infrastructure (deploy/aws) | **PASS**: fmt, init (`-lockfile=readonly`, provider 6.61.0 from releases.hashicorp.com; the registry is blocked here, hashes checked against the lockfile), validate, 21 tests passed |
+| infrastructure (deploy/bootstrap) | **PASS**: same steps, 1 test passed |
+| runtime: pytest | **PASS**: CPython 3.12.15 (from the bundle's pinned interpreter), PostgreSQL 16 (CI pins 14.24), bubblewrap: 3020 passed, 8 skipped, 4114 subtests; the one skip beyond the mirror's 7 is `test_live_start.py:83` (root ignores directory mode) |
+| runtime: offline demo | **PASS** (exit 0, valid trace); the earlier `KeyError: 'entry'` was the missing bubblewrap |
+| runtime: Docker build + read-only run | **PASS**, `pip check` clean in the image; built from a copy of `deploy/Dockerfile` that only adds the proxy CA for the pip step |
+| runtime: real systemd (`LARP_TEST_SYSTEMD=1`) | **NOT RUN**: no systemd here and a privileged systemd container was not permitted; passed 5/5 on the mirror run above, and this PR changes no unit file |
+| host-bundle | `build_release_bundle.py` **PASS** (bundle sha256 `0f87176880f0790887e65b109ede54e346822592f6c061cbedd4df78f8b99c40`); `test_host_bundle.sh` **NOT RUN**: its Amazon Linux image needs cdn.amazonlinux.com, blocked by this container's network policy |
+
+Keith instructed the merge on 2026-10-27, taken as acceptance of the F1 anchor semantics. Release qualification of the
+exact merged build (host-bundle test, systemd cases) remains open.
