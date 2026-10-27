@@ -618,6 +618,32 @@ Open, not findings (to be confirmed read-only; methods in the handoff, items 9 a
 Run 8 status: no trade, so SMALL-5's live acceptance (autonomous buy/sell) is not met by run 8 so far. Restart,
 clean-up or retirement before the FS1 install is Yao's decision.
 
+### OBS03-B1 fix — zero revoke from an API-anchored approve (2026-10-27; criteria before code)
+
+Authorization: Keith (user) asked for the fix on 2026-10-27. Of the two options in S5-OBS03 (build `approve(router, 0)`
+locally, or a 1-wei API approve), this takes a hybrid of the first: the API still names the spender and supplies the
+gas fields; only the amount word of its calldata is set to 0. **Isaac's signer-policy acceptance is still required
+before this build is used for FS1** (OBS03-B1 owner); the signer policy itself is unchanged by this fix.
+
+Design: `LiveVenue.revoke` requests `aggregator/approve-transaction` with `approveAmount: "1"` (the smallest positive
+integer string, which the API accepts) and `vendor: LiquidMesh`. It requires `dexContractAddress` == the intent's
+router and the returned `data` == the canonical `approve(router, 1)` bytes (selector `0x095ea7b3`, zero-padded
+spender, amount word 1), case-insensitive. It returns a payload to the token with value 0 and the same bytes with the
+amount word 0. The 1-unit approval is never signed or broadcast. The executor's existing exact-payload gas estimate
+(`pre-transaction/gas-limit` on the zero payload, max with the API gas × 1.2) and `validate_payload` /
+`SigningPolicy` (amount must be 0) are unchanged.
+
+Pass criteria:
+- B1-1: the revoke request sends `approveAmount: "1"`, never `"0"`; the returned payload's calldata is
+  `approve(router, 0)` to the token with value 0, nonce and API gas fields carried through.
+- B1-2: blocked with no payload when the API spender differs from the router, when the API data is not exactly
+  canonical `approve(router, 1)` (other selector, spender, amount, padding or length), or for a non-eligible token.
+- B1-3: the produced payload passes `validate_payload` for the `REVOKE:` step and the signer's `SigningPolicy`; a
+  payload with a non-zero amount is still refused by both.
+- B1-4: the existing allowance-recovery suite (`tests/execution/test_allowance_recovery.py`) passes with the
+  1-unit request; full pinned suite passes with exact counts; no other module changes.
+- B1-5 (live, not claimed by this change): the next run that needs a clean-up confirms an on-chain allowance of 0.
+
 ## S5-SMALL01 — proportional small-wallet rehearsal, Oct27 19:00SGT flatten
 
 User instruction, 2026-10-27 SGT: amend S5 to buy now and sell at19:00, to exercise FS1 on a smaller wallet and shorter timeline. This is a development rehearsal only. FS1 FINAL remains unchanged.
