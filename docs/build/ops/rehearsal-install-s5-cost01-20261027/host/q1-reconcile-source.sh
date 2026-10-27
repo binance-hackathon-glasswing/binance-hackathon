@@ -7,7 +7,8 @@ for u in larp-runtime larp-execution; do
  [[ $state != active && $state != activating ]] || { echo "$u must be stopped"; exit 5; }
 done
 cd /opt/larp/current
-runuser -u larp-runtime -- env PYTHONDONTWRITEBYTECODE=1 .venv/bin/python - <<'PY'
+# SSM root reads the protected config; database access still uses its larp_runtime IAM role.
+env PYTHONDONTWRITEBYTECODE=1 .venv/bin/python - <<'PY'
 from pathlib import Path
 import hashlib,json,time
 from larp.contracts import Document
