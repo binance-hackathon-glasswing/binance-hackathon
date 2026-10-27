@@ -869,3 +869,22 @@ Public package:docs/build/ops/rehearsal-install-s5-cost01-20261027/.
 Bundle SHA`46f8bc3310df88a373ef078a9087d5cc13e9dacd286bb64366263f1a556160e0`;
 manifest SHA`e7a367b64fbca764864c5f12156303e30a85215c6b2aca4881f97792d5780453`.
 Private inputs/results/credentials remain outside tracked source.
+
+### COST02 source reconciliation prerequisite
+
+Fresh M3 refused correctly: source run8 still holds15.441878USDT,1.536e15wei
+BNB and an incoming TSLAB reservation for open quote round
+`safety:1793077901702:136/quote1`, despite3/3 execution records terminal.
+All holdings match finalized chain and latest/pending nonce39. The old
+planner was stopped before its `ServiceExecution.expire` path could end this
+unclaimed command; the execution service deliberately never journals that
+runtime expiry itself. Do not skip the held-reservation gate.
+
+Recovery criterion before execution: published q1 helper verifies the old
+installed release/config/registered manifest, refuses a running planner or
+executor and any nonterminal execution, then calls only that release's
+`ServiceExecution.settle_open(now)` and `Coordinator.recover(now)`. No planner,
+signer or broadcaster is constructed. Existing registered code emits truthful
+NOT_SUBMITTED expiry and closes the audit round. Require zero held units and
+zero open rounds, deliver the new audit chunks using the old uploader, then
+recapture fresh M3. User all-steps authorization covers this recovery.
