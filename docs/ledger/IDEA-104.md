@@ -743,3 +743,36 @@ Host readback: both x86_64; signer EC2 running but SSM ConnectionLost since04:59
 IAM GetInstanceProfile read is AccessDenied. T1 restoration needs the authorized operator's reviewed Terraform
 plan/apply. No service, key, signer policy, wallet or hosted run state was changed; local SDK/test dependencies and
 disposable PostgreSQL were used. Exact release/systemd/host qualification and run8 cleanup remain prerequisites.
+
+## S5-COST01 — separate cash cushion from discretionary cost admission (proposal)
+
+Yao requested a new review PR on 2026-10-27 after confirming gas is already
+funded in BNB. The current `cost_reserve_units` both reduces investable USDT
+and caps estimated discretionary costs; setting it to zero currently blocks
+all positive-cost entries. PR313 retains the coupled 0.10-USDT setting.
+
+Prospective acceptance, recorded before implementation or test execution:
+- COST1: an explicit positive `discretionary_cost_limit_units` separates the
+  absolute cost ceiling from the USDT cushion `cost_reserve_units`. Absence
+  preserves every historical profile's behavior and bytes. Opt-in is limited
+  to the existing S5 proportional/200bp REHEARSAL scope with initial-only gas.
+- COST2: a zero cash cushion plus a separately sourced cost ceiling permits
+  a below-200bp quote costing more than0.10USDT; the old profile refuses it.
+  The independent absolute ceiling,200bp entry bound, impact/slippage,
+  available cash and BNB/action/exit-reserve checks still reject unsafe work.
+- COST3: cash allocation and per-trade notional calculations use only the
+  cash cushion. Mandatory exit/post-cost tightening keeps its current
+  cash-buffer semantics. Bad/missing scope, zero/negative/noninteger limits,
+  missing LIVE provenance and FINAL opt-in are refused.
+- COST4: focused strategy/risk/profile tests pass and the unchanged FS1
+  profiles rebuild byte for byte. Publish a review PR without host or
+  Terraform changes; no existing profile/package hash is replaced.
+
+Suggested review example only: cash cushion0, separate absolute cost limit
+0.40USDT, existing S5 200bp cap. This is not an adopted numeric profile.
+The per-trade cap must be reviewed because it currently includes the cash
+cushion; changing the cushion changes BUY sizing. The release/package owner
+must generate fresh profile/probe/config pins and numeric coverage and obtain
+exact acceptance before installation. PR313's already-packaged release does
+not gain this feature by merging a later PR. Owners: teammate reviewer for
+policy/numeric adoption; package owner for bindings/qualification/install.
