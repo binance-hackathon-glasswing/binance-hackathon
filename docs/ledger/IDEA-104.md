@@ -835,6 +835,36 @@ Conclusions (observations for owners, not adopted decisions):
 - Scope: one 14-minute window on a Tuesday (US market hours), one size, BUY only. The maker's lifetime and how often
   RFQ is chosen may differ at other times, sizes or for SELL. This is not a guaranteed TTL.
 
+### OBS03-B2-RQ01 — refuse RFQ-maker quotes in execution (2026-10-27; criteria before code)
+
+Authorization: Keith (user) asked on 2026-10-27 for the change, written for Isaac/Keegan's review. **Not adopted until
+Isaac (execution/signer policy) and Keegan (execution owner) accept it**; no host, profile, signer policy or release
+changes here.
+
+Design: `LiveVenue._quote` (the execution re-quote used before the approve and again before the swap, including
+IDEA-090's tighter second request) inspects every `dexName` under the response's `routerResult`. If any name contains
+`rfq` (case-insensitive; covers `Rfq Neptunex` from RV01 and `PcsXRfq` from E-12), it raises
+`DependencyUnavailable('fresh quote uses an RFQ maker route')`. That reuses the executor's existing semantics: the
+probe is already persisted, nothing is prepared or signed, and the next `prepare` re-quotes inside the original probe
+budget and authority (NEXT01-R1). If every remaining quote is RFQ, the existing budget-exhaustion and zero-only cleanup
+paths apply unchanged. A response with no `dexName` anywhere is not refused by this check; every other quote check,
+the decoder and the pre-sign simulation still apply. Planning quotes (`MarketPort`) are unchanged.
+
+Pass criteria:
+- RQ-1 venue: a quote with an `rfq` name in any leg (only leg, partial leg, any letter case, nested anywhere under
+  `routerResult`) is refused with `DependencyUnavailable` and leaves no vendor recorded, so `approve` stays refused.
+  The same applies when the RFQ route first appears on IDEA-090's tighter second request. AMM names (the seven seen in
+  RV01) and responses without names pass as before.
+- RQ-2 before the approve: an RFQ quote consumes one prepare probe and produces no attempt, payload or signature; the
+  intent stays ACTIVE without `abort_pending`. A following AMM quote prepares the APPROVE normally.
+- RQ-3 after the approve: an RFQ quote keeps the confirmed approval and the original intent (no cleanup); a following
+  AMM quote completes the swap. RFQ quotes on every remaining probe exhaust the budget and the existing
+  `abort_unsigned` clean-up starts; no extra probe or authority is created.
+- RQ-4 regression: the venue, re-quote, pre-sign simulation, allowance-recovery and execution suites pass, plus
+  the pinned full suite where the local environment allows (exact counts and any environment skips recorded).
+- RQ-5 (live, not claimed here): the next rehearsal shows an RFQ quote refused before the approve, or reports that
+  none occurred.
+
 ## S5-COST01 — separate cash cushion from discretionary cost admission (proposal)
 
 Yao requested a new review PR on 2026-10-27 after confirming gas is already
