@@ -1,5 +1,11 @@
 # Current shared build and remaining work
 
+S5-COST01 (Oct27, review candidate): opt-in initial-gas S5 cash/cost separation
+permits a zero USDT cushion with an independently sourced positive cost ceiling.
+Affected Linux/Python3.12.15/PostgreSQL14.24 suites:588 passed/87 subtests,zero
+skips. No existing profile/package, FINAL value or deployment changes. Numeric
+adoption, updated bindings and release/host acceptance remain. See IDEA-104.
+
 S5-OBS03 / handoff (2026-10-27 ~06:40Z): run 8 made no trade. The approve confirmed, then the RFQ quote expired before the swap. The allowance clean-up's `approveAmount: "0"` is rejected by the live API, so a 15.44 USDT allowance remains, and FS1's AL9 recovery has the same defect. The runtime was paused by hand at 05:12Z. Open items, owners and evidence: [S5_RUN8_FS1_HANDOFF_20261027.md](S5_RUN8_FS1_HANDOFF_20261027.md).
 
 S5-SMALL01 (2026-10-27, in preparation): user authorized proportional small-wallet targets (including actual DOWN60% case), scoped200bp entry cost cap/minimum3.192045USDT, buys on deployment until18:00SGT, automatic sells from19:00SGT and signing until23:00SGT today. FS1 profiles are unchanged. Before run8: required DB monitoring/backoff, maintenance, pinned windows, database sizing and both host-credit alarms. New deployment is not claimed until host acceptance. See [IDEA-104](../ledger/IDEA-104.md) and [run8 procedure](ops/rehearsal-install-s5-small-20261027/). Earlier deployment-status paragraphs below are historical.
