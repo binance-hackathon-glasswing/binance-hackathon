@@ -4,12 +4,15 @@ Real modules: Ingestor (fake EDGAR) -> SQLiteEvidenceStore jobs -> EvidenceWork 
 -> strategy -> RuntimePlanner -> Coordinator/PostgresStore -> ShadowExecution -> settlement -> round log -> replay.
 """
 
+import errno
 import hashlib
 import json
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+
+import requests
 
 from larp.contracts import ContractError, Document
 from larp.intelligence.gate import lifecycle_policy_from
@@ -451,7 +454,9 @@ class Composition(unittest.TestCase):
         options = ['run', '--config', str(self.root / 'runtime.json'), '--manifest', str(self.root / 'manifest.json'),
                    '--root', str(self.root)]
         manifest = dict(build_id='a' * 40, runtime_config_sha256=hashlib.sha256(raw).hexdigest())
-        for error, code in ((ContractError('refused'), EXIT_REFUSED), (NotIntegrated('later'), EXIT_NOT_INTEGRATED)):
+        # IDEA-109 EX-1/EX-2: a transient OSError exits 1 (systemd restarts); a file error still refuses.
+        for error, code in ((ContractError('refused'), EXIT_REFUSED), (NotIntegrated('later'), EXIT_NOT_INTEGRATED),
+                            (ConnectionResetError('reset'), 1), (TimeoutError('timeout'), 1), (requests.exceptions.ConnectionError('dns'), 1), (OSError(errno.EIO, 'io'), 1), (FileNotFoundError('pinned'), EXIT_REFUSED), (PermissionError('pinned'), EXIT_REFUSED)):
             with self.subTest(code=code), patch('larp.runtime.preflight.verify_release', return_value=manifest), \
                     patch('larp.runtime.service.open_store'), patch('larp.runtime.service.verify_registered_manifest'), \
                     patch('larp.runtime.credentials.runtime_secrets', return_value={}), \
