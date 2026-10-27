@@ -1,0 +1,60 @@
+{
+  "id": "FENCE01-RV01",
+  "pr": 317,
+  "reviewed_original_head": "d7318f7168f39c1a5729ae4ce7aa57a7ad8b9804",
+  "runtime_test_source": "1e90c26f209e7b365c2f5b6dc941a1b2cbd2a80c",
+  "finding": "Final-validation refusals used the original cycle time for persistence and post-approval cleanup eligibility.",
+  "repair": "Retain valid completion observations before validation; persist that time on refusal and use it for bounded cleanup.",
+  "red_regression": {
+    "source": "aed8cd3f",
+    "post_approval_expiry_margin_subcases_failed": 4,
+    "route_deadline_refusal_timestamp_failed": true,
+    "unapproved_expiry_refusal_timestamp_failed": true,
+    "fixture_note": "An assertion failure left one original subcase's wallet barrier active; final fixture cleans up before asserting."
+  },
+  "environment": {
+    "os": "Linux",
+    "python": "3.12.15",
+    "postgres": "14.24-bookworm",
+    "dependency_lockfiles_checked": 4,
+    "dependency_mismatches": [],
+    "pip_check": "PASS"
+  },
+  "focused_fence_cleanup_worker": {
+    "passed": 37,
+    "subtests_passed": 44,
+    "skipped": 0,
+    "seconds": 2.94,
+    "command": "python -m pytest tests/execution/test_allowance_recovery.py tests/execution/test_prepare_fencing.py tests/runtime/test_worker_release.py -q -rs -p no:cacheprovider"
+  },
+  "full_suite": {
+    "passed": 3094,
+    "subtests_passed": 4136,
+    "skipped": 9,
+    "environment_failures": 5,
+    "seconds": 299.0,
+    "command": "python -m pytest -q -p no:cacheprovider --junitxml=/workspace/../tmp/pr317-final.xml"
+  },
+  "environment_corrections": {
+    "git_metadata_failures_retested_pass": 3,
+    "bubblewrap_proc_failures_retested_pass": 2,
+    "initially_skipped_origin_and_nonroot_checks_retested_pass": 2,
+    "sandbox_settings": ["SYS_ADMIN", "seccomp=unconfined", "systempaths=unconfined"],
+    "scope": "Disposable local test containers; no production host. Linked-worktree Git metadata was mounted read-only."
+  },
+  "combined_distinct_tests_passed": 3101,
+  "unresolved_failures": 0,
+  "remaining_unrun": {
+    "systemd": 5,
+    "optional_recorded_market_fixture": 1,
+    "optional_private_source_fixture": 1
+  },
+  "full_suite_repeated_after_environment_corrections": false,
+  "offline_demo": "PASS with real bubblewrap and disposable PostgreSQL",
+  "github_ci": "Jobs did not start: failed account payments or spending limit (run 40513655410 annotation).",
+  "deployment": "NOT_PERFORMED",
+  "remaining_owners": {
+    "release_owner": "Merge and exact release/systemd/bundle qualification",
+    "approved_operator": "Fresh holdings/caps/owner acceptance, registered same-run both-host upgrade, temporary-access teardown"
+  }
+}

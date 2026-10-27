@@ -4,6 +4,7 @@ No network: the composed clients are constructed, never called. The broadcast bo
 """
 
 import errno
+from contextlib import contextmanager
 import hashlib
 import json
 from pathlib import Path
@@ -25,6 +26,18 @@ WALLET = '0x' + '5' * 40
 
 
 class Store:
+    @contextmanager
+    def transaction(self):
+        class Read:
+            def execute(self, sql, params):
+                if sql != 'SELECT epoch,version FROM runs WHERE run_id=%s' or params != ('run',):
+                    raise AssertionError('unexpected fixture SQL')
+                return self
+
+            def fetchone(self):
+                return (3, 7)
+        yield Read()
+
     def load(self, run_id):
         return doc(dict(epoch=3, version=7, wallet_id=WALLET))
 

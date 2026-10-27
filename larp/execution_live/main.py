@@ -180,7 +180,7 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
                           timeout_s=config.get('signer_timeout_seconds', 20))
     try:
         executor = Executor(registry, guards, venue, signer, decoder,
-                            allowance_recovery=config.get('allowance_recovery', False))
+                            allowance_recovery=config.get('allowance_recovery', False), clock_s=clock_s)
     except Blocked:
         raise NotIntegrated('EXECUTOR_CAPABILITY_GATE') from None
     terminal = RoundTerminal(store, run_id=run_id)
@@ -258,7 +258,9 @@ def main(argv=None):
         stopping = []
         signal.signal(signal.SIGTERM, lambda *a: stopping.append(True))
         while not stopping:
-            loop.once(time.time_ns() // 1_000_000)
+            summary = loop.once(time.time_ns() // 1_000_000)
+            if summary['blocked']:
+                print(json.dumps(dict(event='EXECUTION_CYCLE_BLOCKED', blocked=summary['blocked'])), flush=True)
             if not stopping:
                 time.sleep(config['interval_seconds'])
         return 0
