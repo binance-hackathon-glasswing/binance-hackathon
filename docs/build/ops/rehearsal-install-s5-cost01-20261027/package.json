@@ -1,0 +1,43 @@
+{
+  "schema": "S5Cost01OperatorPackage.v1",
+  "build_id": "3ae830981b9ce1c4b80a46dbeb086825d91ae7ec",
+  "old_build_id": "bdd515f80dbc57e80ffeb60c6001091d6e1d7c08",
+  "run_id": "larp-dev-rehearsal-20261027-s5-cost01",
+  "database": "larp_rehearsal8cost01",
+  "source_run_id": "larp-dev-rehearsal-20261027-s5-small",
+  "source_database": "larp_rehearsal8",
+  "profile_sha256": "f26c332aad317631ee7308a6d7669761104e2b4f8d1864300a5d6ff40e487dec",
+  "profile_hash": "a40231c8f52e0185d0e45efaf75797b78ca769afc09b977c6b14bd40bccf63fb",
+  "pins": {
+    "BUILD": "3ae830981b9ce1c4b80a46dbeb086825d91ae7ec",
+    "BUNDLE": "larp-3ae830981b9c-x86_64",
+    "BUNDLE_SHA256": "46f8bc3310df88a373ef078a9087d5cc13e9dacd286bb64366263f1a556160e0",
+    "MANIFEST_SHA256": "e7a367b64fbca764864c5f12156303e30a85215c6b2aca4881f97792d5780453",
+    "PROVISION_SHA256": "d7905de425118df3c9ae1878d6e8fae799bb89e9ed857a1e1f9434a3e34404e2",
+    "CA_SHA256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+    "MIRROR_RUN": "LOCAL-S5-COST02"
+  },
+  "probe_sha256": "9000051b456b03e6eba3a6afaa6006154fdbaf3b288e77d57a986722c4fad614",
+  "history_sha256": "5e572570bc24fb2ca7b692dccf71f67a37c5fac3d75330e4558634cf45417be9",
+  "included_pr_merge_commits": {
+    "278": "f52107f0ced9dac1fc66c027f4f1c2fd36ca927c",
+    "280": "5b5f0c89247f2a63156d7f03a24fe583c3a9c3c4",
+    "282": "51b846f8bbc7324262c0b73835282cc7ff0f805f",
+    "283": "2003c04e26170c9ee6a851961484376b6d94a1a7",
+    "286": "7fc9f6019b54dccaf13b886c2e1123e703abf67a",
+    "287": "1ed5a248cbab03b47484b9602a0a42438304b5b4",
+    "290": "be31b37a1e085b94f9e8830f79bc1c57e041a883",
+    "291": "b6b2e3e30470baa87a42bb732a5f1291254f405f",
+    "292": "ecdbc1aae556c71aa39c6aac23b2b93981d9ef5e",
+    "295": "5e3f33df210a77f452af8583a8d294fb92bef0d9",
+    "296": "d4f7a6e0d00285960c4ee717d19b2979f147ee9d",
+    "297": "d025f7a78affac6cb62980d07ec61ae8476c7754",
+    "298": "c997df2c19cf1c0d17b18b83b5bb0d38015879fc",
+    "303": "e31056894c1f0698744dcb557e110f0939eebfa6",
+    "305": "bdd515f80dbc57e80ffeb60c6001091d6e1d7c08",
+    "306": "74de710276913b8d3575915fc308e5c44a37c85e",
+    "310": "05b7aa6d2e4d9e0aaaa19b2381007083d8490a94",
+    "311": "a22527603ad34c545ff30b5ef996f575b3435b53",
+    "314": "3ae830981b9ce1c4b80a46dbeb086825d91ae7ec"
+  }
+}
