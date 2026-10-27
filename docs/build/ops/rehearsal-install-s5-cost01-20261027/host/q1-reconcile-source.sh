@@ -26,7 +26,7 @@ with s.transaction() as db:
 praw=Path(c['driver']['strategy_profile_file']).read_bytes()
 assert hashlib.sha256(praw).hexdigest()==c['driver']['strategy_profile_sha256']
 coordinator=Coordinator(s,None,None,None,execution=None,run_id=c['run_id'],version_id=c['build_id'],
- profile_hash=Document(praw).digest('StrategyProfile.v1'),address=c['wallet_address'],test_rounds=True,require_version=True)
+ profile_hash=Document.from_dict(json.loads(praw)).digest('StrategyProfile.v1'),address=c['wallet_address'],test_rounds=True,require_version=True)
 execution=ServiceExecution(coordinator,wallet=c['wallet_address'],grace_ms=c['driver']['expiry_grace_ms'])
 now=time.time_ns()//1000000
 execution.settle_open(now);closed=coordinator.recover(now)
