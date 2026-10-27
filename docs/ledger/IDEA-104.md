@@ -1071,3 +1071,27 @@ Pass criteria:
 - F2-4: probe/gas/authority limits, schema, signer policy and historical counters unchanged; no signature or
   broadcast in prepare. New synthetic regressions fail on `8e20a208` and pass after the change; existing
   `tests/execution` (PostgreSQL) pass, with environment limits stated.
+
+### FENCE02 results — residual preparation fence races closed (stacked on PR317)
+
+Commit `32302aad`. `Executor.prepare()` now wraps FENCE01's refresh, pure revalidation and PREPARED commit in a
+bounded loop (`FENCE_REFRESHES = 3`): a `StateVersionConflict` from the guard refresh or the fenced commit repeats
+only those steps against the newest guards; quote, approve, gas, revoke and router preflight run once. `_refreshed`
+requires an unchanged owner epoch and release authority (else `Conflict`). `_record` journals PREPARE_BLOCKED and
+ABORT_CLEAN on refreshed guards when the first snapshot's version is stale; neither record grants signing authority.
+Persistent races and owner/release changes still raise unjournaled. No limit, schema, policy or counter change.
+
+Evidence (synthetic only, no host/key/wallet/provider): seven new regressions failed on PR317's `execution.py`
+(`8e20a208`) for the intended reasons — `StateVersionConflict` on one/two late races and lost PREPARE_BLOCKED/ABORT_CLEAN
+records — and pass after the change; the owner-change guard test passes on both. `tests/execution/test_prepare_fencing.py`
+19 passed/12 subtests. `tests/execution`, `tests/signer`, W04/W08: 561 passed/1315 subtests with 9 environment
+failures, which became 1 after granting the local test role PG16 role-membership (`createrole_self_grant`); the
+remaining signer preflight test checks installed packages against the runtime lock and fails identically on the base.
+Broad run (`tests/runtime`, `integration`, `storage`, `execution`, `signer`, `redteam`, W04/W08): 1539 passed,
+9 skipped, 2141 subtests; 54 failures, all identical on `8e20a208` and caused by the deliberately minimal venv
+(`boto3`/`botocore` absent, runtime-lock preflight). Environment: Python 3.13.17 and PostgreSQL 16 locally, not the
+pinned 3.12.15/14.24; pinned-environment and exact-release/host qualification remain with the release owner.
+
+Open, recorded separately: `reconcile()` commits receipt outcomes after `venue.outcome` with the pre-RPC version (same
+class; delays settlement and burns recovery probes, no signing risk). Commands are claimable only at their issuing run
+version (`loop.py` `_commands`), unchanged here and not implicated in the 12 created-then-aborted intents.
