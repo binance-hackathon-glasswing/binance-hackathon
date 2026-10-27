@@ -912,3 +912,44 @@ Private package-20261027T100020Z uploaded under its dedicated transfer prefix.
 Source configs retired and preserved on both hosts; original database, model
 budget/evidence and protected signer key remain intact. New release installation
 and live start checks follow; no completed BUY is claimed here.
+
+## S5-COST03 — preparation CAS interference found during live acceptance
+
+The combined3ae83098 release is installed and registered on both hosts;
+protected-key, routes/clock/role, model-budget, archive/backup ACK and all
+startup checks pass. First BUY completed on chain: approval
+`0x4ff96b287fbd351590904ee406e3c7750cc48db2bb76e194a22d66ef00b05af9`,
+swap`0x79158e6a010298fad07440749b1d25469cb874976c67f91a242d44589b8246f0`,
+both FINAL_SUCCESS. Do not describe the source wallet as flat after this.
+
+However, five earlier intents ended after PREPARE_PROBE repeated3 times with
+no PREPARED/PREPARE_BLOCKED event, despite successful approve construction
+and exact-payload gas estimation. Preparation performs network I/O after its
+initial journal-version snapshot; concurrent planner/assessment journal writes
+can invalidate the final CAS and consume the preparation budget without a
+prepared attempt. After pausing planner writes, preparation progressed and a
+BUY completed. Fencing remains necessary; never ignore a stale CAS.
+
+Yao's all-steps approval covers finishing the repair/deployment. Planning is
+paused; execution is stopped after all observed records terminal, pending
+truthful receipt ingestion using current registered code. q2 helper verifies
+that exact current release and database, refuses any nonterminal execution,
+and uses only existing settlement/recovery APIs. Preserve filled holdings,
+original orders, journals and all cost basis; no flatten/manual transaction.
+
+Prospective fix criteria before implementation/tests:
+- CAS1: after slow prepare I/O, reacquire fresh guards, reject owner change and
+  revalidate payload economics/nonce/sequence/risk/version/reservation/clock
+  and remaining authority before committing PREPARED at the fresh version.
+  Router preflight remains checked; no signature or broadcast during prepare.
+- CAS2: harmless journal advancement during I/O no longer burns the entire
+  prepare budget. HALT, nonce/owner change, revoked reservation/version,
+  elapsed authority and a race after refresh remain fail closed. Explicit
+  injected live clock supplies fresh completion time; fixture clocks stay
+  deterministic. No fresh quote cached across execution phases.
+- CAS3: meaningful failing regression on base, focused execution/signer/runtime
+  and complete pinned Linux/PG plus systemd/bundle qualification before deploy.
+- CAS4: apply as a registered dev-version upgrade of this same run/database,
+  preserving its newly filled book and shared budgets. Fresh holdings/caps and
+  both-host manifest binding remain required; no reset of terminal attempts.
+  Resume only after host checks, then complete T2 removal of temporary access.
