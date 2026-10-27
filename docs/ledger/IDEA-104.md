@@ -865,6 +865,33 @@ Pass criteria:
 - RQ-5 (live, not claimed here): the next rehearsal shows an RFQ quote refused before the approve, or reports that
   none occurred.
 
+### OBS03-B2-RQ02 — request quotes without RFQ (`enableRFQ=false`) (2026-10-27; criteria before the run and code)
+
+Keith asked on 2026-10-27 that the change actually fix the RFQ issue; refusal alone only skips RFQ quotes. The
+official Web3 trading-API page (the page EXP-005 cites) documents an optional `quote-and-swap` parameter `enableRFQ`,
+"true" by default for bStock pairs, and warns that RFQ calldata may embed a short-deadline settlement. It also lists
+`excludeDexes`. Neither is in the kit's parameter table or used anywhere in this repo. Using it keeps the same
+endpoint, vendor, local signing and router (F-96, F-104); it changes only which liquidity the aggregator may route to.
+
+Live read-only check (RV02), before any code change: the RV01 collector with `--disable-rfq` sends `enableRFQ=false`
+on each probed quote, after an unprobed default quote for the same symbol and size for comparison. 6 rounds × 5
+symbols, BUY 15 USDT, same probes and override.
+- RV02-1 PASS requires: every `enableRFQ=false` quote is answered and routes through no `rfq`-named DEX; no probe
+  returns an `RFQ_*` revert; every quote simulates successfully at every probe through 30 s (non-RFQ failures are
+  reported and examined, not counted as RFQ).
+- RV02-2 (cost, recorded not gated): for each pair, whether the default quote chose RFQ and the output difference in
+  bp `(default − no-RFQ) / default`. A material RFQ price advantage goes to the owners as a trade-off.
+- If RV02-1 fails (RFQ still chosen or expiries still seen), the parameter is not effective and only RQ01 applies.
+
+Code criteria if RV02-1 passes:
+- RQ-6: execution's `LiveVenue` quote and the planner's `MarketPort.quote` both send `enableRFQ="false"` for bStock
+  quotes, so the authorized minimum and the execution re-quote come from the same route family (no repeat of the
+  IDEA-090 S2-F6 shortfall). RQ01's refusal stays as the backstop. Gas top-up quotes (`enableRFQ` already defaults to
+  false for non-bStock pairs) are unchanged.
+- RQ-7: request-binding and replay checks (quote verifier, router replay, caps review) accept the parameter; affected
+  suites and the pinned full suite pass with exact counts.
+- RQ-8 (live, not claimed here): the next rehearsal shows no RFQ route and no `RFQ_OrderExpired`.
+
 ## S5-COST01 — separate cash cushion from discretionary cost admission (proposal)
 
 Yao requested a new review PR on 2026-10-27 after confirming gas is already
