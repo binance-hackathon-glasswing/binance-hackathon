@@ -66,15 +66,22 @@ class LiveVenue:
         return Payload(56,intent.wallet,intent.pay_token,0,nonce,integer(d['gasLimit']),integer(d['gasPrice']),d['data'])
     @boundary
     def revoke(self, intent, token, nonce):
-        """Zero-only supporting approval via the same Web3 API; validated independently before signing."""
+        """Zero-only supporting approval anchored on the same Web3 API; validated independently before signing.
+
+        The live API refuses approveAmount "0" (40001, S5-OBS03), so ask for the canonical approve(router, 1) and send
+        its bytes with the amount word set to 0 (IDEA-104 OBS03-B1). The 1-unit approval is never signed."""
         if token not in REVOKE_TOKENS.values():
             raise Blocked('eligible token required before cleanup')
         r = self.client.request('GET', 'aggregator/approve-transaction', dict(binanceChainId='56',
-            tokenContractAddress=token, approveAmount='0', vendor='LiquidMesh'))
+            tokenContractAddress=token, approveAmount='1', vendor='LiquidMesh'))
         d = single(r)
         if str(d['dexContractAddress']).lower() != intent.router:
             raise Blocked('cleanup spender mismatch')
-        return Payload(56, intent.wallet, token, 0, nonce, integer(d['gasLimit']), integer(d['gasPrice']), d['data'])
+        prefix = '0x095ea7b3' + '0' * 24 + intent.router[2:]
+        if not isinstance(d['data'], str) or d['data'].lower() != prefix + format(1, '064x'):
+            raise Blocked('cleanup approval shape mismatch')
+        return Payload(56, intent.wallet, token, 0, nonce, integer(d['gasLimit']), integer(d['gasPrice']),
+                       prefix + format(0, '064x'))
     @boundary
     def estimate_gas(self,payload):
         r=self.client.request('POST','pre-transaction/gas-limit',dict(binanceChainId='56',evmTx=dict(

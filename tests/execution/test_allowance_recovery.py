@@ -271,21 +271,44 @@ class Scope(unittest.TestCase):
             validate_sequence(Execution(self.i, attempts=(a,)), 'APPROVE', self.payload,
                               replace(self.gates, nonce=9))
 
-    def test_web3_revoke_builder_uses_only_zero_api_approval_and_rejects_wrong_spender(self):
-        calls = []
+    def test_web3_revoke_builder_zeroes_a_canonical_one_unit_api_approval(self):
+        # OBS03-B1: the live API refuses approveAmount "0" (40001); the builder asks for 1 and zeroes the amount word.
+        calls, api = [], {}
         def request(method, endpoint, params):
             calls.append((method, endpoint, params))
-            return dict(response=dict(data=dict(dexContractAddress=self.i.router, gasLimit='100000',
-                                                gasPrice='1', data=self.payload.data)))
+            return dict(response=dict(data=dict(api)))
         venue = LiveVenue(SimpleNamespace(request=request), None, decoder=self.decoder)
-        venue.vendors[self.i.key] = 'LiquidMesh'
-        result = venue.revoke(self.i, USDT, 7)
-        self.assertEqual(result, self.payload)
+        one = zero_payload(self.i, USDT, nonce=7, amount=1).data
+        for data in (one, one.upper().replace('0X', '0x')):
+            api.update(dexContractAddress=self.i.router.upper().replace('0X', '0x'), gasLimit='123456', gasPrice='7',
+                       data=data)
+            result = venue.revoke(self.i, USDT, 7)
+            self.assertEqual(result, replace(self.payload, gas=123456, gas_price=7))
+            validate_payload(self.i, step(USDT), result, self.gates, 10, self.decoder)
+            self.policy.check(self.i, step(USDT), result, self.decoder, f.WALLET)
         self.assertEqual(calls[0][0:2], ('GET', 'aggregator/approve-transaction'))
-        self.assertEqual(calls[0][2]['approveAmount'], '0')
+        api.update(gasLimit='60000')  # the exact-payload estimate the executor runs next simulates the zero bytes
+        self.assertEqual(venue.estimate_gas(result), 60000)
+        self.assertEqual(calls[-1][0:2], ('POST', 'pre-transaction/gas-limit'))
+        self.assertEqual(calls[-1][2]['evmTx'], {'from': self.i.wallet, 'to': USDT, 'data': self.payload.data,
+                                                 'value': '0'})
+        api.update(gasLimit='123456')
+        self.assertEqual(calls[0][2], dict(binanceChainId='56', tokenContractAddress=USDT, approveAmount='1',
+                                           vendor='LiquidMesh'))
+        for token in u.u.TOKENS:
+            self.assertEqual(venue.revoke(self.i, token, 7), replace(self.payload, to=token, gas=123456, gas_price=7))
+        bad = [dict(dexContractAddress='0x' + 'ab' * 20), dict(data=self.payload.data),
+               dict(data=zero_payload(self.i, USDT, amount=2).data), dict(data=one + '00'), dict(data=one[:-2]),
+               dict(data='0xa9059cbb' + one[10:]), dict(data='0x095ea7b3' + '0' * 23 + '1' + one[34:]),
+               dict(data='0x095ea7b3' + '0' * 24 + 'ab' * 20 + format(1, '064x')), dict(data=None), dict(data=1)]
+        for change in bad:
+            with self.subTest(change=change):
+                api.update(dict(dexContractAddress=self.i.router, data=one), **change)
+                with self.assertRaises(Blocked):venue.revoke(self.i, USDT, 7)
+        count = len(calls)
         with self.assertRaises(Blocked):venue.revoke(self.i, NATIVE_BNB, 7)
-        self.assertEqual(len(calls), 1)
-
+        self.assertEqual(len(calls), count)
+        self.assertNotIn('0', {c[2].get('approveAmount') for c in calls})
 
 class Receipt(unittest.TestCase):
     def setUp(self):
