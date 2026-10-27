@@ -1126,3 +1126,27 @@ Prospective fix criteria before implementation/tests:
   preserving its newly filled book and shared budgets. Fresh holdings/caps and
   both-host manifest binding remain required; no reset of terminal attempts.
   Resume only after host checks, then complete T2 removal of temporary access.
+
+### PR318-RV01 — review criteria (2026-10-27, before regression runs)
+
+User authorizes review, fixes and merge of PR318. Canonical `305bccfa` was merged normally into the PR branch.
+Keep fixes in one additive commit; do not amend/rewrite the already-pushed history.
+
+Review findings and prospective pass criteria:
+- RV318-1: the collector promises private raw output outside the checkout, but `--out` currently accepts an
+  in-repository, existing or symlinked target. Reject checkout paths (including linked worktree source roots),
+  symlink aliases and existing directories before credential/network access; create a new private directory
+  outside the checkout. Offline refusal tests must prove no credentials or network calls occur.
+- RV318-2: the fresh official trading-API HTML and web-readable query table did not contain `enableRFQ`,
+  `excludeDexes` or the claimed default/short-deadline statement. Correct the unsupported documentation claim;
+  retain RV02 as observed parameter/route evidence, not an independently verified vendor contract or TTL guarantee.
+  Keep the RFQ-name refusal and all economic/gas/nonce/signer limits. Do not change native gas-top-up quote
+  parameters, which RV02 did not qualify; add a synthetic request-scope regression.
+- Recompute the two committed packets' summaries, counts and hashes without changing original evidence.
+  Run collector/execution/marketdata/signer regressions and full pinned Linux/Python3.12.15/PG14.24 checks.
+  Any environment failures remain explicit. No new live quote, key, model, AWS, host or wallet action.
+  Keep exact release/host/live RQ-5/RQ-8 acceptance open; this is source acceptance for merge only.
+
+Official page checked: https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/trading-api
+(fresh unauthenticated HTML and visible Flash API query table, 2026-10-27). Absence from this check does not prove
+the backend refuses the parameter; it prevents presenting the documentation/default claim as independently verified.
