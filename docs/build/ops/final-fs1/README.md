@@ -27,7 +27,26 @@ changes end and the project is **paused at 2026-10-28T10:00Z**; the organiser-in
 | Router policy, CAP-02 | unchanged from run 4: UNTRUSTED `05759e90…`, CAP-02 `3241abd3…` (re-confirm at A1) |
 | Run mode / environment | `live` / FINAL (the profile is refused in any other mode) |
 | Window (PF-04) | first buy 2026-10-29T14:00Z; new risk ends 2026-11-09T21:00Z; flatten from 2026-11-10T19:00Z; signing ends 2026-11-11T14:45Z; flat by 15:00Z |
-| Build | a new RC from the merge of PR278 (it must contain `tools/deploy/build_final_candidate.py` and `aiand-routing.fs1.json`) |
+| Build | a new qualified RC from `codex/system-testing-20261012`, including PR310/311/318 and the PR317 fence repair with stacked PR319. PR317 is still OPEN at FS1-ALIGN01 (2026-10-28); merge it into canonical before selecting the final source. PR278's merge alone is insufficient. See the [alignment audit](../../FS1_ALIGNMENT_20261028.md) |
+
+### Recent execution fixes and release selection (FS1-ALIGN01, 2026-10-28)
+
+Canonical `3f8e1650` includes PR310's API-compatible zero-only allowance cleanup, PR311's bounded post-approval
+dependency retry and PR318's non-RFQ bStock quotes. FS1's standalone preparer enables allowance recovery in
+runtime/execution and requires the independently assembled signer policy to agree. These shared fixes require
+a new release; an unchanged profile hash does not show that the runtime contains them.
+
+PR319 was merged **into PR317**, at `7484274a`, rather than into canonical. The combined preparation-fence
+fix is reviewed/tested, but remains outside `3f8e1650` until PR317 is merged. The release owner (Keegan, with Yao
+building/installing) must select a canonical descendant containing that reviewed stack and PR318, record the
+exact source/bundle hashes, qualify that release and bind the same manifest on both hosts before A1/P4.
+The historical S5-COST01 package pins `3ae83098`; it does not include PR318 or the fence stack and is not an
+FS1 release receipt. No qualified or installed FINAL build is established by this audit.
+
+FS1 profile `b8ba06e2…`, routing `9b86c732…` and history `5e572570…` remain the selected inputs. PR305/314's
+small-wallet/200bp/independent-cost options are S5-only; do not copy them into FINAL. Fresh FINAL executable
+AMM quotes must pass FS1's unchanged 50bp entry-cost gate and the existing caps/gas review. Runtime owner
+Keegan also retains the fence review's receipt-reconciliation and command-claim follow-up disposition.
 
 ## Standalone preparation (PR296-RV01)
 
@@ -96,7 +115,7 @@ are still required; an offline preparation is not an install receipt.
 |---|---|---|---|
 | W0 | anyone, read-only | chain monitor `--once` on the **final** wallet after funding and the 30 USDT gas swap, before install | 0 units of all five stocks (dust included), actual remaining USDT (about 170 before fees/self-check), actual BNB and a fresh profile valuation; reconcile funding notes and opening equity |
 | D1 | Yao, Mac | new database (proposed `larp_final`), run ID (proposed `larp-final-fs1`) | `D1_DONE` |
-| M1 | Mac or CI | bundle from the PR278 merge; check it contains the FS1 builder and routing file | `M1_DONE` |
+| M1 | Mac or CI; Keegan reviews | select the canonical source after PR317/319 is merged, containing PR310/311/318; record source and bundle hashes and qualify the exact release, including the FS1 builder, routing and standalone preparer. The PR278 merge or historical S5 bundle alone is insufficient | `M1_DONE` only with the recent-fix ancestry and exact-release checks above |
 | Q1 | Yao + Isaac | obtain FS1-pinned final-wallet quotes at actual gas-excluded opening sizes (about 32.3 USDT/name before fees), full-exit child sizes and small level reductions, using its 20 bp slippage and minimum-output cost checks. The existing `quote_check.py` is pinned to run 3's 8 bp/dev address and is supplementary only; an FS1-pinned path remains to be built/reviewed | exact-profile executable quotes and fee/gas evidence accepted, including cost-refused residuals |
 | M2, M3 | Yao, Mac | Standalone preparation and `--caps-inputs` above: fresh final-wallet capture, FINAL quote artifacts, exact prepared initial state and final policy/bindings. No installed dev runtime or retired source ledger is required. The historical `5b642bd3…` probe is comparison evidence only | `numeric_status: COVERED` at FS1 sizes (38.2 USDT cap, two exit children), eight-child action gas and actual BNB; final signer assembly complete before A1 |
 | A1 | Isaac | approve `PROFILE_SHA` `b8ba06e2…` (recovery profile, IDEA-098), the final `signer.json` with `signing_policy.allowance_recovery: true` (zero-only revokes, IDEA-096/LD06), and caps/gas coverage: the eight-child envelope 0.001536 BNB per action and the 0.01536 BNB exit reserve against the final wallet's actual BNB (GAP-73) | recorded in IDEA-093 and IDEA-098 |

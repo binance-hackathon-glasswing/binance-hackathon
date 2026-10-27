@@ -1,5 +1,13 @@
 # Current shared build and remaining work
 
+FS1-ALIGN01 (2026-10-28 SGT): canonical `3f8e1650` includes PR310/311/318 in FS1's shared execution path;
+S5's PR305/314 economics remain scoped away from FINAL. PR319 merged into PR317 at `7484274a`, and PR317
+is still OPEN: the combined fence fix is not canonical. FS1's stale PR278-only Build/M1 instructions now
+require the recent-fix canonical ancestry and exact release qualification after PR317 merges. Selected
+profile/routing/history hashes are unchanged. Focused pinned Linux/PG:168 passed/52 subtests, zero skips or
+failures. No FINAL build/host/deployment acceptance is claimed; existing owner gates remain.
+[Audit and remaining owners](FS1_ALIGNMENT_20261028.md).
+
 PR318-RV01 source review accepted (Oct27; source `a857d03d`, not deployed): bStock planning/execution request the empirically tested non-RFQ hint and reject RFQ-named execution routes. Review repairs enforce private collector output (including default TMPDIR), preserve native quote scope and correct the unverified API-documentation claim. Pinned Linux/PG full suite3108 passed/4154 subtests,zero failures/8 skips; non-root rerun adds1 pass, leaving5 systemd/2 optional fixtures unrun. Exact release/host/live RQ-5/RQ-8 and AMM entry-cost acceptance remain with the release/operator/strategy owners. PR317 remains separate. [Review](PR318_REVIEW_20261027.md).
 
 S5-COST01 (Oct27, review candidate): opt-in initial-gas S5 cash/cost separation
