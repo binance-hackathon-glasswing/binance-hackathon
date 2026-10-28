@@ -638,3 +638,16 @@ This is the F0m record that `prepare_fs1 --model-adoption-ref` names: pass exact
 - **OpenAI budget (F0b):** the routing hash is unchanged. The host's existing ledger carries the actual earlier
   charges (KMP-BUD01: 2,880,356 micro-USD settled, 337,180 UNKNOWN). Run sheet B1 never re-initializes it, so the
   file's US$2 prior-spend figure is used only on a host without a ledger. Those UNKNOWN entries stay with KMP-BUD01.
+
+## FS1 install progress (2026-10-28, after the F-127 pause; no code change)
+
+Claude Code on Yao Zhu's laptop, at Yao's instruction ("install the hosts, we'll do P4 onwards tomorrow"):
+- F0d DB1/DB2: already applied (read-only `terraform plan` from `4ebf65fe`: no database change; database alarms exist,
+  parameter group in sync, `pg_stat_statements` rows present). Plan not applied (its only diff would remove signer SSM).
+  `larp-dev` resized to db.t4g.medium (4 GiB) the same day.
+- D1 `larp_final` created from `4ebf65fe` migrations (PASS). M3 stamp `20261028T100436Z` from the `release/fs1-4ebf65fe`
+  checkout: profile `b8ba06e2…` (pin unchanged), caps COVERED with 24 final-wallet quotes, inputs `3b19a96a…`, signer
+  `59fc940a…`, execution `b0bbfb89…`. **A1: the team approved these hashes (relayed by Yao Zhu in chat, 2026-10-28).**
+- M4 bound/uploaded; W3 configs moved to `/etc/larp-history/4ebf65f-larp-final-selfcheck-temp2` on both hosts; P3
+  (routes PASS, 15 destinations), B1 (OpenAI ledger 5.30 of 50 USD charged), S1 and S1b (key loader PASS) done.
+  All units stopped. P4 → S2 → P5 and P6 at the 2026-10-29T02:00Z restart (local P6 copy refuses before 01:59Z).
