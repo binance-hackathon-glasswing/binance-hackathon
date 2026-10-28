@@ -27,7 +27,7 @@ STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 P=$MAIN/deploy/activation/selfcheck-temp-20261028/private; install -d -m 0700 "$P"
 PREP=$REL/deploy/activation/selfcheck-temp-$STAMP   # prepare_fs1 writes only into the git-ignored deploy/activation
 cd "$REL"
-"$PY" -m tools.deploy.prepare_shadow capture --env-file "$MAIN/.env" --wallet "$W" \
+"$PY" tools/deploy/prepare_shadow.py capture --env-file "$MAIN/.env" --wallet "$W" \
   --artifact-root "$P/capture-artifacts-$STAMP" --output "$P/capture-$STAMP.json" --balance-rpc-config "$RPC"
 common=(--temp-self-check --terraform-output "$TF" --wallet "$W" --capture "$P/capture-$STAMP.json"
   --token-history-config "$HISTORY" --balance-rpc-config "$RPC" --rds-ca-sha256 "$CA_SHA256" --build-id "$BUILD"
