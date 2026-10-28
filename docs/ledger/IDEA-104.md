@@ -1091,6 +1091,10 @@ Source configs retired and preserved on both hosts; original database, model
 budget/evidence and protected signer key remain intact. New release installation
 and live start checks follow; no completed BUY is claimed here.
 
+## REL-AUD01 — release contents and declaration audit (2026-10-28 SGT)
+
+User requested investigation of the claimed revert and important DRAFT declarations, with a new release only if no issue remains. Read-only audit of canonical `2aa95617` and the actual published archive establishes that PR317/PR319 are present; `69d3e314` is confined to an unmerged revert branch, with no associated PR or documented rationale. Archive/manifest hashes and four affected execution file hashes match. Ten local guard/register tests and the declaration renderer pass; no PostgreSQL or host/live rerun. Nine substantive DRAFT rows and dated model-services scope still block live activation. DEV-23 also contradicts the FINAL builder's enabled allowance recovery. No statuses/configuration changed and no new release built. Keegan retains final declarations/services with Keith/Isaac/operator evidence; the user deploys after a truthful new qualified build. [Full findings, evidence and owners](../build/RELEASE_DECLARATIONS_AUDIT_20261028.md).
+
 ## S5-COST03 — preparation CAS interference found during live acceptance
 
 The combined3ae83098 release is installed and registered on both hosts;
