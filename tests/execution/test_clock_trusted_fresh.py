@@ -4,8 +4,8 @@ The TEMP-SC run (2026-10-28) approved three times and never swapped: the cycle t
 before the runtime committed a round, so the cycle's `now` was more than a second behind `last_decision_ms`.
 Synthetic store only; the numbers are the 04:01 case from that run.
 """
-from dataclasses import replace
 import unittest
+from unittest.mock import patch
 
 from larp.storage.postgres import doc
 from larp.execution_live.loop import RunAuthorization
@@ -75,12 +75,16 @@ class FreshDecisionClock(unittest.TestCase):
             'reading behind the last decision': (Store(), CYCLE_NOW + 1),
             'reading behind the cycle': (Store(last_decision_ms=1000), CYCLE_NOW - 1),
             'non-integer reading': (Store(), float(CYCLE_NOW + 3)),
-            'boolean reading': (Store(last_decision_ms=0), True),
             'CLOCK halt': (Store(halt='CLOCK'), CYCLE_NOW + 3),
         }
         for name, (store, reading) in cases.items():
             with self.subTest(name):
                 self.assertFalse(facts(store, Clock(store, reading))['clock_trusted'])
+        # PR325-RV01: at now_s 0 a True reading (== 1) passes the backward and decision checks, so only the type
+        # check can refuse it.
+        store = Store(last_decision_ms=0)
+        self.assertTrue(facts(store, Clock(store, 1), now_s=0)['clock_trusted'])
+        self.assertFalse(facts(store, Clock(store, True), now_s=0)['clock_trusted'])
 
     def test_ct2_tolerance_boundary_is_unchanged(self):
         store = Store(last_decision_ms=(CYCLE_NOW + 2) * 1000 + 1000)
@@ -96,10 +100,13 @@ class FreshDecisionClock(unittest.TestCase):
 
     def test_ct1_other_facts_keep_the_callers_time(self):
         store = Store()
-        late = replace(store.economic, valid_until=CYCLE_NOW + 1)
-        result = RunAuthorization(store, run_id='run', build_id=BUILD,
-                                  clock_s=Clock(store, CYCLE_NOW + 3)).facts(late, CYCLE_NOW)
-        self.assertEqual(result['expires_at'], CYCLE_NOW + 1)
+        seen = []
+        def permitted(projection, economic, now_ms):
+            seen.append(now_ms)
+            return True
+        with patch('larp.strategy.execution_bounds.permitted', permitted):
+            facts(store, Clock(store, CYCLE_NOW + 3))
+        self.assertEqual(seen, [CYCLE_NOW * 1000])  # the risk windows keep the caller's time, not the fresh reading
 
 
 class Wiring(unittest.TestCase):

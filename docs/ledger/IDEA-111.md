@@ -1,7 +1,7 @@
 # IDEA-111 — Stale cycle time makes `clock_trusted` refuse the swap after every approve
 
 - Date / author: 2026-10-28 SGT / Claude Code at Keith's request (read-only host analysis, then this fix)
-- Status: open (criteria registered before code; not merged, not installed)
+- Status: supported offline; reviewed and merged via PR #325 at `44f83d6b` (merge `64c005ae`); included in the FS1 release, live swap check pending
 - What: the TEMP-SC run (IDEA-110) on the final wallet approved SKHYB three times and never swapped. Each
   swap preparation failed `clock_trusted`, and with `allowance_recovery` on that one refusal cancels the intent
   and revokes the approval. Fix: `RunAuthorization.facts` compares the run's `last_decision_ms` with a clock
@@ -89,6 +89,51 @@ executor's own `clock_s`. Without a clock the old behaviour is unchanged. New te
 | CT-4 | PASS. `build_execution` wires the same callable into the executor and the guards' authorization. |
 | CT-5 | PASS. Pinned image `larp-ci:py31215` (Python 3.12.15) with disposable PostgreSQL 14.24: 3152 passed, 4177 subtests, 9 skipped, 5 failed. The same 5 fail identically on unmodified base `2aa95617` (bubblewrap sandbox, git-tracked-file scans and gate-A preparation inside a container mount of a worktree), so none is new. Systemd fixtures and optional fixtures skipped as before. |
 
-Verdict: supported offline. Not done: review (Keegan, execution), merge, release, and a live check that a
-swap follows its approve on the host. Not proven: that the executor's observation commit causes the runtime's
-round. IDEA-096's abort after a refusal following approval is unchanged.
+Verdict at this run: supported offline. Review, merge, release and the live swap check were pending then.
+Review and merge are recorded below; canonical status now records inclusion in the FS1 release. A live check
+that a swap follows its approve on the host remains open. Not proven: that the executor's observation commit causes the
+runtime's round. IDEA-096's abort after a refusal following approval is unchanged.
+
+## Review PR325-RV01 (2026-10-28, independent Claude Code review subagent; head `44f83d6b`)
+
+- Verdict: approve with nits. No code defect found. Signer host does not use `RunAuthorization` or
+  `last_decision_ms` (it checks the CLOCK halt and skew against `gates.observed_at`), so it is unaffected.
+- End-to-end reproduction on PostgreSQL 14.24 with the real RoundDriver, ExecutionLoop, ExecutionService,
+  Executor (allowance recovery on) and RunAuthorization: on base `2aa95617` the swap cycle aborts with
+  "current execution prerequisite failed" after `APPROVE FINAL_SUCCESS`; on the head it prepares the SWAP and
+  reaches FINAL_SUCCESS. An executor clock 5 s behind still refuses. Re-run independently by the author with the
+  same results. (The mid-cycle commit is a direct projection commit, not a planned round.)
+- PR #325 was merged at the reviewed head `44f83d6b` (via `64c005ae`, canonical `4ebf65fe`). Nits fixed in a
+  follow-up: the boolean subtest now isolates the type check (a True
+  reading at `now_s` 0 would otherwise pass); the caller's-time test now asserts that `permitted()` receives
+  `now_s * 1000`, not the fresh reading; stale "not pushed/merged" status wording corrected.
+- Residual risk, not addressed here: a round committed mid-cycle that changes the leg's attempt budget or the
+  intent's reservation can still refuse after an approve and trigger IDEA-096's abort. That would be a real
+  refusal, not a stale-time one; untested. With this fix `clock_trusted` is effectively True on the shared
+  primary clock unless the runtime has raised a CLOCK halt, so the runtime's CLOCK halt is now the guard's main
+  protection.
+- CI: GitHub did not start any job (billing/spending limit), so the local pinned runs are the only test evidence.
+
+## Review PR326-RV01 (2026-10-28, Codex)
+
+Scope: head `88fb07a9`, based on canonical `4ebf65fe`; two regression assertions and
+review/status documentation only. Pass criteria recorded before this review's tests:
+
+- The fresh-clock, router-wiring and allowance-recovery suites pass in pinned
+  Python 3.12.15 with disposable PostgreSQL 14.24, including database cases.
+- In-memory mutations replacing the strict integer check with `isinstance` and
+  passing the fresh time to `permitted()` each fail the intended regression test.
+- No application source changes; status wording consistently distinguishes the
+  completed review/merge and recorded release from the pending live swap check.
+
+Repair: remaining historical "not merged" and "review/merge/release pending" wording
+was qualified or updated here and in CURRENT_STATUS. The live-check backlog remains.
+
+Results: PASS, 48 tests and 57 subtests, zero failures/skips (fresh-clock, router-wiring
+and allowance-recovery suites, Python 3.12.15 / PostgreSQL 14.24). Both in-memory
+mutations were killed by the intended assertion (one failure and zero errors each).
+The containers had no external network or injected production credentials; application
+files were mounted read-only and remained unchanged. `git diff --check` passed.
+GitHub run 40644097402 executed zero job steps; its runtime annotation confirms
+account-payment/spending-limit refusal. This is local offline evidence, not hosted CI
+or live swap acceptance. No remaining blocking defect found in this test/docs diff.
