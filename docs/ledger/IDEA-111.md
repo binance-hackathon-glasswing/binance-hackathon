@@ -102,9 +102,10 @@ round. IDEA-096's abort after a refusal following approval is unchanged.
   "current execution prerequisite failed" after `APPROVE FINAL_SUCCESS`; on the head it prepares the SWAP and
   reaches FINAL_SUCCESS. An executor clock 5 s behind still refuses. Re-run independently by the author with the
   same results. (The mid-cycle commit is a direct projection commit, not a planned round.)
-- Nits fixed after the merge of canonical `2090e175`: the boolean subtest now isolates the type check (a True
+- PR #325 was merged at the reviewed head `44f83d6b` (via `64c005ae`, canonical `4ebf65fe`). Nits fixed in a
+  follow-up: the boolean subtest now isolates the type check (a True
   reading at `now_s` 0 would otherwise pass); the caller's-time test now asserts that `permitted()` receives
-  `now_s * 1000`, not the fresh reading; status wording no longer says "not pushed".
+  `now_s * 1000`, not the fresh reading; stale "not pushed/merged" status wording corrected.
 - Residual risk, not addressed here: a round committed mid-cycle that changes the leg's attempt budget or the
   intent's reservation can still refuse after an approve and trigger IDEA-096's abort. That would be a real
   refusal, not a stale-time one; untested. With this fix `clock_trusted` is effectively True on the shared
