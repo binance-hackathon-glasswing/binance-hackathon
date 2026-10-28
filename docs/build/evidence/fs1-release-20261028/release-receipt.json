@@ -1,0 +1,68 @@
+{
+ "schema": "FS1ReleaseReceipt.v1",
+ "decision_id": "IDEA-042 GAP62-F03; IDEA-093 MA-01; IDEA-111; IDEA-112",
+ "release_url": "https://github.com/binance-hackathon-glasswing/binance-hackathon/releases/tag/fs1-4ebf65fe",
+ "build_id": "4ebf65fe390577d7d77c6c427d3c619423b5fa9f",
+ "source_branch": "codex/system-testing-20261012",
+ "build_branch": "release/fs1-4ebf65fe",
+ "arch": "x86_64",
+ "bundle": "larp-4ebf65fe3905-x86_64.tar.gz",
+ "sha256": "7b8e504dfdc27e2626e37021b372e76036d28bd3d874f620d469020146c7e10d",
+ "manifest_sha256": "e3c190ab7afc79ebadee523c43ce36f2450e1fbbe55f271edb8b4465e71f1c8f",
+ "python_version": "3.12.15",
+ "python_tag": "20261001",
+ "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
+ "rds_region": "ap-southeast-2",
+ "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+ "pins": {
+  "strategy_profile_sha256": "b8ba06e248b48b6406d77c1bda4110001324382e91bb63c71a27ce514731892f",
+  "model_routing_sha256": "9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4",
+  "router_policy_sha256": "05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5",
+  "model_adoption_ref": "IDEA-093 MA-01"
+ },
+ "release_register": {
+  "deviations": 25,
+  "draft": 0,
+  "open": 0,
+  "deviations_sha256": "431e25509c5a5b078ef85da73e94e449269ad55216d37f5e0ac1603378996608",
+  "services": 8,
+  "services_sha256": "f891ab044c84dadc4cf0f751ef4f180a455af16f131023392311195ff2f297a1"
+ },
+ "release_files_verified": 217,
+ "bundle_checksums_verified": 256,
+ "tests": {
+  "pinned_linux": {
+   "image": "larp-test:pr282",
+   "python": "3.12.15",
+   "postgres": "14.24",
+   "passed": 3182,
+   "skipped": 12,
+   "failed": 0,
+   "subtests": 4182,
+   "note": "3179 in the full run; 3 git-dependent tests failed only because the mounted worktree .git pointed outside the container, and all 82 tests in their 3 files pass on a standalone clone of 4ebf65fe"
+  },
+  "macos": {
+   "python": "3.12.14",
+   "postgres": "14.24",
+   "passed": 3181,
+   "failed_known": [
+    "test_ar7_full_verification_memory_does_not_grow_with_the_journal (also fails on canonical 2aa95617; passes on Linux)"
+   ]
+  },
+  "offline_provisioning": {
+   "image": "amazonlinux:2023, --network none",
+   "primary": "PASS",
+   "signer": "PASS",
+   "installs_per_role": 2
+  },
+  "deviation_renderer": "PASS"
+ },
+ "not_run": [
+  "real systemd cases",
+  "bubblewrap sandbox cases (skipped in the image)",
+  "hosted CI (Actions billing)"
+ ],
+ "build_method": "tools/build_release_bundle.py build() with Python/wheels/RDS CA copied from the published temp-selfcheck-e261bcfc archive (sha256 1a58277c..., matched); 35 cached files verified against its SHA256SUMS; lockfiles, python.lock and provision.sh unchanged since e261bcfc; all application files archived from pushed 4ebf65fe",
+ "host_deployment": false,
+ "signing": false
+}

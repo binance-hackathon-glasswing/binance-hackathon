@@ -28,7 +28,7 @@ the first round journals `activation_self_check: EXPIRED` and FS1 trades from 20
 | Router policy, CAP-02 | unchanged from run 4: UNTRUSTED `05759e90…`, CAP-02 `3241abd3…` (re-confirm at A1) |
 | Run mode / environment | `live` / FINAL (the profile is refused in any other mode) |
 | Window (PF-04) | first buy 2026-10-29T14:00Z; new risk ends 2026-11-09T21:00Z; flatten from 2026-11-10T19:00Z; signing ends 2026-11-11T14:45Z; flat by 15:00Z |
-| Build | a new RC from the merge of PR278 (it must contain `tools/deploy/build_final_candidate.py` and `aiand-routing.fs1.json`) |
+| Build | **release [`fs1-4ebf65fe`](../../evidence/fs1-release-20261028/README.md)**: build `4ebf65fe390577d7d77c6c427d3c619423b5fa9f`, bundle `larp-4ebf65fe3905-x86_64.tar.gz` SHA-256 `7b8e504dfdc27e2626e37021b372e76036d28bd3d874f620d469020146c7e10d`, manifest `e3c190ab…`. Contains GAP62-F03, PR323, PR325 (IDEA-111) and IDEA-112 |
 
 ## Standalone preparation (PR296-RV01)
 
