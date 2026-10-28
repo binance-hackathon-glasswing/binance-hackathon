@@ -218,3 +218,11 @@ buy and sell on the final wallet with the fixed build: "set buy window as 3pm" a
   execution records COMPLETED, 4 signatures, 0 refusals; router allowances all 0 (CLEAN); services 0 restarts.
   Seen in passing: transient `StateVersionConflict` cycle blocks on the BUY record (recovered, no effect).
   Open: receiver ACKs/empty spool check, final chain flat check, and retiring the run after signing ends (09:30Z).
+- **Close-out (2026-10-28 ~07:50Z):** uploader 93 deliveries since 07:15Z, all ACK (HTTP 200), 0 failures. Final chain
+  check (public RPC, read-only): zero units of all five stocks (dust included), every allowance 0 (our router,
+  MetaMask, Permit2), 170.0006 USDT, 0.0399 BNB, nonce 12: W0 PASS, so FS1 preparation's flat-wallet precondition holds.
+  Retired: runtime, then execution, then uploader/evidence/archive timer (primary) and signer, all inactive and
+  disabled; configs, database `larp_final_selfcheck2` and the final key stay in place. **W3 verdict: PASS** (W3-1..W3-3).
+- Database follow-up (not code): `larp-dev` has run at 60–150 MB free and 350–470 MB swap all week (working set
+  ≈ 1.3–1.4 GB on 1 GiB). Yao Zhu is upgrading the AWS account to resize before FS1; sizes priced (Sydney,
+  Single-AZ): micro $0.025/h, small (2 GiB) $0.051/h, medium (4 GiB) $0.102/h. Keep `development.tfvars` in step.
