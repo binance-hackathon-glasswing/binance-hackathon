@@ -166,3 +166,13 @@ Pass criteria:
 | W2-3 | PASS | Full suite, local macOS, Python 3.12.14, PostgreSQL 14.24: 3149 passed, 10 skipped, 1 failed, 4172 subtests. The failure is the same pre-existing `test_ar7_full_verification_memory_does_not_grow_with_the_journal`, which also fails on `c1e23729`. |
 
 A scratch run (not committed) of the FINAL caps/signer assembly with the W2 profile gave `numeric_status: COVERED`, and the runtime built from the profile.
+
+## Install progress (2026-10-28 SGT, Claude Code with Yao Zhu)
+
+- **W0** (00:50Z, read-only): the final wallet has no stock, no allowance to our router, MetaMask or Permit2, 170 USDT, 0.0400 BNB and nonce 2 (the MetaMask gas swap). PASS.
+- **D1**: `larp_final_selfcheck` created; `IDEA-110 D1 PASS`, `D1_DONE` (Yao).
+- **M3 gap and fix**: no FINAL caps-inputs path existed. `review_rehearsal_caps.py` is REHEARSAL-only. `tools/deploy/final_caps_inputs.py` (PR #323) builds the inputs from `prepare_fs1` output and live final-wallet quotes. Offline tests: 23 passed.
+- **M3** (stamp `20261028T010234Z`): COVERED with 26 quotes. Profile `b2e85827…` matches the release. Signer `9e574c312d66…`, execution `1be4c3034bb7…`. The quoted self-check BUY of 0.90 USDT costs about 1.3e-5 BNB in gas.
+- **A1**: Yao Zhu and Isaac approved these exact hashes, the caps, the window and the sub-1-USDT leg (relayed by Yao in chat).
+- **M1/M4 local**: Keith's release assets were verified. The bound `release.json` is `9271a5d6…`, and the signer check passes. Host steps follow the run sheet's install package section.
+- **Risk**: the S5-COST03 preparation CAS interference is unfixed in `2aa95617`, because FENCE01 was reverted.
