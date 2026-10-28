@@ -18,6 +18,11 @@ CA_SHA256=d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b
 TF=$MAIN/deploy/activation/tf-output.json
 RPC=$MAIN/deploy/activation/balance-rpc/selected-providers.json
 HISTORY=$REL/docs/build/evidence/th01-live-20261026/token-history.json
+# The team's SEC EDGAR contact (evidence.env), from the existing private Gate A preparation, as every earlier package.
+SEC=$(python3 -I -c 'import shlex,sys
+for l in open(sys.argv[1]):
+    if l.startswith("LARP_SEC_USER_AGENT="): print(shlex.split(l)[0].split("=",1)[1])' "$MAIN/deploy/activation/gate-a-prepared-20261017/evidence.env")
+[[ -n $SEC ]] || { echo "SEC contact missing"; exit 3; }
 ADOPTION=${MODEL_ADOPTION_REF:-"IDEA-110 TEMP-SC on FS1 routing 9b86c732 (approved Yao Zhu + Isaac, 2026-10-28 SGT)"}
 [[ -z $(git -C "$REL" status --porcelain --untracked-files=no) ]] || { echo "tool checkout is dirty"; exit 3; }
 git -C "$REL" branch -r --contains HEAD | grep -q . || { echo "tool commit is not pushed"; exit 3; }
@@ -31,7 +36,7 @@ cd "$REL"
   --artifact-root "$P/capture-artifacts-$STAMP" --output "$P/capture-$STAMP.json" --balance-rpc-config "$RPC"
 common=(--temp-self-check --terraform-output "$TF" --wallet "$W" --capture "$P/capture-$STAMP.json"
   --token-history-config "$HISTORY" --balance-rpc-config "$RPC" --rds-ca-sha256 "$CA_SHA256" --build-id "$BUILD"
-  --model-adoption-ref "$ADOPTION")
+  --model-adoption-ref "$ADOPTION" --sec-contact "$SEC")
 "$PY" -m tools.deploy.prepare_fs1 "${common[@]}" --out "$PREP/prepared" | tee "$P/prepare-$STAMP.json"
 "$PY" -m tools.deploy.final_caps_inputs --prepared "$PREP/prepared" --terraform-output "$TF" \
   --rds-ca-sha256 "$CA_SHA256" --balance-rpc-config "$RPC" --env-file "$MAIN/.env" --output "$P/caps-$STAMP" \
@@ -39,6 +44,7 @@ common=(--temp-self-check --terraform-output "$TF" --wallet "$W" --capture "$P/c
 "$PY" -m tools.deploy.prepare_fs1 "${common[@]}" --out "$PREP/prepared-with-caps" \
   --caps-inputs "$P/caps-$STAMP/inputs.json" --services-out "$P/services-$STAMP" | tee "$P/prepare-caps-$STAMP.json"
 cmp -s "$PREP/prepared/strategy-profile.json" "$PREP/prepared-with-caps/strategy-profile.json" || { echo "profile bytes differ"; exit 3; }
+[[ -f "$PREP/prepared-with-caps/evidence.env" ]] || { echo "no evidence.env"; exit 3; }
 echo "M3 stamp $STAMP"
 echo "profile_sha256 $(shasum -a 256 "$PREP/prepared-with-caps/strategy-profile.json" | cut -c1-64)"
 echo "signer_sha256  $(shasum -a 256 "$P/services-$STAMP/signer.json" | cut -c1-64)"
