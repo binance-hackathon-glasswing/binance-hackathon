@@ -40,6 +40,8 @@ The windows are fixed (IDEA-110 W2, Keith 2026-10-28 SGT). They don't depend on 
 
 ## Pins
 
+TA-01 replacement: [temp-selfcheck-e261bcfc](https://github.com/binance-hackathon-glasswing/binance-hackathon/releases/tag/temp-selfcheck-e261bcfc), source `e261bcfc7a339a5e28388b843798b4197a9993a6`; use its bundle/manifest together, replacing2aa95617. [Verification receipt](../../evidence/temp-selfcheck-20261028/README.md).
+
 | Item | Value |
 |---|---|
 | Source profile | FS1 recovery `b8ba06e2…`; only the IDEA-110 fields change |
