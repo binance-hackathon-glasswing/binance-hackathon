@@ -92,3 +92,22 @@ executor's own `clock_s`. Without a clock the old behaviour is unchanged. New te
 Verdict: supported offline. Not done: review (Keegan, execution), merge, release, and a live check that a
 swap follows its approve on the host. Not proven: that the executor's observation commit causes the runtime's
 round. IDEA-096's abort after a refusal following approval is unchanged.
+
+## Review PR325-RV01 (2026-10-28, independent Claude Code review subagent; head `44f83d6b`)
+
+- Verdict: approve with nits. No code defect found. Signer host does not use `RunAuthorization` or
+  `last_decision_ms` (it checks the CLOCK halt and skew against `gates.observed_at`), so it is unaffected.
+- End-to-end reproduction on PostgreSQL 14.24 with the real RoundDriver, ExecutionLoop, ExecutionService,
+  Executor (allowance recovery on) and RunAuthorization: on base `2aa95617` the swap cycle aborts with
+  "current execution prerequisite failed" after `APPROVE FINAL_SUCCESS`; on the head it prepares the SWAP and
+  reaches FINAL_SUCCESS. An executor clock 5 s behind still refuses. Re-run independently by the author with the
+  same results. (The mid-cycle commit is a direct projection commit, not a planned round.)
+- Nits fixed after the merge of canonical `2090e175`: the boolean subtest now isolates the type check (a True
+  reading at `now_s` 0 would otherwise pass); the caller's-time test now asserts that `permitted()` receives
+  `now_s * 1000`, not the fresh reading; status wording no longer says "not pushed".
+- Residual risk, not addressed here: a round committed mid-cycle that changes the leg's attempt budget or the
+  intent's reservation can still refuse after an approve and trigger IDEA-096's abort. That would be a real
+  refusal, not a stale-time one; untested. With this fix `clock_trusted` is effectively True on the shared
+  primary clock unless the runtime has raised a CLOCK halt, so the runtime's CLOCK halt is now the guard's main
+  protection.
+- CI: GitHub did not start any job (billing/spending limit), so the local pinned runs are the only test evidence.
