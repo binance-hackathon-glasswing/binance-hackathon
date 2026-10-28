@@ -1,5 +1,33 @@
 # IDEA-110 — Temporary sub-1-USDT final-wallet self-check (TEMP-SC)
 
+## TA-01 — temporary activation scope (2026-10-28; criteria before implementation/tests)
+
+User confirms this release is only the temporary pipeline test: one BUY below 1 USDT then an automatic SELL,
+with no discretionary strategy. Final FS1 declaration details remain for later review. The current W2 profile
+already enforces this trading scope but live activation refuses its nine unfinished FS1 declarations.
+
+Implement an explicit, narrowly pinned pre-scored activation exception, not a blanket removal of the final gate:
+- TA1: only live run `larp-final-selfcheck-temp`, database `larp_final_selfcheck`, exact reviewed W2 profile file
+  SHA-256 `b2e85827c65d99b709c0d958c2b1bf734e62cc271bba35ac536284dcba1b4187`, and activation before
+  2026-10-28T06:00Z on Oct28 may retain the existing nine DRAFT rows. Require the existing exact deviations hash
+  `5c38324017313746e08b1ee7c76b721888418a936559c50a7f2ecf02d429b707`, no OPEN rows and the exact draft IDs.
+- TA2: verify actual profile bytes against their configured pin, validate the profile, and record the temporary
+  activation scope, profile hash and deferred rows in RUN_ACTIVATED. Preserve wallet/build/registration/quarantine
+  fencing and operator review reference; no FS1 declaration is finalized or silently omitted.
+- TA3: ordinary FS1/live runs, wrong run/database/profile/hash, modified size/windows, missing/bad register,
+  OPEN rows, added DRAFT rows and activation at/after cutoff refuse before store activation. No caller-supplied
+  generic bypass flag. The standard final gate remains unchanged outside this exact temporary scope.
+- TA4: existing sub-1-USDT/one-BUY/mandatory-full-SELL/no-S1-risk tests and standalone preparation tests pass;
+  add activation integration regressions with disposable PostgreSQL and targeted guards/register/replay checks.
+- TA5: generate and deliver the actual temp profile; commit/push code before building a new exact x86_64 bundle.
+  Verify manifest/archive/profile pins, fix inclusion and declarations. Deliver installation/update instructions
+  for the existing quarantined run (avoid a second init). No host install, key, signing or wallet action here.
+
+The profile's W2 windows remain buy04:00–06:00Z, flat-by07:00Z, terminal flatten07:01Z, signing-end08:00Z Oct28.
+It ends before the10:00Z pause. Model/source/caps and host preflights are retained as pipeline components;
+they do not grant discretionary strategy authority. Actual final-wallet quotes/caps and registration remain
+deployment inputs, not fabricated by offline preparation.
+
 - Date / author: 2026-10-28 SGT (2026-10-27 UTC) / drafted with Claude Code at Keith's request
 - Status: open (criteria registered before code; not merged, not installed)
 - What: a temporary FINAL profile, separate from FS1, that tests the full pipeline on the final wallet:
