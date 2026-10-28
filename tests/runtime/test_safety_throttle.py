@@ -106,6 +106,12 @@ class Settings(unittest.TestCase):
         example = json.loads((ROOT / 'config/runtime/runtime.example.json').read_text())
         self.assertEqual(example['driver']['safety_round_interval_ms'], 120000)
 
+    def test_st5_fs1_standalone_preparation_carries_the_interval(self):
+        from tests.runtime.test_fs1_standalone import prepare
+        runtime = prepare()['runtime.json']
+        runtime = json.loads(runtime) if isinstance(runtime, (bytes, str)) else runtime
+        self.assertEqual(runtime['driver']['safety_round_interval_ms'], 120000)
+
 
 if __name__ == '__main__':
     unittest.main()

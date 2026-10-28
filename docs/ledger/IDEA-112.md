@@ -1,7 +1,7 @@
 # IDEA-112 — Throttle idle signed safety rounds (ARCH-01 / DB-01 volume fix before the F-127 freeze)
 
 - Date / author: 2026-10-28 SGT / Claude Code at Yao Zhu's request ("fix everything before code freeze at 6pm")
-- Status: open (criteria registered before code)
+- Status: implemented and verified offline (2026-10-28); in the FS1 release; host measurement pending
 - What: in signed mode `RoundDriver._signed_cycle` starts a `safety:` round on **every** runtime tick
   (`interval_seconds` 5; about every 13 s in run 7). Each round journals the whole projection plus audit rows,
   even when nothing changed. Run 7 (IDEA-104 S5-OBS02) grew `events` by about 1.7 GB/day from these hold-only
@@ -37,3 +37,19 @@
 - **ST-5.** Validation: negative or non-integer values are refused; `runtime.example.json` carries 120000, and
   the FS1 standalone preparation passes it through.
 - **ST-6.** Full suite with PostgreSQL: no new failures compared with canonical.
+
+## Results (2026-10-28) — PASS offline
+
+- ST-1..ST-4 PASS (`tests/runtime/test_safety_throttle.py`, real signed `RoundDriver`, PostgreSQL 14.24). Without
+  the setting, each idle 5 s cycle plans a safety round and commits two journal versions. With 120000, 23 idle
+  cycles in 115 s plan none, commit nothing and make no quote request; the cycle at +120 s plans one. Another
+  writer's commit plans one at once (and the driver's own round does not retrigger). Midnight UTC plans one at
+  once. A skipped cycle still settles open execution and reaches queueing.
+- ST-5 PASS: invalid values are refused; both runtime examples and the prepared FS1 `runtime.json` carry 120000.
+  The per-tick allowance, gas and balance checks write only on a change (`larp/runtime/allowances.py`,
+  `BalanceCheck`), so they do not defeat the throttle.
+- ST-6 PASS: full suite, macOS, Python 3.12.14, PostgreSQL 14.24, with PR325 merged: 3181 passed, 10 skipped,
+  4179 subtests. Two failures: the known `test_ar7` memory probe (fails on canonical too), and `test_sg3`, which
+  required the shadow example to mirror the base. Fixed, and the affected suites pass (123 tests).
+- Not measured: actual host volume. The first FS1 day should confirm raw `events` growth near the projected
+  ~190 MB/day and daily segments far below 64 MiB (DB-01 DB7 / ARCH-02 host checks).
