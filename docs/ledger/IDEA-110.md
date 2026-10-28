@@ -211,3 +211,10 @@ buy and sell on the final wallet with the fixed build: "set buy window as 3pm" a
 - **W3-3 BUY: PASS.** SKHYB BUY 0.899999 USDT. Approve `0x912ec18fbf75cce27e34faacea441400d97af3ce84788949cad3c54bb7a249ad`
   (status 1, block 130240185); swap `0x6470add8492212d95c7f6b006392aaf8874026d3a45e70b87efa033cee3374d0` (status 1,
   block 130240300). No refusal, no revoke: the IDEA-111 live swap check passes. SELL due at 08:45Z.
+- **W3-3 SELL: PASS.** The self-check sells as soon as the bought units settle (`self_check.phase`: units held → SELL;
+  `flat_by` 08:45Z is the deadline, not the sell time). Full position 5733218145265367 SKHYB units: approve
+  `0x988881dc85ca33e499eb90d6ee6e0b401a5fae4a56bf3bbbc7efc6ed925256af` (status 1, block 130241630), swap
+  `0x95c1b4cae53c705776bc2c5254f4dc4576cf2efd93eb78eba9294e3c1019fa39` (status 1, block 130241743), ~07:32Z. Both
+  execution records COMPLETED, 4 signatures, 0 refusals; router allowances all 0 (CLEAN); services 0 restarts.
+  Seen in passing: transient `StateVersionConflict` cycle blocks on the BUY record (recovered, no effect).
+  Open: receiver ACKs/empty spool check, final chain flat check, and retiring the run after signing ends (09:30Z).
