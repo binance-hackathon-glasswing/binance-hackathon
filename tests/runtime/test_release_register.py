@@ -33,14 +33,15 @@ class Register(unittest.TestCase):
     def test_r1_services_list(self):
         services = validate_services(load(SERVICES))
         pending = [s for s in services['services'] if s['status'] == 'PENDING_DECISION']
-        # V3 trial providers selected; host qualification and final adoption remain separate.
+        # GAP62-F03: every service is declared for the FS1 scored run; none is pending or still provisioning.
         self.assertEqual(pending, [])
+        self.assertEqual({s['status'] for s in services['services']}, {'ACTIVE'})
+        for service_id in ('assessor-model', 'assessor-model-aiand', 'bsc-rpc'):
+            service = next(s for s in services['services'] if s['service_id'] == service_id)
+            self.assertEqual(service['selection_scope'], 'FS1_SCORED_RUN')
         model = next(s for s in services['services'] if s['service_id'] == 'assessor-model')
-        self.assertEqual(model['selection_scope'], 'UNSIGNED_V3_TRIAL')
-        self.assertEqual(model['status'], 'PROVISIONING')
+        self.assertIn('9b86c732', model['scope'])  # the pinned FS1 routing file
         rpc = next(s for s in services['services'] if s['service_id'] == 'bsc-rpc')
-        self.assertEqual(rpc['status'], 'PROVISIONING')
-        self.assertEqual(rpc['selection_scope'], 'DEVELOPMENT_BALANCE_READS_ONLY')
         self.assertEqual(rpc['development_balance_source_ids'], ['BSC_BNBCHAIN_PUBLIC', 'BSC_NODEREAL_PUBLIC'])
         broken = copy.deepcopy(services)
         del broken['services'][0]['terms_ref']

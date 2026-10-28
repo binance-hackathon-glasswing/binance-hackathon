@@ -187,9 +187,10 @@ class Declared(unittest.TestCase):
         from larp.runtime.register import validate_services
         services = validate_services(json.loads((ROOT / 'config/release/services.v1.json').read_text()))
         [rpc] = [s for s in services['services'] if s['service_id'] == 'bsc-rpc']
-        # Isaac selected the development balance providers (IDEA-055 RPC-Q01 D1); host acceptance is still pending.
-        self.assertEqual(rpc['status'], 'PROVISIONING')
-        self.assertEqual(rpc['selection_scope'], 'DEVELOPMENT_BALANCE_READS_ONLY')
+        # Isaac selected the providers (IDEA-055 RPC-Q01 D1); GAP62-F03 declares them for the FS1 scored run.
+        self.assertEqual(rpc['status'], 'ACTIVE')
+        self.assertEqual(rpc['selection_scope'], 'FS1_SCORED_RUN')
+        self.assertEqual(rpc['development_balance_source_ids'], ['BSC_BNBCHAIN_PUBLIC', 'BSC_NODEREAL_PUBLIC'])
 
     def test_f8_the_example_names_two_unset_providers(self):
         import importlib.util

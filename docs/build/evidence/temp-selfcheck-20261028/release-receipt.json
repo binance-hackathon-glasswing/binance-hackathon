@@ -1,0 +1,57 @@
+{
+  "sha256": "1a58277c8919d49980388e04df7bc9fe119db0c8621fffcf7a64a1232b6ce5c1",
+  "manifest_sha256": "7635b1965a7655f22953d5d61702af1ac57c26ac1b386db575e3c48ac766d41c",
+  "build_id": "e261bcfc7a339a5e28388b843798b4197a9993a6",
+  "arch": "x86_64",
+  "python_version": "3.12.15",
+  "python_tag": "20261001",
+  "python_file": "cpython-3.12.15+20261001-x86_64-unknown-linux-gnu-install_only.tar.gz",
+  "python_sha256": "0e56475e23f61a9c7d254fe16bc4931544026d591fc1cb8b770712ee94fa6260",
+  "rds_region": "ap-southeast-2",
+  "rds_ca_sha256": "d73890748b5a95551800df8a6f07c9c800e32ed34da7e6c9505918bf8ac2398b",
+  "schema": "TemporarySelfCheckReleaseReceipt.v1",
+  "decision_id": "IDEA-110 TA-01",
+  "release_url": "https://github.com/binance-hackathon-glasswing/binance-hackathon/releases/tag/temp-selfcheck-e261bcfc",
+  "pull_request": "https://github.com/binance-hackathon-glasswing/binance-hackathon/pull/324",
+  "profile_sha256": "b2e85827c65d99b709c0d958c2b1bf734e62cc271bba35ac536284dcba1b4187",
+  "release_files_verified": 217,
+  "bundle_checksums_verified": 256,
+  "tests": {
+    "pinned_linux": {
+      "python": "3.12.15",
+      "postgres": "14.24",
+      "passed": 3165,
+      "subtests": 4172,
+      "skipped": 11,
+      "failed": 0,
+      "seconds": 290.42
+    },
+    "recovered_sandbox_cases": 3,
+    "distinct_linux_passes": 3168,
+    "remaining_unrun": [
+      "5 real-systemd",
+      "2 external fixtures",
+      "1 root-sensitive permissions"
+    ],
+    "focused_local": {
+      "python": "3.12.14",
+      "passed": 79,
+      "subtests": 17,
+      "failed": 0
+    },
+    "offline_provisioning": {
+      "primary": "PASS",
+      "signer": "PASS"
+    },
+    "sandboxed_demo": "PASS",
+    "deviation_renderer": "PASS",
+    "shell_syntax": "PASS"
+  },
+  "hosted_ci": {
+    "run_id": 40623823267,
+    "status": "NO_STEPS_BILLING_BLOCKED"
+  },
+  "host_deployment": false,
+  "signing": false,
+  "build_method": "standard builder with verified unchanged Python/wheels/CA cache from published archive a4511e4aa314e92e3f2d5e5f9bf447b934523f78f70ff651c254bdf4a242cbf3"
+}

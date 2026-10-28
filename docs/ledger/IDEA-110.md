@@ -1,5 +1,33 @@
 # IDEA-110 — Temporary sub-1-USDT final-wallet self-check (TEMP-SC)
 
+## TA-01 — temporary activation scope (2026-10-28; criteria before implementation/tests)
+
+User confirms this release is only the temporary pipeline test: one BUY below 1 USDT then an automatic SELL,
+with no discretionary strategy. Final FS1 declaration details remain for later review. The current W2 profile
+already enforces this trading scope but live activation refuses its nine unfinished FS1 declarations.
+
+Implement an explicit, narrowly pinned pre-scored activation exception, not a blanket removal of the final gate:
+- TA1: only live run `larp-final-selfcheck-temp`, database `larp_final_selfcheck`, exact reviewed W2 profile file
+  SHA-256 `b2e85827c65d99b709c0d958c2b1bf734e62cc271bba35ac536284dcba1b4187`, and activation before
+  2026-10-28T06:00Z on Oct28 may retain the existing nine DRAFT rows. Require the existing exact deviations hash
+  `5c38324017313746e08b1ee7c76b721888418a936559c50a7f2ecf02d429b707`, no OPEN rows and the exact draft IDs.
+- TA2: verify actual profile bytes against their configured pin, validate the profile, and record the temporary
+  activation scope, profile hash and deferred rows in RUN_ACTIVATED. Preserve wallet/build/registration/quarantine
+  fencing and operator review reference; no FS1 declaration is finalized or silently omitted.
+- TA3: ordinary FS1/live runs, wrong run/database/profile/hash, modified size/windows, missing/bad register,
+  OPEN rows, added DRAFT rows and activation at/after cutoff refuse before store activation. No caller-supplied
+  generic bypass flag. The standard final gate remains unchanged outside this exact temporary scope.
+- TA4: existing sub-1-USDT/one-BUY/mandatory-full-SELL/no-S1-risk tests and standalone preparation tests pass;
+  add activation integration regressions with disposable PostgreSQL and targeted guards/register/replay checks.
+- TA5: generate and deliver the actual temp profile; commit/push code before building a new exact x86_64 bundle.
+  Verify manifest/archive/profile pins, fix inclusion and declarations. Deliver installation/update instructions
+  for the existing quarantined run (avoid a second init). No host install, key, signing or wallet action here.
+
+The profile's W2 windows remain buy04:00–06:00Z, flat-by07:00Z, terminal flatten07:01Z, signing-end08:00Z Oct28.
+It ends before the10:00Z pause. Model/source/caps and host preflights are retained as pipeline components;
+they do not grant discretionary strategy authority. Actual final-wallet quotes/caps and registration remain
+deployment inputs, not fabricated by offline preparation.
+
 - Date / author: 2026-10-28 SGT (2026-10-27 UTC) / drafted with Claude Code at Keith's request
 - Status: open (criteria registered before code; not merged, not installed)
 - What: a temporary FINAL profile, separate from FS1, that tests the full pipeline on the final wallet:
@@ -138,3 +166,17 @@ Pass criteria:
 | W2-3 | PASS | Full suite, local macOS, Python 3.12.14, PostgreSQL 14.24: 3149 passed, 10 skipped, 1 failed, 4172 subtests. The failure is the same pre-existing `test_ar7_full_verification_memory_does_not_grow_with_the_journal`, which also fails on `c1e23729`. |
 
 A scratch run (not committed) of the FINAL caps/signer assembly with the W2 profile gave `numeric_status: COVERED`, and the runtime built from the profile.
+
+## Install progress (2026-10-28 SGT, Claude Code with Yao Zhu)
+
+- **W0** (00:50Z, read-only): the final wallet has no stock, no allowance to our router, MetaMask or Permit2, 170 USDT, 0.0400 BNB and nonce 2 (the MetaMask gas swap). PASS.
+- **D1**: `larp_final_selfcheck` created; `IDEA-110 D1 PASS`, `D1_DONE` (Yao).
+- **M3 gap and fix**: no FINAL caps-inputs path existed. `review_rehearsal_caps.py` is REHEARSAL-only. `tools/deploy/final_caps_inputs.py` (PR #323) builds the inputs from `prepare_fs1` output and live final-wallet quotes. Offline tests: 23 passed.
+- **M3** (stamp `20261028T010234Z`): COVERED with 26 quotes. Profile `b2e85827…` matches the release. Signer `9e574c312d66…`, execution `1be4c3034bb7…`. The quoted self-check BUY of 0.90 USDT costs about 1.3e-5 BNB in gas.
+- **A1**: Yao Zhu and Isaac approved these exact hashes, the caps, the window and the sub-1-USDT leg (relayed by Yao in chat).
+- **M1/M4 local**: Keith's release assets were verified. The bound `release.json` is `9271a5d6…`, and the signer check passes. Host steps follow the run sheet's install package section.
+- **Risk** (corrected 2026-10-28, REL-AUD01): this line first said FENCE01 was reverted. It was not. PR317/PR319 (FENCE01/FENCE02) are ancestors of `2aa95617`; the revert commit `69d3e314` sits on an unmerged branch, and the published archive contains the fenced files byte for byte ([audit](../build/RELEASE_DECLARATIONS_AUDIT_20261028.md)).
+
+## TA-01 results and release (2026-10-28 SGT)
+
+Implemented at `e261bcfc7a339a5e28388b843798b4197a9993a6`, pushed before building. TA1–TA3: exact W2 file/run/database/date/register pins qualify; FS1, altered files/pins/size/windows/register/OPEN/extra-DRAFT/cutoff refuse before activation. RUN_ACTIVATED retains temporary purpose/profile/deferred rows. A real disposable-PostgreSQL regression activates the existing quarantined run, registers the build and refuses a repeated activation. No generic bypass, declaration status edit or database reset. TA4: focused79 tests/17subtests; full Linux/Python3.12.15/PG14.24:3165 passed/4172subtests/11skips/0failed; three sandbox skips pass separately,3168 distinct passes/8unrun. TA5: actual public profile generated (b2e85827), new exact x86_64 bundle built; all217 source files/256 checksums match, primary/signer offline provisioning PASS, sandboxed demo PASS. Hosted CI ran no steps due billing. [Published release/receipt and remaining deployment steps](../build/evidence/temp-selfcheck-20261028/README.md). PR324 retains final declaration follow-up; user deploys later. No host/key/wallet/signing action.
