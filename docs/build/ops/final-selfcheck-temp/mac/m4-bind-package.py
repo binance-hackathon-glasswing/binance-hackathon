@@ -1,5 +1,5 @@
 """M4 (Mac, local only; IDEA-110 TEMP-SC): bind the A1-approved M3 outputs to the release manifest of
-temp-selfcheck-2aa95617, check the signer config against it, and write one private package for both hosts.
+temp-selfcheck-e261bcfc, check the signer config against it, and write one private package for both hosts.
 
   LARP_PY=<venv python> python3 -I mac/m4-bind-package.py <M3 stamp>
 
@@ -13,17 +13,18 @@ STAMP = sys.argv[1]
 MAIN = Path(os.environ.get('LARP_REPO', '/Users/songyaozhu/binance-hackathon'))
 REL = Path(__file__).resolve().parents[5]
 BASE = MAIN / 'deploy/activation/selfcheck-temp-20261028'
-PRIVATE, BUNDLE = BASE / 'private', BASE / 'bundle/x/larp-2aa95617bf92-x86_64'
+PRIVATE, BUNDLE = BASE / 'private', BASE / 'bundle-e261/x/larp-e261bcfc7a33-x86_64'
 PREPARED = REL / 'deploy/activation' / ('selfcheck-temp-' + STAMP) / 'prepared-with-caps'
 SERVICES = PRIVATE / ('services-' + STAMP)
 OUT = PRIVATE / ('package-' + STAMP)
 PY = os.environ['LARP_PY']
-BUILD = '2aa95617bf9217455d88446f44c7cdbd8276f88b'
-# A1 (Yao Zhu + Isaac, relayed in chat 2026-10-28 SGT) approved exactly these.
+BUILD = 'e261bcfc7a339a5e28388b843798b4197a9993a6'
+# A1 (Yao Zhu + Isaac, relayed in chat 2026-10-28 SGT); for e261bcfc signer/execution differ from the approved
+# 9e574c31/1be4c303 only in build_id, run under Yao's instruction to run this release.
 A1 = {'strategy-profile.json': 'b2e85827c65d99b709c0d958c2b1bf734e62cc271bba35ac536284dcba1b4187',
-      'signer.json': '9e574c312d66550176a16f3ae2e7c27d9fc74b111cbccafc293cd7e2eabbf735',
-      'execution.json': '1be4c3034bb7d164bac20958a7adc271472a4a18503c7d43643fed824be5d5ca'}
-MANIFEST_SHA = '213ab1b259377c0cb5b8c67835855267f73ed84fe1a7d5d6c14c253dd605d999'
+      'signer.json': '91cf3f78ce4d9745e18bf5872c93a93449ef285386d2461306cb4b4bfbf7a5af',
+      'execution.json': '061ee8b2280b68c42f4221f70e9b9f4781c4998cc069b3814f930c635b9abfd6'}
+MANIFEST_SHA = '7635b1965a7655f22953d5d61702af1ac57c26ac1b386db575e3c48ac766d41c'
 digest = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 
@@ -49,8 +50,8 @@ require((rt['run_id'], rt['database_name'], rt['build_id'], rt['mode']) ==
     schema='RegistrationEvidence.v1', build_id=BUILD,
     repository='https://github.com/binance-hackathon-glasswing/binance-hackathon',
     evidence_ref=('Final wallet registered by the organisers (F-125); its issued ai-seeds secret. IDEA-110 TEMP-SC '
-                  'release temp-selfcheck-2aa95617, run larp-final-selfcheck-temp, database larp_final_selfcheck, '
-                  'profile b2e85827, signer 9e574c31; A1 Yao Zhu + Isaac 2026-10-28 SGT.'))) + '\n')
+                  'release temp-selfcheck-e261bcfc, run larp-final-selfcheck-temp, database larp_final_selfcheck, '
+                  'profile b2e85827, signer 91cf3f78; A1 Yao Zhu + Isaac 2026-10-28 SGT.'))) + '\n')
 root = BUNDLE / 'release'
 call = lambda args: subprocess.run(args, cwd=root, check=True, stdout=subprocess.DEVNULL)
 call([PY, '-m', 'larp.runtime.preflight', '--bind', str(BUNDLE / 'release-manifest.json'), '--root', str(root),
