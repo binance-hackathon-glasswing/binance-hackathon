@@ -7,6 +7,22 @@ This sheet installs a **temporary** run on the final wallet. It is **not FS1**:
 
 It answers F-125's "end-to-end self-check with a real final-wallet trade" at the smallest size Keith asked for (2026-10-28 SGT). This sheet is a plan: no host, wallet, key or approval action has been taken. Times are UTC (SGT = UTC+8).
 
+TA-01 (Oct28): the user authorizes this temporary pipeline test while FS1's final declarations remain unfinished.
+Activation now accepts the existing nine DRAFT rows only for this exact W2 profile hash, temp run/database and
+Oct28 activation before06:00Z. It records the temporary purpose and deferred IDs in RUN_ACTIVATED.
+No FS1 declaration becomes FINAL; ordinary FS1/live activation still refuses DRAFT rows. Existing signer, caps,
+release/registration, wallet, gas, logging and market checks remain. No discretionary strategy BUY is permitted.
+The generated public profile is [strategy-profile.json](../../evidence/temp-selfcheck-20261028/strategy-profile.json),
+file SHA-256 `b2e85827c65d99b709c0d958c2b1bf734e62cc271bba35ac536284dcba1b4187`.
+
+**Continuing the existing refused P4:** after installing/binding the new bundle and service configs to its new
+build_id, use P4 with third argument `existing-quarantined`:
+`ssm_run.py host/p4-init-activate-start.sh "<reviewer>" "<IDEA-110 A1 reference>" existing-quarantined`.
+This skips only `init` and runs the normal reviewed `activate`; an already active run or a different registered
+build still refuses. Do not delete/recreate the database or reset attempt history. With a genuinely new database,
+omit that argument to retain init then activate. Then follow S2, P5, P6 and the read-only J checks below.
+This document does not execute any of those host steps.
+
 ## Timing (read first)
 
 The windows are fixed (IDEA-110 W2, Keith 2026-10-28 SGT). They don't depend on when the install is prepared.
