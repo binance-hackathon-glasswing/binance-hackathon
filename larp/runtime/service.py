@@ -470,6 +470,31 @@ def init_run(config, store):
     return dict(initialized=True, run_id=config['run_id'], mode=mode, quarantined=True)
 
 
+def temporary_self_check_activation(config, register, now_ms):
+    """IDEA-110 TA-01: exact W2 pipeline test only; unfinished FS1 declarations remain explicit."""
+    from larp.strategy.profiles import validate_live
+    from larp.strategy.schema import instant
+    profile_sha = 'b2e85827c65d99b709c0d958c2b1bf734e62cc271bba35ac536284dcba1b4187'
+    drafts = ['DEV-01', 'DEV-02', 'DEV-03', 'DEV-04', 'DEV-07', 'DEV-19', 'DEV-22', 'DEV-23', 'DEV-24']
+    driver = config.get('driver') or {}
+    if (config.get('mode') != 'live' or config.get('run_id') != 'larp-final-selfcheck-temp'
+            or config.get('database_name') != 'larp_final_selfcheck'
+            or driver.get('strategy_profile_sha256') != profile_sha
+            or register.get('open_deviations') != [] or register.get('draft_deviations') != drafts
+            or register.get('deviations_sha256') != '5c38324017313746e08b1ee7c76b721888418a936559c50a7f2ecf02d429b707'
+            or type(now_ms) is not int
+            or not int(instant('2026-10-28T00:00:00Z').timestamp() * 1000) <= now_ms
+                   < int(instant('2026-10-28T06:00:00Z').timestamp() * 1000)):
+        return None
+    try:
+        profile = _pinned_json(driver.get('strategy_profile_file'), profile_sha, 'Temporary self-check profile')
+        validate_live(profile)
+    except (ContractError, ValueError, OSError, TypeError):
+        raise StartRefused('Temporary self-check profile is missing, changed or invalid') from None
+    return dict(purpose='TEMPORARY_PIPELINE_SELF_CHECK', strategy_profile_sha256=profile_sha,
+                deferred_deviations=drafts)
+
+
 def activate_run(config, store, manifest, *, reviewer, review_ref, now_ms):
     """The reviewed step that authorizes a dev/live run (IDEA-050): lift quarantine, register the running build if no
     version is registered, and journal who reviewed it. Run by a person before the scored run, and after a restore.
@@ -487,11 +512,13 @@ def activate_run(config, store, manifest, *, reviewer, review_ref, now_ms):
         raise StartRefused('Configured mode differs from the run, or the run is not dev/live')
     if run['wallet_id'] != config.get('wallet_address'):
         raise StartRefused('Configured wallet differs from the run')
+    temporary_scope = None
     if run['mode'] == 'live':
         # The final build runs unchanged for the whole scored run (F-117), so its declared deviations must be final
         # before it is activated: no OPEN decision and no DRAFT row (G-11; plan.md §6.5; IDEA-049 D-FND-010).
         register = manifest.read().get('release_register') or {}
-        if register.get('open_deviations') != [] or register.get('draft_deviations') != []:
+        temporary_scope = temporary_self_check_activation(config, register, now_ms)
+        if (register.get('open_deviations') != [] or register.get('draft_deviations') != []) and temporary_scope is None:
             raise StartRefused('Final activation needs a final deviations register: no OPEN or DRAFT rows')
     registered = run['projection'].get('registered_version')
     manifest_sha = hashlib.sha256(manifest.payload).hexdigest()
@@ -511,6 +538,8 @@ def activate_run(config, store, manifest, *, reviewer, review_ref, now_ms):
     current = store.load(run_id)
     event = dict(kind='RUN_ACTIVATED', epoch=epoch, build_id=config['build_id'], manifest_sha256=manifest_sha,
                  reviewer=reviewer.strip(), review_ref=review_ref.strip(), at_ms=now_ms)
+    if temporary_scope is not None:
+        event['temporary_self_check'] = temporary_scope
     store.commit(batch_for(current, f'activate:{epoch}', event))
     return dict(activated=True, run_id=run_id, epoch=epoch, signing_enabled=False)
 

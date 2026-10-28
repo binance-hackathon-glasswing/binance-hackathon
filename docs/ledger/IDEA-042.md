@@ -704,3 +704,63 @@ Pass criteria, written before the change:
 
 #39 can close: acceptance 1 (decision, PF-03) and acceptance 3 (manifested scope) are met, acceptance 2 does not
 apply, and PF-03's recording step is done.
+
+## GAP62-F03 — finalise the nine DRAFT rows and the services list for FS1 (2026-10-28; prospective)
+
+Yao Zhu asked on 2026-10-28 (SGT) to make FS1 ready for deployment with no outstanding items, after the REL-AUD01
+audit ([RELEASE_DECLARATIONS_AUDIT_20261028.md](../build/RELEASE_DECLARATIONS_AUDIT_20261028.md)). The audit found
+that DEV-01–04, DEV-07, DEV-19, DEV-22, DEV-23 and DEV-24 still describe superseded designs (EQUAL_WEIGHT, the
+unsigned v3 trial, cleanup off, a pending rehearsal window). The services list repeats the obsolete trial scope.
+`activate_run` refuses a `live` run while any row is DRAFT, so FS1 cannot be activated as the register stands.
+Code changes end at the F-127 pause, 2026-10-28T10:00Z.
+
+The rows describe what the FS1 release actually does: recovery profile `b8ba06e2…`, routing `9b86c732…`,
+`prepare_fs1`. Where live evidence is missing or a limitation remains, the row says so. A FINAL row means "the
+declaration is final and true". It does not mean the behaviour is proven on chain.
+
+Pass criteria, written before the change:
+- F3-1. Each of the nine rows describes the selected FS1 values, checked against the profile bytes and source:
+  five names at 1/5; levels 95/60/30%; weight cap 30%; hard name line 35%; top-up band 5%; trend 5 sessions, 100 bp
+  band, start UP; DETERMINISTIC limiter; loss ladder 3%/8%/12%; 8% stop recovery below 5%; PF-04 calendar; v4 routing
+  and its 180/60/90 s budgets, six tool calls, five workers and four continuation rounds; IDEA-098 recovery and the
+  OBS03-B1 revoke. No obsolete conditional baseline is described as current.
+- F3-2. DEV-23 keeps the untrusted-router limitation and states that local checks cannot prove the router honours
+  recipient, minimum output or deadline, nor recover a bad fill. DEV-24 states the actual rehearsal: no five-day
+  complete pipeline; dated signed dev-wallet runs; the IDEA-110 final-wallet self-check in place of FS1's own,
+  which expires unused. No outcome is claimed that the ledger does not record.
+- F3-3. DEV-19/DEV-22 and the two assessor services name the model-adoption decision recorded for FS1. Without a
+  recorded decision these rows are not marked FINAL.
+- F3-4. All 25 rows FINAL, 0 OPEN. `validate_deviations` passes with the proposal quotes and evidence IDs.
+  `tools/render_deviations.py --write` updates plan.md §6.5 and `--check` passes.
+- F3-5. The IDEA-110 TA-01 tests pin the exact register of the temp release (`5c383243…`, nine DRAFT rows) instead of
+  the live file. The temporary exception still refuses everything outside its scope. A new test pins the real
+  register at zero DRAFT/OPEN rows, so live FS1 activation is not refused for declarations.
+- F3-6. Register, activation, FS1 standalone, temp self-check and release-bundle tests pass. No profile, routing,
+  signer policy or trading code changes. A new release must be built from this commit; earlier receipts do not
+  transfer.
+
+### GAP62-F03 results (2026-10-28) — PASS
+
+- **F3-1 PASS.** The nine rows were checked against the profile bytes and source: cap 38.2 USDT, minimum 18.637 USDT,
+  reserve 0.2 USDT, levels 19/20, 3/5 and 3/10, hard line 7/20, weight cap 3/10, band 1/20, 3 legs, 5 attempts,
+  limiter expiry 3; gas 8 × 1.2M × 0.16 gwei = 0.001536 BNB, exit reserve 0.01536 BNB; loss ladder 97/92/88 and
+  recovery above 95 (`larp/risk/accounting.py`); deadlines 180/60/90 s and 3 reserved tool calls
+  (`larp/intelligence/time_budget.py`, `routing.py`); 5 workers and 4 continuation rounds (`runtime.example.json`).
+- **F3-2 PASS.** DEV-23 keeps the unproven-router limitation and states that live zero-revoke confirmation (B1-5) was
+  pending when written. DEV-24 declares no five-day complete rehearsal, the dated dev runs and IDEA-110.
+- **F3-3 PASS.** The adoption is recorded as IDEA-093 MA-01 (Yao Zhu for the team, 2026-10-28). DEV-19/22 and both
+  assessor services name it.
+- **F3-4 PASS.** 25 FINAL, 0 DRAFT, 0 OPEN; `load_register` and `render_deviations.py --check` pass. DEV-25 no longer
+  cites GAP-62 (removed from the backlog). Services: all ACTIVE, three with `selection_scope` FS1_SCORED_RUN.
+- **F3-5 PASS.** The TA-01 tests use the temp release's exact register (`5c383243…`); a new test pins the real
+  register at zero DRAFT/OPEN rows and shows that the temp scope no longer matches.
+- **F3-6 PASS.** Full suite, macOS, Python 3.12.14, disposable PostgreSQL 14.24: **3168 passed, 10 skipped, 2 failed,
+  4172 subtests**. The `test_ar7_full_verification_memory_does_not_grow_with_the_journal` failure also fails on
+  canonical `2aa95617`/`c1e23729` (IDEA-110 W2-3). `test_r5_the_wrapper_reports_a_capture_that_dies_at_startup`
+  passes alone on canonical and on this branch, and 5/5 reruns of its module pass: a load-timing flake, outside
+  every changed file. No profile, routing, signer-policy or trading-code change; the only code differences from
+  canonical are PR324 (`larp/runtime/service.py`) and PR323 (`tools/deploy/final_caps_inputs.py`).
+- Calendar (PF-04 item, closed): FS1 windows are ordered, all inside F-128's 2026-10-29T02:00Z–2026-11-12T15:59Z, last
+  signing 25.2 h before the end. `session-calendar.2026.json` has 11 sessions in the window and no holidays.
+- Not done here: the full pinned-Linux and bubblewrap/systemd checks, and the new release build. A new build_id from
+  the merge commit is required; earlier receipts (`e261bcfc`, `2aa95617`) do not transfer.

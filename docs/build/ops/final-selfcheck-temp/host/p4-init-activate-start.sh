@@ -5,6 +5,8 @@
 set -euo pipefail
 RUN=larp-final-selfcheck-temp
 REVIEWER=${1:?reviewer name}; APPROVAL=${2:?IDEA-110 record of the A1 approval}
+INIT_MODE=${3:-new}
+[[ $INIT_MODE == new || $INIT_MODE == existing-quarantined ]] || { echo "expected new or existing-quarantined"; exit 3; }
 REF="IDEA-110 TEMP-SC: $APPROVAL; live FINAL $RUN, larp_final_selfcheck, temp self-check <1 USDT"
 [[ ${#REF} -le 200 ]] || { echo "review reference too long"; exit 3; }
 grep -q "\"run_id\": *\"$RUN\"" /etc/larp/runtime.json || { echo "unexpected runtime.json run"; exit 3; }
@@ -16,7 +18,9 @@ P=".venv/bin/python"; export PYTHONDONTWRITEBYTECODE=1
 AS_RT="runuser -u larp-runtime -g larp-runtime -G larp-evidence --"
 [[ $(systemctl is-active larp-runtime || true) == inactive && $(systemctl is-active larp-execution || true) == inactive ]] \
   || { echo "runtime/execution already active; refusing initialization"; exit 5; }
-$AS_RT $P -m larp.runtime.service init --config /etc/larp/runtime.json --manifest /etc/larp/release.json --root /opt/larp/current
+if [[ $INIT_MODE == new ]]; then
+  $AS_RT $P -m larp.runtime.service init --config /etc/larp/runtime.json --manifest /etc/larp/release.json --root /opt/larp/current
+fi
 $AS_RT $P -m larp.runtime.service activate --config /etc/larp/runtime.json --manifest /etc/larp/release.json \
   --root /opt/larp/current --reviewer "$REVIEWER" --review-ref "$REF"
 systemctl start larp-evidence
