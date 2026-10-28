@@ -18,6 +18,15 @@ from tools.deploy.prepare_fs1 import PROFILE
 ROOT = Path(__file__).resolve().parents[2]
 NOW = int(instant('2026-10-28T02:00:00Z').timestamp() * 1000)
 WALLET = '0x' + '5' * 40
+# GAP62-F03: the exception is pinned to the register that release e261bcfc shipped (nine DRAFT rows), not the live
+# file, which is now final for FS1.
+TEMP_DRAFTS = ['DEV-01', 'DEV-02', 'DEV-03', 'DEV-04', 'DEV-07', 'DEV-19', 'DEV-22', 'DEV-23', 'DEV-24']
+TEMP_DEVIATIONS_SHA = '5c38324017313746e08b1ee7c76b721888418a936559c50a7f2ecf02d429b707'
+
+
+def temp_register():
+    return dict(load_register(ROOT), deviations_sha256=TEMP_DEVIATIONS_SHA, open_deviations=[],
+                draft_deviations=list(TEMP_DRAFTS))
 
 
 def candidate(tmp_path):
@@ -29,7 +38,7 @@ def candidate(tmp_path):
                   driver=dict(strategy_profile_file=str(path), strategy_profile_sha256=hashlib.sha256(raw).hexdigest()))
     manifest = Document.from_dict(dict(schema='ReleaseManifest.v1', build_id='b' * 40,
         repository='https://github.com/binance-hackathon-glasswing/binance-hackathon',
-        release_register=load_register(ROOT)))
+        release_register=temp_register()))
     return config, manifest
 
 
@@ -94,6 +103,14 @@ class TemporaryActivation(DatabaseCase):
             assert run['projection']['registered_version']['build_id'] == c['build_id']
             activated = self.store.event(c['run_id'], 'activate:' + str(result['epoch']))
             assert activated['temporary_self_check']['purpose'] == 'TEMPORARY_PIPELINE_SELF_CHECK'
-            assert activated['temporary_self_check']['deferred_deviations'] == load_register(ROOT)['draft_deviations']
+            assert activated['temporary_self_check']['deferred_deviations'] == TEMP_DRAFTS
             with pytest.raises(StartRefused):
                 activate_run(c, self.store, m, reviewer='Synthetic', review_ref='IDEA-110 TA-01', now_ms=NOW + 1)
+
+
+def test_live_register_is_final_and_does_not_qualify_for_the_temp_exception(tmp_path):
+    """GAP62-F03: FS1 activation needs no exception; the temp scope never matches the final register."""
+    register = load_register(ROOT)
+    assert register['open_deviations'] == [] and register['draft_deviations'] == []
+    c, _ = candidate(tmp_path)
+    assert temporary_self_check_activation(c, register, NOW) is None

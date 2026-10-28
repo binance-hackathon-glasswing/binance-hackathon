@@ -704,3 +704,37 @@ Pass criteria, written before the change:
 
 #39 can close: acceptance 1 (decision, PF-03) and acceptance 3 (manifested scope) are met, acceptance 2 does not
 apply, and PF-03's recording step is done.
+
+## GAP62-F03 — finalise the nine DRAFT rows and the services list for FS1 (2026-10-28; prospective)
+
+Yao Zhu asked on 2026-10-28 (SGT) to make FS1 ready for deployment with no outstanding items, after the REL-AUD01
+audit ([RELEASE_DECLARATIONS_AUDIT_20261028.md](../build/RELEASE_DECLARATIONS_AUDIT_20261028.md)). The audit found
+that DEV-01–04, DEV-07, DEV-19, DEV-22, DEV-23 and DEV-24 still describe superseded designs (EQUAL_WEIGHT, the
+unsigned v3 trial, cleanup off, a pending rehearsal window). The services list repeats the obsolete trial scope.
+`activate_run` refuses a `live` run while any row is DRAFT, so FS1 cannot be activated as the register stands.
+Code changes end at the F-127 pause, 2026-10-28T10:00Z.
+
+The rows describe what the FS1 release actually does: recovery profile `b8ba06e2…`, routing `9b86c732…`,
+`prepare_fs1`. Where live evidence is missing or a limitation remains, the row says so. A FINAL row means "the
+declaration is final and true". It does not mean the behaviour is proven on chain.
+
+Pass criteria, written before the change:
+- F3-1. Each of the nine rows describes the selected FS1 values, checked against the profile bytes and source:
+  five names at 1/5; levels 95/60/30%; weight cap 30%; hard name line 35%; top-up band 5%; trend 5 sessions, 100 bp
+  band, start UP; DETERMINISTIC limiter; loss ladder 3%/8%/12%; 8% stop recovery below 5%; PF-04 calendar; v4 routing
+  and its 180/60/90 s budgets, six tool calls, five workers and four continuation rounds; IDEA-098 recovery and the
+  OBS03-B1 revoke. No obsolete conditional baseline is described as current.
+- F3-2. DEV-23 keeps the untrusted-router limitation and states that local checks cannot prove the router honours
+  recipient, minimum output or deadline, nor recover a bad fill. DEV-24 states the actual rehearsal: no five-day
+  complete pipeline; dated signed dev-wallet runs; the IDEA-110 final-wallet self-check in place of FS1's own,
+  which expires unused. No outcome is claimed that the ledger does not record.
+- F3-3. DEV-19/DEV-22 and the two assessor services name the model-adoption decision recorded for FS1. Without a
+  recorded decision these rows are not marked FINAL.
+- F3-4. All 25 rows FINAL, 0 OPEN. `validate_deviations` passes with the proposal quotes and evidence IDs.
+  `tools/render_deviations.py --write` updates plan.md §6.5 and `--check` passes.
+- F3-5. The IDEA-110 TA-01 tests pin the exact register of the temp release (`5c383243…`, nine DRAFT rows) instead of
+  the live file. The temporary exception still refuses everything outside its scope. A new test pins the real
+  register at zero DRAFT/OPEN rows, so live FS1 activation is not refused for declarations.
+- F3-6. Register, activation, FS1 standalone, temp self-check and release-bundle tests pass. No profile, routing,
+  signer policy or trading code changes. A new release must be built from this commit; earlier receipts do not
+  transfer.
