@@ -26,3 +26,11 @@ hosted CI. Python/wheels/CA are reused from the checksum-verified `e261bcfc` arc
 
 Not done here: installation. FS1 deployment follows [the run sheet](../../ops/final-fs1/README.md): retire the
 IDEA-110 run, fresh final-wallet Q1/M3 caps, A1 approval, DB1/DB2, install, P6 only at 2026-10-29T02:00Z.
+
+**Independent rebuild (FS1-RB01, 2026-10-28, cloud Linux session).** `tools/build_release_bundle.py --arch x86_64`
+on a checkout of `release/fs1-4ebf65fe` at `4ebf65fe`, with the Python, wheels and RDS CA downloaded fresh (not reused
+from `e261bcfc`), reproduces the published bundle byte for byte: `7b8e504d…` and manifest `e3c190ab…`; 256/256 bundle
+checksums, 217 manifest files, register 25/0/0 with the receipt's deviation and service hashes. The manifest
+depends on the checkout's origin URL (`build_origin`, provenance only): the published bytes need
+`https://github.com/binance-hackathon-glasswing/binance-hackathon.git`; the same URL without `.git` gives manifest
+`9e32001b…` and bundle `1c9fd16b…`, with all other content identical. Nothing was uploaded or installed.
