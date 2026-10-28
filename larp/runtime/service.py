@@ -143,7 +143,7 @@ DRIVER_KEYS = ('execution', 'assessor', 'intelligence_mode', 'evidence_root', 'm
                'issuers')
 OPTIONAL_DRIVER_INTEGERS = ('expiry_grace_ms', 'day_roll_window_ms', 'max_quote_rounds', 'max_quote_requests',
                             'balance_check_interval_ms', 'balance_check_max_age_ms', 'price_jump_check_bps',
-                            'assessment_workers', 'continuation_rounds')
+                            'assessment_workers', 'continuation_rounds', 'safety_round_interval_ms')
 # IDEA-093 PL: concurrent routed assessments (one job per company) and planning rounds after a settled trade.
 MAX_ASSESSMENT_WORKERS = 5
 # IDEA-055 (#36): chain-balance reconciliation. Required in dev and live; account-specific, never committed.
@@ -419,7 +419,8 @@ def build_driver(config, store, secrets, *, clock_ms=None):
     return RoundDriver(coordinator, work, ports=dict(market=market, assessor=assessor, evidence=evidence),
                        execution=execution, market=feed, day_roll=day_roll, balance_check=balance_check,
                        assessments=deferred, gas_check=gas_check, allowance_check=allowance_check,
-                       max_quote_rounds=d.get('max_quote_rounds', 0), max_quote_requests=d.get('max_quote_requests', 2))
+                       max_quote_rounds=d.get('max_quote_rounds', 0), max_quote_requests=d.get('max_quote_requests', 2),
+                       safety_round_interval_ms=d.get('safety_round_interval_ms'))  # IDEA-112
 
 
 def verify_registered_manifest(store, config, manifest):
