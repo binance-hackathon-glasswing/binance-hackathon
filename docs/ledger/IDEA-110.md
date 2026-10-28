@@ -167,6 +167,16 @@ Pass criteria:
 
 A scratch run (not committed) of the FINAL caps/signer assembly with the W2 profile gave `numeric_status: COVERED`, and the runtime built from the profile.
 
+## Install progress (2026-10-28 SGT, Claude Code with Yao Zhu)
+
+- **W0** (00:50Z, read-only): the final wallet has no stock, no allowance to our router, MetaMask or Permit2, 170 USDT, 0.0400 BNB and nonce 2 (the MetaMask gas swap). PASS.
+- **D1**: `larp_final_selfcheck` created; `IDEA-110 D1 PASS`, `D1_DONE` (Yao).
+- **M3 gap and fix**: no FINAL caps-inputs path existed. `review_rehearsal_caps.py` is REHEARSAL-only. `tools/deploy/final_caps_inputs.py` (PR #323) builds the inputs from `prepare_fs1` output and live final-wallet quotes. Offline tests: 23 passed.
+- **M3** (stamp `20261028T010234Z`): COVERED with 26 quotes. Profile `b2e85827…` matches the release. Signer `9e574c312d66…`, execution `1be4c3034bb7…`. The quoted self-check BUY of 0.90 USDT costs about 1.3e-5 BNB in gas.
+- **A1**: Yao Zhu and Isaac approved these exact hashes, the caps, the window and the sub-1-USDT leg (relayed by Yao in chat).
+- **M1/M4 local**: Keith's release assets were verified. The bound `release.json` is `9271a5d6…`, and the signer check passes. Host steps follow the run sheet's install package section.
+- **Risk** (corrected 2026-10-28, REL-AUD01): this line first said FENCE01 was reverted. It was not. PR317/PR319 (FENCE01/FENCE02) are ancestors of `2aa95617`; the revert commit `69d3e314` sits on an unmerged branch, and the published archive contains the fenced files byte for byte ([audit](../build/RELEASE_DECLARATIONS_AUDIT_20261028.md)).
+
 ## TA-01 results and release (2026-10-28 SGT)
 
 Implemented at `e261bcfc7a339a5e28388b843798b4197a9993a6`, pushed before building. TA1–TA3: exact W2 file/run/database/date/register pins qualify; FS1, altered files/pins/size/windows/register/OPEN/extra-DRAFT/cutoff refuse before activation. RUN_ACTIVATED retains temporary purpose/profile/deferred rows. A real disposable-PostgreSQL regression activates the existing quarantined run, registers the build and refuses a repeated activation. No generic bypass, declaration status edit or database reset. TA4: focused79 tests/17subtests; full Linux/Python3.12.15/PG14.24:3165 passed/4172subtests/11skips/0failed; three sandbox skips pass separately,3168 distinct passes/8unrun. TA5: actual public profile generated (b2e85827), new exact x86_64 bundle built; all217 source files/256 checksums match, primary/signer offline provisioning PASS, sandboxed demo PASS. Hosted CI ran no steps due billing. [Published release/receipt and remaining deployment steps](../build/evidence/temp-selfcheck-20261028/README.md). PR324 retains final declaration follow-up; user deploys later. No host/key/wallet/signing action.

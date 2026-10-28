@@ -95,3 +95,38 @@ TA-01 replacement: [temp-selfcheck-e261bcfc](https://github.com/binance-hackatho
 - FS1's own built-in 32-USDT self-check, which is unchanged.
 
 Those are owner decisions, recorded in IDEA-110.
+
+## Install package (2026-10-28 SGT; W0, D1, M1, M3 and local M4 done)
+
+Done:
+- **W0** passed 00:50Z: no stock, no allowance (our router, MetaMask, Permit2), 170 USDT, 0.0400 BNB, nonce 2.
+- **D1:** `larp_final_selfcheck` created, `D1_DONE`.
+- **M1:** Keith's release assets verified against the release notes.
+- **M3** (stamp `20261028T010234Z`, `mac/m3-capture-prepare-caps.sh`): `COVERED`, 26 quotes.
+- **A1** (Yao Zhu + Isaac, relayed in chat) on profile `b2e85827…`, signer `9e574c31…`, execution `1be4c303…`, the caps and the window.
+- **M4 local** (`mac/m4-bind-package.py`): preflight bind and signer check pass; `release.json` `9271a5d6…`.
+
+The new FINAL caps builder is `tools/deploy/final_caps_inputs.py`, PR #323. It is Mac-only and not in the bundle.
+
+Copy this folder to `deploy/activation/selfcheck-temp-20261028/ops/` and run from there, so `results/` stays git-ignored. Export `LARP_REPO`. Stop at any missing DONE marker. All steps through P6 must finish by 06:00Z.
+
+| Step | Who | Command |
+|---|---|---|
+| M2 | Yao | `bash mac/m2-upload-bundle.sh` |
+| M4U | Yao | `bash mac/m4-upload.sh 20261028T010234Z` |
+| SEC | Yao | `bash tools/deploy/put_service_secrets.sh --name larp-dev`: **runtime** with the final `AI_SEEDS_ADDRESS` plus the existing Web3/AIand/OpenAI keys, and **uploader** with the final `AI_SEEDS_ADDRESS` + `AI_SEEDS_SECRET`. Never paste values anywhere |
+| R1p | Yao | `python3 -I ssm_run.py host/r1-retire-primary.sh` (retires dev run cost01) |
+| P2p | Yao | `python3 -I ssm_run.py host/p2-provision.sh primary @artifact_bucket larp-2aa95617bf92-x86_64 a4511e4a…cbf3 d7905de4…04e2` (full hashes in `pins` below) |
+| P3 | Yao | the `P3:` line M4 printed |
+| B1 | Yao | `python3 -I ssm_run.py host/b1-model-budget-check.sh` |
+| T1 | Yao | Terraform `enable_signer_provisioning=true` (as the S5 sheets) |
+| R1s, P2s, S1 | Yao | `ssm_run.py --signer host/r1-retire-signer.sh` (moves the dev key aside), then `--signer host/p2-provision.sh signer …`, then the `S1:` line M4 printed |
+| K1 | Isaac | place the final wallet key at `/etc/larp/signer/wallet.key` (root-only, as SJ-06 K1) |
+| S1b | Yao | `python3 -I ssm_run.py --signer host/s1b-credential-mode-test.sh` |
+| P4 | Yao | `python3 -I ssm_run.py host/p4-init-activate-start.sh "Yao Zhu" "A1 Yao Zhu + Isaac 2026-10-28 SGT"` |
+| S2 → P5 → P6 | Yao | `--signer host/s2-key-check-start-signer.sh`, then `host/p5-start-execution.sh`, then `host/p6-start-runtime.sh` |
+| J / X | anyone / Yao | `checks/trading-status.sh` and the W0 chain check; retire after 08:00Z (step 9) and remove T1 |
+
+Pins: bundle `a4511e4aa314e92e3f2d5e5f9bf447b934523f78f70ff651c254bdf4a242cbf3`, provision.sh `d7905de425118df3c9ae1878d6e8fae799bb89e9ed857a1e1f9434a3e34404e2`, manifest `213ab1b259377c0cb5b8c67835855267f73ed84fe1a7d5d6c14c253dd605d999`.
+
+**Known risk:** S5-COST03's preparation CAS interference (buy intents ended at PREPARE_PROBE ×3 while the planner was writing) is not fixed in `2aa95617`; the FENCE01 fix was reverted (`69d3e314`). If the self-check BUY repeats PREPARE_PROBE without PREPARED, record it. Under the 06:00Z window a missed BUY makes the self-check `EXPIRED`, and the run only flattens.
