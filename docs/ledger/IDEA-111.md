@@ -73,3 +73,22 @@ Run `larp-final-selfcheck-temp`, release `e261bcfc` (its execution code is byte-
 
 Not covered offline: the live race (needs a release and host run), and whether the runtime's round is caused
 by the executor's observation commit (seen in all three cases, not traced through the runtime code).
+
+## Results (2026-10-28, Claude Code; criteria committed first at `5862b2df`)
+
+Change: `RunAuthorization(clock_s=…)` reads the clock once after `store.load()` and uses that reading only for
+`clock_trusted`; a non-integer, boolean or backward reading is untrusted. `build_execution` passes the
+executor's own `clock_s`. Without a clock the old behaviour is unchanged. New tests:
+`tests/execution/test_clock_trusted_fresh.py`.
+
+| Criterion | Result |
+|---|---|
+| CT-1 | PASS. The 04:01 reproduction is trusted with a later reading; stale `now` alone still refuses; other facts identical. Red before the fix (constructor had no clock; 10 failed / 1 passed). |
+| CT-2 | PASS. Reading behind the decision by more than 1 s, behind `now`, float, boolean and a `CLOCK` halt all refuse; the 1000 ms boundary is unchanged. |
+| CT-3 | PASS. One read, after the projection load. |
+| CT-4 | PASS. `build_execution` wires the same callable into the executor and the guards' authorization. |
+| CT-5 | PASS. Pinned image `larp-ci:py31215` (Python 3.12.15) with disposable PostgreSQL 14.24: 3152 passed, 4177 subtests, 9 skipped, 5 failed. The same 5 fail identically on unmodified base `2aa95617` (bubblewrap sandbox, git-tracked-file scans and gate-A preparation inside a container mount of a worktree), so none is new. Systemd fixtures and optional fixtures skipped as before. |
+
+Verdict: supported offline. Not done: review (Keegan, execution), merge, release, and a live check that a
+swap follows its approve on the host. Not proven: that the executor's observation commit causes the runtime's
+round. IDEA-096's abort after a refusal following approval is unchanged.
