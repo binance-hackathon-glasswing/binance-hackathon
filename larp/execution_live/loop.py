@@ -33,12 +33,15 @@ def intent_key(run_id, wallet, intent_id):
 class RunAuthorization:
     """`LiveGuards.authorization`: run facts for one intent, from the journal at the moment of the snapshot."""
 
-    def __init__(self, store, *, run_id, build_id, manifest_sha256=None, settlement_hold=None):
+    def __init__(self, store, *, run_id, build_id, manifest_sha256=None, settlement_hold=None, clock_s=None):
         self.store, self.run_id, self.build_id = store, run_id, build_id
         self.manifest_sha256 = manifest_sha256
         # Untrusted-router mode (IDEA-070 B02-U): True while a terminal execution has no stored final fact, e.g. a
         # fill settlement refused below its minimum. No new signature until it is resolved.
         self.settlement_hold = settlement_hold
+        # IDEA-111: the decision clock is checked against a reading taken after the projection is loaded. The
+        # caller's time is the cycle start, and a round the runtime commits mid-cycle is not a clock fault.
+        self.clock_s = clock_s
 
     def facts(self, intent, now_s):
         from larp.runtime.coordinator import halt_reasons
@@ -65,7 +68,13 @@ class RunAuthorization:
         if facts['risk_valid'] and self.settlement_hold is not None and self.settlement_hold() is not False:
             facts['risk_valid'] = False
         last = projection.get('last_decision_ms')
-        facts['clock_trusted'] = 'CLOCK' not in halted and (last is None or now_s * 1000 >= last - 1000)
+        observed_s = now_s
+        if self.clock_s is not None:
+            observed_s = self.clock_s()
+            if type(observed_s) is not int or observed_s < now_s:
+                observed_s = None  # a malformed or backward reading is never trusted
+        facts['clock_trusted'] = ('CLOCK' not in halted and observed_s is not None
+                                  and (last is None or observed_s * 1000 >= last - 1000))
         record = projection.get('round_records', {}).get(intent.round_id)
         planned = record is not None and any(i['intent_id'] == intent.intent_id
                                              for i in record['plan'].get('intents', []))

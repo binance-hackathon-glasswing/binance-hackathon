@@ -170,7 +170,8 @@ def build_execution(config, store, secrets, *, clock_s=None, manifest_sha256=Non
     hold = (lambda: bool(loop._unpublished_terminal())) if getattr(decoder, 'mode', None) == 'untrusted' else None
     guards = LiveGuards(store=registry, market=market, chain=chain,
                         authorization=RunAuthorization(store, run_id=run_id, build_id=config['build_id'],
-                                                       manifest_sha256=manifest_sha256, settlement_hold=hold))
+                                                       manifest_sha256=manifest_sha256, settlement_hold=hold,
+                                                       clock_s=clock_s))
     venue = LiveVenue(client, chain, decoder=decoder,
                       release=FencedRelease(registry, Web3Broadcaster(
                           key, secret, wallet=wallet,

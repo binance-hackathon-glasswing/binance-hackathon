@@ -358,7 +358,7 @@
    "id": "DEV-24",
    "area": "Rehearsal",
    "declared": "full pipeline for 5+ days including a weekend, at minimum size",
-   "v1_behaviour": "No five-day complete-pipeline rehearsal at minimum size took place. Rehearsal was shadow operation plus short signed runs on the development wallet, 2026-10-24 to 2026-10-27: runs 4 and 5 built and mostly sold a book (IDEA-089, IDEA-097; run 4's flatten was blocked by a leftover allowance, IDEA-096); runs 7 and 8 made no or aborted entries (IDEA-104 OBS01, OBS03); the S5-COST03 run completed one BUY. On the final wallet, F-125's self-check is a separate temporary run (IDEA-110): one 0.90 USDT SKHYB BUY, then a full SELL, on 2026-10-28 before the F-127 pause; its outcome is recorded in IDEA-110. FS1's own built-in self-check window (to 2026-10-28T23:00Z) ends before FS1 plans its first round, so it is journaled EXPIRED and makes no trade.",
+   "v1_behaviour": "No five-day complete-pipeline rehearsal at minimum size took place. Rehearsal was shadow operation plus short signed runs on the development wallet, 2026-10-24 to 2026-10-27: runs 4 and 5 built and mostly sold a book (IDEA-089, IDEA-097; run 4's flatten was blocked by a leftover allowance, IDEA-096); runs 7 and 8 made no or aborted entries (IDEA-104 OBS01, OBS03); the S5-COST03 run completed one BUY. On the final wallet, F-125's self-check was a separate temporary run (IDEA-110) on 2026-10-28, planned as one 0.90 USDT SKHYB BUY and then a full SELL. It approved SKHYB three times, refused each swap on a stale clock check and revoked each approval, so no swap took place and the wallet ended flat with a zero allowance (IDEA-111). That defect is fixed in the FS1 release; no completed final-wallet swap preceded the scored run. FS1's own built-in self-check window (to 2026-10-28T23:00Z) ends before FS1 plans its first round, so it is journaled EXPIRED and makes no trade.",
    "reason": "Gate B was not passed by 2026-10-21, so D-DN-02 applied: shadow plus a shorter signed window (Keegan, 2026-10-17). Defects found in the signed runs were fixed (IDEA-096/098, IDEA-104 OBS03-B1, FENCE01/02). F-127 paused projects at 2026-10-28T10:00Z, after the planned FS1 install time, so the final-wallet check ran as IDEA-110.",
    "evidence": [
     "GAP-04",
@@ -368,6 +368,7 @@
     "IDEA-097",
     "IDEA-104",
     "IDEA-110",
+    "IDEA-111",
     "F-125",
     "F-127"
    ],
