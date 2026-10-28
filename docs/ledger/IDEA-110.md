@@ -197,3 +197,17 @@ buy and sell on the final wallet with the fixed build: "set buy window as 3pm" a
   wallet. The TA-01 tests now read the W2 profile from its saved evidence copy.
 - Offline result: strategy/runtime/execution 1206 passed, 402 skipped (no local PostgreSQL); full suite on the
   15:00–15:29 draft 2570 passed, 624 skipped, 0 failed.
+
+### W3 install and live BUY (2026-10-28, Claude Code on Yao Zhu's laptop at Yao's instruction)
+
+- 06:43Z: `larp-dev` (db.t4g.micro) ran out of memory (~100 MB free, ~430 MB swap); the W2 run's services
+  restart-looped on `Unavailable`. W2 services stopped (X0p/X0s); RDS rebooted at Yao's approval (07:07Z shutdown,
+  recovery complete 07:13:43Z).
+- Release `fs1-4ebf65fe` (bundle `7b8e504d…`, manifest `e3c190ab…`) uploaded; M3 stamp `20261028T071015Z`: COVERED,
+  23 quotes; profile `70cf1bee…`, signer `02e9b9a0…`, execution `068f30d9…` (approved by Yao Zhu in chat).
+- D1 `larp_final_selfcheck2` (first attempt hit the pre-reboot timeouts); P2/P3 (routes recheck PASS after reboot),
+  P2/S1/S1b (key loader PASS), P4 (first init `RUNTIME_FAILED` on a transient DB error, init retried, activated
+  epoch 2), S2, P5, P6: all services active, 0 restarts, at 07:19Z.
+- **W3-3 BUY: PASS.** SKHYB BUY 0.899999 USDT. Approve `0x912ec18fbf75cce27e34faacea441400d97af3ce84788949cad3c54bb7a249ad`
+  (status 1, block 130240185); swap `0x6470add8492212d95c7f6b006392aaf8874026d3a45e70b87efa033cee3374d0` (status 1,
+  block 130240300). No refusal, no revoke: the IDEA-111 live swap check passes. SELL due at 08:45Z.
