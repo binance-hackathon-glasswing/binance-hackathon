@@ -80,3 +80,9 @@ No disposable PostgreSQL was configured for this audit, so database race/live-ac
 rerun; historical full results retain their original commits. No host/service/key/wallet action, signing,
 provider/model call or deployment occurred. Reported quarantined/service-off state was supplied by the user
 and was not independently rechecked on hosts.
+
+## Follow-up (2026-10-28)
+
+All nine rows and the services list were rewritten for FS1 and made FINAL under
+[IDEA-042 GAP62-F03](../ledger/IDEA-042.md), with the model adoption recorded as
+[IDEA-093 MA-01](../ledger/IDEA-093.md). The FS1 release must be built from that commit, with a new build_id.

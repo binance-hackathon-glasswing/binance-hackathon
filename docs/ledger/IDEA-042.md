@@ -738,3 +738,29 @@ Pass criteria, written before the change:
 - F3-6. Register, activation, FS1 standalone, temp self-check and release-bundle tests pass. No profile, routing,
   signer policy or trading code changes. A new release must be built from this commit; earlier receipts do not
   transfer.
+
+### GAP62-F03 results (2026-10-28) — PASS
+
+- **F3-1 PASS.** The nine rows were checked against the profile bytes and source: cap 38.2 USDT, minimum 18.637 USDT,
+  reserve 0.2 USDT, levels 19/20, 3/5 and 3/10, hard line 7/20, weight cap 3/10, band 1/20, 3 legs, 5 attempts,
+  limiter expiry 3; gas 8 × 1.2M × 0.16 gwei = 0.001536 BNB, exit reserve 0.01536 BNB; loss ladder 97/92/88 and
+  recovery above 95 (`larp/risk/accounting.py`); deadlines 180/60/90 s and 3 reserved tool calls
+  (`larp/intelligence/time_budget.py`, `routing.py`); 5 workers and 4 continuation rounds (`runtime.example.json`).
+- **F3-2 PASS.** DEV-23 keeps the unproven-router limitation and states that live zero-revoke confirmation (B1-5) was
+  pending when written. DEV-24 declares no five-day complete rehearsal, the dated dev runs and IDEA-110.
+- **F3-3 PASS.** The adoption is recorded as IDEA-093 MA-01 (Yao Zhu for the team, 2026-10-28). DEV-19/22 and both
+  assessor services name it.
+- **F3-4 PASS.** 25 FINAL, 0 DRAFT, 0 OPEN; `load_register` and `render_deviations.py --check` pass. DEV-25 no longer
+  cites GAP-62 (removed from the backlog). Services: all ACTIVE, three with `selection_scope` FS1_SCORED_RUN.
+- **F3-5 PASS.** The TA-01 tests use the temp release's exact register (`5c383243…`); a new test pins the real
+  register at zero DRAFT/OPEN rows and shows that the temp scope no longer matches.
+- **F3-6 PASS.** Full suite, macOS, Python 3.12.14, disposable PostgreSQL 14.24: **3168 passed, 10 skipped, 2 failed,
+  4172 subtests**. The `test_ar7_full_verification_memory_does_not_grow_with_the_journal` failure also fails on
+  canonical `2aa95617`/`c1e23729` (IDEA-110 W2-3). `test_r5_the_wrapper_reports_a_capture_that_dies_at_startup`
+  passes alone on canonical and on this branch, and 5/5 reruns of its module pass: a load-timing flake, outside
+  every changed file. No profile, routing, signer-policy or trading-code change; the only code differences from
+  canonical are PR324 (`larp/runtime/service.py`) and PR323 (`tools/deploy/final_caps_inputs.py`).
+- Calendar (PF-04 item, closed): FS1 windows are ordered, all inside F-128's 2026-10-29T02:00Z–2026-11-12T15:59Z, last
+  signing 25.2 h before the end. `session-calendar.2026.json` has 11 sessions in the window and no holidays.
+- Not done here: the full pinned-Linux and bubblewrap/systemd checks, and the new release build. A new build_id from
+  the merge commit is required; earlier receipts (`e261bcfc`, `2aa95617`) do not transfer.

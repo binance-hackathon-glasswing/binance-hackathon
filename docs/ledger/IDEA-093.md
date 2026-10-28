@@ -616,3 +616,25 @@ No install, version event, model request, transaction or policy-value change occ
 
 - 2026-10-26 publication follow-up: user authorized committing/pushing the standalone FS1 review fixes to
   PR296; scope and expected remote head are recorded in IDEA-104 PR296-RV01. No merge or installation.
+
+## MA-01 — FS1 model adoption and self-check disposition (2026-10-28, Yao Zhu for the team)
+
+Decided in chat on 2026-10-28 (SGT), after REL-AUD01 and GAP62-F03: "yes we decide to use FS, we cant do a FS1 check".
+This is the F0m record that `prepare_fs1 --model-adoption-ref` names: pass exactly `IDEA-093 MA-01`.
+
+- **Adopted for the scored run:** the FS1 routing `config/intelligence/aiand-routing.fs1.json` (AIandRouting.v4,
+  SHA-256 `9b86c7327eddca76e0739f6639211f9b609f18c027bc4e61bf83dc804dfcf1f4`): OpenAI `gpt-6.1-sol` medium primary,
+  AIand `moonshotai/kimi-k3` and `zai-org/glm-5.3` high reviewers, budgets as DEV-22. Models assess evidence only;
+  deterministic verification and code keep all trade authority (D-11). Declared in DEV-19/DEV-22 (GAP62-F03).
+- **Self-check:** FS1's built-in `activation_self_check` (about 32 USDT SKHYB, open to 2026-10-28T18:00Z, flat by
+  23:00Z) cannot run before the F-127 pause. The F-125 final-wallet self-check is the separate IDEA-110 run. The
+  profile `b8ba06e2…` is kept unchanged (no new hash or approval): FS1's runtime (P6) starts only at the
+  organiser restart, 2026-10-29T02:00Z, so the first round journals the self-check `EXPIRED` and it never trades
+  (`larp/strategy/self_check.py`: `now >= flat_by` gives EXPIRED; EXPIRED does not block FS1 entries). Starting P6
+  before 2026-10-28T23:00Z is not allowed, because before 18:00Z it would buy.
+- **Time frame (F-128):** scored run 2026-10-29T02:00Z to 2026-11-12T15:59Z; every sell must be done before the end.
+  The PF-04 calendar flattens from 2026-11-10T19:00Z and ends signing at 2026-11-11T14:45Z (flat by 15:00Z), about
+  25 hours before the end, so it is unchanged.
+- **OpenAI budget (F0b):** the routing hash is unchanged. The host's existing ledger carries the actual earlier
+  charges (KMP-BUD01: 2,880,356 micro-USD settled, 337,180 UNKNOWN). Run sheet B1 never re-initializes it, so the
+  file's US$2 prior-spend figure is used only on a host without a ledger. Those UNKNOWN entries stay with KMP-BUD01.
