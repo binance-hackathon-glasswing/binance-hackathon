@@ -993,8 +993,13 @@ class RoundDriver:
 
     def __init__(self, coordinator, work, *, ports=None, execution=None, market=None, day_roll=None,
                  max_quote_rounds=0, max_quote_requests=2, balance_check=None, assessments=None, gas_check=None,
-                 allowance_check=None):
+                 allowance_check=None, safety_round_interval_ms=None):
         self.coordinator, self.work = coordinator, work
+        if safety_round_interval_ms is not None and (type(safety_round_interval_ms) is not int
+                                                     or safety_round_interval_ms <= 0):
+            raise ContractError('Invalid safety-round interval')
+        # IDEA-112: (decided_ms, journal version after it) of this process's last signed safety round.
+        self.safety_interval, self._safety = safety_round_interval_ms, None
         self.assessments = assessments
         self.balance_check = balance_check
         self.gas_check = gas_check
@@ -1146,6 +1151,15 @@ class RoundDriver:
                 summary['closed'] += len(self.execution.settle_open(now_ms))
         return summary
 
+    def _safety_due(self, current, now_ms):
+        """IDEA-112: an idle signed safety round only on a restart, after another writer's commit, on a new UTC day
+        or once the interval has passed. Without an interval, every cycle (the original behaviour)."""
+        if self.safety_interval is None or self._safety is None:
+            return True
+        last_ms, version = self._safety
+        day = lambda ms: datetime.fromtimestamp(ms / 1000, timezone.utc).date()
+        return current['version'] != version or day(now_ms) != day(last_ms) or now_ms - last_ms >= self.safety_interval
+
     def _signed_cycle(self, now_ms, summary):
         """No provider call on this thread: complete old evidence, plan safety, then queue one new job."""
         c, queue = self.coordinator, self.assessments
@@ -1168,24 +1182,29 @@ class RoundDriver:
                 return summary
         # Mandatory risk and existing accepted evidence remain usable even when there is no filing,
         # or the sole worker is hung. The worker never supplies a proposal or writes the projection.
-        if self.market is not None:
-            self.market.refresh(now_ms)
-        decided = max(now_ms, c.clock())
-        current = c.store.load(c.run_id).read()
-        round_id = f"safety:{decided}:{current['version']}"
-        issuer = self.work.issuers[0]
-        item = dict(issuer_id=issuer, records=self.work._latest(issuer, decided), claim=None,
-                    job=dict(job_id=round_id, lane='evidence', due_ms=decided,
-                             valid_until_ms=decided+self.work.cadence, max_attempts=1, priority=0,
-                             calendar_id='UTC', tzdata_version='utc-only-no-tzdata', missed='expire',
-                             payload=dict(kind='REASSESS_ISSUER', issuer_id=issuer, reason='SAFETY_TICK')))
-        c.start(round_id, self.work.request(item, current, decided), decided,
-                assessment_override=None, use_accepted_evidence=True)
-        summary['round_id'] = round_id
-        if self.market is not None and self.max_quote_rounds and not self.execution.waiting(decided):
-            self._quotes(round_id, item, decided, summary)
-        if self.execution.waiting(decided):
-            return summary
+        if self._safety_due(c.store.load(c.run_id).read(), max(now_ms, c.clock())):
+            if self.market is not None:
+                self.market.refresh(now_ms)
+            decided = max(now_ms, c.clock())
+            current = c.store.load(c.run_id).read()
+            round_id = f"safety:{decided}:{current['version']}"
+            issuer = self.work.issuers[0]
+            item = dict(issuer_id=issuer, records=self.work._latest(issuer, decided), claim=None,
+                        job=dict(job_id=round_id, lane='evidence', due_ms=decided,
+                                 valid_until_ms=decided+self.work.cadence, max_attempts=1, priority=0,
+                                 calendar_id='UTC', tzdata_version='utc-only-no-tzdata', missed='expire',
+                                 payload=dict(kind='REASSESS_ISSUER', issuer_id=issuer, reason='SAFETY_TICK')))
+            c.start(round_id, self.work.request(item, current, decided), decided,
+                    assessment_override=None, use_accepted_evidence=True)
+            summary['round_id'] = round_id
+            if self.market is not None and self.max_quote_rounds and not self.execution.waiting(decided):
+                self._quotes(round_id, item, decided, summary)
+            self._safety = (decided, c.store.load(c.run_id).read()['version'])
+            if self.execution.waiting(decided):
+                return summary
+        else:
+            decided = max(now_ms, c.clock())
+            summary['safety_skipped'] = True
         summary['closed'] += len(self.execution.settle_open(decided))
         # IDEA-093 PL: fill every free slot, one job per company; one slot (one assessor) is the original single job.
         slots = len(getattr(queue, 'assessors', ())) or 1
