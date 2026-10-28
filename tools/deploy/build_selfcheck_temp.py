@@ -1,9 +1,9 @@
 """IDEA-110 TEMP-SC: the temporary sub-1-USDT final-wallet self-check profile (W2: fixed buy window).
 
 From the reviewed FS1 recovery profile's exact bytes, change only: `policy_id`, the self-check (0.90 USDT, same name),
-its own 1000bp entry-cost floor and the windows. W2 (Keith, 2026-10-28 SGT): buy 12:00-14:00 SGT Oct 28
-(04:00-06:00Z), flat by 07:00Z (= trade_after), new risk ends and the terminal flatten starts at 07:01Z, signing ends
-at 08:00Z. The temp policy never opens S1 risk, so the one self-check BUY is the only buy. Everything ends by the
+its own 1000bp entry-cost floor and the windows. W3 (Yao Zhu, 2026-10-28 SGT, after IDEA-111): buy
+15:00-16:30 SGT Oct 28 (07:00-08:30Z), sell at 16:45 SGT: flat by 08:45Z (= trade_after), new risk ends and the terminal
+flatten starts at 08:46Z, signing ends at 09:30Z. (W2's 04:00-06:00Z window ran on e261bcfc without a swap, IDEA-111.) The temp policy never opens S1 risk, so the one self-check BUY is the only buy. Everything ends by the
 F-127 pause (2026-10-28T10:00Z). No ports, keys or installation.
 """
 import argparse
@@ -16,11 +16,11 @@ from larp.strategy import self_check
 from larp.strategy.profiles import validate_live
 from larp.strategy.schema import instant
 
-DECISION = 'IDEA-110 TEMP-SC W2 (Keith, 2026-10-28 SGT)'
+DECISION = 'IDEA-110 TEMP-SC W3 (Yao Zhu, 2026-10-28 SGT)'
 PAY_UNITS = 900_000  # 0.90 USDT: above the 1000bp floor at the pinned costs (0.589 USDT), below 1 USDT
-WINDOW = dict(buy_after='2026-10-28T04:00:00Z', buy_until='2026-10-28T06:00:00Z', flat_by='2026-10-28T07:00:00Z')
-TERMINAL = dict(trade_after='2026-10-28T07:00:00Z', new_risk_end='2026-10-28T07:01:00Z',
-                flatten_start='2026-10-28T07:01:00Z', signing_end='2026-10-28T08:00:00Z')
+WINDOW = dict(buy_after='2026-10-28T07:00:00Z', buy_until='2026-10-28T08:30:00Z', flat_by='2026-10-28T08:45:00Z')
+TERMINAL = dict(trade_after='2026-10-28T08:45:00Z', new_risk_end='2026-10-28T08:46:00Z',
+                flatten_start='2026-10-28T08:46:00Z', signing_end='2026-10-28T09:30:00Z')
 
 
 def build(*, fs1_raw, now):
@@ -35,15 +35,15 @@ def build(*, fs1_raw, now):
     p['activation_self_check'] = dict(p['activation_self_check'], pay_units=PAY_UNITS, **WINDOW)
     p.update(TERMINAL, policy_id=self_check.TEMP_POLICY_ID, **{self_check.TEMP_COST_KEY: self_check.TEMP_COST_CAP_BPS})
     p['provenance']['activation_self_check'] = dict(decision_id=DECISION,
-        formula='FS1 self-check name; pay 0.90 USDT (< 1 USDT total); buy 04:00-06:00Z Oct 28 (12:00-14:00 SGT), '
-                'flat by 07:00Z')
+        formula='FS1 self-check name; pay 0.90 USDT (< 1 USDT total); buy 07:00-08:30Z Oct 28 (15:00-16:30 SGT), '
+                'flat by 08:45Z')
     p['provenance']['policy_id'] = dict(decision_id=DECISION,
         formula='Temporary final-wallet self-check only: no S1 risk, ends by the F-127 pause; not FS1')
     p['provenance'][self_check.TEMP_COST_KEY] = dict(decision_id=DECISION,
         formula='Self-check BUY only: 1000bp entry-cost cap and its validate_live gas floor; FS1 minimum unchanged')
     for key in TERMINAL:
         p['provenance'][key] = dict(decision_id=DECISION,
-            formula='trade_after = flat_by = 07:00Z; new risk end = flatten = 07:01Z; signing end 08:00Z, Oct 28')
+            formula='trade_after = flat_by = 08:45Z; new risk end = flatten = 08:46Z; signing end 09:30Z, Oct 28')
     validate_live(p)
     return Document.from_dict(p)
 

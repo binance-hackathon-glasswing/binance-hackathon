@@ -15,7 +15,7 @@ from tests.runtime.test_gate_a import WALLET
 from tools.deploy import final_caps_inputs as tool, prepare_fs1
 
 NOW = '2026-10-27T18:00:30Z'
-TEMP = dict(temp_self_check=True, run_id='larp-final-selfcheck-temp', database_name='larp_final_selfcheck')
+TEMP = dict(temp_self_check=True, run_id='larp-final-selfcheck-temp2', database_name='larp_final_selfcheck2')
 ROUTER = '0xb44446b0c8e56988c34f7ff73ae904982b5fdda5'
 
 
@@ -80,8 +80,8 @@ def test_temp_caps_inputs_cover_and_assemble_through_final_services(tmp_path):
         assert result['numeric_status'] == 'COVERED', result['blockers']
         services = prepare_fs1.final_services(files, inputs, now=NOW, base_dir=tmp_path / 'caps')
     signer = json.loads(services['signer.json'])
-    assert signer['mode'] == 'live' and signer['run_id'] == 'larp-final-selfcheck-temp'
-    assert signer['database_name'] == 'larp_final_selfcheck' and signer['signing_policy']['allowance_recovery'] is True
+    assert signer['mode'] == 'live' and signer['run_id'] == 'larp-final-selfcheck-temp2'
+    assert signer['database_name'] == 'larp_final_selfcheck2' and signer['signing_policy']['allowance_recovery'] is True
     execution = json.loads(services['execution.json'])
     assert execution['rpc_source_id'] == providers[0]['source_id'] and execution['mode'] == 'live'
     # The self-check BUY of 0.90 USDT is quoted beside the profile sizes.

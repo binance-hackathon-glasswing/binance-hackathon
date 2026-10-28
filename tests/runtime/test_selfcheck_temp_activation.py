@@ -12,10 +12,10 @@ from larp.runtime.service import StartRefused, activate_run, temporary_self_chec
 from larp.storage.postgres import doc
 from larp.strategy.schema import instant
 from tests.support import DatabaseCase
-from tools.deploy.build_selfcheck_temp import build
 from tools.deploy.prepare_fs1 import PROFILE
 
 ROOT = Path(__file__).resolve().parents[2]
+W2_PROFILE = ROOT / 'docs/build/evidence/temp-selfcheck-20261028/strategy-profile.json'
 NOW = int(instant('2026-10-28T02:00:00Z').timestamp() * 1000)
 WALLET = '0x' + '5' * 40
 # GAP62-F03: the exception is pinned to the register that release e261bcfc shipped (nine DRAFT rows), not the live
@@ -30,7 +30,7 @@ def temp_register():
 
 
 def candidate(tmp_path):
-    raw = build(fs1_raw=PROFILE.read_bytes(), now='2026-10-28T02:00:00Z').payload + b'\n'
+    raw = W2_PROFILE.read_bytes()  # the exception pins release e261bcfc's W2 bytes; build() now gives W3
     path = tmp_path / 'profile.json'
     path.write_bytes(raw)
     config = dict(mode='live', run_id='larp-final-selfcheck-temp', database_name='larp_final_selfcheck',

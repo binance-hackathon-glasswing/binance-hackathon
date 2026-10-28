@@ -46,11 +46,11 @@ def reasons(result):
 def test_w2_1_generator_gives_the_fixed_window_whenever_prepared():
     p = build(fs1_raw=PROFILE.read_bytes(), now=NOW).read()
     validate_live(p)
-    assert p['activation_self_check'] == dict(symbol='SKHYB', pay_units=900_000, buy_after='2026-10-28T04:00:00Z',
-        buy_until='2026-10-28T06:00:00Z', flat_by='2026-10-28T07:00:00Z')
+    assert p['activation_self_check'] == dict(symbol='SKHYB', pay_units=900_000, buy_after='2026-10-28T07:00:00Z',
+        buy_until='2026-10-28T08:30:00Z', flat_by='2026-10-28T08:45:00Z')
     assert (p['trade_after'], p['new_risk_end'], p['flatten_start'], p['signing_end']) == (
-        '2026-10-28T07:00:00Z', '2026-10-28T07:01:00Z', '2026-10-28T07:01:00Z', '2026-10-28T08:00:00Z')
-    later = datetime(2026, 10, 28, 5, 59, 59, tzinfo=timezone.utc)
+        '2026-10-28T08:45:00Z', '2026-10-28T08:46:00Z', '2026-10-28T08:46:00Z', '2026-10-28T09:30:00Z')
+    later = datetime(2026, 10, 28, 8, 29, 59, tzinfo=timezone.utc)
     assert build(fs1_raw=PROFILE.read_bytes(), now=later).payload == build(fs1_raw=PROFILE.read_bytes(), now=NOW).payload
     assert p['policy_id'] == self_check.TEMP_POLICY_ID and p[self_check.TEMP_COST_KEY] == 1000
     assert self_check.temp_floor(p) == 588_951
@@ -63,7 +63,7 @@ def test_w2_1_generator_gives_the_fixed_window_whenever_prepared():
 def test_w2_1_generator_refuses_other_sources_and_a_closed_window():
     with pytest.raises(ContractError, match='reviewed FS1'):
         build(fs1_raw=PROFILE.read_bytes() + b' ', now=NOW)
-    for late in ('2026-10-28T06:00:00Z', '2026-10-28T09:00:00Z'):
+    for late in ('2026-10-28T08:30:00Z', '2026-10-28T09:00:00Z'):
         with pytest.raises(ContractError, match='window closed'):
             build(fs1_raw=PROFILE.read_bytes(), now=late)
 

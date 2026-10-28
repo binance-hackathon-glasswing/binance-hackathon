@@ -13,7 +13,7 @@ from tests.runtime.test_gate_a import WALLET, terraform_output
 from tools.deploy.build_selfcheck_temp import WINDOW
 import render_host_configs
 
-TEMP = dict(temp_self_check=True, run_id='larp-final-selfcheck-temp', database_name='larp_final_selfcheck')
+TEMP = dict(temp_self_check=True, run_id='larp-final-selfcheck-temp2', database_name='larp_final_selfcheck2')
 # The temp window must start after the pinned quote measurement (2026-10-19T23:57Z) and end by the F-127 pause.
 NOW = '2026-10-27T18:00:30Z'
 
@@ -28,10 +28,10 @@ def test_ts6_temp_preparation_uses_its_own_run_database_directories_and_stamped_
     files = prepare(**TEMP)
     values = {n: json.loads(raw) for n, raw in files.items() if n.endswith('.json')}
     runtime, profile = values['runtime.json'], values['strategy-profile.json']
-    assert runtime['run_id'] == 'larp-final-selfcheck-temp' and runtime['mode'] == 'live'
-    assert all(values[n]['database_name'] == 'larp_final_selfcheck' for n in
+    assert runtime['run_id'] == 'larp-final-selfcheck-temp2' and runtime['mode'] == 'live'
+    assert all(values[n]['database_name'] == 'larp_final_selfcheck2' for n in
                ('runtime.json', 'uploader.json', 'operations.json'))
-    directory = '/var/lib/larp-runtime/final-' + WALLET[2:] + '-selfcheck-temp'
+    directory = '/var/lib/larp-runtime/final-' + WALLET[2:] + '-selfcheck-temp2'
     assert (runtime['ai_seeds_dir'], runtime['nonce_dir']) == (directory + '/ai-seeds', directory + '/nonce')
     assert profile['policy_id'] == self_check.TEMP_POLICY_ID
     assert {k: profile['activation_self_check'][k] for k in WINDOW} == WINDOW  # W2 fixed window
@@ -43,7 +43,7 @@ def test_ts6_temp_preparation_uses_its_own_run_database_directories_and_stamped_
 
 @pytest.mark.parametrize('changes', [
     dict(TEMP, run_id='larp-final-fs1'), dict(TEMP, database_name='larp_final'),
-    dict(run_id='larp-final-selfcheck-temp', database_name='larp_final_selfcheck'),  # temp identity on FS1
+    dict(run_id='larp-final-selfcheck-temp2', database_name='larp_final_selfcheck2'),  # temp identity on FS1
     dict(TEMP, temp_self_check='yes')])
 def test_ts6_temp_and_fs1_identities_never_mix(changes):
     with pytest.raises(ContractError):
@@ -74,8 +74,8 @@ def test_ts6_cli_temp_mode_prints_the_stamped_window(tmp_path, monkeypatch, caps
         assert prepare_fs1.main(args) == 0
     report = json.loads(capsys.readouterr().out)
     assert report['status'] == 'TEMP_SELF_CHECK_PREPARED_REQUIRES_APPROVAL' and report['signing_enabled'] is False
-    assert report['run_id'] == 'larp-final-selfcheck-temp' and report['activation_self_check']['pay_units'] == 900_000
-    assert report['activation_self_check']['buy_after'] == '2026-10-28T04:00:00Z'
+    assert report['run_id'] == 'larp-final-selfcheck-temp2' and report['activation_self_check']['pay_units'] == 900_000
+    assert report['activation_self_check']['buy_after'] == '2026-10-28T07:00:00Z'
     written = (tmp_path / 'prepared/strategy-profile.json').read_bytes()
     assert report['profile_sha256'] == gate_a.digest(written) and written == prepared['strategy-profile.json']
 
@@ -84,4 +84,4 @@ def test_w2_2_preparation_at_different_times_gives_identical_profile_bytes():
     first = prepare(**TEMP)['strategy-profile.json']
     assert prepare(**TEMP, now='2026-10-27T18:04:00Z')['strategy-profile.json'] == first
     with pytest.raises(ContractError, match='window closed'):
-        prepare(**TEMP, now='2026-10-28T06:00:00Z')
+        prepare(**TEMP, now='2026-10-28T08:30:00Z')

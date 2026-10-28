@@ -23,8 +23,9 @@ POLICY = ROOT / 'docs/build/evidence/untrusted-router-policy-ld03-20261020.json'
 POLICY_SHA = '05759e90b87511210a6dce953a9cd2f1e2c8a36a219988905a10b66c127957c5'
 
 
-TEMP_RUN_ID = 'larp-final-selfcheck-temp'
-TEMP_DATABASE = 'larp_final_selfcheck'
+# W3: a fresh run and database; the W2 run on e261bcfc keeps its own registered build and audit trail.
+TEMP_RUN_ID = 'larp-final-selfcheck-temp2'
+TEMP_DATABASE = 'larp_final_selfcheck2'
 
 
 def prepare_final(configs, *, wallet, database_name, capture_raw, calendar_raw, token_history_raw,
@@ -56,7 +57,7 @@ def prepare_final(configs, *, wallet, database_name, capture_raw, calendar_raw, 
     # Wallet ownership markers must not reuse the development wallet's directories.
     directory = '/var/lib/larp-runtime/final-' + gate_a.wallet_address(wallet)[2:]
     if temp_self_check:
-        directory += '-selfcheck-temp'  # IDEA-110: never FS1's ownership markers
+        directory += '-selfcheck-temp2'  # IDEA-110 W3: never FS1's ownership markers
     configs['runtime.json'].update(ai_seeds_dir=directory + '/ai-seeds', nonce_dir=directory + '/nonce')
     return gate_a.prepare(configs, profile_raw=profile_raw, capture_raw=capture_raw, calendar_raw=calendar_raw,
         token_history_raw=token_history_raw, run_id=run_id, build_id=build_id, now=now,
