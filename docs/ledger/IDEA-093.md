@@ -651,3 +651,15 @@ Claude Code on Yao Zhu's laptop, at Yao's instruction ("install the hosts, we'll
 - M4 bound/uploaded; W3 configs moved to `/etc/larp-history/4ebf65f-larp-final-selfcheck-temp2` on both hosts; P3
   (routes PASS, 15 destinations), B1 (OpenAI ledger 5.30 of 50 USD charged), S1 and S1b (key loader PASS) done.
   All units stopped. P4 → S2 → P5 and P6 at the 2026-10-29T02:00Z restart (local P6 copy refuses before 01:59Z).
+
+## FS1 scored start (2026-10-29)
+
+- 02:00:02Z W0 PASS on the final wallet (0 stock, 0 allowances, 170.0006 USDT, 0.0399 BNB, nonce 12), unchanged.
+- The laptop's network and the AWS sign-in session dropped just before 02:00Z; Yao re-ran `aws login`.
+- P4 02:00:38Z: `larp-final-fs1` initialized and activated (epoch 2), evidence/uploader active. S2: key loader PASS,
+  `wallet_matches: true`, signer started. P5: execution active, 0 restarts. **P6 02:02:55Z: runtime active,
+  0 restarts: the scored run started.**
+- First rounds (read-only): VERSION_REGISTERED (build `4ebf65fe…`), RUN_ACTIVATED, BALANCE_CHECKED `MATCH`,
+  DAY_ROLLED 2026-10-29, one round planned and closed (reassessment jobs queued, LOW_TURNOVER_HOLD), no halt, no
+  orders, 0 execution records. J-SC PASS: `risk_state.activation_self_check: EXPIRED`; day anchor 198.828337 USDT.
+  First FS1 buys open at 14:00Z.
